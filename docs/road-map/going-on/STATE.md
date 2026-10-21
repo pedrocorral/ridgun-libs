@@ -1,12 +1,12 @@
 ---
-updated: 2026-10-21T21:55
+updated: 2026-10-21T22:20
 active_task: none
 agent_runtime: gemini
 ---
 # Session state — read this first when resuming
 
 ## Where we are (3 lines max)
-- Completed all roadmap tasks (`TASK-0001`..`TASK-0009`) for the 7-module pure-Ridgun (`v0.9.5`) library suite (`socket`, `argon2id`, `crypto`, `posix`, `io`, `str`, `test`).
+- Completed all roadmap tasks (`TASK-0001`..`TASK-0010`) for the 7-module pure-Ridgun (`v0.9.5`) library suite (`socket`, `argon2id`, `crypto`, `posix`, `io`, `str`, `test`), including exhaustive socket and cryptography edge-case tests.
 - All 7 library modules (`src/main/ridgun/lib/*.rg`) pass `stable check` (`0` errors), all 7 test suites (`src/test/ridgun/test_*.rg`) pass `stable test` (`7/7` passed, `0` failures), and all `.rglib`, `.rgc`, and `.so` bundles are compiled in `target/` and `target/bundles/`.
 - All 23 requirements/contracts (`FR-*`, `NFR-*`, `API-*`, `DM-*`) are `implemented` and all 17 test specs (`TS-*`) are `automated` with `0 errors, 0 warnings` on `aix docs validate`.
 ## Files to load for the active task (nothing else)

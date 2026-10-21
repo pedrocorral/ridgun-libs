@@ -26,56 +26,87 @@ fn :: aead pt (Int, String) => String
 -- @tests TS-CRYPTO-003
 fn :: test rgf019 bytes and bitops => ()
       test rgf019 bytes and bitops =
-        -- 1. Raw byte_str lengths and round-trip (0..255)
-        _   = assert_int_equals (str_len (byte str 0)) 1 "len byte_str 0"
-        _   = assert_int_equals (str_len (byte str 127)) 1 "len byte_str 127"
-        _   = assert_int_equals (str_len (byte str 128)) 1 "len byte_str 128"
-        _   = assert_int_equals (str_len (byte str 255)) 1 "len byte_str 255"
-        b5  = bytes from list [0, 1, 127, 128, 255]
-        _   = assert_int_equals (str_len b5) 5 "len b5 == 5"
-        rt  = bytes to list b5
-        _   = assert_int_equals (c nth int rt 0) 0 "rt 0"
-        _   = assert_int_equals (c nth int rt 1) 1 "rt 1"
-        _   = assert_int_equals (c nth int rt 2) 127 "rt 2"
-        _   = assert_int_equals (c nth int rt 3) 128 "rt 3"
-        _   = assert_int_equals (c nth int rt 4) 255 "rt 4"
+        -- 1. Raw byte_str lengths, wraparound normalization, and full 0..255 round-trip
+        _    = assert_int_equals (str_len (byte str 0)) 1 "len byte_str 0"
+        _    = assert_int_equals (str_len (byte str 127)) 1 "len byte_str 127"
+        _    = assert_int_equals (str_len (byte str 128)) 1 "len byte_str 128"
+        _    = assert_int_equals (str_len (byte str 255)) 1 "len byte_str 255"
+        _    = assert_str_eq (byte str (0 - 1)) (byte str 255) "byte_str -1 wraps to 255"
+        _    = assert_str_eq (byte str 256) (byte str 0) "byte_str 256 wraps to 0"
+        b5   = bytes from list [0, 1, 127, 128, 255]
+        _    = assert_int_equals (str_len b5) 5 "len b5 == 5"
+        rt   = bytes to list b5
+        _    = assert_int_equals (c nth int rt 0) 0 "rt 0"
+        _    = assert_int_equals (c nth int rt 1) 1 "rt 1"
+        _    = assert_int_equals (c nth int rt 2) 127 "rt 2"
+        _    = assert_int_equals (c nth int rt 3) 128 "rt 3"
+        _    = assert_int_equals (c nth int rt 4) 255 "rt 4"
+        b256 = bytes from list (range bytes 0 255)
+        _    = assert_int_equals (str_len b256) 256 "len b256 == 256"
+        r256 = bytes to list b256
+        _    = assert_int_equals (c list len r256) 256 "r256 list len == 256"
+        _    = assert_int_equals (c nth int r256 0) 0 "r256[0] == 0"
+        _    = assert_int_equals (c nth int r256 128) 128 "r256[128] == 128"
+        _    = assert_int_equals (c nth int r256 255) 255 "r256[255] == 255"
 
-        -- 2. RGF-019 32-bit unsigned bitwise operations
-        _   = assert_int_equals (band 4294967295 255) 255 "band"
-        _   = assert_int_equals (bor 240 15) 255 "bor"
-        _   = assert_int_equals (bxor 305419896 4294967295) 3989547399 "bxor"
-        _   = assert_int_equals (shl 1 31) 2147483648 "shl 31"
-        _   = assert_int_equals (shl 1 32) 0 "shl 32"
-        _   = assert_int_equals (shr 2147483648 31) 1 "shr 31"
-        _   = assert_int_equals (shr 2147483648 32) 0 "shr 32"
+        -- 2. RGF-019 32-bit unsigned bitwise operations and boundary shifts
+        _    = assert_int_equals (band 4294967295 255) 255 "band"
+        _    = assert_int_equals (band 305419896 0) 0 "band with 0"
+        _    = assert_int_equals (bor 240 15) 255 "bor"
+        _    = assert_int_equals (bor 305419896 0) 305419896 "bor with 0"
+        _    = assert_int_equals (bxor 305419896 4294967295) 3989547399 "bxor"
+        _    = assert_int_equals (bxor 305419896 305419896) 0 "bxor self == 0"
+        _    = assert_int_equals (shl 1 0) 1 "shl 0"
+        _    = assert_int_equals (shl 1 (0 - 1)) 0 "shl negative shift"
+        _    = assert_int_equals (shl 1 31) 2147483648 "shl 31"
+        _    = assert_int_equals (shl 1 32) 0 "shl 32"
+        _    = assert_int_equals (shr 2147483648 0) 2147483648 "shr 0"
+        _    = assert_int_equals (shr 2147483648 (0 - 1)) 0 "shr negative shift"
+        _    = assert_int_equals (shr 2147483648 31) 1 "shr 31"
+        _    = assert_int_equals (shr 2147483648 32) 0 "shr 32"
         ()
 
 -- @tests TS-CRYPTO-003
 fn :: test sha256 hmac and pbkdf2 => ()
       test sha256 hmac and pbkdf2 =
-        -- 1. SHA-256 ("abc" -> FIPS 180-4 vector)
+        -- 1. SHA-256 (empty string "" and "abc" -> FIPS 180-4 vectors)
+        h_emp = sha256 hex ""
+        _     = assert_str_eq h_emp "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" "sha256_hex empty"
         h_hex = sha256 hex "abc"
         _     = assert_str_eq h_hex "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" "sha256_hex abc"
         h_raw = sha256 bytes "abc"
         _     = assert eq (str_len h_raw) 32
         _     = assert_str_eq (bytes to hex str h_raw) h_hex "sha256_bytes matches sha256_hex"
 
-        -- 2. HMAC-SHA-256 (RFC 4231 Test Case 2: "Jefe" / "what do ya want for nothing?")
+        -- 2. HMAC-SHA-256 (RFC 4231 Test Case 2 and >64-byte key reduction)
         mac   = hmac sha256 "Jefe" "what do ya want for nothing?"
         _     = assert eq (str_len mac) 32
         _     = assert_str_eq (bytes to hex str mac) "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843" "RFC 4231 Test Case 2"
+        long_k = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef_extra_key_bytes"
+        mac_lk = hmac sha256 long_k "message"
+        _      = assert eq (str_len mac_lk) 32
+        _      = assert_true (ct equal mac_lk (hmac sha256 (sha256 bytes long_k) "message")) "HMAC >64B key hashed to 32B"
 
         -- 3. Constant-time comparison (`ct_equal`)
+        _     = assert_true (ct equal "" "") "ct_equal empty strings"
         _     = assert_true (ct equal mac mac) "ct_equal identical"
         _     = assert_false (ct equal mac (sha256 bytes "abc")) "ct_equal different 32B"
         _     = assert_false (ct equal "short" "longer") "ct_equal different lengths"
 
-        -- 4. PBKDF2-HMAC-SHA-256 (RFC 6070 c=1 and c=2)
+        -- 4. PBKDF2-HMAC-SHA-256 (RFC 6070 c=1, c=2, multi-block dk_len=64, sub-block dk_len=16, invalid args)
         dk1   = pbkdf2 hmac sha256 "password" "salt" 1 32
         _     = assert eq (str_len dk1) 32
         _     = assert_str_eq (bytes to hex str dk1) "120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b" "RFC 6070 PBKDF2 c=1"
         dk2   = pbkdf2 hmac sha256 "password" "salt" 2 32
         _     = assert_str_eq (bytes to hex str dk2) "ae4d0c95af6b46d32d0adff928f06dd02a303f8ef3c251dfd6e2d85a95474c43" "RFC 6070 PBKDF2 c=2"
+        dk16  = pbkdf2 hmac sha256 "password" "salt" 1 16
+        _     = assert eq (str_len dk16) 16
+        _     = assert_str_eq (bytes to hex str dk16) "120fb6cffcf8b32c43e7225256c4f837" "PBKDF2 16-byte prefix"
+        dk64  = pbkdf2 hmac sha256 "password" "salt" 1 64
+        _     = assert eq (str_len dk64) 64
+        _     = assert_str_eq (byte slice dk64 0 32) dk1 "PBKDF2 64-byte block 1 matches dk1"
+        _     = assert_str_eq (pbkdf2 hmac sha256 "password" "salt" 0 32) "" "PBKDF2 iterations=0 rejected"
+        _     = assert_str_eq (pbkdf2 hmac sha256 "password" "salt" 1 0) "" "PBKDF2 dk_len=0 rejected"
         ()
 
 -- ── TS-CRYPTO-004 & TS-PERF-001: Argon2id 5-Arg API & ChaCha20-Poly1305 AEAD ──
@@ -89,6 +120,12 @@ fn :: test argon2id five arg and perf => ()
         _   = assert_true (argon2id verify "correct horse battery staple" phc) "argon2id_verify matching (pwd, phc)"
         _   = assert_false (argon2id verify "wrong password" phc) "argon2id_verify wrong password"
         _   = assert_false (argon2id verify "correct horse battery staple" "$argon2id$v=19$m=64,t=2,p=1$bad$bad") "argon2id_verify bad PHC"
+
+        -- Negative parameter guards for 5-arg argon2id_hash
+        _   = assert_str_eq (argon2id hash "password" "short" 64 2 1) "" "salt < 8 bytes rejected"
+        _   = assert_str_eq (argon2id hash "password" "0123456789abcdef" 4 2 1) "" "m_cost < 8*p rejected"
+        _   = assert_str_eq (argon2id hash "password" "0123456789abcdef" 64 0 1) "" "t_cost < 1 rejected"
+        _   = assert_str_eq (argon2id hash "password" "0123456789abcdef" 64 2 0) "" "p_cost < 1 rejected"
 
         -- TS-PERF-001 AC1: OWASP m=19456, t=2, p=1 hash + verify latency < 2000 ms
         t1     = sys monotonic ms
@@ -121,19 +158,42 @@ fn :: test rfc8439 chacha20 poly1305 aead => ()
         _        = assert eq (aead rc res_ok) 0
         _        = assert_str_eq (aead pt res_ok) pt "aead_open decrypted plaintext"
 
-        -- Verify tamper detection (-12 AUTH_FAILED) on modified AAD, modified nonce, or modified tag
+        -- Verify empty plaintext and empty AAD round-trip
+        sealed_empty = aead seal key nonce "" ""
+        _            = assert eq (str_len sealed_empty) 16
+        res_empty    = aead open key nonce "" sealed_empty
+        _            = assert eq (aead rc res_empty) 0
+        _            = assert_str_eq (aead pt res_empty) "" "aead_open empty plaintext"
+
+        -- Verify tamper detection (-12 AUTH_FAILED) on modified AAD, modified nonce, modified ciphertext, or modified tag
         res_aad  = aead open key nonce "tampered-aad" sealed
         _        = assert eq (aead rc res_aad) (0 - 12)
         _        = assert_str_eq (aead pt res_aad) "" "tampered AAD returns empty plaintext"
+
+        bad_nonce = bytes from list [8, 0, 0, 0, 64, 65, 66, 67, 68, 69, 70, 71]
+        res_nonce = aead open key bad_nonce aad sealed
+        _         = assert eq (aead rc res_nonce) (0 - 12)
+        _         = assert_str_eq (aead pt res_nonce) "" "tampered nonce returns empty plaintext"
+
+        bad_ct   = (byte str 0) + (byte slice sealed 1 130)
+        res_ct   = aead open key nonce aad bad_ct
+        _        = assert eq (aead rc res_ct) (0 - 12)
+        _        = assert_str_eq (aead pt res_ct) "" "tampered ciphertext byte returns empty plaintext"
 
         bad_seal = (byte slice sealed 0 129) + (byte str 0)
         res_tag  = aead open key nonce aad bad_seal
         _        = assert eq (aead rc res_tag) (0 - 12)
         _        = assert_str_eq (aead pt res_tag) "" "tampered tag returns empty plaintext"
 
-        -- Verify invalid key/nonce length returns (-7, "")
+        -- Verify invalid key/nonce/ciphertext length returns (-7, "") or ""
+        _        = assert_str_eq (aead seal "short-key" nonce aad pt) "" "aead_seal invalid key length"
+        _        = assert_str_eq (aead seal key "short-nonce" aad pt) "" "aead_seal invalid nonce length"
         res_inv  = aead open "short-key" nonce aad sealed
         _        = assert eq (aead rc res_inv) (0 - 7)
+        res_ninv = aead open key "short-nonce" aad sealed
+        _        = assert eq (aead rc res_ninv) (0 - 7)
+        res_tinv = aead open key nonce aad "short-tag"
+        _        = assert eq (aead rc res_tinv) (0 - 7)
         ()
 
 fn :: main => ()

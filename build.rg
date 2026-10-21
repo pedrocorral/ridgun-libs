@@ -25,4 +25,4 @@ fn :: dependencies => [String]
       dependencies =  []
 
 fn :: task bundle => String
-      task bundle =  "mkdir -p target target/bundles && for m in socket argon2id crypto posix io str test; do ridgunc build --lib src/main/ridgun/lib/$m.rg -o target/$m.rglib && cp target/$m.rglib target/bundles/$m.rglib && cp target/$m.rglib target/$m.rgc && ridgunc build --so src/main/ridgun/lib/$m.rg -o target/lib$m.so; done"
+      task bundle =  "mkdir -p target target/bundles && rm -f target/socket.rglib target/argon2id.rglib target/crypto.rglib target/posix.rglib target/io.rglib target/str.rglib target/test.rglib && for m in socket argon2id crypto posix io str test; do ridgunc build --lib src/main/ridgun/lib/$m.rg -o target/bundles/$m.rglib && cp target/bundles/$m.rglib target/$m.rgc && ridgunc build --so src/main/ridgun/lib/$m.rg -o target/lib$m.so; done"

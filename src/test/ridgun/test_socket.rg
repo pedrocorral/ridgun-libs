@@ -8,6 +8,7 @@
 -- @tests TS-OBS-001
 
 import test
+import crypto
 import socket
 
 fn :: is addr ok SockAddrRes     => Bool
@@ -104,7 +105,30 @@ fn :: test_sock_address_and_lifecycle => ()
         _          = assert ok (is_connected peer1)
         closed_cli = unwrap sock (sock close cli1)
         _          = assert eq (is_open closed_cli) False
-        assert eq (is sock ok (sock close closed_cli)) False
+        _          = assert eq (is sock ok (sock close closed_cli)) False
+        -- Additional family, option, and lifecycle negative edge cases
+        _          = assert ok (is addr ok (sock parse addr "unix:/tmp/ridgun_prefixed.sock"))
+        _          = assert ok (is addr ok (sock addr ipv6 "::1" 8443))
+        _          = assert eq (is addr ok (sock addr ipv6 "invalid_v6" 8443)) False
+        _          = assert eq (is addr ok (sock parse addr "/tmp/bad|pipe.sock")) False
+        _          = assert eq (is addr ok (sock parse addr "/tmp/bad$dollar.sock")) False
+        _          = assert eq (is addr ok (sock parse addr "/tmp/bad space.sock")) False
+        _          = assert eq (family (sock tcp6)) "inet6"
+        _          = assert eq (family (sock udp6)) "inet6"
+        _          = assert eq (family (sock unix stream)) "unix"
+        _          = assert eq (sock_type (sock unix dgram)) "dgram"
+        good_opts  = SockOpts True True True True False 1000 32768 32768
+        bad_opts1  = SockOpts True False False False False (0 - 1) 32768 32768
+        bad_opts2  = SockOpts True False False False False 1000 0 32768
+        _          = assert ok (is sock ok (sock set options (sock tcp) good_opts))
+        _          = assert eq (is sock ok (sock set options (sock tcp) bad_opts1)) False
+        _          = assert eq (is sock ok (sock set options (sock tcp) bad_opts2)) False
+        _          = assert eq (is sock ok (sock bind (sock tcp) (unwrap addr r_v6))) False
+        _          = assert eq (is sock ok (sock listen (sock tcp) 8)) False
+        _          = assert eq (is sock ok (sock listen srv0 0)) False
+        _          = assert eq (is sock ok (sock listen (sock udp) 8)) False
+        _          = assert eq (is sock ok (sock accept srv0)) False
+        assert eq (is sock ok (sock connect (sock tcp) (unwrap addr r_ux))) False
 
 -- @tests TS-SOCK-002
 fn :: test_sock_data_transfer_and_framing => ()
@@ -138,6 +162,7 @@ fn :: test_sock_data_transfer_and_framing => ()
         r_line   = sock recv line p5 32
         _        = assert ok (is recv str ok r_line)
         _        = assert eq (unwrap recv str r_line) "PING 1"
+        p6       = unwrap recv str sock r_line
         u_sender = unwrap sock (sock bind (sock udp) cli_addr)
         u_rcvr   = unwrap sock (sock bind (sock udp) srv_addr)
         u_sent   = unwrap sock (sock send to u_sender [1, 2, 3] srv_addr)
@@ -145,7 +170,18 @@ fn :: test_sock_data_transfer_and_framing => ()
         u_rcvr2  = unwrap pair right d_pair
         d_res    = sock recv from u_rcvr2 16
         _        = assert eq (unwrap dgram payload d_res) [1, 2, 3]
-        assert eq (port (unwrap dgram sender d_res)) 50001
+        _        = assert eq (port (unwrap dgram sender d_res)) 50001
+        -- Additional framing, line, byte-range, and datagram negative edge cases
+        _        = assert eq (is sock ok (sock send bytes c0 [0, 256])) False
+        _        = assert eq (is sock ok (sock send bytes c0 [0 - 1])) False
+        c_short  = unwrap sock (sock send bytes (unwrap pair left pair3) [0, 1])
+        p_short  = unwrap pair right (sock pipe transfer c_short p6)
+        _        = assert eq (is recv bytes ok (sock recv frame p_short 16)) False
+        _        = assert eq (is recv str ok (sock recv line p_short 16)) False
+        c_longl  = unwrap sock (sock send line (unwrap pair left pair3) "LINE_TOO_LONG_FOR_LIMIT")
+        p_longl  = unwrap pair right (sock pipe transfer c_longl (unwrap recv bytes sock (sock recv bytes p_short 2)))
+        _        = assert eq (is recv str ok (sock recv line p_longl 4)) False
+        assert eq (is sock ok (sock send to c0 [1, 2] srv_addr)) False
 
 -- @tests TS-SOCK-003
 fn :: test_sock_advanced_ops_dns_cidr_and_polling => ()
@@ -194,7 +230,17 @@ fn :: test_sock_advanced_ops_dns_cidr_and_polling => ()
         c_shut_wr = unwrap sock (sock shutdown (unwrap pair left pair1) "wr")
         _         = assert eq (is sock ok (sock send bytes c_shut_wr [1])) False
         p_shut_rd = unwrap sock (sock shutdown p1 "rd")
-        assert eq (is recv bytes ok (sock recv bytes p_shut_rd 4)) False
+        _         = assert eq (is recv bytes ok (sock recv bytes p_shut_rd 4)) False
+        c_shut_all = unwrap sock (sock shutdown p1 "rdwr")
+        _         = assert eq (can_read c_shut_all) False
+        _         = assert eq (can_write c_shut_all) False
+        _         = assert eq (is sock ok (sock shutdown p1 "bad_mode")) False
+        _         = assert ok (is addr ok (sock resolve host "ip6-localhost" 9090))
+        _         = assert ok (ip in cidr "203.0.113.5" "0.0.0.0/0")
+        _         = assert ok (ip in cidr "192.168.1.1" "192.168.1.1/32")
+        _         = assert eq (ip in cidr "192.168.1.2" "192.168.1.1/32") False
+        _         = assert eq ( is addr ok (sock local addr (sock tcp))) False
+        assert eq (is addr ok (sock peer addr (sock tcp))) False
 
 fn :: tup2 fst (Int, Int) => Int
       tup2 fst (a, _)     =  a
@@ -219,7 +265,11 @@ fn :: tup3 fd (Int, Int, String) => Int
 -- @tests TS-OBS-001
 fn :: test_sock_rgf001_kernel_tcp_and_unix => ()
       test_sock_rgf001_kernel_tcp_and_unix =
-        -- 1. Ephemeral TCP listen + sys_local_port + ADDR_IN_USE
+        -- 1. Ephemeral TCP listen + sys_local_port + ADDR_IN_USE + invalid/permission checks
+        _      = assert_int_equals (tup2 fst (sys tcp listen "bad_host" 8080 16)) (0 - 7) "invalid host -> -7"
+        _      = assert_int_equals (tup2 fst (sys tcp listen "127.0.0.1" 70000 16)) (0 - 7) "invalid port -> -7"
+        _      = assert_int_equals (tup2 fst (sys tcp listen "127.0.0.1" 8080 0)) (0 - 7) "invalid backlog -> -7"
+        _      = assert_int_equals (tup2 fst (sys tcp listen "127.0.0.1" 80 16)) (0 - 6) "privileged port 80 -> -6"
         l_res  = sys tcp listen "127.0.0.1" 0 16
         _      = assert_int_equals (tup2 fst l_res) 0 "sys_tcp_listen status"
         lfd    = tup2 snd l_res
@@ -235,29 +285,77 @@ fn :: test_sock_rgf001_kernel_tcp_and_unix => ()
         ref_c  = sys tcp connect "127.0.0.1" 39999 100
         _      = assert_int_equals (tup2 fst ref_c) (0 - 3) "sys_tcp_connect refused -> -3"
 
-        -- 3. TCP connect + accept + send + recv + shutdown_write + EOF (-1) + sys_close
+        -- 3. TCP multi-client queue, bidirectional I/O, chunked recv, recv timeout (-2), shutdown_write, send after shutdown (-4), EOF (-1)
         c_res  = sys tcp connect "127.0.0.1" lport 500
-        _      = assert_int_equals (tup2 fst c_res) 0 "sys_tcp_connect ok"
+        c_res2 = sys tcp connect "127.0.0.1" lport 500
+        _      = assert_int_equals (tup2 fst c_res) 0 "sys_tcp_connect 1 ok"
+        _      = assert_int_equals (tup2 fst c_res2) 0 "sys_tcp_connect 2 ok"
         cfd    = tup2 snd c_res
+        cfd2   = tup2 snd c_res2
         a_res  = sys accept lfd 500
-        _      = assert_int_equals (tup3 rc a_res) 0 "sys_accept ok"
+        a_res2 = sys accept lfd 500
+        _      = assert_int_equals (tup3 rc a_res) 0 "sys_accept 1 ok"
+        _      = assert_int_equals (tup3 rc a_res2) 0 "sys_accept 2 ok"
         sfd    = tup3 fd a_res
-        snd1   = sys send cfd "ping\n" 500
+        sfd2   = tup3 fd a_res2
+
+        -- Empty recv with timeout=20 returns (-2, "")
+        rcv_to = sys recv sfd 16 20
+        _      = assert_int_equals (tup2 rc rcv_to) (0 - 2) "sys_recv timeout on idle stream -> -2"
+
+        -- Chunked recv: send 10 bytes, read 4 + 4 + 2 bytes, plus reverse direction sfd -> cfd
+        snd1   = sys send cfd "0123456789" 500
         _      = assert_int_equals (tup2 fst snd1) 0 "sys_send status"
-        _      = assert_int_equals (tup2 snd snd1) 5 "sys_send len 5"
-        rcv1   = sys recv sfd 64 500
-        _      = assert_int_equals (tup2 rc rcv1) 0 "sys_recv status"
-        _      = assert_str_eq (tup2 str rcv1) "ping\n" "TCP sys_recv ping"
+        _      = assert_int_equals (tup2 snd snd1) 10 "sys_send len 10"
+        ch1    = sys recv sfd 4 500
+        ch2    = sys recv sfd 4 500
+        ch3    = sys recv sfd 4 500
+        _      = assert_str_eq (tup2 str ch1) "0123" "chunk 1 (4B)"
+        _      = assert_str_eq (tup2 str ch2) "4567" "chunk 2 (4B)"
+        _      = assert_str_eq (tup2 str ch3) "89" "chunk 3 (2B)"
+        _      = assert_int_equals (tup2 fst (sys send sfd "pong" 500)) 0 "server->client send ok"
+        _      = assert_str_eq (tup2 str (sys recv cfd 16 500)) "pong" "client recv pong"
+
+        -- Raw binary bytes (0, 1, 127, 128, 254, 255) + AEAD ciphertext over TCP sys_send/sys_recv
+        raw_bin = bytes from list [0, 1, 127, 128, 254, 255]
+        _       = assert_int_equals (str_len raw_bin) 6 "raw_bin len == 6"
+        _       = assert_int_equals (tup2 fst (sys send cfd2 raw_bin 500)) 0 "sys_send raw binary ok"
+        r_bin   = tup2 str (sys recv sfd2 16 500)
+        _       = assert_int_equals (str_len r_bin) 6 "raw binary recv len == 6"
+        _       = assert_int_equals (str_char_at r_bin 0) 0 "raw binary byte[0] == 0"
+        _       = assert_int_equals (str_char_at r_bin 1) 1 "raw binary byte[1] == 1"
+        _       = assert_int_equals (str_char_at r_bin 3) 128 "raw binary byte[3] == 128"
+        _       = assert_int_equals (str_char_at r_bin 5) 255 "raw binary byte[5] == 255"
+        k32     = sha256 bytes "socket-session-key"
+        n12     = "0123456789ab"
+        ct_wire = aead seal k32 n12 "tcp-aad" "confidential-payload-over-tcp"
+        _       = assert_int_equals (tup2 fst (sys send cfd2 ct_wire 500)) 0 "sys_send AEAD ciphertext ok"
+        rx_wire = tup2 str (sys recv sfd2 128 500)
+        opened  = aead open k32 n12 "tcp-aad" rx_wire
+        _       = assert_int_equals (tup2 rc opened) 0 "aead_open over TCP socket ok"
+        _       = assert_str_eq (tup2 str opened) "confidential-payload-over-tcp" "decrypted TCP payload matches"
+
+        -- Shutdown write -> subsequent send returns (-4, -1) RESET, peer recv returns (-1, "") EOF
         _      = assert_int_equals (sys shutdown write cfd) 0 "sys_shutdown_write"
+        _      = assert_int_equals (tup2 fst (sys send cfd "after-shut" 100)) (0 - 4) "send after shutdown_write -> -4"
         rcv_ef = sys recv sfd 64 500
         _      = assert_int_equals (tup2 rc rcv_ef) (0 - 1) "sys_recv EOF -> -1"
         _      = assert_int_equals (sys_close cfd) 0 "sys_close cfd"
         _      = assert_int_equals (sys_close sfd) 0 "sys_close sfd"
+        _      = assert_int_equals (sys_close cfd2) 0 "sys_close cfd2"
+        _      = assert_int_equals (sys_close sfd2) 0 "sys_close sfd2"
         _      = assert_int_equals (sys_close lfd) 0 "sys_close lfd"
 
-        -- 4. AF_UNIX listen + connect + send + recv + path traversal rejection (-7)
+        -- Operations on closed fd return -7 (INVALID)
+        _      = assert_int_equals (sys local port lfd) (0 - 7) "sys_local_port on closed lfd -> -7"
+        _      = assert_int_equals (tup3 rc (sys accept lfd 10)) (0 - 7) "sys_accept on closed lfd -> -7"
+        _      = assert_int_equals (tup2 fst (sys send cfd "x" 10)) (0 - 7) "sys_send on closed cfd -> -7"
+        _      = assert_int_equals (tup2 rc (sys recv sfd 16 10)) (0 - 7) "sys_recv on closed sfd -> -7"
+
+        -- 4. AF_UNIX listen + connect + send + recv + path traversal (-7) + missing listener (-3)
         u_bad  = sys unix listen "../traversal.sock" 8
         _      = assert_int_equals (tup2 fst u_bad) (0 - 7) "sys_unix_listen traversal -> -7"
+        _      = assert_int_equals (tup2 fst (sys unix connect "/tmp/rg_nonexistent_99999.sock" 50)) (0 - 3) "sys_unix_connect missing -> -3"
         upath  = "/tmp/rg_sock_rgf001_{sys_getpid}.sock"
         ul_res = sys unix listen upath 8
         _      = assert_int_equals (tup2 fst ul_res) 0 "sys_unix_listen ok"

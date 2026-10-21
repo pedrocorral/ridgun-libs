@@ -582,7 +582,7 @@ fn :: sock lstat exists (Bool, String, Int, Int, Int, String, String, Int, Strin
       sock lstat exists (exists, _, _, _, _, _, _, _, _) = exists
 
 fn :: sock lstat size (Bool, String, Int, Int, Int, String, String, Int, String) => Int
-      sock lstat size (_, _, sz, _, _, _, _, _, _) = sz
+      sock lstat size (_, _, _, _, sz, _, _, _, _) = sz
 
 fn :: is sock ws Int => Bool
       is sock ws c   =  c == 32 or c == 9 or c == 10 or c == 13
@@ -796,12 +796,33 @@ fn :: sys accept Int Int        => (Int, Int, String)
         | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{lfd}.listen")) = (0 - 7, 0 - 1, "")
         | otherwise = accept poll loop lfd (sys_time_ms) timeout_ms
 
+fn :: sock read raw fd Int Int => String
+      sock read raw fd rfd max_n =
+        | rfd < 0   = ""
+        | max_n < 1 =
+          _ = sys_close rfd
+          ""
+        | otherwise =
+          s = sys_read_fd rfd max_n
+          _ = sys_close rfd
+          s
+
+fn :: sock write raw fd Int String => Int
+      sock write raw fd wfd s =
+        | wfd < 0   = 0 - 99
+        | otherwise =
+          nw = sys_write_fd wfd s
+          _  = sys_close wfd
+          nw
+
 fn :: send to tx base String String => (Int, Int)
       send to tx base tx_base data =
         | sock lstat exists (file_lstat "{tx_base}.wr_closed") = (0 - 4, 0 - 1)
         | otherwise =
-          cur = read_file "{tx_base}.dat"
-          _   = write_file "{tx_base}.dat" (cur + data)
+          dpath = "{tx_base}.dat"
+          fsize = sock lstat size (file_lstat dpath)
+          cur   = sock read raw fd (sys_open_mode dpath "r") fsize
+          _     = sock write raw fd (sys_open dpath 577 420) (cur + data)
           (0, str_len data)
 
 -- @implements FR-SOCK-004
@@ -827,23 +848,20 @@ fn :: sys shutdown write Int => Int
           _       = write_file "{tx_base}.eof" "1"
           0
 
-fn :: min sock len Int Int => Int
-      min sock len a   b   =
-        | a < b     = a
-        | otherwise = b
+fn :: consume rx fd Int String Int Int => (Int, String)
+      consume rx fd rfd dpath fsize max_bytes =
+        | rfd < 0   = (0 - 99, "")
+        | otherwise =
+          chunk = sys_read_fd rfd max_bytes
+          rem   = sys_read_fd rfd fsize
+          _     = sys_close rfd
+          _     = sock write raw fd (sys_open dpath 577 420) rem
+          (0, chunk)
 
-fn :: consume rx buf String String Int => (Int, String)
-      consume rx buf dpath full max_bytes =
-        take_n = min sock len (str_len full) max_bytes
-        chunk  = str_slice full 0 take_n
-        rem    = str_slice full take_n (str_len full)
-        _      = write_file dpath rem
-        (0, chunk)
-
-fn :: recv poll step String String String String Int Int Int => (Int, String)
-      recv poll step rx_base dpath epath full max_bytes start_ms timeout_ms =
-        | (str_len full) > 0 =
-          consume rx buf dpath full max_bytes
+fn :: recv poll step String String String Int Int Int Int => (Int, String)
+      recv poll step rx_base dpath epath fsize max_bytes start_ms timeout_ms =
+        | fsize > 0 =
+          consume rx fd (sys_open_mode dpath "r") dpath fsize max_bytes
         | sock lstat exists (file_lstat epath) = (0 - 1, "")
         | timeout_ms == 0 = (0 - 2, "")
         | timeout_ms > 0 and ((sys_time_ms) - start_ms) >= timeout_ms = (0 - 2, "")
@@ -855,8 +873,8 @@ fn :: recv poll loop String Int Int Int => (Int, String)
       recv poll loop rx_base max_bytes start_ms timeout_ms =
         dpath = "{rx_base}.dat"
         epath = "{rx_base}.eof"
-        full  = read_file dpath
-        recv poll step rx_base dpath epath full max_bytes start_ms timeout_ms
+        fsize = sock lstat size (file_lstat dpath)
+        recv poll step rx_base dpath epath fsize max_bytes start_ms timeout_ms
 
 -- @implements FR-SOCK-004
 -- @implements API-SOCK-001
