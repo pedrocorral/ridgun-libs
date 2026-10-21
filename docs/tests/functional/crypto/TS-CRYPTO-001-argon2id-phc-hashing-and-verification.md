@@ -1,0 +1,25 @@
+---
+id: TS-CRYPTO-001
+title: Verify RFC 9106 Argon2id PHC hashing, parameter validation, and constant-time verification
+level: unit
+covers: [FR-CRYPTO-001]
+status: automated
+automated_in: [src/test/ridgun/test_argon2id.rg]
+---
+# TS-CRYPTO-001 — Verify RFC 9106 Argon2id PHC hashing, parameter validation, and constant-time verification
+
+## Preconditions / fixtures
+- Pure-Ridgun `argon2id` module (`src/main/ridgun/lib/argon2id.rg`).
+
+## Steps / inputs
+1. Hash a password and salt (`>= 8` bytes) with valid RFC 9106 Argon2id parameters (`m_cost = 32`, `t_cost = 3`, `lanes = 4`, `tag_len = 32`) via `argon2id hash`, verifying deterministic output and canonical PHC format `$argon2id$v=19$m=32,t=3,p=4$<salt_b64>$<tag_b64>`.
+2. Call `argon2id hash` with invalid parameters (`t_cost = 0`, `lanes = 0`, `m_cost < 8 * lanes`, `tag_len = 2`, and 4-byte salt).
+3. Verify the generated PHC string with `argon2id verify` against the matching password, a wrong password, and malformed PHC strings (`$argon2i$...`, missing segments, corrupted Base64).
+
+## Expected results (map to acceptance criteria)
+- AC1 → Valid parameters produce deterministic RFC 9106 Argon2id output encoded as `$argon2id$v=19$m=...,t=...,p=...$<salt_b64>$<tag_b64>`.
+- AC2 → Invalid parameters or short salts return `Argon2Err` without executing memory-matrix compression.
+- AC3 → `argon2id verify` returns `True` for the matching password and `False` for wrong passwords or malformed PHC strings using constant-time comparison.
+
+## Not covered here (to avoid duplication)
+- Socket operations (`TS-SOCK-001`, `TS-SOCK-002`).

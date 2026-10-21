@@ -1,0 +1,28 @@
+RGC1
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.3
+-- FUNCTIONS: 4
+-- TYPES: 0
+-- SUMMARY: fail_test:InlineSequential
+-- SUMMARY: assert_true_msg:InlineSequential
+-- SUMMARY: assert_true:InlineSequential
+-- SUMMARY: assert_equals:InlineSequential
+-- src/main/ridgun/lib/test.rg
+-- Pure-Ridgun Unit Test Assertion Library
+
+fn :: fail test String => ()
+      fail test msg    =
+        _ = echo "[ASSERT FAIL] {msg}"
+        sys_exit 1
+
+fn :: assert true msg Bool String => ()
+      assert true msg cond label  =
+        | cond      = ()
+        | otherwise = fail test "expected True at {label}"
+
+fn :: assert true Bool => ()
+      assert true cond =  assert true msg cond "assert_true"
+
+fn :: assert equals A      A        => ()
+      assert equals actual expected =
+        | actual == expected = ()
+        | otherwise          = fail test "assert_equals failed"

@@ -1,0 +1,10 @@
+# data-model/ — DM-<Entity> aggregates
+Read this when: persistence, API schemas, migrations, or core library ADT definitions. Skip when: UI-only work.
+
+| Path | What | Read when |
+|---|---|---|
+| `field-dictionary.md` | **Canonical field names** — the only names allowed in DM/API/schemas/code | Before naming any field, anywhere |
+| `DM-Socket.md` | `SockAddr`, `SockOpts`, `Socket`, `SockPoll`, and `RGF-001` status-tuple model | Working on `socket.rg` |
+| `DM-Argon2.md` | `Argon2Params`, `Argon2Phc`, and `RGF-015` AEAD key/nonce/tag model | Working on `argon2id.rg`, `crypto.rg` |
+| `DM-PosixStatus.md` | `PollStatus`, `ProcStatus`, descriptors, events, and signals model | Working on `posix.rg` |
+| `DM-IoResult.md` | Extensible `IoError` and `IoResult` high-level I/O model | Working on `io.rg` |

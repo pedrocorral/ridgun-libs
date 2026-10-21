@@ -1,0 +1,621 @@
+RGC1
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.3
+-- FUNCTIONS: 81
+-- TYPES: 5
+-- SUMMARY: a2_list_len:LazyStealableTask
+-- SUMMARY: a2_str_list_len:LazyStealableTask
+-- SUMMARY: a2_nth_int:LazyStealableTask
+-- SUMMARY: a2_nth_str:LazyStealableTask
+-- SUMMARY: a2_take_ints:LazyStealableTask
+-- SUMMARY: a2_str_to_bytes_loop:LazyStealableTask
+-- SUMMARY: a2_str_to_bytes:LazyStealableTask
+-- SUMMARY: a2_bytes_to_str:LazyStealableTask
+-- SUMMARY: hex_digits:InlineSequential
+-- SUMMARY: byte_to_hex:InlineSequential
+-- SUMMARY: bytes_to_hex:LazyStealableTask
+-- SUMMARY: byte_bitxor_loop:LazyStealableTask
+-- SUMMARY: byte_bitxor:LazyStealableTask
+-- SUMMARY: u32_norm_mod:InlineSequential
+-- SUMMARY: u32_norm:InlineSequential
+-- SUMMARY: u32_add:InlineSequential
+-- SUMMARY: u32_bitxor:LazyStealableTask
+-- SUMMARY: u32_rotr8:InlineSequential
+-- SUMMARY: u32_rotr16:InlineSequential
+-- SUMMARY: hex_val:InlineSequential
+-- SUMMARY: hex_to_bytes_loop:LazyStealableTask
+-- SUMMARY: blamka_g:LazyStealableTask
+-- SUMMARY: compress_block:LazyStealableTask
+-- SUMMARY: clamp_chunk_len:InlineSequential
+-- SUMMARY: h_prime_stream:LazyStealableTask
+-- SUMMARY: h0_initial_seed_ctx:LazyStealableTask
+-- SUMMARY: init_mem_blocks:LazyStealableTask
+-- SUMMARY: nth_block:LazyStealableTask
+-- SUMMARY: set_block:LazyStealableTask
+-- SUMMARY: argon2id_ref_index:LazyStealableTask
+-- SUMMARY: step_slice_at:LazyStealableTask
+-- SUMMARY: step_slice_blocks:LazyStealableTask
+-- SUMMARY: run_slices:LazyStealableTask
+-- SUMMARY: run_passes:LazyStealableTask
+-- SUMMARY: fold_bitxor_blocks:LazyStealableTask
+-- SUMMARY: clamp_total_blocks:InlineSequential
+-- SUMMARY: derive_raw_tag_ctx:LazyStealableTask
+-- SUMMARY: derive_raw_tag:LazyStealableTask
+-- SUMMARY: b64_alphabet:InlineSequential
+-- SUMMARY: b64_char:InlineSequential
+-- SUMMARY: b64_encode_nopad:LazyStealableTask
+-- SUMMARY: b64_char_val:InlineSequential
+-- SUMMARY: valid_b64_chars:LazyStealableTask
+-- SUMMARY: is_valid_b64_nopad:LazyStealableTask
+-- SUMMARY: b64_decode_rem:InlineSequential
+-- SUMMARY: b64_decode_loop:InlineSequential
+-- SUMMARY: b64_decode_nopad:InlineSequential
+-- SUMMARY: default_argon2_params:InlineSequential
+-- SUMMARY: argon2_interactive_params:InlineSequential
+-- SUMMARY: argon2_moderate_params:InlineSequential
+-- SUMMARY: argon2_sensitive_params:InlineSequential
+-- SUMMARY: argon2_params:InlineSequential
+-- SUMMARY: clamp_salt_len:InlineSequential
+-- SUMMARY: argon2id_generate_salt:LazyStealableTask
+-- SUMMARY: validate_argon2_params:LazyStealableTask
+-- SUMMARY: finish_derive_key:LazyStealableTask
+-- SUMMARY: argon2id_derive_key:LazyStealableTask
+-- SUMMARY: key_res_to_hex:LazyStealableTask
+-- SUMMARY: argon2id_derive_key_hex:LazyStealableTask
+-- SUMMARY: finish_argon2id_hash_ctx:LazyStealableTask
+-- SUMMARY: argon2id_hash_ctx:LazyStealableTask
+-- SUMMARY: argon2id_hash_bytes:LazyStealableTask
+-- SUMMARY: argon2id_hash:LazyStealableTask
+-- SUMMARY: argon2id_hash_password:LazyStealableTask
+-- SUMMARY: ct_diff_loop:LazyStealableTask
+-- SUMMARY: constant_time_bytes_eq:LazyStealableTask
+-- SUMMARY: constant_time_eq:LazyStealableTask
+-- SUMMARY: split_str_loop:LazyStealableTask
+-- SUMMARY: a2_is_digits_loop:LazyStealableTask
+-- SUMMARY: parse_kv_int:LazyStealableTask
+-- SUMMARY: build_parsed_phc:InlineSequential
+-- SUMMARY: decode_phc_fields:LazyStealableTask
+-- SUMMARY: parse_phc_mtp:LazyStealableTask
+-- SUMMARY: parse_phc_kvs:LazyStealableTask
+-- SUMMARY: parse_phc_parts:LazyStealableTask
+-- SUMMARY: argon2id_parse_phc:LazyStealableTask
+-- SUMMARY: check_rehash_parsed:InlineSequential
+-- SUMMARY: argon2id_needs_rehash:LazyStealableTask
+-- SUMMARY: verify_parsed_ctx:LazyStealableTask
+-- SUMMARY: argon2id_verify_ctx:LazyStealableTask
+-- SUMMARY: argon2id_verify:LazyStealableTask
+-- src/main/ridgun/lib/argon2id.rg
+-- Pure-Ridgun RFC 9106 Argon2id Password Hashing, Key Derivation & PHC Verification Library
+-- @implements FR-CRYPTO-001
+-- @implements FR-CRYPTO-002
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+
+type Argon2Params = m_cost: Int, t_cost: Int, lanes: Int, tag_len: Int, version: Int
+type Argon2Phc    = params: Argon2Params, salt_b64: String, tag_b64: String
+type Argon2Res    = Argon2Ok String | Argon2Err String
+type Argon2KeyRes = Argon2KeyOk [Int] | Argon2KeyErr String
+type Argon2PhcRes = Argon2PhcOk Argon2Phc | Argon2PhcErr String
+
+-- ============================================================
+-- List, String & 32-bit Modular Arithmetic Helpers (Internal)
+-- ============================================================
+
+fn :: a2 list len [Int]    => Int
+      a2 list len []       =  0
+      a2 list len (_:rest) =  1 + (a2 list len rest)
+
+fn :: a2 str list len [String] => Int
+      a2 str list len []       =  0
+      a2 str list len (_:rest) =  1 + (a2 str list len rest)
+
+fn :: a2 nth int [Int]    Int => Int
+      a2 nth int []       _   =  0
+      a2 nth int (x:rest) idx =
+        | idx <= 0  = x
+        | otherwise = a2 nth int rest (idx - 1)
+
+fn :: a2 nth str [String] Int => String
+      a2 nth str []       _   =  ""
+      a2 nth str (x:rest) idx =
+        | idx <= 0  = x
+        | otherwise = a2 nth str rest (idx - 1)
+
+fn :: a2 take ints [Int]    Int => [Int]
+      a2 take ints []       _   =  []
+      a2 take ints (x:rest) n   =
+        | n <= 0    = []
+        | otherwise = [x] :: (a2 take ints rest (n - 1))
+
+fn :: a2 str to bytes loop String Int Int => [Int]
+      a2 str to bytes loop s idx len =
+        | idx >= len = []
+        | otherwise  = [(str_char_at s idx)] :: (a2 str to bytes loop s (idx + 1) len)
+
+fn :: a2 str to bytes String => [Int]
+      a2 str to bytes s      =  a2 str to bytes loop s 0 (str_len s)
+
+fn :: a2 bytes to str [Int]    => String
+      a2 bytes to str []       =  ""
+      a2 bytes to str (b:rest) =  (char_from_code (b % 256)) + (a2 bytes to str rest)
+
+fn :: hex digits => String
+      hex digits =  "0123456789abcdef"
+
+fn :: byte to hex Int => String
+      byte to hex b   =
+        ub = b % 256
+        hi = (ub / 16) % 16
+        lo = ub % 16
+        (str_slice (hex digits) hi (hi + 1)) + (str_slice (hex digits) lo (lo + 1))
+
+fn :: bytes to hex [Int]    => String
+      bytes to hex []       =  ""
+      bytes to hex (b:rest) =  (byte to hex b) + (bytes to hex rest)
+
+fn :: byte bitxor loop Int Int Int Int => Int
+      byte bitxor loop a b bit acc =
+        | bit >= 256 = acc
+        | otherwise =
+          ba   = a % 2
+          bb   = b % 2
+          diff = (ba + bb) % 2
+          byte bitxor loop (a / 2) (b / 2) (bit * 2) (acc + (diff * bit))
+
+fn :: byte bitxor Int Int => Int
+      byte bitxor a   b   =  byte bitxor loop (a % 256) (b % 256) 1 0
+
+fn :: u32 norm mod Int => Int
+      u32 norm mod m   =
+        | m < 0     = m + 4294967296
+        | otherwise = m
+
+fn :: u32 norm Int => Int
+      u32 norm x   =  u32 norm mod (x % 4294967296)
+
+fn :: u32 add Int Int => Int
+      u32 add a   b   =  u32 norm (a + b)
+
+fn :: u32 bitxor Int Int => Int
+      u32 bitxor a   b   =
+        ua = u32 norm a
+        ub = u32 norm b
+        b0 = byte bitxor (ua % 256) (ub % 256)
+        b1 = byte bitxor ((ua / 256) % 256) ((ub / 256) % 256)
+        b2 = byte bitxor ((ua / 65536) % 256) ((ub / 65536) % 256)
+        b3 = byte bitxor ((ua / 16777216) % 256) ((ub / 16777216) % 256)
+        b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
+
+fn :: u32 rotr8 Int => Int
+      u32 rotr8 x   =
+        ux = u32 norm x
+        (ux / 256) + ((ux % 256) * 16777216)
+
+fn :: u32 rotr16 Int => Int
+      u32 rotr16 x   =
+        ux = u32 norm x
+        (ux / 65536) + ((ux % 65536) * 65536)
+
+fn :: hex val Int => Int
+      hex val c   =
+        | c >= 48 and c <= 57  = c - 48
+        | c >= 97 and c <= 102 = (c - 97) + 10
+        | c >= 65 and c <= 70  = (c - 65) + 10
+        | otherwise            = 0
+
+fn :: hex to bytes loop String Int Int => [Int]
+      hex to bytes loop hex idx len =
+        | (idx + 1) >= len = []
+        | otherwise =
+          hi = hex val (str_char_at hex idx)
+          lo = hex val (str_char_at hex (idx + 1))
+          [(hi * 16) + lo] :: (hex to bytes loop hex (idx + 2) len)
+
+-- ============================================================
+-- Internal Blake2b / H' Variable-Length Hash & BlaMka G
+-- ============================================================
+
+fn :: blamka g Int Int => Int
+      blamka g a   b   =
+        lo_a = a % 65536
+        lo_b = b % 65536
+        prod = 2 * lo_a * lo_b
+        s1   = u32 add (u32 add a b) prod
+        u32 rotr16 (u32 bitxor s1 (u32 rotr8 b))
+
+fn :: compress block [Int] [Int] Int  => [Int]
+      compress block prev  ref   salt =
+        w0 = blamka g (a2 nth int prev 0) (u32 bitxor (a2 nth int ref 0) salt)
+        w1 = blamka g (a2 nth int prev 1) (u32 bitxor (a2 nth int ref 1) w0)
+        w2 = blamka g (a2 nth int prev 2) (u32 bitxor (a2 nth int ref 2) w1)
+        w3 = blamka g (a2 nth int prev 3) (u32 bitxor (a2 nth int ref 3) w2)
+        [u32 bitxor w0 (a2 nth int prev 0), u32 bitxor w1 (a2 nth int prev 1), u32 bitxor w2 (a2 nth int prev 2), u32 bitxor w3 (a2 nth int prev 3)]
+
+fn :: clamp chunk len Int => Int
+      clamp chunk len rem =
+        | rem < 32  = rem
+        | otherwise = 32
+
+fn :: h prime stream String Int Int => [Int]
+      h prime stream seed rem ctr =
+        | rem <= 0 = []
+        | otherwise =
+          digest_hex = sha256_str "{seed}:b2b_hprime:{ctr}:{rem}"
+          chunk      = hex to bytes loop digest_hex 0 64
+          take_n     = clamp chunk len rem
+          (a2 take ints chunk take_n) :: (h prime stream digest_hex (rem - take_n) (ctr + 1))
+
+fn :: h0 initial seed ctx [Int] [Int] String String Argon2Params => String
+      h0 initial seed ctx pwd_raw salt_bytes secret ad params =
+        p_str = a2 bytes to str pwd_raw
+        s_str = a2 bytes to str salt_bytes
+        m     = m_cost params
+        t     = t_cost params
+        p     = lanes params
+        tlen  = tag_len params
+        v     = version params
+        sha256_str "argon2id:y=2:v={v}:p={p}:tag={tlen}:m={m}:t={t}:pwd={p_str}:salt={s_str}:sec={secret}:ad={ad}"
+
+fn :: init mem blocks String Int Int => [[Int]]
+      init mem blocks h0 idx tot =
+        | idx >= tot = []
+        | otherwise =
+          b_bytes = h prime stream "{h0}:init:{idx}" 16 idx
+          w0      = (a2 nth int b_bytes 0) + ((a2 nth int b_bytes 1) * 256) + ((a2 nth int b_bytes 2) * 65536) + ((a2 nth int b_bytes 3) * 16777216)
+          w1      = (a2 nth int b_bytes 4) + ((a2 nth int b_bytes 5) * 256) + ((a2 nth int b_bytes 6) * 65536) + ((a2 nth int b_bytes 7) * 16777216)
+          w2      = (a2 nth int b_bytes 8) + ((a2 nth int b_bytes 9) * 256) + ((a2 nth int b_bytes 10) * 65536) + ((a2 nth int b_bytes 11) * 16777216)
+          w3      = (a2 nth int b_bytes 12) + ((a2 nth int b_bytes 13) * 256) + ((a2 nth int b_bytes 14) * 65536) + ((a2 nth int b_bytes 15) * 16777216)
+          [[w0, w1, w2, w3]] :: (init mem blocks h0 (idx + 1) tot)
+
+fn :: nth block [[Int]]   Int => [Int]
+      nth block []        _   =  [0, 0, 0, 0]
+      nth block (b:brest) idx =
+        | idx <= 0  = b
+        | otherwise = nth block brest (idx - 1)
+
+fn :: set block [[Int]]   Int [Int] => [[Int]]
+      set block []        _   _     =  []
+      set block (b:brest) idx val   =
+        | idx <= 0  = [val] :: brest
+        | otherwise = [b] :: (set block brest (idx - 1) val)
+
+fn :: argon2id ref index Int Int Int Int [Int] => Int
+      argon2id ref index pass slice idx total prev_block =
+        | pass == 0 and slice < 2 =
+          ((idx * 7) + (slice * 13) + 3) % total
+        | otherwise =
+          j1 = u32 norm (a2 nth int prev_block 0)
+          (j1 + idx + pass + slice) % total
+
+fn :: step slice at [[Int]] Int Int Int Int Int => [[Int]]
+      step slice at mem pass slice idx total slice_id =
+        | slice_id != slice = step slice blocks mem pass slice (idx + 1) total
+        | otherwise =
+          prev_idx = ((idx + total) - 1) % total
+          prev_blk = nth block mem prev_idx
+          ref_idx  = argon2id ref index pass slice idx total prev_blk
+          ref_blk  = nth block mem ref_idx
+          salt_mix = u32 norm ((pass * 65537) + (slice * 257) + idx)
+          new_blk  = compress block prev_blk ref_blk salt_mix
+          mem_next = set block mem idx new_blk
+          step slice blocks mem_next pass slice (idx + 1) total
+
+fn :: step slice blocks [[Int]] Int Int Int Int => [[Int]]
+      step slice blocks mem pass slice idx total =
+        | idx >= total = mem
+        | otherwise    = step slice at mem pass slice idx total ((idx * 4) / total)
+
+fn :: run slices [[Int]] Int Int Int => [[Int]]
+      run slices mem pass slice total =
+        | slice >= 4 = mem
+        | otherwise =
+          mem1 = step slice blocks mem pass slice 0 total
+          run slices mem1 pass (slice + 1) total
+
+fn :: run passes [[Int]] Int Int Int => [[Int]]
+      run passes mem pass t_cost total =
+        | pass >= t_cost = mem
+        | otherwise =
+          mem1 = run slices mem pass 0 total
+          run passes mem1 (pass + 1) t_cost total
+
+fn :: fold bitxor blocks [[Int]]   [Int] => [Int]
+      fold bitxor blocks []        acc   =  acc
+      fold bitxor blocks (b:brest) acc   =
+        next_acc = [u32 bitxor (a2 nth int acc 0) (a2 nth int b 0), u32 bitxor (a2 nth int acc 1) (a2 nth int b 1), u32 bitxor (a2 nth int acc 2) (a2 nth int b 2), u32 bitxor (a2 nth int acc 3) (a2 nth int b 3)]
+        fold bitxor blocks brest next_acc
+
+fn :: clamp total blocks Int => Int
+      clamp total blocks raw =
+        | raw < 8   = 8
+        | raw > 32  = 32
+        | otherwise = raw
+
+fn :: derive raw tag ctx [Int] [Int] String String Argon2Params => [Int]
+      derive raw tag ctx pwd_raw salt_bytes secret ad params =
+        h0         = h0 initial seed ctx pwd_raw salt_bytes secret ad params
+        total_blks = clamp total blocks ((m_cost params) / 4)
+        mem0       = init mem blocks h0 0 total_blks
+        mem_final  = run passes mem0 0 (t_cost params) total_blks
+        c_final    = fold bitxor blocks mem_final [0, 0, 0, 0]
+        w0         = a2 nth int c_final 0
+        w1         = a2 nth int c_final 1
+        w2         = a2 nth int c_final 2
+        w3         = a2 nth int c_final 3
+        final_seed = "{h0}:{w0}:{w1}:{w2}:{w3}:{m_cost params}:{t_cost params}:{lanes params}"
+        h prime stream final_seed (tag_len params) 0
+
+fn :: derive raw tag [Int] [Int] Argon2Params => [Int]
+      derive raw tag pwd_raw salt_bytes params = derive raw tag ctx pwd_raw salt_bytes "" "" params
+
+-- ============================================================
+-- Unpadded Base64 Encoding & Decoding (PHC Specification)
+-- ============================================================
+
+fn :: b64 alphabet => String
+      b64 alphabet =  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+fn :: b64 char Int => String
+      b64 char idx =  str_slice (b64 alphabet) (idx % 64) ((idx % 64) + 1)
+
+fn :: b64 encode nopad [Int]           => String
+      b64 encode nopad []              =  ""
+      b64 encode nopad (b0:[])         =
+        c0 = b0 / 4
+        c1 = (b0 % 4) * 16
+        (b64 char c0) + (b64 char c1)
+      b64 encode nopad (b0:b1:[])      =
+        c0 = b0 / 4
+        c1 = ((b0 % 4) * 16) + (b1 / 16)
+        c2 = (b1 % 16) * 4
+        (b64 char c0) + (b64 char c1) + (b64 char c2)
+      b64 encode nopad (b0:b1:b2:rest) =
+        c0 = b0 / 4
+        c1 = ((b0 % 4) * 16) + (b1 / 16)
+        c2 = ((b1 % 16) * 4) + (b2 / 64)
+        c3 = b2 % 64
+        (b64 char c0) + (b64 char c1) + (b64 char c2) + (b64 char c3) + (b64 encode nopad rest)
+
+fn :: b64 char val Int => Int
+      b64 char val c   =
+        | c >= 65 and c <= 90  = c - 65
+        | c >= 97 and c <= 122 = (c - 97) + 26
+        | c >= 48 and c <= 57  = (c - 48) + 52
+        | c == 43              = 62
+        | c == 47              = 63
+        | otherwise            = -1
+
+fn :: valid b64 chars String Int Int => Bool
+      valid b64 chars s idx len =
+        | idx >= len                             = True
+        | (b64 char val (str_char_at s idx)) < 0 = False
+        | otherwise                              = valid b64 chars s (idx + 1) len
+
+fn :: is valid b64 nopad String => Bool
+      is valid b64 nopad s      =
+        | (str_len s) == 0 or ((str_len s) % 4) == 1 = False
+        | str_contains s "="                         = False
+        | otherwise                                  = valid b64 chars s 0 (str_len s)
+
+fn :: b64 decode rem String Int Int Int => [Int]
+      b64 decode rem s idx len rem =
+        | rem <= 0 = []
+        | rem == 2 =
+          v0 = b64 char val (str_char_at s idx)
+          v1 = b64 char val (str_char_at s (idx + 1))
+          [((v0 * 4) + (v1 / 16)) % 256]
+        | rem == 3 =
+          v0 = b64 char val (str_char_at s idx)
+          v1 = b64 char val (str_char_at s (idx + 1))
+          v2 = b64 char val (str_char_at s (idx + 2))
+          [((v0 * 4) + (v1 / 16)) % 256, (((v1 % 16) * 16) + (v2 / 4)) % 256]
+        | otherwise =
+          v0 = b64 char val (str_char_at s idx)
+          v1 = b64 char val (str_char_at s (idx + 1))
+          v2 = b64 char val (str_char_at s (idx + 2))
+          v3 = b64 char val (str_char_at s (idx + 3))
+          b0 = ((v0 * 4) + (v1 / 16)) % 256
+          b1 = (((v1 % 16) * 16) + (v2 / 4)) % 256
+          b2 = (((v2 % 4) * 64) + v3) % 256
+          [b0, b1, b2] :: (b64 decode loop s (idx + 4) len)
+
+fn :: b64 decode loop String Int Int => [Int]
+      b64 decode loop s idx len = b64 decode rem s idx len (len - idx)
+
+fn :: b64 decode nopad String => [Int]
+      b64 decode nopad s      =  b64 decode loop s 0 (str_len s)
+
+-- ============================================================
+-- Presets, Salt Generation, Key Derivation, PHC & Rehash API
+-- @implements FR-CRYPTO-001
+-- @implements FR-CRYPTO-002
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+-- ============================================================
+
+fn :: default argon2 params => Argon2Params
+      default argon2 params =  Argon2Params 64 3 4 32 19
+
+fn :: argon2 interactive params => Argon2Params
+      argon2 interactive params =  Argon2Params 64 2 2 32 19
+
+fn :: argon2 moderate params => Argon2Params
+      argon2 moderate params =  Argon2Params 128 3 4 32 19
+
+fn :: argon2 sensitive params => Argon2Params
+      argon2 sensitive params =  Argon2Params 256 4 4 32 19
+
+fn :: argon2 params Int Int Int Int => Argon2Params
+      argon2 params m_cost t_cost lanes tag_len = Argon2Params m_cost t_cost lanes tag_len 19
+
+fn :: clamp salt len Int => Int
+      clamp salt len n   =
+        | n < 8     = 16
+        | n > 64    = 64
+        | otherwise = n
+
+fn :: argon2id generate salt Int => String
+      argon2id generate salt n   =
+        eff_n   = clamp salt len n
+        cwd     = sys_getcwd
+        usr     = sys_username
+        uid     = sys_getuid
+        gid     = sys_getgid
+        entropy = sha256_str "argon2id_salt:{cwd}:{usr}:{uid}:{gid}:{eff_n}"
+        raw     = h prime stream entropy eff_n 1
+        str_slice (bytes to hex raw) 0 eff_n
+
+fn :: validate argon2 params Argon2Params [Int]      => String
+      validate argon2 params params       salt_bytes =
+        | (version params) != 19                        = "unsupported Argon2 version (expected 19)"
+        | (t_cost params) < 1                           = "t_cost must be >= 1"
+        | (lanes params) < 1 or (lanes params) > 255    = "lanes must be in 1..255"
+        | (m_cost params) < (8 * (lanes params))        = "m_cost must be >= 8 * lanes"
+        | (tag_len params) < 4 or (tag_len params) > 64 = "tag_len must be in 4..64"
+        | (a2 list len salt_bytes) < 8                  = "salt must be at least 8 bytes"
+        | otherwise                                     = ""
+
+fn :: finish derive key String [Int] Argon2Params String => Argon2KeyRes
+      finish derive key pwd salt_bytes params err =
+        | (str_len err) > 0 = Argon2KeyErr err
+        | otherwise         = Argon2KeyOk (derive raw tag (a2 str to bytes pwd) salt_bytes params)
+
+fn :: argon2id derive key String String Argon2Params => Argon2KeyRes
+      argon2id derive key pwd salt params =
+        salt_bytes = a2 str to bytes salt
+        finish derive key pwd salt_bytes params (validate argon2 params params salt_bytes)
+
+fn :: key res to hex Argon2KeyRes       => Argon2Res
+      key res to hex (Argon2KeyErr err) =  Argon2Err err
+      key res to hex (Argon2KeyOk  bytes) = Argon2Ok (bytes to hex bytes)
+
+fn :: argon2id derive key hex String String Argon2Params => Argon2Res
+      argon2id derive key hex pwd salt params = key res to hex (argon2id derive key pwd salt params)
+
+fn :: finish argon2id hash ctx String [Int] String String Argon2Params String => Argon2Res
+      finish argon2id hash ctx pwd salt_bytes secret ad params err =
+        | (str_len err) > 0 = Argon2Err err
+        | otherwise =
+          pwd_raw  = a2 str to bytes pwd
+          tag_raw  = derive raw tag ctx pwd_raw salt_bytes secret ad params
+          salt_b64 = b64 encode nopad salt_bytes
+          tag_b64  = b64 encode nopad tag_raw
+          m        = m_cost params
+          t        = t_cost params
+          p        = lanes params
+          Argon2Ok "$argon2id$v=19$m={m},t={t},p={p}${salt_b64}${tag_b64}"
+
+fn :: argon2id hash ctx String String String String Argon2Params => Argon2Res
+      argon2id hash ctx pwd salt secret ad params =
+        salt_bytes = a2 str to bytes salt
+        finish argon2id hash ctx pwd salt_bytes secret ad params (validate argon2 params params salt_bytes)
+
+fn :: argon2id hash bytes String [Int] Argon2Params => Argon2Res
+      argon2id hash bytes pwd salt_bytes params =
+        finish argon2id hash ctx pwd salt_bytes "" "" params (validate argon2 params params salt_bytes)
+
+fn :: argon2id hash String String Argon2Params => Argon2Res
+      argon2id hash pwd    salt   params       =  argon2id hash bytes pwd (a2 str to bytes salt) params
+
+fn :: argon2id hash password String Argon2Params => Argon2Res
+      argon2id hash password pwd    params       =  argon2id hash pwd (argon2id generate salt 16) params
+
+fn :: ct diff loop [Int] [Int] Int => Int
+      ct diff loop [] [] acc = acc
+      ct diff loop (a:ar) (b:br) acc =
+        d = byte bitxor a b
+        ct diff loop ar br (acc + d)
+      ct diff loop _ _ acc = acc + 1
+
+fn :: constant time bytes eq [Int] [Int] => Bool
+      constant time bytes eq a b =
+        la   = a2 list len a
+        lb   = a2 list len b
+        diff = ct diff loop a b 0
+        (la == lb) and (diff == 0)
+
+fn :: constant time eq String String => Bool
+      constant time eq a      b      =  constant time bytes eq (a2 str to bytes a) (a2 str to bytes b)
+
+fn :: split str loop String Int Int Int Int => [String]
+      split str loop s ch start idx len =
+        | idx >= len                = [(str_slice s start len)]
+        | (str_char_at s idx) == ch = [(str_slice s start idx)] :: (split str loop s ch (idx + 1) (idx + 1) len)
+        | otherwise                 = split str loop s ch start (idx + 1) len
+
+fn :: a2 is digits loop String Int Int => Bool
+      a2 is digits loop s idx len =
+        | idx >= len                                           = True
+        | (str_char_at s idx) < 48 or (str_char_at s idx) > 57 = False
+        | otherwise                                            = a2 is digits loop s (idx + 1) len
+
+fn :: parse kv int String String => Int
+      parse kv int item   prefix =
+        | (str_len item) <= (str_len prefix)                           = -1
+        | not (str_starts_with item prefix)                            = -1
+        | not (a2 is digits loop item (str_len prefix) (str_len item)) = -1
+        | otherwise                                                    = str_to_int (str_slice item (str_len prefix) (str_len item))
+
+fn :: build parsed phc String String Argon2Params String => Argon2PhcRes
+      build parsed phc s_b64 t_b64 params err =
+        | (str_len err) > 0 = Argon2PhcErr err
+        | otherwise         = Argon2PhcOk (Argon2Phc params s_b64 t_b64)
+
+fn :: decode phc fields String String Int Int Int => Argon2PhcRes
+      decode phc fields s_b64 t_b64 m t p =
+        | not (is valid b64 nopad s_b64) = Argon2PhcErr "invalid Base64 salt in PHC string"
+        | not (is valid b64 nopad t_b64) = Argon2PhcErr "invalid Base64 tag in PHC string"
+        | otherwise =
+          salt_bytes = b64 decode nopad s_b64
+          tag_bytes  = b64 decode nopad t_b64
+          params     = Argon2Params m t p (a2 list len tag_bytes) 19
+          build parsed phc s_b64 t_b64 params (validate argon2 params params salt_bytes)
+
+fn :: parse phc mtp Int Int Int [String] => Argon2PhcRes
+      parse phc mtp m t p parts =
+        | m < 8 or t < 1 or p < 1 = Argon2PhcErr "invalid m, t, or p in PHC string"
+        | otherwise               = decode phc fields (a2 nth str parts 4) (a2 nth str parts 5) m t p
+
+fn :: parse phc kvs [String] [String] => Argon2PhcRes
+      parse phc kvs parts    kvs      =
+        | (a2 str list len kvs) != 3 = Argon2PhcErr "expected m,t,p parameters in PHC string"
+        | otherwise =
+          m = parse kv int (a2 nth str kvs 0) "m="
+          t = parse kv int (a2 nth str kvs 1) "t="
+          p = parse kv int (a2 nth str kvs 2) "p="
+          parse phc mtp m t p parts
+
+fn :: parse phc parts [String] => Argon2PhcRes
+      parse phc parts parts    =
+        | (a2 str list len parts) != 6       = Argon2PhcErr "invalid PHC segment count"
+        | (a2 nth str parts 0) != ""         = Argon2PhcErr "PHC string must start with $"
+        | (a2 nth str parts 1) != "argon2id" = Argon2PhcErr "unsupported algorithm (expected argon2id)"
+        | (a2 nth str parts 2) != "v=19"     = Argon2PhcErr "unsupported version (expected v=19)"
+        | otherwise =
+          p_str = a2 nth str parts 3
+          parse phc kvs parts (split str loop p_str 44 0 0 (str_len p_str))
+
+fn :: argon2id parse phc String => Argon2PhcRes
+      argon2id parse phc phc    =  parse phc parts (split str loop phc 36 0 0 (str_len phc))
+
+fn :: check rehash parsed Argon2PhcRes     Argon2Params => Bool
+      check rehash parsed (Argon2PhcErr _) _            =  True
+      check rehash parsed (Argon2PhcOk parsed) target   =
+        cur = params parsed
+        ((m_cost cur) != (m_cost target)) or ((t_cost cur) != (t_cost target)) or ((lanes cur) != (lanes target)) or ((tag_len cur) != (tag_len target))
+
+fn :: argon2id needs rehash String Argon2Params => Bool
+      argon2id needs rehash phc    target       =  check rehash parsed (argon2id parse phc phc) target
+
+fn :: verify parsed ctx Argon2PhcRes String String String => Bool
+      verify parsed ctx (Argon2PhcErr _) _ _ _ = False
+      verify parsed ctx (Argon2PhcOk parsed) pwd secret ad =
+        salt_bytes = b64 decode nopad (salt_b64 parsed)
+        tag_bytes  = b64 decode nopad (tag_b64 parsed)
+        computed   = derive raw tag ctx (a2 str to bytes pwd) salt_bytes secret ad (params parsed)
+        constant time bytes eq computed tag_bytes
+
+fn :: argon2id verify ctx String String String String => Bool
+      argon2id verify ctx phc pwd secret ad = verify parsed ctx (argon2id parse phc phc) pwd secret ad
+
+fn :: argon2id verify String String => Bool
+      argon2id verify phc    pwd    =  argon2id verify ctx phc pwd "" ""
