@@ -9,3 +9,7 @@ Read this when: working in a domain.
 | `io/` | Test specifications for `IO` (`FR-IO-001`, `FR-IO-002`) | Testing `io.rg` |
 | `str/` | Test specifications for `STR` (`FR-STR-001`) | Testing `str.rg` |
 | `tst/` | Test specifications for `TST` (`FR-TST-001`) | Testing `test.rg` |
+| `math/` | Test specifications for `MATH` (`FR-MATH-001`) | Testing `math.rg` |
+| `list/` | Test specifications for `LIST` (`FR-LIST-001`) | Testing `list.rg` |
+| `codec/` | Test specifications for `CODEC` (`FR-CODEC-001`) | Testing `codec.rg` |
+| `cli/` | Test specifications for `CLI` (`FR-CLI-001`) | Testing `cli.rg` |

@@ -2,18 +2,26 @@
 
 | Requirement | Test specs | Implemented in | Tested in | Gap |
 |---|---|---|---|---|
+| API-CLI-001 | TS-CLI-001 | src/main/ridgun/lib/cli.rg | src/test/ridgun/test_cli.rg | ok |
+| API-CODEC-001 | TS-CODEC-001 | src/main/ridgun/lib/codec.rg | src/test/ridgun/test_codec.rg | ok |
 | API-CRYPTO-001 | TS-CRYPTO-003 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test_crypto.rg | ok |
 | API-IO-001 | TS-IO-001 | src/main/ridgun/lib/io.rg | src/test/ridgun/test_io.rg | ok |
+| API-LIST-001 | TS-LIST-001 | src/main/ridgun/lib/list.rg | src/test/ridgun/test_list.rg | ok |
+| API-MATH-001 | TS-MATH-001 | src/main/ridgun/lib/math.rg | src/test/ridgun/test_math.rg | ok |
 | API-POSIX-001 | TS-POSIX-001 | src/main/ridgun/lib/posix.rg | src/test/ridgun/test_posix.rg | ok |
 | API-SOCK-001 | TS-SOCK-004 | src/main/ridgun/lib/socket.rg | src/test/ridgun/test_socket.rg | ok |
 | API-STR-001 | TS-STR-001 | src/main/ridgun/lib/str.rg | src/test/ridgun/test_str.rg | ok |
 | API-TST-001 | TS-TST-001 | src/main/ridgun/lib/test.rg | src/test/ridgun/test_test.rg | ok |
+| FR-CLI-001 | TS-CLI-001 | src/main/ridgun/lib/cli.rg | src/test/ridgun/test_cli.rg | ok |
+| FR-CODEC-001 | TS-CODEC-001 | src/main/ridgun/lib/codec.rg | src/test/ridgun/test_codec.rg | ok |
 | FR-CRYPTO-001 | TS-CRYPTO-001 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test_argon2id.rg | ok |
 | FR-CRYPTO-002 | TS-CRYPTO-002 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test_argon2id.rg | ok |
 | FR-CRYPTO-003 | TS-CRYPTO-003 | src/main/ridgun/lib/crypto.rg | src/test/ridgun/test_crypto.rg | ok |
 | FR-CRYPTO-004 | TS-CRYPTO-004 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test_crypto.rg | ok |
 | FR-IO-001 | TS-IO-001 | src/main/ridgun/lib/io.rg | src/test/ridgun/test_io.rg | ok |
 | FR-IO-002 | TS-IO-002 | src/main/ridgun/lib/io.rg | src/test/ridgun/test_io.rg | ok |
+| FR-LIST-001 | TS-LIST-001 | src/main/ridgun/lib/list.rg | src/test/ridgun/test_list.rg | ok |
+| FR-MATH-001 | TS-MATH-001 | src/main/ridgun/lib/math.rg | src/test/ridgun/test_math.rg | ok |
 | FR-POSIX-001 | TS-POSIX-001 | src/main/ridgun/lib/posix.rg | src/test/ridgun/test_posix.rg | ok |
 | FR-POSIX-002 | TS-POSIX-002 | src/main/ridgun/lib/posix.rg | src/test/ridgun/test_posix.rg | ok |
 | FR-SOCK-001 | TS-SOCK-001 | src/main/ridgun/lib/socket.rg | src/test/ridgun/test_socket.rg | ok |

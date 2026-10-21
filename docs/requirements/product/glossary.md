@@ -13,5 +13,9 @@ status: approved
 | High-Level I/O Library | Extensible `IoError` and `IoResult` types, timeout-guarded descriptor reads/writes (`read fd`, `write fd`), timeout-guarded command execution (`exec with timeout`), line streams, and file metadata predicates (`RG-010`) | IO |
 | String Library | Pure-Ridgun string searching, trimming, replacement, splitting, and ASCII case conversion (`RG-010`: `str_index_of`, `str_trim`, `str_replace`, `str_split`, `str_to_upper`, `str_to_lower`) | STR |
 | Test Assertion Library | Pure-Ridgun test runner assertion helpers (`RG-011`: `assert_equals`, `assert_true`, `assert_false`) | TST |
+| Mathematics Library | Pure-Ridgun integer arithmetic, rounding division, powers/roots/logarithms, modular number theory (`gcd`, `lcm`, `mod_pow`, `mod_inv`, primality), combinatorics, and list statistics | MATH |
+| List & Key-Value Collection Library | Pure-Ridgun list manipulation (`len`, `nth`, `take`, `drop`, `slice`, `reverse`, `range`, `dedup`, $O(N \log N)$ mergesort) and associative `[(String, String)]` key-value map utilities | LIST |
+| Encoding & Lightweight JSON Library | Pure-Ridgun RFC 4648 Hex/Base64/Base64url, RFC 3986 URL percent-encoding and query strings, and RFC 8259 JSON escaping, formatting, and key extraction | CODEC |
+| Command-Line & Environment Library | Pure-Ridgun CLI flag/option/positional argument parser (`--flag`, `-f`, `--key=val`, `--`) and typed environment variable readers (`env_get_or`, `env_get_int_or`, `env_get_bool_or`) | CLI |
 
 Domain codes are UPPERCASE, ≤ 8 chars, and name folders in `functional/`, `api/`, and `docs/tests/*/`.
