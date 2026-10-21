@@ -2,7 +2,7 @@
 id: FR-CRYPTO-003
 title: Provide raw byte manipulation, 32-bit bitwise operations, SHA-256, HMAC-SHA-256, constant-time equality, and PBKDF2-HMAC-SHA-256
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: CRYPTO
 depends_on: [FR-CRYPTO-001, FR-CRYPTO-002]

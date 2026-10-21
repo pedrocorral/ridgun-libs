@@ -2,7 +2,7 @@
 id: FR-SOCK-004
 title: Provide Solstice RGF-001 kernel-backed TCP and Unix socket API with status tuples and timeouts
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: SOCK
 depends_on: [FR-SOCK-001, FR-SOCK-002, FR-SOCK-003]

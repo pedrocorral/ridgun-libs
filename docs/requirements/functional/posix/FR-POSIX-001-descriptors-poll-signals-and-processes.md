@@ -2,7 +2,7 @@
 id: FR-POSIX-001
 title: Provide typed POSIX descriptor wrappers, PollStatus, ProcStatus, open flags, signals, and poll timeout waiting
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: POSIX
 depends_on: []

@@ -2,8 +2,8 @@
 id: TS-STR-001
 title: Verify string searching, trimming, replacement, splitting, case conversion, and padding utilities
 level: unit
-covers: [FR-STR-001]
-status: planned
+covers: [FR-STR-001, API-STR-001]
+status: automated
 automated_in: [src/test/ridgun/test_str.rg]
 ---
 # TS-STR-001 — Verify string searching, trimming, replacement, splitting, case conversion, and padding utilities

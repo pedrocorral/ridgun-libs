@@ -2,7 +2,7 @@
 id: FR-POSIX-002
 title: Provide POSIX filesystem operations, monotonic and wall clocks, signal watching, and CSPRNG random bytes
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: POSIX
 depends_on: [FR-POSIX-001]

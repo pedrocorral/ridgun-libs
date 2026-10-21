@@ -2,7 +2,7 @@
 id: FR-STR-001
 title: Provide pure-Ridgun string searching, trimming, replacement, splitting, case conversion, and padding utilities
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: STR
 depends_on: []

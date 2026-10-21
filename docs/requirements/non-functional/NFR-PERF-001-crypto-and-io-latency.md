@@ -2,7 +2,7 @@
 id: NFR-PERF-001
 title: Cryptographic hashing and poll-based timeout latency bounds
 type: non-functional
-status: approved
+status: implemented
 priority: must
 related: [FR-CRYPTO-004, FR-SOCK-004, FR-POSIX-001, FR-IO-001, ADR-0002]
 tests: [TS-PERF-001]

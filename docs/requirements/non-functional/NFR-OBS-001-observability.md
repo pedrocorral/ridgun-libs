@@ -2,7 +2,7 @@
 id: NFR-OBS-001
 title: Observability baseline
 type: non-functional
-status: approved
+status: implemented
 priority: must
 related: []
 tests: [TS-OBS-001]

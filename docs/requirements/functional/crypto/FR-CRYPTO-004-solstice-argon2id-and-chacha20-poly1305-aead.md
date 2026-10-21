@@ -2,7 +2,7 @@
 id: FR-CRYPTO-004
 title: Provide Solstice RGF-015 RFC 9106 Argon2id 5-arg API and RFC 8439 ChaCha20-Poly1305 AEAD
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: CRYPTO
 depends_on: [FR-CRYPTO-001, FR-CRYPTO-002, FR-CRYPTO-003]

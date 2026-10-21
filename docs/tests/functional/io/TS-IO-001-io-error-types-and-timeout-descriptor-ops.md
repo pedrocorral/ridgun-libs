@@ -2,8 +2,8 @@
 id: TS-IO-001
 title: Verify IoError and IoResult formatting and timeout-bounded descriptor read, write, and command execution
 level: unit
-covers: [FR-IO-001]
-status: planned
+covers: [FR-IO-001, API-IO-001]
+status: automated
 automated_in: [src/test/ridgun/test_io.rg]
 ---
 # TS-IO-001 — Verify IoError and IoResult formatting and timeout-bounded descriptor read, write, and command execution

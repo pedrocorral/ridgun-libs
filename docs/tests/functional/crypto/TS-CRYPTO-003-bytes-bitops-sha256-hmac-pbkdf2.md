@@ -2,8 +2,8 @@
 id: TS-CRYPTO-003
 title: Verify raw byte manipulation, 32-bit bitwise operations, SHA-256, HMAC-SHA-256, constant-time equality, and PBKDF2-HMAC-SHA-256
 level: unit
-covers: [FR-CRYPTO-003]
-status: planned
+covers: [FR-CRYPTO-003, API-CRYPTO-001]
+status: automated
 automated_in: [src/test/ridgun/test_crypto.rg]
 ---
 # TS-CRYPTO-003 — Verify raw byte manipulation, 32-bit bitwise operations, SHA-256, HMAC-SHA-256, constant-time equality, and PBKDF2-HMAC-SHA-256

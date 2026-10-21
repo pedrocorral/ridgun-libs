@@ -3,7 +3,7 @@ id: TS-POSIX-002
 title: Verify POSIX filesystem operations, monotonic and wall clocks, signal watching, and CSPRNG random bytes
 level: unit
 covers: [FR-POSIX-002]
-status: planned
+status: automated
 automated_in: [src/test/ridgun/test_posix.rg]
 ---
 # TS-POSIX-002 — Verify POSIX filesystem operations, monotonic and wall clocks, signal watching, and CSPRNG random bytes

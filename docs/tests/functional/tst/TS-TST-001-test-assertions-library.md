@@ -2,8 +2,8 @@
 id: TS-TST-001
 title: Verify RG-011 test assertion library with message-annotated and concise assertion helpers
 level: unit
-covers: [FR-TST-001]
-status: planned
+covers: [FR-TST-001, API-TST-001]
+status: automated
 automated_in: [src/test/ridgun/test_test.rg]
 ---
 # TS-TST-001 — Verify RG-011 test assertion library with message-annotated and concise assertion helpers

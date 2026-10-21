@@ -2,7 +2,7 @@
 id: NFR-SEC-001
 title: Secure coding baseline applies to all components
 type: non-functional
-status: approved
+status: implemented
 priority: must
 related: []
 tests: [TS-SEC-001]

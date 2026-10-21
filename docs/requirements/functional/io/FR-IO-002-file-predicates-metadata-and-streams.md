@@ -2,7 +2,7 @@
 id: FR-IO-002
 title: Provide high-level file I/O helpers, path metadata predicates, and line-stream utilities
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: IO
 depends_on: [FR-IO-001]

@@ -2,7 +2,7 @@
 id: FR-TST-001
 title: Provide RG-011 test assertion library with message-annotated and concise assertion helpers
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: TST
 depends_on: []

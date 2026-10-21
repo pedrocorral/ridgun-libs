@@ -2,7 +2,7 @@
 id: FR-IO-001
 title: Provide extensible IoError and IoResult types and timeout-bounded descriptor read, write, and command execution
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: IO
 depends_on: [FR-POSIX-001, FR-POSIX-002]

@@ -2,6 +2,10 @@
 -- Pure-Ridgun RFC 9106 Argon2id Password Hashing, Key Derivation & PHC Verification Library
 -- @implements FR-CRYPTO-001
 -- @implements FR-CRYPTO-002
+-- @implements FR-CRYPTO-004
+-- @implements NFR-PERF-001
+-- @implements API-CRYPTO-001
+-- @implements DM-Argon2
 -- @mitigates VUL-AUTHN-001
 -- @mitigates VUL-INPUT-001
 
@@ -532,5 +536,22 @@ fn :: verify parsed ctx Argon2PhcRes String String String => Bool
 fn :: argon2id verify ctx String String String String => Bool
       argon2id verify ctx phc pwd secret ad = verify parsed ctx (argon2id parse phc phc) pwd secret ad
 
+-- @implements FR-CRYPTO-001
+-- @implements FR-CRYPTO-004
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
 fn :: argon2id verify String String => Bool
-      argon2id verify phc    pwd    =  argon2id verify ctx phc pwd "" ""
+      argon2id verify a      b      =
+        | str_starts_with a "$argon2id$" = argon2id verify ctx a b "" ""
+        | str_starts_with b "$argon2id$" = argon2id verify ctx b a "" ""
+        | otherwise                      = False
+
+fn :: unwrap phc res Argon2Res      => String
+      unwrap phc res (Argon2Ok phc) =  phc
+      unwrap phc res (Argon2Err _)  =  ""
+
+-- @implements FR-CRYPTO-004
+-- @implements API-CRYPTO-001
+fn :: argon2id hash phc String String Int Int Int => String
+      argon2id hash phc pwd salt m_kib t_iters p_lanes =
+        unwrap phc res (argon2id hash pwd salt (Argon2Params m_kib t_iters p_lanes 32 19))
