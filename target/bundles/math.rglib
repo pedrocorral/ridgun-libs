@@ -1,5 +1,5 @@
 -- RGLIB1
--- SELF_HOSTED_COMPILER: ridgunc v0.9.5
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.6
 -- FUNCTIONS: 57
 -- TYPES: 0
 -- SUMMARY: math_abs:InlineSequential

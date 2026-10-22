@@ -17,5 +17,11 @@ status: approved
 | List & Key-Value Collection Library | Pure-Ridgun list manipulation (`len`, `nth`, `take`, `drop`, `slice`, `reverse`, `range`, `dedup`, $O(N \log N)$ mergesort) and associative `[(String, String)]` key-value map utilities | LIST |
 | Encoding & Lightweight JSON Library | Pure-Ridgun RFC 4648 Hex/Base64/Base64url, RFC 3986 URL percent-encoding and query strings, and RFC 8259 JSON escaping, formatting, and key extraction | CODEC |
 | Command-Line & Environment Library | Pure-Ridgun CLI flag/option/positional argument parser (`--flag`, `-f`, `--key=val`, `--`) and typed environment variable readers (`env_get_or`, `env_get_int_or`, `env_get_bool_or`) | CLI |
+| Path Manipulation & Confinement Library | Pure-Ridgun cross-platform path joining, normalization (`path_clean`), component extraction (`dirname`, `basename`, `stem`, `ext`), and anti-traversal confinement (`path_is_safe_subpath`) | PATH |
+| Date, Time & Calendar Library | Pure-Ridgun civil UTC calendar conversions (`epoch_sec` <-> `Y/M/D h:m:s`), ISO-8601 / RFC 3339 formatting and parsing, leap-year/day-of-week helpers, human duration formatting, and exponential backoff | TIME |
+| Structured Logging Library | Pure-Ridgun level-filtered logging (`DEBUG`..`ERROR`), human-readable and NDJSON structured formatting, and automatic secret/token redaction (`[REDACTED]`) | LOG |
+| Glob & Wildcard Pattern Library | Pure-Ridgun shell wildcard (`*`, `?`, `[a-z]`, `[!a-z]`) and multi-extension path matching (`glob_match`, `glob_filter`) | GLOB |
+| UUID, Checksum & Deterministic PRNG Library | Pure-Ridgun RFC 9562 UUIDv4/UUIDv7 generation and validation, FNV-1a / Adler-32 / CRC-32 checksums, and seeded deterministic PRNG (`prng_next`, `prng_range`) | UUID |
+| URI & HTTP/1.1 Protocol Library | Pure-Ridgun RFC 3986 URI parsing (`scheme`, `host`, `port`, `path`, `query`) and RFC 9112 HTTP/1.1 request/response building, parsing, headers, and status reason phrases | HTTP |
 
 Domain codes are UPPERCASE, ≤ 8 chars, and name folders in `functional/`, `api/`, and `docs/tests/*/`.

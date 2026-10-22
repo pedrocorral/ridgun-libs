@@ -1,5 +1,5 @@
 -- RGLIB1
--- SELF_HOSTED_COMPILER: ridgunc v0.9.5
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.6
 -- FUNCTIONS: 129
 -- TYPES: 10
 -- SUMMARY: int_list_len:LazyStealableTask

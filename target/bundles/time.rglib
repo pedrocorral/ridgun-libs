@@ -1,0 +1,255 @@
+-- RGLIB1
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.6
+-- FUNCTIONS: 26
+-- TYPES: 0
+-- SUMMARY: time_is_leap_year:InlineSequential
+-- SUMMARY: tm_feb_days:InlineSequential
+-- SUMMARY: time_days_in_month:InlineSequential
+-- SUMMARY: tm_adj_year:InlineSequential
+-- SUMMARY: tm_calc_era:InlineSequential
+-- SUMMARY: tm_calc_mp:InlineSequential
+-- SUMMARY: tm_days_from_civil:InlineSequential
+-- SUMMARY: time_day_of_week:InlineSequential
+-- SUMMARY: time_utc_to_epoch:InlineSequential
+-- SUMMARY: tm_z_era:InlineSequential
+-- SUMMARY: tm_mp_to_month:InlineSequential
+-- SUMMARY: tm_finish_year:InlineSequential
+-- SUMMARY: tm_civil_from_days:InlineSequential
+-- SUMMARY: time_epoch_to_utc:InlineSequential
+-- SUMMARY: tm_pad2:InlineSequential
+-- SUMMARY: tm_pad4:InlineSequential
+-- SUMMARY: tm_fmt_utc_tuple:InlineSequential
+-- SUMMARY: time_format_iso8601:InlineSequential
+-- SUMMARY: tm_all_digits:LazyStealableTask
+-- SUMMARY: tm_is_sep_at:InlineSequential
+-- SUMMARY: tm_parse_iso8601_len:LazyStealableTask
+-- SUMMARY: time_parse_iso8601:LazyStealableTask
+-- SUMMARY: tm_join_part:InlineSequential
+-- SUMMARY: time_format_duration_ms:InlineSequential
+-- SUMMARY: tm_pow2_loop:LazyStealableTask
+-- SUMMARY: time_backoff_ms:LazyStealableTask
+-- ============================================================
+-- src/main/ridgun/lib/time.rg
+-- Pure-Ridgun UTC Civil Calendar, ISO-8601/RFC 3339, Duration & Backoff Library (TIME)
+-- @implements FR-TIME-001
+-- @implements API-TIME-001
+-- @mitigates VUL-INPUT-001
+-- ============================================================
+
+-- ── Leap Year, Month Length & Day of Week ────────────────────
+
+-- @implements FR-TIME-001
+-- @implements API-TIME-001
+fn :: time is leap year Int  => Bool
+      time is leap year year =
+        | (year % 400) == 0 = True
+        | (year % 100) == 0 = False
+        | (year % 4) == 0   = True
+        | otherwise         = False
+
+fn :: tm feb days Int  => Int
+      tm feb days year =
+        | time is leap year year = 29
+        | otherwise              = 28
+
+-- @implements FR-TIME-001
+-- @implements API-TIME-001
+-- @mitigates VUL-INPUT-001
+fn :: time days in month Int Int => Int
+      time days in month year month =
+        | month < 1 or month > 12                                      = 0
+        | month == 2                                                   = tm feb days year
+        | month == 4 or month == 6 or month == 9 or month == 11        = 30
+        | otherwise                                                    = 31
+
+-- ── Howard Hinnant Civil Calendar <-> Epoch Days ─────────────
+
+fn :: tm adj year Int Int => Int
+      tm adj year y   m   =
+        | m <= 2    = y - 1
+        | otherwise = y
+
+fn :: tm calc era Int   => Int
+      tm calc era y_adj =
+        | y_adj >= 0 = y_adj / 400
+        | otherwise  = (y_adj - 399) / 400
+
+fn :: tm calc mp Int => Int
+      tm calc mp m   =
+        | m > 2     = m - 3
+        | otherwise = m + 9
+
+fn :: tm days from civil Int Int Int => Int
+      tm days from civil y m d =
+        y_adj = tm adj year y m
+        era   = tm calc era y_adj
+        yoe   = y_adj - (era * 400)
+        mp    = tm calc mp m
+        doy   = (((153 * mp) + 2) / 5) + d - 1
+        doe   = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy
+        (era * 146097) + doe - 719468
+
+-- @implements FR-TIME-001
+-- @implements API-TIME-001
+fn :: time day of week Int Int Int => Int
+      time day of week year month day =
+        z = tm days from civil year month day
+        (((z + 4) % 7) + 7) % 7
+
+-- @implements FR-TIME-001
+-- @implements API-TIME-001
+-- @mitigates VUL-INPUT-001
+fn :: time utc to epoch Int Int Int Int Int Int => Int
+      time utc to epoch y m d hh mm ss =
+        | m < 1 or m > 12                          = 0 - 1
+        | d < 1 or d > (time days in month y m)    = 0 - 1
+        | hh < 0 or hh > 23                        = 0 - 1
+        | mm < 0 or mm > 59                        = 0 - 1
+        | ss < 0 or ss > 59                        = 0 - 1
+        | otherwise =
+          days = tm days from civil y m d
+          (days * 86400) + (hh * 3600) + (mm * 60) + ss
+
+fn :: tm z era Int     => Int
+      tm z era z_shift =
+        | z_shift >= 0 = z_shift / 146097
+        | otherwise    = (z_shift - 146096) / 146097
+
+fn :: tm mp to month Int => Int
+      tm mp to month mp  =
+        | mp < 10   = mp + 3
+        | otherwise = mp - 9
+
+fn :: tm finish year Int Int => Int
+      tm finish year y0  m   =
+        | m <= 2    = y0 + 1
+        | otherwise = y0
+
+fn :: tm civil from days Int Int Int Int => (Int, Int, Int, Int, Int, Int)
+      tm civil from days z hh mm ss =
+        z_shift = z + 719468
+        era     = tm z era z_shift
+        doe     = z_shift - (era * 146097)
+        yoe     = (doe - (doe / 1460) + (doe / 36524) - (doe / 146096)) / 365
+        y0      = yoe + (era * 400)
+        doy     = doe - ((365 * yoe) + (yoe / 4) - (yoe / 100))
+        mp      = ((5 * doy) + 2) / 153
+        d       = doy - (((153 * mp) + 2) / 5) + 1
+        m       = tm mp to month mp
+        y       = tm finish year y0 m
+        (y, m, d, hh, mm, ss)
+
+-- @implements FR-TIME-001
+-- @implements API-TIME-001
+fn :: time epoch to utc Int       => (Int, Int, Int, Int, Int, Int)
+      time epoch to utc epoch_sec =
+        rem_raw = ((epoch_sec % 86400) + 86400) % 86400
+        days    = (epoch_sec - rem_raw) / 86400
+        hh      = rem_raw / 3600
+        mm      = (rem_raw % 3600) / 60
+        ss      = rem_raw % 60
+        tm civil from days days hh mm ss
+
+-- ── ISO-8601 / RFC 3339 Formatting & Parsing ─────────────────
+
+fn :: tm pad2 Int => String
+      tm pad2 n   =
+        | n < 10    = "0" + (int_to_str n)
+        | otherwise = int_to_str n
+
+fn :: tm pad4 Int => String
+      tm pad4 n   =
+        | n < 10   = "000" + (int_to_str n)
+        | n < 100  = "00" + (int_to_str n)
+        | n < 1000 = "0" + (int_to_str n)
+        | otherwise = int_to_str n
+
+fn :: tm fmt utc tuple (Int, Int, Int, Int, Int, Int) => String
+      tm fmt utc tuple (y, m, d, hh, mm, ss)          =
+        (tm pad4 y) + "-" + (tm pad2 m) + "-" + (tm pad2 d) + "T" + (tm pad2 hh) + ":" + (tm pad2 mm) + ":" + (tm pad2 ss) + "Z"
+
+-- @implements FR-TIME-001
+-- @implements API-TIME-001
+fn :: time format iso8601 Int       => String
+      time format iso8601 epoch_sec =  tm fmt utc tuple (time epoch to utc epoch_sec)
+
+fn :: tm all digits String Int Int => Bool
+      tm all digits s idx end_idx =
+        | idx >= end_idx                                       = True
+        | (str_char_at s idx) < 48 or (str_char_at s idx) > 57 = False
+        | otherwise                                            = tm all digits s (idx + 1) end_idx
+
+fn :: tm is sep at String Int Int Int => Bool
+      tm is sep at s idx c1 c2 =
+        ch = str_char_at s idx
+        (ch == c1) or (ch == c2)
+
+fn :: tm parse iso8601 len String Int => Int
+      tm parse iso8601 len s n =
+        | n < 19 or n > 20                         = 0 - 1
+        | not (tm all digits s 0 4)                = 0 - 1
+        | (str_char_at s 4) != 45                  = 0 - 1
+        | not (tm all digits s 5 7)                = 0 - 1
+        | (str_char_at s 7) != 45                  = 0 - 1
+        | not (tm all digits s 8 10)               = 0 - 1
+        | not (tm is sep at s 10 84 32)            = 0 - 1
+        | not (tm all digits s 11 13)              = 0 - 1
+        | (str_char_at s 13) != 58                 = 0 - 1
+        | not (tm all digits s 14 16)              = 0 - 1
+        | (str_char_at s 16) != 58                 = 0 - 1
+        | not (tm all digits s 17 19)              = 0 - 1
+        | n == 20 and (str_char_at s 19) != 90     = 0 - 1
+        | otherwise =
+          y  = str_to_int (str_slice s 0 4)
+          m  = str_to_int (str_slice s 5 7)
+          d  = str_to_int (str_slice s 8 10)
+          hh = str_to_int (str_slice s 11 13)
+          mm = str_to_int (str_slice s 14 16)
+          ss = str_to_int (str_slice s 17 19)
+          time utc to epoch y m d hh mm ss
+
+-- @implements FR-TIME-001
+-- @implements API-TIME-001
+-- @mitigates VUL-INPUT-001
+fn :: time parse iso8601 String => Int
+      time parse iso8601 s      =  tm parse iso8601 len s (str_len s)
+
+-- ── Human-Readable Duration & Exponential Backoff ────────────
+
+fn :: tm join part String Int String => String
+      tm join part acc val unit =
+        | val <= 0           = acc
+        | (str_len acc) == 0 = (int_to_str val) + unit
+        | otherwise          = acc + " " + (int_to_str val) + unit
+
+-- @implements FR-TIME-001
+-- @implements API-TIME-001
+fn :: time format duration ms Int => String
+      time format duration ms ms  =
+        | ms <= 0 = "0ms"
+        | otherwise =
+          h  = ms / 3600000
+          m  = (ms % 3600000) / 60000
+          s  = (ms % 60000) / 1000
+          rm = ms % 1000
+          p1 = tm join part "" h "h"
+          p2 = tm join part p1 m "m"
+          p3 = tm join part p2 s "s"
+          tm join part p3 rm "ms"
+
+fn :: tm pow2 loop Int Int Int => Int
+      tm pow2 loop rem cur max_ms =
+        | rem <= 0 or cur >= max_ms =
+          | cur > max_ms = max_ms
+          | otherwise    = cur |.
+        | otherwise = tm pow2 loop (rem - 1) (cur * 2) max_ms
+
+-- @implements FR-TIME-001
+-- @implements API-TIME-001
+-- @mitigates VUL-INPUT-001
+fn :: time backoff ms Int Int Int => Int
+      time backoff ms attempt base_ms max_ms =
+        | base_ms <= 0              = 0
+        | max_ms <= base_ms         = base_ms
+        | attempt <= 0              = base_ms
+        | otherwise                 = tm pow2 loop attempt base_ms max_ms

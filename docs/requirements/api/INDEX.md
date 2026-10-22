@@ -13,3 +13,9 @@ Read this when: implementing or consuming a library's public module interface. S
 | `list/` | Public API contract for `list.rg` (`API-LIST-001`) | Consuming or editing `list` |
 | `codec/` | Public API contract for `codec.rg` (`API-CODEC-001`) | Consuming or editing `codec` |
 | `cli/` | Public API contract for `cli.rg` (`API-CLI-001`) | Consuming or editing `cli` |
+| `path/` | Public API contract for `path.rg` (`API-PATH-001`) | Consuming or editing `path` |
+| `time/` | Public API contract for `time.rg` (`API-TIME-001`) | Consuming or editing `time` |
+| `log/` | Public API contract for `log.rg` (`API-LOG-001`) | Consuming or editing `log` |
+| `glob/` | Public API contract for `glob.rg` (`API-GLOB-001`) | Consuming or editing `glob` |
+| `uuid/` | Public API contract for `uuid.rg` (`API-UUID-001`) | Consuming or editing `uuid` |
+| `http/` | Public API contract for `http.rg` (`API-HTTP-001`) | Consuming or editing `http` |

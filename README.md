@@ -6,7 +6,7 @@ Pure-Ridgun (`v0.9.5`) standard and system library suite. Every module compiles 
 
 ## Overview
 
-`ridgun-libs` provides **11 foundational libraries** across **10 domains** for Ridgun applications, CLI utilities (`unix-tools`), and network servers (`Solstice`):
+`ridgun-libs` provides **17 foundational libraries** across **16 domains** for Ridgun applications, CLI utilities (`unix-tools`), and network servers (`Solstice`):
 
 | Module | Source | Bundles (`target/bundles/` & `target/`) | Domain | Summary |
 |---|---|---|---|---|
@@ -20,6 +20,12 @@ Pure-Ridgun (`v0.9.5`) standard and system library suite. Every module compiles 
 | **`list`** | `src/main/ridgun/lib/list.rg` | `list.rglib`, `list.rgc`, `liblist.so` | `LIST` | `[Int]` and `[String]` indexing, slicing (`list_take`, `list_drop`, `list_slice`), reversal, ranges (`list_range`, `list_range_step`), search, deduplication, deterministic $O(N \log N)$ mergesort (`list_sort`, `list_str_sort`), and associative `[(String, String)]` key-value maps (`kv_get`, `kv_put`, `kv_remove`, `kv_merge`). |
 | **`codec`** | `src/main/ridgun/lib/codec.rg` | `codec.rglib`, `codec.rgc`, `libcodec.so` | `CODEC` | RFC 4648 Hex (`hex_encode`, `hex_decode`), Base64 (`base64_encode`, `base64_decode`), and URL-safe Base64url (`base64url_encode`, `base64url_decode`), RFC 3986 URL percent-encoding and query strings, and RFC 8259 lightweight JSON formatting and field extraction. |
 | **`cli`** | `src/main/ridgun/lib/cli.rg` | `cli.rglib`, `cli.rgc`, `libcli.so` | `CLI` | Command-line flag (`--flag`, `-f`, bundled `-la`), option (`--key=val`, `--key val`, `-k val`), `--` end-of-options separator, positional/subcommand parser, and typed environment variable readers (`env_get_or`, `env_get_int_or`, `env_get_bool_or`). |
+| **`path`** | `src/main/ridgun/lib/path.rg` | `path.rglib`, `path.rgc`, `libpath.so` | `PATH` | POSIX path normalization (`path_clean`), joining (`path_join`, `path_join_list`), component extraction (`path_dirname`, `path_basename`, `path_ext`, `path_stem`, `path_split`, `path_replace_ext`), and directory-traversal confinement (`path_is_safe_subpath`). |
+| **`time`** | `src/main/ridgun/lib/time.rg` | `time.rglib`, `time.rgc`, `libtime.so` | `TIME` | Proleptic Gregorian UTC civil calendar conversion (`time_epoch_to_utc`, `time_utc_to_epoch`, `time_is_leap_year`, `time_days_in_month`, `time_day_of_week`), ISO-8601/RFC 3339 formatting and parsing (`time_format_iso8601`, `time_parse_iso8601`), human duration formatting (`time_format_duration_ms`), and exponential backoff (`time_backoff_ms`). |
+| **`log`** | `src/main/ridgun/lib/log.rg` | `log.rglib`, `log.rgc`, `liblog.so` | `LOG` | Severity-filtered (`DEBUG`, `INFO`, `WARN`, `ERROR`) text and NDJSON structured logging (`log_format_text`, `log_format_json`, `log_should_emit`) with automatic secret redaction (`log_is_sensitive_key`, `log_redact_fields`). |
+| **`glob`** | `src/main/ridgun/lib/glob.rg` | `glob.rglib`, `glob.rgc`, `libglob.so` | `GLOB` | Wildcard (`*`, `?`) and bracket character class (`[a-z]`, `[!0-9]`, `[^a-z]`) pattern matching (`glob_match`, `glob_match_ci`) and list filtering (`glob_filter`, `glob_any_match`). |
+| **`uuid`** | `src/main/ridgun/lib/uuid.rg` | `uuid.rglib`, `uuid.rgc`, `libuuid.so` | `UUID` | RFC 9562 `UUIDv4` and time-ordered `UUIDv7` generation and validation (`uuid_v4`, `uuid_v7`, `uuid_v7_at`, `uuid_is_valid`, `uuid_version`), non-cryptographic checksums (`fnv1a_32`, `adler32`, `crc32`), and deterministic seeded PRNG (`prng_next`, `prng_range`). |
+| **`http`** | `src/main/ridgun/lib/http.rg` | `http.rglib`, `http.rgc`, `libhttp.so` | `HTTP` | RFC 3986 URI parsing (`uri_parse`, `uri_scheme`, `uri_host`, `uri_port`, `uri_path`, `uri_query`) and RFC 9112 HTTP/1.1 request/response wire formatting, parsing, and header inspection (`http_status_text`, `http_build_request`, `http_parse_request`, `http_build_response`, `http_parse_response`, `http_parse_headers`, `http_header_get`, `http_bearer_token`). |
 | **`test`** | `src/main/ridgun/lib/test.rg` | `test.rglib`, `test.rgc`, `libtest.so` | `TST` | Unit and functional test assertion primitives (`assert_equals`, `assert_int_equals`, `assert_str_eq`, `assert_true`, `assert_false`, `assert_eq`, `assert_ne`, `assert_ok`). |
 
 ---
@@ -40,10 +46,10 @@ Run all commands from the repository root:
 # 1. Format all source and test files using canonical Ridgun tabular alignment
 stable format
 
-# 2. Type-check and statically analyze all 11 library modules
+# 2. Type-check and statically analyze all 17 library modules
 stable check
 
-# 3. Run all 11 automated test suites in src/test/ridgun/
+# 3. Run all 17 automated test suites in src/test/ridgun/
 stable test
 
 # 4. Build all .rglib, .rgc, and native ELF64 .so bundles into target/ and target/bundles/
@@ -51,8 +57,8 @@ stable bundle
 ```
 
 Expected output from `stable check` and `stable test`:
-- `Checked 11 module(s) — 0 errors.`
-- `Passed 11/11 test suite(s) — 0 failures.`
+- `Checked 17 module(s) — 0 errors.`
+- `Passed 17/17 test suite(s) — 0 failures.`
 
 ---
 
@@ -176,6 +182,42 @@ fn :: demo std => ()
 
 ---
 
+### 5. `path`, `time`, `log`, `glob`, `uuid` & `http` — System, Web & Observability Libraries
+
+```ridgun
+import path
+import time
+import log
+import glob
+import uuid
+import http
+
+fn :: demo web sys => ()
+      demo web sys =
+        -- path: lexical cleaning, extension replacement, and traversal confinement
+        clean_p = path replace ext (path join "/srv/www" "assets/../index.html") ".rg"
+        safe_ok = path is safe subpath "/srv/www" "assets/logo.png"
+
+        -- time: ISO-8601 UTC timestamps, human durations, and exponential backoff
+        iso_ts  = time format iso8601 1792664400
+        dur_str = time format duration ms 3661005
+        wait_ms = time backoff ms 3 100 5000
+
+        -- log: NDJSON structured logging with automatic secret redaction
+        ndjson  = log format json "INFO" "request handled" [("req_id", uuid v4), ("api_key", "sk_live_999")]
+
+        -- glob & uuid: wildcard filtering and CRC-32 checksums
+        rg_list = glob filter "*.rg" ["main.rg", "README.md", "http.rg"]
+        chk_crc = crc32 "123456789"
+
+        -- http: RFC 3986 URI decomposition & HTTP/1.1 wire request construction
+        host    = uri host "https://api.example.com:8443/v1/users?active=1"
+        raw_req = http build request "GET" "/v1/users" [("Host", host)] ""
+        echo clean_p safe_ok iso_ts dur_str wait_ms ndjson rg_list chk_crc raw_req
+```
+
+---
+
 ## Project Layout & Documentation (`AIX`)
 
 All requirements, API contracts, data models, architectural decisions, security audits, and test specifications live under `docs/` and are validated by `aix docs validate`:
@@ -186,7 +228,7 @@ All requirements, API contracts, data models, architectural decisions, security 
 | `src/test/ridgun/` | Automated unit and functional test suites (`test_*.rg`) |
 | `target/bundles/` | Compiled Ridgun library bundles (`*.rglib`) |
 | `target/` | Compiled `.rgc` archives and native ELF64 shared objects (`lib*.so`) |
-| `docs/requirements/functional/` | Functional requirements (`FR-SOCK-*`, `FR-CRYPTO-*`, `FR-POSIX-*`, `FR-IO-*`, `FR-STR-*`, `FR-TST-*`, `FR-MATH-*`, `FR-LIST-*`, `FR-CODEC-*`, `FR-CLI-*`) |
+| `docs/requirements/functional/` | Functional requirements (`FR-SOCK-*`, `FR-CRYPTO-*`, `FR-POSIX-*`, `FR-IO-*`, `FR-STR-*`, `FR-TST-*`, `FR-MATH-*`, `FR-LIST-*`, `FR-CODEC-*`, `FR-CLI-*`, `FR-PATH-*`, `FR-TIME-*`, `FR-LOG-*`, `FR-GLOB-*`, `FR-UUID-*`, `FR-HTTP-*`) |
 | `docs/requirements/api/` | Public module contracts (`API-*-001`) |
 | `docs/requirements/decisions/` | Architecture Decision Records (`ADR-0001`, `ADR-0002`) |
 | `docs/tests/` | Test specifications (`TS-*`) and generated traceability matrix (`coverage-matrix.md`) |
