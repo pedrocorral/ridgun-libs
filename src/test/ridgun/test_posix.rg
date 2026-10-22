@@ -97,20 +97,30 @@ fn :: test_posix_filesystem_clocks_signals_and_random => ()
         w2      = sys wall time ms
         _       = assert_true ((t2 - t1) >= 20) "monotonic ms elapsed >= 20"
         _       = assert_true (n2 > n1) "monotonic ns non-decreasing"
+        _       = assert_true ((n2 - n1) >= 20000000) "monotonic ns elapsed >= 20ms (20,000,000 ns)"
         _       = assert_true (w1 > 1700000000000) "wall time > 1700000000000"
+        k_sec   = sys_call 201 0 0 0 0 0 0
+        w_sec   = w2 / 1000
+        _       = assert_true (((w_sec - k_sec) <= 2) and ((k_sec - w_sec) <= 2)) "sys_wall_time_ms matches kernel time(0) within 2s"
         _       = assert_true ((w2 - w1) >= 20) "wall time ms elapsed >= 20"
         sw_bad  = sys signal watch [9]
         _       = assert_equals (pair fst sw_bad) (0 - 7) "SIGKILL watch rejected with -7"
         sw_ok   = sys signal watch [sig term]
         _       = assert_equals (pair fst sw_ok) 0 "SIGTERM watch ok"
         sh      = pair snd sw_ok
-        _       = assert_equals (posix notify signal (sys_getpid) (sig term)) 0 "notify signal"
+        _       = assert_true ((sys_call 72 sh 1 0 0 0 0) >= 0) "signalfd handle is real kernel fd"
+        _       = assert_equals (sys_kill (sys_getpid) (sig term)) 0 "real kernel sys_kill SIGTERM does not kill process"
         sw_got  = sys signal wait sh 100
-        _       = assert_equals (pair fst sw_got) 0 "sys_signal_wait status 0"
-        _       = assert_equals (pair snd sw_got) (sig term) "sys_signal_wait got SIGTERM"
+        _       = assert_equals (pair fst sw_got) 0 "sys_signal_wait status 0 after real sys_kill"
+        _       = assert_equals (pair snd sw_got) (sig term) "sys_signal_wait got real SIGTERM (15)"
+        _       = assert_equals (posix notify signal (sys_getpid) (sig term)) 0 "notify signal"
+        sw_got2 = sys signal wait sh 100
+        _       = assert_equals (pair fst sw_got2) 0 "sys_signal_wait status 0"
+        _       = assert_equals (pair snd sw_got2) (sig term) "sys_signal_wait got SIGTERM"
         sw_to   = sys signal wait sh 20
         _       = assert_equals (pair fst sw_to) (0 - 2) "second sys_signal_wait times out (-2)"
         _       = assert_equals (posix close sh) 0 "posix close signalfd"
+        _       = assert_equals (pair fst (sys signal wait sh 10)) (0 - 7) "sys_signal_wait on closed fd -> -7"
         r_bad   = sys random bytes (0 - 1)
         _       = assert_equals (pair fst r_bad) (0 - 7) "negative random bytes -> -7"
         r_zero  = sys random bytes 0
@@ -118,8 +128,10 @@ fn :: test_posix_filesystem_clocks_signals_and_random => ()
         _       = assert_equals (pair snd r_zero) "" "0 random bytes -> empty"
         r1      = sys random bytes 32
         r2      = sys random bytes 32
+        rl      = sys random bytes list 256
         _       = assert_equals (pair fst r1) 0 "random 32 status 0"
         _       = assert_equals (str_len (pair snd r1)) 32 "random 32 length == 32"
+        _       = assert_equals (pair fst rl) 0 "random list 256 status 0"
         _       = assert_equals (path separator Linux) "/" "path separator Linux"
         _       = assert_equals (path separator Windows) "\\" "path separator Windows"
         _       = assert_equals (null device for Linux) "/dev/null" "null device Linux"

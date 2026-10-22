@@ -274,10 +274,33 @@ fn :: test_sock_rgf001_kernel_tcp_and_unix => ()
         _      = assert_int_equals (tup2 fst l_res) 0 "sys_tcp_listen status"
         lfd    = tup2 snd l_res
         _      = assert_true (lfd >= 0) "lfd >= 0"
+        _      = assert_true ((sys_call 72 lfd 1 0 0 0 0) >= 0) "lfd is real kernel fd (fcntl F_GETFD >= 0)"
         lport  = sys local port lfd
         _      = assert_true (lport > 0) "ephemeral port > 0"
         dup_l  = sys tcp listen "127.0.0.1" lport 8
         _      = assert_int_equals (tup2 fst dup_l) (0 - 5) "dup sys_tcp_listen -> -5"
+
+        -- 1b. Real DNS resolution (/etc/hosts + RFC 1035 wire packet parser + localhost + literal IP + hostname connect)
+        r_loc  = sys resolve ipv4 "localhost"
+        _      = assert_int_equals (tup2 rc r_loc) 0 "sys_resolve_ipv4 localhost ok"
+        _      = assert_str_eq (tup2 str r_loc) "127.0.0.1" "sys_resolve_ipv4 localhost -> 127.0.0.1"
+        r_bad  = sys resolve ipv4 "-bad..host"
+        _      = assert_int_equals (tup2 rc r_bad) (0 - 7) "sys_resolve_ipv4 invalid hostname -> -7"
+        dns_q  = sk build dns query "example.com"
+        _      = assert_int_equals (str_len dns_q) 29 "RFC 1035 DNS query length for example.com == 29"
+        -- Construct an RFC 1035 DNS response packet with 1 A record (93.184.216.34) using 0xC00C name compression
+        dns_hd = (sk raw byte 18) + (sk raw byte 52) + (sk raw byte 129) + (sk raw byte 128) + (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0)
+        dns_qn = sk encode qname ["example", "com"]
+        dns_qt = (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 1)
+        dns_an = (sk raw byte 192) + (sk raw byte 12) + (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 60) + (sk raw byte 0) + (sk raw byte 4) + (sk raw byte 93) + (sk raw byte 184) + (sk raw byte 216) + (sk raw byte 34)
+        dns_ip = sk extract dns ipv4 (dns_hd + dns_qn + dns_qt + dns_an)
+        _      = assert_str_eq dns_ip "93.184.216.34" "sk_extract_dns_ipv4 parses RFC 1035 A record (93.184.216.34)"
+        c_host = sys tcp connect "localhost" lport 500
+        _      = assert_int_equals (tup2 fst c_host) 0 "sys_tcp_connect via hostname localhost ok"
+        a_host = sys accept lfd 500
+        _      = assert_int_equals (tup3 rc a_host) 0 "sys_accept from hostname connect ok"
+        _      = assert_int_equals (sys_close (tup2 snd c_host)) 0 "close c_host"
+        _      = assert_int_equals (sys_close (tup3 fd a_host)) 0 "close a_host"
 
         -- 2. Accept timeout (-2) when no client pending + connect refused (-3) on unbound port
         acc_to = sys accept lfd 30

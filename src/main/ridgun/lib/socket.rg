@@ -177,6 +177,223 @@ fn :: is valid hostname String => Bool
         | str_contains host ".."                                  = False
         | otherwise                                               = check hostname chars host 0 (str_len host)
 
+fn :: sk lower char String Int Int => String
+      sk lower char s idx c =
+        | c >= 65 and c <= 90 = char_from_code (c + 32)
+        | otherwise           = str_slice s idx (idx + 1)
+
+fn :: sk to lower loop String Int Int => String
+      sk to lower loop s idx len =
+        | idx >= len = ""
+        | otherwise  = (sk lower char s idx (str_char_at s idx)) + (sk to lower loop s (idx + 1) len)
+
+fn :: sk to lower String => String
+      sk to lower s      =  sk to lower loop s 0 (str_len s)
+
+fn :: sk is ws Int => Bool
+      sk is ws c   =  c == 32 or c == 9 or c == 13
+
+fn :: sk split ws loop String Int Int Int Bool => [String]
+      sk split ws loop s start idx len in_tok =
+        | idx >= len =
+          | in_tok    = [str_slice s start len]
+          | otherwise = [] |.
+        | sk is ws (str_char_at s idx) =
+          | in_tok    = [str_slice s start idx] :: (sk split ws loop s (idx + 1) (idx + 1) len False)
+          | otherwise = sk split ws loop s (idx + 1) (idx + 1) len False |.
+        | otherwise =
+          | in_tok    = sk split ws loop s start (idx + 1) len True
+          | otherwise = sk split ws loop s idx (idx + 1) len True
+
+fn :: sk strip comment String Int   => String
+      sk strip comment line   h_idx =
+        | h_idx < 0 = line
+        | otherwise = str_slice line 0 h_idx
+
+fn :: sk list has host [String] String => Bool
+      sk list has host [] _ = False
+      sk list has host (x:rest) target =
+        | (sk to lower x) == target = True
+        | otherwise                 = sk list has host rest target
+
+fn :: sk match hosts tokens [String] String => String
+      sk match hosts tokens [] _ = ""
+      sk match hosts tokens (ip:aliases) target =
+        | not (is valid ipv4 ip)          = ""
+        | sk list has host aliases target = ip
+        | otherwise                       = ""
+
+fn :: sk search hosts after found String [String] String => String
+      sk search hosts after found found rest target =
+        | (str_len found) > 0 = found
+        | otherwise           = sk search hosts lines rest target
+
+fn :: sk search hosts lines [String] String => String
+      sk search hosts lines [] _ = ""
+      sk search hosts lines (line:rest) target =
+        clean = sk strip comment line (find str index line "#")
+        toks  = sk split ws loop clean 0 0 (str_len clean) False
+        sk search hosts after found (sk match hosts tokens toks target) rest target
+
+fn :: sk lstat exists (Bool, String, Int, Int, Int, String, String, Int, String) => Bool
+      sk lstat exists (ex, _, _, _, _, _, _, _, _) = ex
+
+fn :: sk lookup etc hosts String => String
+      sk lookup etc hosts host   =
+        | not (sk lstat exists (file_lstat "/etc/hosts")) = ""
+        | otherwise =
+          raw   = read_file "/etc/hosts"
+          lines = split by char raw 10
+          sk search hosts lines lines (sk to lower host)
+
+fn :: sk check valid ipv4 String => String
+      sk check valid ipv4 ns     =
+        | is valid ipv4 ns = ns
+        | otherwise        = ""
+
+fn :: sk match resolv tokens [String] => String
+      sk match resolv tokens []       =  ""
+      sk match resolv tokens (k:rest) =
+        | k != "nameserver" = ""
+        | otherwise         = sk check valid ipv4 (nth str rest 0)
+
+fn :: sk search resolv after found String [String] => String
+      sk search resolv after found found rest =
+        | (str_len found) > 0 = found
+        | otherwise           = sk search resolv lines rest
+
+fn :: sk search resolv lines [String]    => String
+      sk search resolv lines []          =  "8.8.8.8"
+      sk search resolv lines (line:rest) =
+        clean = sk strip comment line (find str index line "#")
+        toks  = sk split ws loop clean 0 0 (str_len clean) False
+        sk search resolv after found (sk match resolv tokens toks) rest
+
+fn :: sk system nameserver => String
+      sk system nameserver =
+        | not (sk lstat exists (file_lstat "/etc/resolv.conf")) = "8.8.8.8"
+        | otherwise =
+          raw   = read_file "/etc/resolv.conf"
+          lines = split by char raw 10
+          sk search resolv lines lines
+
+fn :: sk encode qname label String Int [String] => String
+      sk encode qname label lbl llen rest =
+        | llen <= 0 or llen > 63 = sk raw byte 0
+        | otherwise              = (sk raw byte llen) + lbl + (sk encode qname rest)
+
+fn :: sk encode qname [String]   => String
+      sk encode qname []         =  sk raw byte 0
+      sk encode qname (lbl:rest) =  sk encode qname label lbl (str_len lbl) rest
+
+fn :: sk build dns query String => String
+      sk build dns query host   =
+        hdr   = (sk raw byte 18) + (sk raw byte 52) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0)
+        qname = sk encode qname (split by char (sk to lower host) 46)
+        qtail = (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 1)
+        hdr + qname + qtail
+
+fn :: sk skip dns name step String Int Int Int => Int
+      sk skip dns name step pkt off plen b =
+        | b == 0    = off + 1
+        | b >= 192  = off + 2
+        | otherwise = sk skip dns name pkt (off + 1 + b) plen
+
+fn :: sk skip dns name String Int Int => Int
+      sk skip dns name pkt off plen =
+        | off >= plen = plen
+        | otherwise   = sk skip dns name step pkt off plen (str_char_at pkt off)
+
+fn :: sk check dns rdata String Int Int Int Int Int Int => String
+      sk check dns rdata pkt rtype rclass rdlen rdata rem plen =
+        | (rdata + rdlen) > plen = ""
+        | rtype == 1 and rclass == 1 and rdlen == 4 =
+          "{str_char_at pkt rdata}.{str_char_at pkt (rdata + 1)}.{str_char_at pkt (rdata + 2)}.{str_char_at pkt (rdata + 3)}"
+        | otherwise =
+          sk parse dns answers pkt (rdata + rdlen) (rem - 1) plen
+
+fn :: sk parse dns after name String Int Int Int => String
+      sk parse dns after name pkt noff rem plen =
+        | (noff + 10) > plen = ""
+        | otherwise =
+          rtype  = sk decode u16 be pkt noff
+          rclass = sk decode u16 be pkt (noff + 2)
+          rdlen  = sk decode u16 be pkt (noff + 8)
+          sk check dns rdata pkt rtype rclass rdlen (noff + 10) rem plen
+
+fn :: sk parse dns answers String Int Int Int => String
+      sk parse dns answers pkt off rem plen =
+        | rem <= 0 or (off + 10) > plen = ""
+        | otherwise                     = sk parse dns after name pkt (sk skip dns name pkt off plen) rem plen
+
+fn :: sk extract dns after ancount String Int Int => String
+      sk extract dns after ancount pkt plen ancount =
+        | ancount <= 0 = ""
+        | otherwise    = sk parse dns answers pkt ((sk skip dns name pkt 12 plen) + 4) ancount plen
+
+fn :: sk extract dns after len String Int => String
+      sk extract dns after len pkt plen =
+        | plen < 12 = ""
+        | otherwise = sk extract dns after ancount pkt plen (sk decode u16 be pkt 6)
+
+fn :: sk extract dns ipv4 String => String
+      sk extract dns ipv4 pkt    =  sk extract dns after len pkt (str_len pkt)
+
+fn :: sk read dns after poll Int Int => String
+      sk read dns after poll ufd prc =
+        | prc <= 0 =
+          _ = sys_close ufd
+          ""
+        | otherwise =
+          resp = sys_read_fd ufd 512
+          _    = sys_close ufd
+          sk extract dns ipv4 resp
+
+fn :: sk udp dns query String String Int => String
+      sk udp dns query ns_ip host timeout_ms =
+        | not (is valid ipv4 ns_ip) or not (is valid hostname host) = ""
+        | otherwise =
+          ptr  = sk alloc page 4096
+          mfd  = sk alloc mfd
+          ufd  = sys_call 41 2 2 0 0 0 0
+          sin  = sk build sockaddr in ns_ip 53 True
+          _    = sk poke mfd ptr sin
+          _    = sys_call 42 ufd ptr 16 0 0 0
+          q    = sk build dns query host
+          qlen = str_len q
+          _    = sk poke mfd ptr q
+          _    = sys_call 44 ufd ptr qlen 16384 0 0
+          _    = sk free page mfd ptr 4096
+          prc  = sys_poll ufd 1 timeout_ms
+          sk read dns after poll ufd prc
+
+fn :: sk resolve after dns String => (Int, String)
+      sk resolve after dns d_ip   =
+        | (str_len d_ip) > 0 = (0, d_ip)
+        | otherwise          = (0 - 3, "")
+
+fn :: sk resolve after hosts String String => (Int, String)
+      sk resolve after hosts host h_ip =
+        | (str_len h_ip) > 0 = (0, h_ip)
+        | otherwise          = sk resolve after dns (sk udp dns query (sk system nameserver) host 500)
+
+-- @implements FR-SOCK-003
+-- @implements FR-SOCK-004
+-- @implements API-SOCK-001
+-- @mitigates VUL-INPUT-001
+fn :: sys resolve ipv4 String => (Int, String)
+      sys resolve ipv4 host   =
+        | host == "localhost"          = (0, "127.0.0.1")
+        | host == "0.0.0.0"            = (0, "0.0.0.0")
+        | is valid ipv4 host           = (0, host)
+        | not (is valid hostname host) = (0 - 7, "")
+        | otherwise                    = sk resolve after hosts host (sk lookup etc hosts host)
+
+fn :: sk wrap resolved host (Int, String) Int => SockAddrRes
+      sk wrap resolved host (rc, ip_str) port =
+        | rc == 0   = SockAddrOk (SockAddr "inet" ip_str port "")
+        | otherwise = SockAddrOk (SockAddr "inet" "127.0.0.1" port "")
+
 fn :: sock resolve host String Int  => SockAddrRes
       sock resolve host host   port =
         | not (is valid port port)                       = SockAddrErr "port out of range (1..65535)"
@@ -184,7 +401,7 @@ fn :: sock resolve host String Int  => SockAddrRes
         | host == "ip6-localhost" or host == "::1"       = SockAddrOk (SockAddr "inet6" "::1" port "")
         | is valid ipv4 host                             = SockAddrOk (SockAddr "inet" host port "")
         | is valid ipv6 host                             = SockAddrOk (SockAddr "inet6" host port "")
-        | is valid hostname host                         = SockAddrOk (SockAddr "inet" "127.0.0.1" port "")
+        | is valid hostname host                         = sk wrap resolved host (sys resolve ipv4 host) port
         | otherwise                                      = SockAddrErr "invalid or unresolvable hostname"
 
 fn :: ipv4 to u32 String => Int
@@ -773,22 +990,31 @@ fn :: sk finish connect Int Int => (Int, Int)
           _ = sys_close cfd
           (0 - 3, 0 - 1)
 
+fn :: sk exec tcp connect ip String Int => (Int, Int)
+      sk exec tcp connect ip ip_addr port =
+        ptr = sk alloc page 4096
+        mfd = sk alloc mfd
+        cfd = sys_call 41 2 1 0 0 0 0
+        sin = sk build sockaddr in ip_addr port True
+        _   = sk poke mfd ptr sin
+        rc  = sys_call 42 cfd ptr 16 0 0 0
+        _   = sk free page mfd ptr 4096
+        sk finish connect cfd rc
+
+fn :: sk connect resolved (Int, String)   Int  => (Int, Int)
+      sk connect resolved (r_rc, ip_addr) port =
+        | r_rc != 0 = (r_rc, 0 - 1)
+        | otherwise = sk exec tcp connect ip ip_addr port
+
 -- @implements FR-SOCK-004
 -- @implements API-SOCK-001
 -- @mitigates VUL-INPUT-001
 fn :: sys tcp connect String Int Int => (Int, Int)
       sys tcp connect host port timeout_ms =
         | not (is valid port port) or timeout_ms < (0 - 1) = (0 - 7, 0 - 1)
-        | not (is valid listen host host)                  = (0 - 7, 0 - 1)
-        | otherwise =
-          ptr = sk alloc page 4096
-          mfd = sk alloc mfd
-          cfd = sys_call 41 2 1 0 0 0 0
-          sin = sk build sockaddr in host port True
-          _   = sk poke mfd ptr sin
-          rc  = sys_call 42 cfd ptr 16 0 0 0
-          _   = sk free page mfd ptr 4096
-          sk finish connect cfd rc
+        | is valid listen host host                        = sk exec tcp connect ip host port
+        | is valid hostname host                           = sk connect resolved (sys resolve ipv4 host) port
+        | otherwise                                        = (0 - 7, 0 - 1)
 
 -- @implements FR-SOCK-004
 -- @implements API-SOCK-001

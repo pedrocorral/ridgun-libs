@@ -20,6 +20,7 @@ auth: none
   - `sock send frame Socket String => SockRes`, `sock recv frame Socket Int => SockStrRes`, `sock send line Socket String => SockRes`, `sock recv line Socket Int => SockStrRes`
   - `sock local addr Socket => SockAddrRes`, `sock peer addr Socket => SockAddrRes`, `sock poll Socket => SockPoll`, `is valid hostname String => Bool`, `sock resolve host String Int => SockAddrRes`, `ip in cidr String String => Bool`
 - Solstice `RGF-001` status-tuple signatures:
+  - `sys_resolve_ipv4 String => (Int, String)`
   - `sys_tcp_listen String Int Int => (Int, Int)`
   - `sys_unix_listen String Int => (Int, Int)`
   - `sys_local_port Int => Int`

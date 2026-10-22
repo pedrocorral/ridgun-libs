@@ -1,5 +1,5 @@
 -- RGLIB1
--- SELF_HOSTED_COMPILER: ridgunc v0.9.7
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.8
 -- FUNCTIONS: 87
 -- TYPES: 2
 -- SUMMARY: poll_in:InlineSequential

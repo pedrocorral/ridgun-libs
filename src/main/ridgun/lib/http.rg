@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+import socket
+
 -- ── Internal String & Case Helpers ───────────────────────────
 
 fn :: ht index of loop String String Int Int Int => Int
@@ -362,3 +364,108 @@ fn :: http parse response String => (Int, String, String)
         body  = ht pair val hb
         lines = ht split lines loop head 0 0 (str_len head)
         ht parse resp parts lines body
+
+-- ── Live Kernel TCP HTTP/1.1 Client (`http_request_tcp`, `http_get`, `http_post`) ──
+
+fn :: ht ensure hdr [(String, String)] String String => [(String, String)]
+      ht ensure hdr headers key val =
+        | (str_len (http header get headers key)) > 0 = headers
+        | otherwise                                   = headers :: [(key, val)]
+
+fn :: ht read tcp step Int Int String (Int, String) => String
+      ht read tcp step fd timeout_ms acc (rc, chunk) =
+        | rc != 0   = acc
+        | otherwise = ht read tcp loop fd timeout_ms (acc + chunk)
+
+fn :: ht read tcp loop Int Int String => String
+      ht read tcp loop fd timeout_ms acc =
+        ht read tcp step fd timeout_ms acc (sys recv fd 16384 timeout_ms)
+
+fn :: ht resp code (Int, String, String) => Int
+      ht resp code (c, _, _)             =  c
+
+fn :: ht resp body (Int, String, String) => String
+      ht resp body (_, _, b)             =  b
+
+fn :: ht finish tcp resp String => (Int, Int, String)
+      ht finish tcp resp raw    =
+        | (str_len raw) == 0 = (0 - 1, 0, "")
+        | otherwise =
+          pr   = http parse response raw
+          code = ht resp code pr
+          (0, code, raw)
+
+fn :: ht send read step Int Int (Int, Int) => (Int, Int, String)
+      ht send read step cfd timeout_ms (s_rc, _) =
+        | s_rc != 0 =
+          _ = sys_close cfd
+          (s_rc, 0, "")
+        | otherwise =
+          raw = ht read tcp loop cfd timeout_ms ""
+          _   = sys_close cfd
+          ht finish tcp resp raw
+
+fn :: ht connect send tcp Int Int String Int => (Int, Int, String)
+      ht connect send tcp c_rc cfd wire timeout_ms =
+        | c_rc != 0 = (c_rc, 0, "")
+        | otherwise = ht send read step cfd timeout_ms (sys send cfd wire timeout_ms)
+
+-- @implements FR-HTTP-001
+-- @implements API-HTTP-001
+-- @mitigates VUL-INPUT-001
+fn :: http request tcp String Int String String [(String, String)] String Int => (Int, Int, String)
+      http request tcp host port method path headers body timeout_ms =
+        c_res = sys tcp connect host port timeout_ms
+        hdrs1 = ht ensure hdr headers "Host" host
+        hdrs2 = ht ensure hdr hdrs1 "Connection" "close"
+        wire  = http build request method path hdrs2 body
+        ht connect send tcp (sock rc c_res) (sock fd c_res) wire timeout_ms
+
+fn :: ht pick path String => String
+      ht pick path p      =
+        | (str_len p) == 0 = "/"
+        | otherwise        = p
+
+fn :: ht build target path String String => String
+      ht build target path p q =
+        | (str_len q) == 0 = ht pick path p
+        | otherwise        = (ht pick path p) + "?" + q
+
+fn :: ht exec url req (String, String, Int, String, String) String [(String, String)] String Int => (Int, Int, String)
+      ht exec url req (scheme, host, port, p, q) method headers body timeout_ms =
+        | scheme != "http" or (str_len host) == 0 or port <= 0 = (0 - 7, 0, "")
+        | otherwise                                            = http request tcp host port method (ht build target path p q) headers body timeout_ms
+
+-- @implements FR-HTTP-001
+-- @implements API-HTTP-001
+-- @mitigates VUL-INPUT-001
+fn :: http get String Int        => (Int, Int, String)
+      http get url    timeout_ms =
+        ht exec url req (uri parse url) "GET" [] "" timeout_ms
+
+-- @implements FR-HTTP-001
+-- @implements API-HTTP-001
+-- @mitigates VUL-INPUT-001
+fn :: http post String String String Int => (Int, Int, String)
+      http post url content_type body timeout_ms =
+        ht exec url req (uri parse url) "POST" [("Content-Type", content_type)] body timeout_ms
+
+-- @implements FR-HTTP-001
+-- @implements API-HTTP-001
+fn :: http resp rc (Int, Int, String) => Int
+      http resp rc (rc, _, _)         =  rc
+
+-- @implements FR-HTTP-001
+-- @implements API-HTTP-001
+fn :: http resp status (Int, Int, String) => Int
+      http resp status (_, st, _)         =  st
+
+-- @implements FR-HTTP-001
+-- @implements API-HTTP-001
+fn :: http resp headers (Int, Int, String) => [(String, String)]
+      http resp headers (_, _, raw)        =  http parse headers raw
+
+-- @implements FR-HTTP-001
+-- @implements API-HTTP-001
+fn :: http resp body (Int, Int, String) => String
+      http resp body (_, _, raw)        =  ht resp body (http parse response raw)
