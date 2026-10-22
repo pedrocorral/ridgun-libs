@@ -373,6 +373,7 @@ fn :: test_sock_rgf001_kernel_tcp_and_unix => ()
         _      = assert_int_equals (sys_close ucfd) 0 "sys_close ucfd"
         _      = assert_int_equals (sys_close usfd) 0 "sys_close usfd"
         _      = assert_int_equals (sys_close ulfd) 0 "sys_close ulfd"
+        _      = assert_int_equals (shell_exec "rm -f '{upath}'") 0 "unlink AF_UNIX socket"
         ()
 
 fn :: main => ()

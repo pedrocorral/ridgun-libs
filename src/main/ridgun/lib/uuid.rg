@@ -94,19 +94,70 @@ fn :: uu prng range step Int Int Int => (Int, Int)
 fn :: prng range Int  Int Int => (Int, Int)
       prng range seed lo  hi  =  uu prng range step (prng next seed) lo hi
 
--- ── RFC 9562 UUIDv4 & UUIDv7 Generation & Validation ─────────
+-- ── RFC 9562 UUIDv4 & UUIDv7 Generation & Validation (CSPRNG + clock_gettime) ──
 
-fn :: uu lstat exists (Bool, String, Int, Int, Int, String, String, Int, String) => Bool
-      uu lstat exists (exists, _, _, _, _, _, _, _, _) = exists
+fn :: uu alloc page Int => Int
+      uu alloc page sz  =
+        neg1 = 0 - 1
+        sys_call 9 0 sz 3 34 neg1 0
 
-fn :: uu next seq Int => Int
-      uu next seq pid =
-        p = "/tmp/rg_uuid_seq_{pid}.cnt"
-        n =
-          | uu lstat exists (file_lstat p) = (str_to_int (read_file p)) + 1
-          | otherwise                      = 1 |.
-        _ = write_file p "{n}"
-        n
+fn :: uu free page Int Int Int => Int
+      uu free page mfd ptr sz =
+        _ = sys_close mfd
+        sys_call 11 ptr sz 0 0 0 0
+
+fn :: uu alloc mfd => Int
+      uu alloc mfd =  sys_call 319 4194311 1 0 0 0 0
+
+fn :: uu peek Int Int Int => String
+      uu peek mfd ptr len =
+        _ = sys_call 18 mfd ptr len 0 0 0
+        _ = sys_call 8 mfd 0 0 0 0 0
+        sys_read_fd mfd len
+
+fn :: uu decode u32 le String Int => Int
+      uu decode u32 le s off =
+        b0 = str_char_at s off
+        b1 = str_char_at s (off + 1)
+        b2 = str_char_at s (off + 2)
+        b3 = str_char_at s (off + 3)
+        b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
+
+fn :: uu decode u64 le String Int => Int
+      uu decode u64 le s off =
+        lo = uu decode u32 le s off
+        hi = uu decode u32 le s (off + 4)
+        lo + (hi * 4294967296)
+
+fn :: uu wall time ms => Int
+      uu wall time ms =
+        ptr  = uu alloc page 4096
+        mfd  = uu alloc mfd
+        _    = sys_call 228 0 ptr 0 0 0 0
+        raw  = uu peek mfd ptr 16
+        _    = uu free page mfd ptr 4096
+        sec  = uu decode u64 le raw 0
+        nsec = uu decode u64 le raw 8
+        (sec * 1000) + (nsec / 1000000)
+
+fn :: uu bytes to hex loop String Int Int => String
+      uu bytes to hex loop s idx len =
+        | idx >= len = ""
+        | otherwise =
+          b   = ((str_char_at s idx) % 256 + 256) % 256
+          hi  = b / 16
+          lo  = b % 16
+          tbl = uu hex lut 0
+          (str_slice tbl hi (hi + 1)) + (str_slice tbl lo (lo + 1)) + (uu bytes to hex loop s (idx + 1) len)
+
+fn :: uu random hex16 => String
+      uu random hex16 =
+        ptr = uu alloc page 4096
+        mfd = uu alloc mfd
+        _   = sys_call 318 ptr 16 0 0 0 0
+        raw = uu peek mfd ptr 16
+        _   = uu free page mfd ptr 4096
+        uu bytes to hex loop raw 0 16
 
 fn :: uu hex val Int => Int
       uu hex val c   =
@@ -126,15 +177,12 @@ fn :: uu variant char String => String
 -- @implements API-UUID-001
 fn :: uuid v4 => String
       uuid v4 =
-        pid = sys_getpid
-        ms  = sys_time_ms
-        seq = uu next seq pid
-        h   = sha256_str "uuid_v4:{pid}:{ms}:{seq}"
-        p1  = str_slice h 0 8
-        p2  = str_slice h 8 12
-        p3  = "4" + (str_slice h 13 16)
-        p4  = (uu variant char (str_slice h 16 17)) + (str_slice h 17 20)
-        p5  = str_slice h 20 32
+        h  = uu random hex16
+        p1 = str_slice h 0 8
+        p2 = str_slice h 8 12
+        p3 = "4" + (str_slice h 13 16)
+        p4 = (uu variant char (str_slice h 16 17)) + (str_slice h 17 20)
+        p5 = str_slice h 20 32
         "{p1}-{p2}-{p3}-{p4}-{p5}"
 
 fn :: uu hex48 loop Int Int => String
@@ -151,9 +199,7 @@ fn :: uuid v7 at Int   => String
       uuid v7 at ts_ms =
         eff_ts = uu abs ts_ms
         ts_hex = uu hex48 loop eff_ts 12
-        pid    = sys_getpid
-        seq    = uu next seq pid
-        h      = sha256_str "uuid_v7:{pid}:{eff_ts}:{seq}"
+        h      = uu random hex16
         p1     = str_slice ts_hex 0 8
         p2     = str_slice ts_hex 8 12
         p3     = "7" + (str_slice h 0 3)
@@ -164,7 +210,7 @@ fn :: uuid v7 at Int   => String
 -- @implements FR-UUID-001
 -- @implements API-UUID-001
 fn :: uuid v7 => String
-      uuid v7 =  uuid v7 at (((sys_call 201 0 0 0 0 0 0) * 1000) + ((sys_time_ms) % 1000))
+      uuid v7 =  uuid v7 at (uu wall time ms)
 
 fn :: uu is hex range String Int Int => Bool
       uu is hex range s idx end_idx =

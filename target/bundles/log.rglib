@@ -1,5 +1,5 @@
 -- RGLIB1
--- SELF_HOSTED_COMPILER: ridgunc v0.9.6
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.7
 -- FUNCTIONS: 21
 -- TYPES: 0
 -- SUMMARY: lg_lower_char:InlineSequential

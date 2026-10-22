@@ -1,15 +1,11 @@
 -- RGLIB1
--- SELF_HOSTED_COMPILER: ridgunc v0.9.6
--- FUNCTIONS: 96
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.7
+-- FUNCTIONS: 92
 -- TYPES: 0
 -- SUMMARY: norm_byte_mod:InlineSequential
 -- SUMMARY: norm_byte:InlineSequential
--- SUMMARY: build_lut_range:LazyStealableTask
--- SUMMARY: read_one_raw_byte_fd:InlineSequential
--- SUMMARY: open_raw_lut_check:LazyStealableTask
--- SUMMARY: open_raw_lut:LazyStealableTask
--- SUMMARY: byte_str_norm:LazyStealableTask
--- SUMMARY: byte_str:LazyStealableTask
+-- SUMMARY: byte_str_norm:InlineSequential
+-- SUMMARY: byte_str:InlineSequential
 -- SUMMARY: bytes_from_list:LazyStealableTask
 -- SUMMARY: bytes_to_list_loop:LazyStealableTask
 -- SUMMARY: bytes_to_list:LazyStealableTask
@@ -123,37 +119,14 @@ fn :: norm byte mod Int => Int
 fn :: norm byte Int => Int
       norm byte b   =  norm byte mod (b % 256)
 
-fn :: build lut range Int => [Int]
-      build lut range i   =
-        | i >= 256  = []
-        | otherwise = [i] :: (build lut range (i + 1))
-
-fn :: read one raw byte fd Int Int => String
-      read one raw byte fd fd ub =
-        | fd < 0    = ""
-        | otherwise =
-          _   = sys_call 8 fd (ub - 1) 0 0 0 0
-          raw = sys_read_fd fd 1
-          _   = sys_close fd
-          raw
-
-fn :: open raw lut check String Int => Int
-      open raw lut check lpath fd =
-        | fd >= 0   = fd
-        | otherwise =
-          _ = write_bytes lpath (build lut range 1)
-          sys_open lpath 0 0
-
-fn :: open raw lut String => Int
-      open raw lut lpath  =
-        open raw lut check lpath (sys_open lpath 0 0)
-
 fn :: byte str norm Int => String
       byte str norm ub  =
-        | ub < 128  = char_from_code ub
+        | ub >= 1 and ub <= 127 = char_from_code ub
         | otherwise =
-          lpath = "/tmp/rg_raw_byte_lut_{sys_getuid}_255.bin"
-          read one raw byte fd (open raw lut lpath) ub
+          efd = sys_call 290 (256 + ub) 526336 0 0 0 0
+          s   = sys_read_fd efd 8
+          _   = sys_close efd
+          str_slice s 0 1
 
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001

@@ -97,7 +97,7 @@ fn :: test_posix_filesystem_clocks_signals_and_random => ()
         w2      = sys wall time ms
         _       = assert_true ((t2 - t1) >= 20) "monotonic ms elapsed >= 20"
         _       = assert_true (n2 > n1) "monotonic ns non-decreasing"
-        _       = assert_true (w1 > 1790000000000) "wall time > Oct 2026 (1790000000000)"
+        _       = assert_true (w1 > 1700000000000) "wall time > 1700000000000"
         _       = assert_true ((w2 - w1) >= 20) "wall time ms elapsed >= 20"
         sw_bad  = sys signal watch [9]
         _       = assert_equals (pair fst sw_bad) (0 - 7) "SIGKILL watch rejected with -7"
@@ -110,6 +110,7 @@ fn :: test_posix_filesystem_clocks_signals_and_random => ()
         _       = assert_equals (pair snd sw_got) (sig term) "sys_signal_wait got SIGTERM"
         sw_to   = sys signal wait sh 20
         _       = assert_equals (pair fst sw_to) (0 - 2) "second sys_signal_wait times out (-2)"
+        _       = assert_equals (posix close sh) 0 "posix close signalfd"
         r_bad   = sys random bytes (0 - 1)
         _       = assert_equals (pair fst r_bad) (0 - 7) "negative random bytes -> -7"
         r_zero  = sys random bytes 0

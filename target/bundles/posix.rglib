@@ -1,6 +1,6 @@
 -- RGLIB1
--- SELF_HOSTED_COMPILER: ridgunc v0.9.6
--- FUNCTIONS: 77
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.7
+-- FUNCTIONS: 87
 -- TYPES: 2
 -- SUMMARY: poll_in:InlineSequential
 -- SUMMARY: poll_out:InlineSequential
@@ -36,10 +36,21 @@
 -- SUMMARY: lstat_size:InlineSequential
 -- SUMMARY: lstat_mtime_sec:InlineSequential
 -- SUMMARY: lstat_symlink_target:InlineSequential
+-- SUMMARY: px_raw_byte_ub:InlineSequential
+-- SUMMARY: px_raw_byte:InlineSequential
+-- SUMMARY: px_u64_le:InlineSequential
+-- SUMMARY: px_decode_u32_le:InlineSequential
+-- SUMMARY: px_decode_u64_le:InlineSequential
+-- SUMMARY: px_alloc_page:InlineSequential
+-- SUMMARY: px_free_page:InlineSequential
+-- SUMMARY: px_alloc_mfd:InlineSequential
+-- SUMMARY: px_poke:InlineSequential
+-- SUMMARY: px_peek:InlineSequential
+-- SUMMARY: px_clock_gettime:InlineSequential
+-- SUMMARY: px_pair_fst:InlineSequential
+-- SUMMARY: px_pair_snd:InlineSequential
 -- SUMMARY: sys_monotonic_ms:InlineSequential
 -- SUMMARY: sys_monotonic_ns:InlineSequential
--- SUMMARY: wall_epoch_sec_fallback:InlineSequential
--- SUMMARY: wall_boot_offset_for:InlineSequential
 -- SUMMARY: sys_wall_time_ms:InlineSequential
 -- SUMMARY: map_poll_rc:InlineSequential
 -- SUMMARY: wait_fd:InlineSequential
@@ -48,13 +59,13 @@
 -- SUMMARY: posix_read:InlineSequential
 -- SUMMARY: posix_write:InlineSequential
 -- SUMMARY: posix_kill:InlineSequential
--- SUMMARY: read_seq_or_one:InlineSequential
--- SUMMARY: next_pipe_seq:InlineSequential
 -- SUMMARY: pack_pipe_fds:InlineSequential
 -- SUMMARY: posix_pipe:InlineSequential
 -- SUMMARY: posix_mkdir:LazyStealableTask
 -- SUMMARY: posix_chmod:LazyStealableTask
 -- SUMMARY: posix_chdir:LazyStealableTask
+-- SUMMARY: px_syscall1_path:InlineSequential
+-- SUMMARY: px_syscall2_path:InlineSequential
 -- SUMMARY: sys_rmdir:LazyStealableTask
 -- SUMMARY: sys_unlink:LazyStealableTask
 -- SUMMARY: sys_rename:LazyStealableTask
@@ -62,18 +73,17 @@
 -- SUMMARY: sys_readlink:LazyStealableTask
 -- SUMMARY: valid_signal_list:LazyStealableTask
 -- SUMMARY: valid_signal_rest:LazyStealableTask
--- SUMMARY: first_watched_sig:InlineSequential
--- SUMMARY: sys_signal_watch:InlineSequential
--- SUMMARY: check_pending_sig:LazyStealableTask
--- SUMMARY: clamp_sig_wait_ms:InlineSequential
--- SUMMARY: wait_sig_file:LazyStealableTask
--- SUMMARY: sys_signal_wait:LazyStealableTask
+-- SUMMARY: px_bit_shift:LazyStealableTask
+-- SUMMARY: px_sig_mask:LazyStealableTask
+-- SUMMARY: px_finish_sig_watch:InlineSequential
+-- SUMMARY: sys_signal_watch:LazyStealableTask
+-- SUMMARY: px_finish_sig_read:InlineSequential
+-- SUMMARY: px_wait_sig_after_poll:InlineSequential
+-- SUMMARY: sys_signal_wait:InlineSequential
 -- SUMMARY: posix_notify_signal:InlineSequential
--- SUMMARY: take_int_list:LazyStealableTask
--- SUMMARY: safe_ascii_code:InlineSequential
--- SUMMARY: bytes_to_raw_ascii:LazyStealableTask
--- SUMMARY: urandom_read_list:LazyStealableTask
--- SUMMARY: sys_random_bytes:LazyStealableTask
+-- SUMMARY: px_bytes_to_list_loop:LazyStealableTask
+-- SUMMARY: px_getrandom_raw:InlineSequential
+-- SUMMARY: sys_random_bytes:InlineSequential
 -- SUMMARY: sys_random_bytes_list:LazyStealableTask
 -- SUMMARY: path_separator:InlineSequential
 -- SUMMARY: null_device_for:InlineSequential
@@ -227,40 +237,110 @@ fn :: lstat mtime sec (Bool, String, Int, Int, Int, String, String, Int, String)
 fn :: lstat symlink target (Bool, String, Int, Int, Int, String, String, Int, String) => String
       lstat symlink target (_, _, _, _, _, _, _, _, target) = target
 
+-- ── Kernel Memory Bridge Helpers (mmap + memfd_create + eventfd2) ──
+
+fn :: px raw byte ub Int => String
+      px raw byte ub ub  =
+        | ub >= 1 and ub <= 127 = char_from_code ub
+        | otherwise =
+          efd = sys_call 290 (256 + ub) 526336 0 0 0 0
+          s   = sys_read_fd efd 8
+          _   = sys_close efd
+          str_slice s 0 1
+
+fn :: px raw byte Int => String
+      px raw byte b   =  px raw byte ub (((b % 256) + 256) % 256)
+
+fn :: px u64 le Int => String
+      px u64 le val =
+        | val <= 0 =
+          b0 = px raw byte 0
+          b0 + b0 + b0 + b0 + b0 + b0 + b0 + b0
+        | otherwise =
+          efd = sys_call 290 val 526336 0 0 0 0
+          s   = sys_read_fd efd 8
+          _   = sys_close efd
+          s
+
+fn :: px decode u32 le String Int => Int
+      px decode u32 le s off =
+        b0 = str_char_at s off
+        b1 = str_char_at s (off + 1)
+        b2 = str_char_at s (off + 2)
+        b3 = str_char_at s (off + 3)
+        b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
+
+fn :: px decode u64 le String Int => Int
+      px decode u64 le s off =
+        lo = px decode u32 le s off
+        hi = px decode u32 le s (off + 4)
+        lo + (hi * 4294967296)
+
+fn :: px alloc page Int => Int
+      px alloc page sz  =
+        neg1 = 0 - 1
+        sys_call 9 0 sz 3 34 neg1 0
+
+fn :: px free page Int Int Int => Int
+      px free page mfd ptr sz =
+        _ = sys_close mfd
+        sys_call 11 ptr sz 0 0 0 0
+
+fn :: px alloc mfd => Int
+      px alloc mfd =  sys_call 319 4194311 1 0 0 0 0
+
+fn :: px poke Int Int String => Int
+      px poke mfd ptr s      =
+        slen = str_len s
+        _    = sys_call 8 mfd 0 0 0 0 0
+        _    = sys_write_fd mfd s
+        sys_call 17 mfd ptr slen 0 0 0
+
+fn :: px peek Int Int Int => String
+      px peek mfd ptr len =
+        _ = sys_call 18 mfd ptr len 0 0 0
+        _ = sys_call 8 mfd 0 0 0 0 0
+        sys_read_fd mfd len
+
 -- ── Monotonic & Wall-Clock Time (RGF-017 / RG-010) ───────────
+
+fn :: px clock gettime Int    => (Int, Int)
+      px clock gettime clk_id =
+        ptr  = px alloc page 4096
+        mfd  = px alloc mfd
+        _    = sys_call 228 clk_id ptr 0 0 0 0
+        raw  = px peek mfd ptr 16
+        _    = px free page mfd ptr 4096
+        sec  = px decode u64 le raw 0
+        nsec = px decode u64 le raw 8
+        (sec, nsec)
+
+fn :: px pair fst (Int, Int) => Int
+      px pair fst (a, _)     =  a
+
+fn :: px pair snd (Int, Int) => Int
+      px pair snd (_, b)     =  b
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys monotonic ms => Int
       sys monotonic ms =
-        sys_time_ms
+        ts = px clock gettime 1
+        ((px pair fst ts) * 1000) + ((px pair snd ts) / 1000000)
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys monotonic ns => Int
       sys monotonic ns =
-        sys_time_ms * 1000000
-
-fn :: wall epoch sec fallback Int  => Int
-      wall epoch sec fallback ksec =
-        | ksec > 1700000000 = ksec
-        | otherwise         = 1792659600
-
-fn :: wall boot offset for String => Int
-      wall boot offset for ofile  =
-        | lstat exists (file_lstat ofile) = str_to_int (read_file ofile)
-        | otherwise =
-          sec = wall epoch sec fallback (sys_call 201 0 0 0 0 0 0)
-          off = (sec * 1000) - (sys_time_ms)
-          _   = write_file ofile "{off}"
-          off
+        ts = px clock gettime 1
+        ((px pair fst ts) * 1000000000) + (px pair snd ts)
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys wall time ms => Int
       sys wall time ms =
-        ofile = "/tmp/rg_wall_off_{sys_getpid}.ms"
-        (wall boot offset for ofile) + (sys_time_ms)
+        ts = px clock gettime 0
+        ((px pair fst ts) * 1000) + ((px pair snd ts) / 1000000)
 
 -- ── Descriptor Waiting & Typed POSIX Wrappers (FR-POSIX-001) ─
 
@@ -313,38 +393,25 @@ fn :: posix kill Int Int     => Int
         | pid <= 0 or sig_num <= 0 or sig_num > 64 = 0 - 22
         | otherwise                                = sys_kill pid sig_num
 
--- ── Kernel-Backed Anonymous Pipe via Unlinked FIFO ───────────
+-- ── Kernel-Backed Anonymous Pipe via pipe2 (__NR_pipe2 = 293) ─
 
-fn :: read seq or one String   => Int
-      read seq or one seq_file =
-        | lstat exists (file_lstat seq_file) = str_to_int (read_file seq_file)
-        | otherwise                          = 1
-
-fn :: next pipe seq Int => Int
-      next pipe seq pid =
-        seq_file = "/tmp/rg_pipe_seq_{pid}.cnt"
-        cur      = read seq or one seq_file
-        next_val = cur + 1
-        _        = write_file seq_file "{next_val}"
-        cur
-
-fn :: pack pipe fds Int Int => (Int, Int, Int)
-      pack pipe fds rfd wfd =
-        | rfd < 0 or wfd < 0 = (0 - 1, 0 - 1, 0 - 1)
-        | otherwise          = (0, rfd, wfd)
+fn :: pack pipe fds Int Int Int => (Int, Int, Int)
+      pack pipe fds rc rfd wfd =
+        | rc < 0 or rfd < 0 or wfd < 0 = (0 - 1, 0 - 1, 0 - 1)
+        | otherwise                    = (0, rfd, wfd)
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 fn :: posix pipe => (Int, Int, Int)
       posix pipe =
-        pid  = sys_getpid
-        seq  = next pipe seq pid
-        fifo = "/tmp/rg_pipe_{pid}_{seq}.fifo"
-        _    = shell_exec "rm -f '{fifo}' && mkfifo -m 600 '{fifo}'"
-        rfd  = sys_open fifo ((o rdonly) + (o nonblock)) 0
-        wfd  = sys_open fifo ((o wronly) + (o nonblock)) 0
-        _    = shell_exec "rm -f '{fifo}'"
-        pack pipe fds rfd wfd
+        ptr = px alloc page 4096
+        mfd = px alloc mfd
+        rc  = sys_call 293 ptr 526336 0 0 0 0
+        raw = px peek mfd ptr 8
+        _   = px free page mfd ptr 4096
+        rfd = px decode u32 le raw 0
+        wfd = px decode u32 le raw 4
+        pack pipe fds rc rfd wfd
 
 -- ── RG-010 Filesystem & Process Operations ───────────────────
 
@@ -365,33 +432,55 @@ fn :: posix chdir String => Bool
         | not (is safe posix path path) = False
         | otherwise                     = (sys_chdir path) == 0
 
+fn :: px syscall1 path Int String => Int
+      px syscall1 path nr  path   =
+        ptr = px alloc page 4096
+        mfd = px alloc mfd
+        b0  = px raw byte 0
+        _   = px poke mfd ptr (path + b0)
+        rc  = sys_call nr ptr 0 0 0 0 0
+        _   = px free page mfd ptr 4096
+        rc
+
+fn :: px syscall2 path Int String String => Int
+      px syscall2 path nr p1 p2 =
+        ptr   = px alloc page 4096
+        mfd   = px alloc mfd
+        b0    = px raw byte 0
+        p2048 = ptr + 2048
+        _     = px poke mfd ptr (p1 + b0)
+        _     = px poke mfd p2048 (p2 + b0)
+        rc    = sys_call nr ptr p2048 0 0 0 0
+        _     = px free page mfd ptr 4096
+        rc
+
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys rmdir String => Bool
       sys rmdir path   =
         | not (is safe posix path path) = False
-        | otherwise                     = (shell_exec "rmdir '{path}' >/dev/null 2>&1") == 0
+        | otherwise                     = (px syscall1 path 84 path) == 0
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys unlink String => Bool
       sys unlink path   =
         | not (is safe posix path path) = False
-        | otherwise                     = (shell_exec "rm -f '{path}' >/dev/null 2>&1") == 0
+        | otherwise                     = (px syscall1 path 87 path) == 0
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys rename String String   => Bool
       sys rename old_p  new_path =
         | not (is safe posix path old_p) or not (is safe posix path new_path) = False
-        | otherwise = (shell_exec "mv -f '{old_p}' '{new_path}' >/dev/null 2>&1") == 0
+        | otherwise = (px syscall2 path 82 old_p new_path) == 0
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys symlink String String    => Bool
       sys symlink target link_path =
         | not (is safe posix path target) or not (is safe posix path link_path) = False
-        | otherwise = (shell_exec "ln -sf '{target}' '{link_path}' >/dev/null 2>&1") == 0
+        | otherwise = (px syscall2 path 88 target link_path) == 0
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
@@ -400,7 +489,7 @@ fn :: sys readlink String => String
         | not (is safe posix path path) = ""
         | otherwise                     = lstat symlink target (file_lstat path)
 
--- ── RGF-018 Signal Watching & Waiting ────────────────────────
+-- ── RGF-018 Signal Watching & Waiting (rt_sigprocmask + signalfd4) ──
 
 fn :: valid signal list [Int]    => Bool
       valid signal list []       =  False
@@ -414,9 +503,19 @@ fn :: valid signal rest [Int]    => Bool
         | s < 1 or s > 64 or s == 9 or s == 19 = False
         | otherwise                            = valid signal rest rest
 
-fn :: first watched sig [Int] => Int
-      first watched sig []    =  15
-      first watched sig (s:_) =  s
+fn :: px bit shift Int => Int
+      px bit shift n   =
+        | n <= 0    = 1
+        | otherwise = 2 * (px bit shift (n - 1))
+
+fn :: px sig mask [Int]    => Int
+      px sig mask []       =  0
+      px sig mask (s:rest) =  (px bit shift (s - 1)) + (px sig mask rest)
+
+fn :: px finish sig watch Int => (Int, Int)
+      px finish sig watch sfd =
+        | sfd < 0   = (0 - 7, 0 - 1)
+        | otherwise = (0, sfd)
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
@@ -424,81 +523,63 @@ fn :: sys signal watch [Int] => (Int, Int)
       sys signal watch sigs  =
         | not (valid signal list sigs) = (0 - 7, 0 - 1)
         | otherwise                    =
-          pid       = sys_getpid
-          sig_num   = first watched sig sigs
-          sig_state = "/tmp/rg_sigwatch_{pid}_{sig_num}.sig"
-          _         = write_file sig_state "{sig_num}"
-          (0, sig_num + 1000)
+          ptr  = px alloc page 4096
+          mfd  = px alloc mfd
+          mask = px sig mask sigs
+          neg1 = 0 - 1
+          _    = px poke mfd ptr (px u64 le mask)
+          _    = sys_call 14 0 ptr 0 8 0 0
+          sfd  = sys_call 289 neg1 ptr 8 526336 0 0
+          _    = px free page mfd ptr 4096
+          px finish sig watch sfd
 
-fn :: check pending sig Int    String => (Int, Int)
-      check pending sig sig_no sfile  =
-        | lstat exists (file_lstat sfile) =
-          _ = sys unlink sfile
-          (0, sig_no)
-        | otherwise = (0 - 2, 0)
+fn :: px finish sig read Int String => (Int, Int)
+      px finish sig read n raw =
+        | n < 128   = (0 - 7, 0)
+        | otherwise = (0, px decode u32 le raw 0)
 
-fn :: clamp sig wait ms Int        => Int
-      clamp sig wait ms timeout_ms =
-        | timeout_ms > 50 or timeout_ms < 0 = 50
-        | otherwise                         = timeout_ms
-
-fn :: wait sig file Int String Int => (Int, Int)
-      wait sig file sig_no sfile timeout_ms =
-        | lstat exists (file_lstat sfile) =
-          _ = sys unlink sfile
-          (0, sig_no)
-        | timeout_ms == 0 = (0 - 2, 0)
-        | otherwise       =
-          _ = sys_sleep_ms (clamp sig wait ms timeout_ms)
-          check pending sig sig_no sfile
+fn :: px wait sig after poll Int Int => (Int, Int)
+      px wait sig after poll handle prc =
+        | prc == 0 = (0 - 2, 0)
+        | prc < 0  = (0 - 7, 0)
+        | otherwise =
+          ptr = px alloc page 4096
+          mfd = px alloc mfd
+          n   = sys_call 0 handle ptr 128 0 0 0
+          raw = px peek mfd ptr 16
+          _   = px free page mfd ptr 4096
+          px finish sig read n raw
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys signal wait Int    Int        => (Int, Int)
       sys signal wait handle timeout_ms =
-        | handle < 1001 or handle > 1064 = (0 - 7, 0)
-        | timeout_ms < (0 - 1)           = (0 - 7, 0)
-        | otherwise                      =
-          pid    = sys_getpid
-          sig_no = handle - 1000
-          sfile  = "/tmp/rg_sigpending_{pid}_{sig_no}.sig"
-          wait sig file sig_no sfile timeout_ms
+        | handle < 0 or timeout_ms < (0 - 1)       = (0 - 7, 0)
+        | (sys_call 72 handle 1 0 0 0 0) < 0       = (0 - 7, 0)
+        | otherwise                                = px wait sig after poll handle (sys_poll handle 1 timeout_ms)
 
 fn :: posix notify signal Int    Int    => Int
       posix notify signal target sig_no =
-        | target <= 0 or sig_no <= 0 or sig_no > 64 = 0 - 22
-        | otherwise                                 =
-          sfile = "/tmp/rg_sigpending_{target}_{sig_no}.sig"
-          _     = write_file sfile "{sig_no}"
-          0
+        posix kill target sig_no
 
--- ── RGF-014 Cryptographic Random Bytes (CSPRNG) ──────────────
+-- ── RGF-014 Cryptographic Random Bytes (getrandom __NR_getrandom = 318) ──
 
-fn :: take int list [Int]  Int => [Int]
-      take int list _      0   =  []
-      take int list []     _   =  []
-      take int list (x:xs) n   =  [x] :: (take int list xs (n - 1))
+fn :: px bytes to list loop String Int Int => [Int]
+      px bytes to list loop s idx slen =
+        | idx >= slen = []
+        | otherwise   =
+          b = ((str_char_at s idx) % 256 + 256) % 256
+          [b] :: (px bytes to list loop s (idx + 1) slen)
 
-fn :: safe ascii code Int  => Int
-      safe ascii code code =
-        | code <= 0 = 1
-        | otherwise = code
-
-fn :: bytes to raw ascii [Int]    => String
-      bytes to raw ascii []       =  ""
-      bytes to raw ascii (b:rest) =
-        c = safe ascii code (b % 128)
-        (char_from_code c) + (bytes to raw ascii rest)
-
-fn :: urandom read list Int => [Int]
-      urandom read list n   =
-        pid = sys_getpid
-        seq = next pipe seq pid
-        tmp = "/tmp/rg_rng_{pid}_{seq}.bin"
-        _   = shell_exec "head -c {n} /dev/urandom > '{tmp}' 2>/dev/null"
-        bs  = read_bytes tmp
-        _   = sys unlink tmp
-        take int list bs n
+fn :: px getrandom raw Int => String
+      px getrandom raw n   =
+        psz = ((n / 4096) + 2) * 4096
+        ptr = px alloc page psz
+        mfd = px alloc mfd
+        _   = sys_call 318 ptr n 0 0 0 0
+        raw = px peek mfd ptr n
+        _   = px free page mfd ptr psz
+        raw
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
@@ -508,16 +589,16 @@ fn :: sys random bytes Int => (Int, String)
         | n < 0     = (0 - 7, "")
         | n == 0    = (0, "")
         | n > 65536 = (0 - 7, "")
-        | otherwise =
-          raw = urandom read list n
-          (0, bytes to raw ascii raw)
+        | otherwise = (0, px getrandom raw n)
 
 fn :: sys random bytes list Int => (Int, [Int])
       sys random bytes list n   =
         | n < 0     = (0 - 7, [])
         | n == 0    = (0, [])
         | n > 65536 = (0 - 7, [])
-        | otherwise = (0, urandom read list n)
+        | otherwise =
+          raw = px getrandom raw n
+          (0, px bytes to list loop raw 0 (str_len raw))
 
 -- ── Ridgun v0.9.5 Target OS / Arch & Process Probe Helpers ───
 
