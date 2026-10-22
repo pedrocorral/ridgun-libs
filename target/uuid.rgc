@@ -194,7 +194,7 @@ fn :: uuid v7 at Int   => String
 -- @implements FR-UUID-001
 -- @implements API-UUID-001
 fn :: uuid v7 => String
-      uuid v7 =  uuid v7 at (sys_time_ms)
+      uuid v7 =  uuid v7 at (((sys_call 201 0 0 0 0 0 0) * 1000) + ((sys_time_ms) % 1000))
 
 fn :: uu is hex range String Int Int => Bool
       uu is hex range s idx end_idx =

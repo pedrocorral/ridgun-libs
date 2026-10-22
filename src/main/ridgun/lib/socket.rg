@@ -632,34 +632,46 @@ fn :: resolve tcp port Int  => Int
           seq = next sock seq pid
           40000 + ((pid % 1000) * 20) + (seq % 19)
 
-fn :: is port in use by lfd Int Int => Bool
-      is port in use by lfd old_lfd port =
-        | not (sock fd is open old_lfd) = False
-        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{old_lfd}.port")) = False
+fn :: sock lpid is alive Int Int => Bool
+      sock lpid is alive lpid old_lfd =
+        | lpid == (sys_getpid) = sock fd is open old_lfd
+        | lpid <= 0            = False
+        | otherwise            = (sys_kill lpid 0) == 0
+
+fn :: is port in use by lfd Int Int Int => Bool
+      is port in use by lfd lpid old_lfd port =
+        | not (sock lpid is alive lpid old_lfd) = False
+        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{lpid}_{old_lfd}.port")) = False
         | otherwise =
-          old_p = str_to_int (clean sock str (read_file "/tmp/rg_sock_fd_{old_lfd}.port"))
+          old_p = str_to_int (clean sock str (read_file "/tmp/rg_sock_fd_{lpid}_{old_lfd}.port"))
           old_p == port
 
-fn :: check tcp lfile String Int  => Bool
-      check tcp lfile lfile  port =
+fn :: check tcp lfile String String Int => Bool
+      check tcp lfile lfile pfile port =
         | not (sock lstat exists (file_lstat lfile)) = False
+        | not (sock lstat exists (file_lstat pfile)) = False
         | otherwise =
           old_lfd = str_to_int (clean sock str (read_file lfile))
-          is port in use by lfd old_lfd port
+          lpid    = str_to_int (clean sock str (read_file pfile))
+          is port in use by lfd lpid old_lfd port
 
 fn :: is tcp port in use Int => Bool
       is tcp port in use port =
-        check tcp lfile "/tmp/rg_sock_tcp_{port}.lfd" port
+        uid = sys_getuid
+        check tcp lfile "/tmp/rg_sock_tcp_{uid}_{port}.lfd" "/tmp/rg_sock_tcp_{uid}_{port}.lpid" port
 
 fn :: bind tcp listener String Int         => (Int, Int)
       bind tcp listener host   actual_port =
         | is tcp port in use actual_port = (0 - 5, 0 - 1)
         | otherwise =
-          lfd = alloc sock fd (sys_getpid)
-          _   = write_file "/tmp/rg_sock_fd_{lfd}.port" "{actual_port}"
-          _   = write_file "/tmp/rg_sock_fd_{lfd}.listen" "tcp:{host}:{actual_port}"
-          _   = write_file "/tmp/rg_sock_fd_{lfd}.q" ""
-          _   = write_file "/tmp/rg_sock_tcp_{actual_port}.lfd" "{lfd}"
+          pid = sys_getpid
+          uid = sys_getuid
+          lfd = alloc sock fd pid
+          _   = write_file "/tmp/rg_sock_fd_{pid}_{lfd}.port" "{actual_port}"
+          _   = write_file "/tmp/rg_sock_fd_{pid}_{lfd}.listen" "tcp:{host}:{actual_port}"
+          _   = write_file "/tmp/rg_sock_fd_{pid}_{lfd}.q" ""
+          _   = write_file "/tmp/rg_sock_tcp_{uid}_{actual_port}.lfd" "{lfd}"
+          _   = write_file "/tmp/rg_sock_tcp_{uid}_{actual_port}.lpid" "{pid}"
           (0, lfd)
 
 -- @implements FR-SOCK-004
@@ -682,13 +694,16 @@ fn :: sys unix listen String Int     => (Int, Int)
       sys unix listen path   backlog =
         | backlog < 1 or (not (is safe unix path path)) = (0 - 7, 0 - 1)
         | otherwise =
-          lfd   = alloc sock fd (sys_getpid)
+          pid   = sys_getpid
+          uid   = sys_getuid
+          lfd   = alloc sock fd pid
           phash = sha256_str path
           _     = write_file path "{lfd}"
-          _     = write_file "/tmp/rg_sock_fd_{lfd}.port" "0"
-          _     = write_file "/tmp/rg_sock_fd_{lfd}.listen" "unix:{path}"
-          _     = write_file "/tmp/rg_sock_fd_{lfd}.q" ""
-          _     = write_file "/tmp/rg_sock_ux_{phash}.lfd" "{lfd}"
+          _     = write_file "/tmp/rg_sock_fd_{pid}_{lfd}.port" "0"
+          _     = write_file "/tmp/rg_sock_fd_{pid}_{lfd}.listen" "unix:{path}"
+          _     = write_file "/tmp/rg_sock_fd_{pid}_{lfd}.q" ""
+          _     = write_file "/tmp/rg_sock_ux_{uid}_{phash}.lfd" "{lfd}"
+          _     = write_file "/tmp/rg_sock_ux_{uid}_{phash}.lpid" "{pid}"
           (0, lfd)
 
 -- @implements FR-SOCK-004
@@ -696,18 +711,18 @@ fn :: sys unix listen String Int     => (Int, Int)
 fn :: sys local port Int => Int
       sys local port lfd =
         | not (sock fd is open lfd) = 0 - 7
-        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{lfd}.port")) = 0 - 7
-        | otherwise = str_to_int (clean sock str (read_file "/tmp/rg_sock_fd_{lfd}.port"))
+        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{sys_getpid}_{lfd}.port")) = 0 - 7
+        | otherwise = str_to_int (clean sock str (read_file "/tmp/rg_sock_fd_{sys_getpid}_{lfd}.port"))
 
 fn :: join sock queue String String => String
       join sock queue qcur   cid    =
         | (str_len qcur) == 0 = cid
         | otherwise           = qcur + "," + cid
 
-fn :: connect to listener lfd Int => (Int, Int)
-      connect to listener lfd lfd =
-        | not (sock fd is open lfd) = (0 - 3, 0 - 1)
-        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{lfd}.listen")) = (0 - 3, 0 - 1)
+fn :: connect to listener lfd Int Int => (Int, Int)
+      connect to listener lfd lpid lfd =
+        | not (sock lpid is alive lpid lfd) = (0 - 3, 0 - 1)
+        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{lpid}_{lfd}.listen")) = (0 - 3, 0 - 1)
         | otherwise =
           pid  = sys_getpid
           seq  = next sock seq pid
@@ -717,11 +732,11 @@ fn :: connect to listener lfd Int => (Int, Int)
           _    = write_file "{c2s}.dat" ""
           _    = write_file "{s2c}.dat" ""
           cfd  = alloc sock fd pid
-          _    = write_file "/tmp/rg_sock_fd_{cfd}.tx" c2s
-          _    = write_file "/tmp/rg_sock_fd_{cfd}.rx" s2c
-          qcur = read_file "/tmp/rg_sock_fd_{lfd}.q"
+          _    = write_file "/tmp/rg_sock_fd_{pid}_{cfd}.tx" c2s
+          _    = write_file "/tmp/rg_sock_fd_{pid}_{cfd}.rx" s2c
+          qcur = read_file "/tmp/rg_sock_fd_{lpid}_{lfd}.q"
           qnew = join sock queue qcur cid
-          _    = write_file "/tmp/rg_sock_fd_{lfd}.q" qnew
+          _    = write_file "/tmp/rg_sock_fd_{lpid}_{lfd}.q" qnew
           (0, cfd)
 
 -- @implements FR-SOCK-004
@@ -731,17 +746,22 @@ fn :: sys tcp connect String Int Int => (Int, Int)
       sys tcp connect host port timeout_ms =
         | not (is valid port port) or timeout_ms < (0 - 1) = (0 - 7, 0 - 1)
         | not (is valid listen host host)                  = (0 - 7, 0 - 1)
-        | not (sock lstat exists (file_lstat "/tmp/rg_sock_tcp_{port}.lfd")) = (0 - 3, 0 - 1)
+        | not (sock lstat exists (file_lstat "/tmp/rg_sock_tcp_{sys_getuid}_{port}.lfd")) = (0 - 3, 0 - 1)
+        | not (sock lstat exists (file_lstat "/tmp/rg_sock_tcp_{sys_getuid}_{port}.lpid")) = (0 - 3, 0 - 1)
         | otherwise =
-          lfd = str_to_int (clean sock str (read_file "/tmp/rg_sock_tcp_{port}.lfd"))
-          connect to listener lfd lfd
+          uid  = sys_getuid
+          lfd  = str_to_int (clean sock str (read_file "/tmp/rg_sock_tcp_{uid}_{port}.lfd"))
+          lpid = str_to_int (clean sock str (read_file "/tmp/rg_sock_tcp_{uid}_{port}.lpid"))
+          connect to listener lfd lpid lfd
 
-fn :: connect unix lfile String => (Int, Int)
-      connect unix lfile lfile  =
+fn :: connect unix lfile String String => (Int, Int)
+      connect unix lfile lfile  pfile  =
         | not (sock lstat exists (file_lstat lfile)) = (0 - 3, 0 - 1)
+        | not (sock lstat exists (file_lstat pfile)) = (0 - 3, 0 - 1)
         | otherwise =
-          lfd = str_to_int (clean sock str (read_file lfile))
-          connect to listener lfd lfd
+          lfd  = str_to_int (clean sock str (read_file lfile))
+          lpid = str_to_int (clean sock str (read_file pfile))
+          connect to listener lfd lpid lfd
 
 -- @implements FR-SOCK-004
 -- @implements API-SOCK-001
@@ -751,8 +771,9 @@ fn :: sys unix connect String Int        => (Int, Int)
       sys unix connect path   timeout_ms =
         | not (is safe unix path path) or timeout_ms < (0 - 1) = (0 - 7, 0 - 1)
         | otherwise =
+          uid   = sys_getuid
           phash = sha256_str path
-          connect unix lfile "/tmp/rg_sock_ux_{phash}.lfd"
+          connect unix lfile "/tmp/rg_sock_ux_{uid}_{phash}.lfd" "/tmp/rg_sock_ux_{uid}_{phash}.lpid"
 
 fn :: dequeue first cid String Int       => (String, String)
       dequeue first cid q      comma_idx =
@@ -761,12 +782,13 @@ fn :: dequeue first cid String Int       => (String, String)
 
 fn :: accept cid on listener Int String String => (Int, Int, String)
       accept cid on listener lfd cid qrest =
-        _   = write_file "/tmp/rg_sock_fd_{lfd}.q" qrest
+        pid = sys_getpid
+        _   = write_file "/tmp/rg_sock_fd_{pid}_{lfd}.q" qrest
         c2s = "/tmp/rg_sock_ch_{cid}_c2s"
         s2c = "/tmp/rg_sock_ch_{cid}_s2c"
-        sfd = alloc sock fd (sys_getpid)
-        _   = write_file "/tmp/rg_sock_fd_{sfd}.tx" s2c
-        _   = write_file "/tmp/rg_sock_fd_{sfd}.rx" c2s
+        sfd = alloc sock fd pid
+        _   = write_file "/tmp/rg_sock_fd_{pid}_{sfd}.tx" s2c
+        _   = write_file "/tmp/rg_sock_fd_{pid}_{sfd}.rx" c2s
         (0, sfd, "127.0.0.1")
 
 fn :: accept dequeue step Int (String, String) => (Int, Int, String)
@@ -785,7 +807,7 @@ fn :: accept poll step Int String Int Int => (Int, Int, String)
 
 fn :: accept poll loop Int Int Int => (Int, Int, String)
       accept poll loop lfd start_ms timeout_ms =
-        accept poll step lfd (clean sock str (read_file "/tmp/rg_sock_fd_{lfd}.q")) start_ms timeout_ms
+        accept poll step lfd (clean sock str (read_file "/tmp/rg_sock_fd_{sys_getpid}_{lfd}.q")) start_ms timeout_ms
 
 -- @implements FR-SOCK-004
 -- @implements API-SOCK-001
@@ -793,7 +815,7 @@ fn :: accept poll loop Int Int Int => (Int, Int, String)
 fn :: sys accept Int Int        => (Int, Int, String)
       sys accept lfd timeout_ms =
         | not (sock fd is open lfd) or timeout_ms < (0 - 1) = (0 - 7, 0 - 1, "")
-        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{lfd}.listen")) = (0 - 7, 0 - 1, "")
+        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{sys_getpid}_{lfd}.listen")) = (0 - 7, 0 - 1, "")
         | otherwise = accept poll loop lfd (sys_time_ms) timeout_ms
 
 fn :: sock read raw fd Int Int => String
@@ -831,9 +853,9 @@ fn :: send to tx base String String => (Int, Int)
 fn :: sys send Int String Int        => (Int, Int)
       sys send fd  data   timeout_ms =
         | not (sock fd is open fd) or timeout_ms < (0 - 1) = (0 - 7, 0 - 1)
-        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{fd}.tx")) = (0 - 7, 0 - 1)
+        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{sys_getpid}_{fd}.tx")) = (0 - 7, 0 - 1)
         | otherwise =
-          tx_base = clean sock str (read_file "/tmp/rg_sock_fd_{fd}.tx")
+          tx_base = clean sock str (read_file "/tmp/rg_sock_fd_{sys_getpid}_{fd}.tx")
           send to tx base tx_base data
 
 -- @implements FR-SOCK-004
@@ -841,9 +863,9 @@ fn :: sys send Int String Int        => (Int, Int)
 fn :: sys shutdown write Int => Int
       sys shutdown write fd  =
         | not (sock fd is open fd) = 0 - 7
-        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{fd}.tx")) = 0 - 7
+        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{sys_getpid}_{fd}.tx")) = 0 - 7
         | otherwise =
-          tx_base = clean sock str (read_file "/tmp/rg_sock_fd_{fd}.tx")
+          tx_base = clean sock str (read_file "/tmp/rg_sock_fd_{sys_getpid}_{fd}.tx")
           _       = write_file "{tx_base}.wr_closed" "1"
           _       = write_file "{tx_base}.eof" "1"
           0
@@ -882,7 +904,44 @@ fn :: recv poll loop String Int Int Int => (Int, String)
 fn :: sys recv Int Int       Int        => (Int, String)
       sys recv fd  max_bytes timeout_ms =
         | not (sock fd is open fd) or max_bytes < 1 or timeout_ms < (0 - 1) = (0 - 7, "")
-        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{fd}.rx")) = (0 - 7, "")
+        | not (sock lstat exists (file_lstat "/tmp/rg_sock_fd_{sys_getpid}_{fd}.rx")) = (0 - 7, "")
         | otherwise =
-          rx_base = clean sock str (read_file "/tmp/rg_sock_fd_{fd}.rx")
+          rx_base = clean sock str (read_file "/tmp/rg_sock_fd_{sys_getpid}_{fd}.rx")
           recv poll loop rx_base max_bytes (sys_time_ms) timeout_ms
+
+-- ── RGF-001 Tuple Accessor Helpers ───────────────────────────
+
+-- @implements FR-SOCK-004
+-- @implements API-SOCK-001
+fn :: sock rc (Int, Int) => Int
+      sock rc (rc, _)    =  rc
+
+-- @implements FR-SOCK-004
+-- @implements API-SOCK-001
+fn :: sock fd (Int, Int) => Int
+      sock fd (_, fd)    =  fd
+
+-- @implements FR-SOCK-004
+-- @implements API-SOCK-001
+fn :: sock accept rc (Int, Int, String) => Int
+      sock accept rc (rc, _, _)         =  rc
+
+-- @implements FR-SOCK-004
+-- @implements API-SOCK-001
+fn :: sock accept fd (Int, Int, String) => Int
+      sock accept fd (_, fd, _)         =  fd
+
+-- @implements FR-SOCK-004
+-- @implements API-SOCK-001
+fn :: sock accept ip (Int, Int, String) => String
+      sock accept ip (_, _, ip)         =  ip
+
+-- @implements FR-SOCK-004
+-- @implements API-SOCK-001
+fn :: sock recv rc (Int, String) => Int
+      sock recv rc (rc, _)       =  rc
+
+-- @implements FR-SOCK-004
+-- @implements API-SOCK-001
+fn :: sock recv data (Int, String) => String
+      sock recv data (_, data)     =  data

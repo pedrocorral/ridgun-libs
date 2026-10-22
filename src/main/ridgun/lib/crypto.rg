@@ -52,7 +52,7 @@ fn :: byte str norm Int => String
       byte str norm ub  =
         | ub < 128  = char_from_code ub
         | otherwise =
-          lpath = "/tmp/rg_raw_byte_lut_255.bin"
+          lpath = "/tmp/rg_raw_byte_lut_{sys_getuid}_255.bin"
           read one raw byte fd (open raw lut lpath) ub
 
 -- @implements FR-CRYPTO-003

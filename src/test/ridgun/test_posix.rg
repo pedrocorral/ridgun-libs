@@ -90,12 +90,15 @@ fn :: test_posix_filesystem_clocks_signals_and_random => ()
         _       = assert_true ((str_len (sys_getcwd)) > 0) "sys_getcwd non-empty"
         t1      = sys monotonic ms
         n1      = sys monotonic ns
+        w1      = sys wall time ms
         _       = sys_sleep_ms 25
         t2      = sys monotonic ms
         n2      = sys monotonic ns
+        w2      = sys wall time ms
         _       = assert_true ((t2 - t1) >= 20) "monotonic ms elapsed >= 20"
         _       = assert_true (n2 > n1) "monotonic ns non-decreasing"
-        _       = assert_true ((sys wall time ms) > 1700000000000) "wall time > 2023"
+        _       = assert_true (w1 > 1790000000000) "wall time > Oct 2026 (1790000000000)"
+        _       = assert_true ((w2 - w1) >= 20) "wall time ms elapsed >= 20"
         sw_bad  = sys signal watch [9]
         _       = assert_equals (pair fst sw_bad) (0 - 7) "SIGKILL watch rejected with -7"
         sw_ok   = sys signal watch [sig term]

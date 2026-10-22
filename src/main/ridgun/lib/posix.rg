@@ -160,11 +160,26 @@ fn :: sys monotonic ns => Int
       sys monotonic ns =
         sys_time_ms * 1000000
 
+fn :: wall epoch sec fallback Int  => Int
+      wall epoch sec fallback ksec =
+        | ksec > 1700000000 = ksec
+        | otherwise         = 1792659600
+
+fn :: wall boot offset for String => Int
+      wall boot offset for ofile  =
+        | lstat exists (file_lstat ofile) = str_to_int (read_file ofile)
+        | otherwise =
+          sec = wall epoch sec fallback (sys_call 201 0 0 0 0 0 0)
+          off = (sec * 1000) - (sys_time_ms)
+          _   = write_file ofile "{off}"
+          off
+
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys wall time ms => Int
       sys wall time ms =
-        1761070000000 + sys_time_ms
+        ofile = "/tmp/rg_wall_off_{sys_getpid}.ms"
+        (wall boot offset for ofile) + (sys_time_ms)
 
 -- ── Descriptor Waiting & Typed POSIX Wrappers (FR-POSIX-001) ─
 

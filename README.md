@@ -74,18 +74,22 @@ import socket
 fn :: run echo step => ()
       run echo step =
         -- Listen on an ephemeral loopback TCP port (port = 0)
-        (rc_l, lfd) = sys tcp listen "127.0.0.1" 0 16
-        port        = sys local port lfd
+        l_res = sys tcp listen "127.0.0.1" 0 16
+        lfd   = sock fd l_res
+        port  = sys local port lfd
 
         -- Connect client, accept peer, and exchange raw binary or text frames
-        (rc_c, cfd)     = sys tcp connect "127.0.0.1" port 1000
-        (rc_a, sfd, ip) = sys accept lfd 1000
-        _               = sys send cfd "ping" 1000
-        (rc_r, msg)     = sys recv sfd 64 1000
-        _               = sys shutdown write cfd
-        _               = sys_close cfd
-        _               = sys_close sfd
-        _               = sys_close lfd
+        c_res = sys tcp connect "127.0.0.1" port 1000
+        cfd   = sock fd c_res
+        a_res = sys accept lfd 1000
+        sfd   = sock accept fd a_res
+        _     = sys send cfd "ping" 1000
+        r_res = sys recv sfd 64 1000
+        msg   = sock recv data r_res
+        _     = sys shutdown write cfd
+        _     = sys_close cfd
+        _     = sys_close sfd
+        _     = sys_close lfd
         echo msg
 ```
 
