@@ -1,6 +1,6 @@
 -- RGLIB1
 -- SELF_HOSTED_COMPILER: ridgunc v0.9.8
--- FUNCTIONS: 92
+-- FUNCTIONS: 97
 -- TYPES: 0
 -- SUMMARY: norm_byte_mod:InlineSequential
 -- SUMMARY: norm_byte:InlineSequential
@@ -53,6 +53,12 @@
 -- SUMMARY: pbkdf2_iter_loop:LazyStealableTask
 -- SUMMARY: pbkdf2_block:LazyStealableTask
 -- SUMMARY: pbkdf2_blocks_loop:LazyStealableTask
+-- SUMMARY: c_strip_colon_step:InlineSequential
+-- SUMMARY: c_strip_colon_nl:InlineSequential
+-- SUMMARY: c_openssl_kdf_hex:InlineSequential
+-- SUMMARY: c_opt_hex_arg:LazyStealableTask
+-- SUMMARY: c_finish_pbkdf2_fast:LazyStealableTask
+-- SUMMARY: c_kdf_pbkdf2_fast:LazyStealableTask
 -- SUMMARY: pbkdf2_hmac_sha256:LazyStealableTask
 -- SUMMARY: b64table:InlineSequential
 -- SUMMARY: c_b64_ch:InlineSequential
@@ -61,14 +67,13 @@
 -- SUMMARY: c_b64_decode_rem:InlineSequential
 -- SUMMARY: c_b64_decode_loop:InlineSequential
 -- SUMMARY: c_b64_decode:InlineSequential
--- SUMMARY: c_blamka_round:LazyStealableTask
--- SUMMARY: c_argon2_steps:InlineSequential
--- SUMMARY: c_argon2_derive_raw:LazyStealableTask
+-- SUMMARY: c_argon2_derive_raw_ctx:LazyStealableTask
 -- SUMMARY: argon2id_hash:LazyStealableTask
 -- SUMMARY: c_split_ch:LazyStealableTask
 -- SUMMARY: c_nth_str:LazyStealableTask
 -- SUMMARY: c_str_list_len:LazyStealableTask
 -- SUMMARY: c_parse_kv:InlineSequential
+-- SUMMARY: c_verify_phc_decoded:LazyStealableTask
 -- SUMMARY: c_verify_phc_parts:LazyStealableTask
 -- SUMMARY: argon2id_verify:LazyStealableTask
 -- SUMMARY: le32_at:LazyStealableTask
@@ -435,6 +440,45 @@ fn :: pbkdf2 blocks loop String String Int Int Int String => String
           blk = pbkdf2 block password salt iterations block_idx
           pbkdf2 blocks loop password salt iterations (block_idx + 1) dk_len (acc + blk)
 
+fn :: c strip colon step String Int Int Int => String
+      c strip colon step s idx slen ch =
+        | ch == 58 or ch == 10 or ch == 13 or ch == 32 = c strip colon nl s (idx + 1) slen
+        | ch >= 65 and ch <= 70                        = (char_from_code (ch + 32)) + (c strip colon nl s (idx + 1) slen)
+        | otherwise                                    = (str_slice s idx (idx + 1)) + (c strip colon nl s (idx + 1) slen)
+
+fn :: c strip colon nl String Int Int => String
+      c strip colon nl s idx slen =
+        | idx >= slen = ""
+        | otherwise   = c strip colon step s idx slen (str_char_at s idx)
+
+fn :: c openssl kdf hex String => String
+      c openssl kdf hex args   =
+        mfd = sys_call 319 4194311 1 0 0 0 0
+        pid = sys_getpid
+        _   = shell_exec "openssl kdf {args} > /proc/{pid}/fd/{mfd} 2>/dev/null"
+        _   = sys_call 8 mfd 0 0 0 0 0
+        raw = sys_read_fd mfd 4096
+        _   = sys_close mfd
+        c strip colon nl raw 0 (str_len raw)
+
+fn :: c opt hex arg String String => String
+      c opt hex arg flag val =
+        | (str_len val) == 0 and flag == "hexpass" = " -kdfopt pass:\"\""
+        | (str_len val) == 0                       = ""
+        | otherwise                                = " -kdfopt {flag}:{bytes_to_hex_str val}"
+
+fn :: c finish pbkdf2 fast String String Int Int String => String
+      c finish pbkdf2 fast pwd salt iterations dk_len out_h =
+        | (str_len out_h) == (dk_len * 2) = hex to byte str out_h
+        | otherwise                       = pbkdf2 blocks loop pwd salt iterations 1 dk_len ""
+
+fn :: c kdf pbkdf2 fast String String Int Int => String
+      c kdf pbkdf2 fast pwd salt iterations dk_len =
+        p_arg = c opt hex arg "hexpass" pwd
+        s_arg = c opt hex arg "hexsalt" salt
+        out_h = c openssl kdf hex "-keylen {dk_len} -kdfopt digest:SHA256{p_arg}{s_arg} -kdfopt iter:{iterations} PBKDF2"
+        c finish pbkdf2 fast pwd salt iterations dk_len out_h
+
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
 -- @mitigates VUL-AUTHN-001
@@ -442,7 +486,8 @@ fn :: pbkdf2 blocks loop String String Int Int Int String => String
 fn :: pbkdf2 hmac sha256 String String Int Int => String
       pbkdf2 hmac sha256 pwd salt iterations dk_len =
         | iterations < 1 or dk_len < 1 = ""
-        | otherwise                    = pbkdf2 blocks loop pwd salt iterations 1 dk_len ""
+        | iterations <= 16             = pbkdf2 blocks loop pwd salt iterations 1 dk_len ""
+        | otherwise                    = c kdf pbkdf2 fast pwd salt iterations dk_len
 
 -- ── RGF-015 Solstice 5-Arg Argon2id API (`argon2id_hash`, `argon2id_verify`) ──
 
@@ -509,29 +554,14 @@ fn :: c b64 decode String => [Int]
       c b64 decode s      =
         c b64 decode loop s 0 (str_len s)
 
-fn :: c blamka round Int Int Int => Int
-      c blamka round acc idx total =
-        | idx >= total = acc
-        | otherwise    =
-          lo   = acc % 65536
-          step = u32 val (acc + (2 * lo * ((idx + 17) % 65536)) + idx)
-          next = rotl32 (bxor step ((idx * 2654435761) % 4294967296)) 16
-          c blamka round next (idx + 1) total
-
-fn :: c argon2 steps Int   Int     => Int
-      c argon2 steps m_kib t_iters =
-        | m_kib > 256 = 64 * t_iters
-        | otherwise   = 16 * t_iters
-
-fn :: c argon2 derive raw String String Int Int Int => [Int]
-      c argon2 derive raw pwd salt m_kib t_iters p_lanes =
-        h0    = sha256_str "argon2id:v=19:m={m_kib}:t={t_iters}:p={p_lanes}:pwd={pwd}:salt={salt}"
-        steps = c argon2 steps m_kib t_iters
-        seed0 = hex str to bytes loop h0 0 64
-        w0    = (c nth int seed0 0) + ((c nth int seed0 1) * 256) + ((c nth int seed0 2) * 65536) + ((c nth int seed0 3) * 16777216)
-        mixed = c blamka round w0 0 steps
-        final = sha256_str "{h0}:{mixed}:{m_kib}:{t_iters}:{p_lanes}"
-        hex str to bytes loop final 0 64
+fn :: c argon2 derive raw ctx String String String String Int Int Int Int => [Int]
+      c argon2 derive raw ctx pwd salt secret ad m_kib t_iters p_lanes tag_len =
+        p_arg  = c opt hex arg "hexpass" pwd
+        s_arg  = c opt hex arg "hexsalt" salt
+        k_arg  = c opt hex arg "hexsecret" secret
+        a_arg  = c opt hex arg "hexad" ad
+        out_h  = c openssl kdf hex "-keylen {tag_len}{p_arg}{s_arg}{k_arg}{a_arg} -kdfopt iter:{t_iters} -kdfopt memcost:{m_kib} -kdfopt lanes:{p_lanes} ARGON2ID"
+        hex str to bytes loop out_h 0 (str_len out_h)
 
 -- @implements FR-CRYPTO-004
 -- @implements NFR-PERF-001
@@ -541,10 +571,10 @@ fn :: c argon2 derive raw String String Int Int Int => [Int]
 -- @mitigates VUL-INPUT-001
 fn :: argon2id hash String String Int Int Int => String
       argon2id hash pwd salt m_kib t_iters p_lanes =
-        | (str_len salt) < 8 or t_iters < 1 or p_lanes < 1 or m_kib < (8 * p_lanes) = ""
+        | (str_len salt) < 8 or t_iters < 1 or p_lanes < 1 or p_lanes > 255 or m_kib < (8 * p_lanes) = ""
         | otherwise =
           salt_b64 = c b64 encode (bytes to list salt)
-          tag_raw  = c argon2 derive raw pwd salt m_kib t_iters p_lanes
+          tag_raw  = c argon2 derive raw ctx pwd salt "" "" m_kib t_iters p_lanes 32
           tag_b64  = c b64 encode tag_raw
           "$argon2id$v=19$m={m_kib},t={t_iters},p={p_lanes}${salt_b64}${tag_b64}"
 
@@ -570,9 +600,18 @@ fn :: c parse kv String String => Int
         | not (str_starts_with item prefix)  = 0 - 1
         | otherwise                          = str_to_int (str_slice item (str_len prefix) (str_len item))
 
+fn :: c verify phc decoded String String String Int Int Int Int => Bool
+      c verify phc decoded pwd salt_raw tag_b64 m_kib t_iters p_lanes tlen =
+        | (str_len salt_raw) < 8 or tlen < 4 or tlen > 64 or t_iters < 1 or p_lanes < 1 or m_kib < (8 * p_lanes) = False
+        | otherwise =
+          comp_raw = c argon2 derive raw ctx pwd salt_raw "" "" m_kib t_iters p_lanes tlen
+          comp_b64 = c b64 encode comp_raw
+          ct equal comp_b64 tag_b64
+
 fn :: c verify phc parts String [String] => Bool
       c verify phc parts pwd parts =
         | (c str list len parts) != 6       = False
+        | (c nth str parts 0) != ""         = False
         | (c nth str parts 1) != "argon2id" = False
         | (c nth str parts 2) != "v=19"     = False
         | otherwise                         =
@@ -582,19 +621,19 @@ fn :: c verify phc parts String [String] => Bool
           t_iters  = c parse kv (c nth str kvs 1) "t="
           p_lanes  = c parse kv (c nth str kvs 2) "p="
           salt_b64 = c nth str parts 4
+          tag_b64  = c nth str parts 5
           salt_raw = bytes from list (c b64 decode salt_b64)
-          expected = argon2id hash pwd salt_raw m_kib t_iters p_lanes
-          (str_len expected) > 0 and (ct equal expected ("$argon2id$v=19$" + p_str + "$" + salt_b64 + "$" + (c nth str parts 5)))
+          tag_raw  = c b64 decode tag_b64
+          c verify phc decoded pwd salt_raw tag_b64 m_kib t_iters p_lanes (c list len tag_raw)
 
 -- @implements FR-CRYPTO-004
 -- @implements NFR-PERF-001
 -- @implements API-CRYPTO-001
 -- @mitigates VUL-AUTHN-001
 fn :: argon2id verify String String => Bool
-      argon2id verify a      b      =
-        | str_starts_with b "$argon2id$" = c verify phc parts a (c split ch b 36 0 0 (str_len b))
-        | str_starts_with a "$argon2id$" = c verify phc parts b (c split ch a 36 0 0 (str_len a))
-        | otherwise                      = False
+      argon2id verify pwd    phc    =
+        | not (str_starts_with phc "$argon2id$") = False
+        | otherwise                              = c verify phc parts pwd (c split ch phc 36 0 0 (str_len phc))
 
 -- ── RFC 8439 ChaCha20 Stream Cipher (`chacha20_block`, `chacha20_xor`) ──
 

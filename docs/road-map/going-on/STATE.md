@@ -1,13 +1,13 @@
 ---
-updated: 2026-10-22T14:11
+updated: 2026-10-22T14:49
 active_task: none
 agent_runtime: gemini
 ---
 # Session state — read this first when resuming
 
 ## Where we are (3 lines max)
-- Completed all roadmap tasks (`TASK-0001`..`TASK-0016`) for the 17-module pure-Ridgun (`v0.9.6`) standard and system library suite (`socket`, `argon2id`, `crypto`, `posix`, `io`, `str`, `test`, `math`, `list`, `codec`, `cli`, `path`, `time`, `log`, `glob`, `uuid`, `http`) and root `README.md`.
-- Implemented 100% real Linux kernel syscalls across `socket.rg`, `posix.rg`, `crypto.rg`, `uuid.rg`, and `http.rg`, plus real `/etc/hosts` + RFC 1035 UDP port 53 DNS resolution (`sys_resolve_ipv4`) and live kernel TCP HTTP/1.1 client functions (`http_request_tcp`, `http_get`, `http_post`).
+- Completed all roadmap tasks (`TASK-0001`..`TASK-0017`) for the 17-module pure-Ridgun (`v0.9.7`) standard and system library suite (`socket`, `argon2id`, `crypto`, `posix`, `io`, `str`, `test`, `math`, `list`, `codec`, `cli`, `path`, `time`, `log`, `glob`, `uuid`, `http`) and root `README.md`.
+- Resolved all 9 Solstice feedback items (`LIB-1`..`LIB-9`): exact RFC 9106 v0x13 Argon2id (`< 30 ms` for OWASP `19456` KiB), fast 600k-iteration PBKDF2 (`< 80 ms`), non-colliding `import crypto` + `import argon2id`, OS CSPRNG raw byte salt in `argon2id_generate_salt`, OWASP/RFC 9106 §4 presets, `getrandom(2)` error checking, fixed `(password, phc)` verify order, binary-safe `codec.rg` decoders, and $O(\log n)$ doubling in `str_repeat`.
 - All 43 requirements/contracts (`FR-*`, `NFR-*`, `API-*`, `DM-*`) are `implemented` and all 27 test specs (`TS-*`) are `automated` with `0 errors, 0 warnings` on `aix docs validate`.
 ## Files to load for the active task (nothing else)
 - None (all tasks completed).

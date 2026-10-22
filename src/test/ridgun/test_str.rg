@@ -5,6 +5,7 @@
 -- ============================================================
 
 import test
+import posix
 import str
 
 -- @tests TS-STR-001
@@ -43,12 +44,19 @@ fn :: test_str_trim_replace_and_split => ()
 -- @tests TS-STR-001
 fn :: test_str_case_repeat_and_padding => ()
       test_str_case_repeat_and_padding =
-        _ = assert_equals (str_to_upper "Abc! 123") "ABC! 123" "str_to_upper"
-        _ = assert_equals (str_to_lower "Abc! 123") "abc! 123" "str_to_lower"
-        _ = assert_equals (str repeat "ab" 3) "ababab" "str repeat 3"
-        _ = assert_equals (str repeat "ab" 0) "" "str repeat 0"
-        _ = assert_equals (str pad left "7" 3 "0") "007" "str pad left"
-        _ = assert_equals (str pad right "7" 3 "0") "700" "str pad right"
+        _     = assert_equals (str_to_upper "Abc! 123") "ABC! 123" "str_to_upper"
+        _     = assert_equals (str_to_lower "Abc! 123") "abc! 123" "str_to_lower"
+        _     = assert_equals (str repeat "ab" 3) "ababab" "str repeat 3"
+        _     = assert_equals (str repeat "ab" 0) "" "str repeat 0"
+        t0    = sys monotonic ms
+        r64k  = str repeat "x" 65536
+        r256k = str repeat "x" 262144
+        t1    = sys monotonic ms
+        _     = assert_equals (str_len r64k) 65536 "str_repeat 65536 length"
+        _     = assert_equals (str_len r256k) 262144 "str_repeat 262144 length"
+        _     = assert_true ((t1 - t0) < 200) "LIB-9: str_repeat 64k+256k in < 200 ms"
+        _     = assert_equals (str pad left "7" 3 "0") "007" "str pad left"
+        _     = assert_equals (str pad right "7" 3 "0") "700" "str pad right"
         assert_equals (str pad left "1234" 3 "0") "1234" "str pad left already wide"
 
 fn :: main => ()

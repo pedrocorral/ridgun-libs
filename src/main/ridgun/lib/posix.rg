@@ -480,15 +480,36 @@ fn :: px bytes to list loop String Int Int => [Int]
           b = ((str_char_at s idx) % 256 + 256) % 256
           [b] :: (px bytes to list loop s (idx + 1) slen)
 
-fn :: px getrandom raw Int => String
-      px getrandom raw n   =
+fn :: px getrandom call Int Int Int => Int
+      px getrandom call ptr rem rc =
+        | rc == (0 - 4) = px getrandom loop ptr rem
+        | otherwise     = rc
+
+fn :: px getrandom step Int Int Int => Int
+      px getrandom step ptr rem rc =
+        | rc <= 0   = rc
+        | rc >= rem = 0
+        | otherwise = px getrandom loop (ptr + rc) (rem - rc)
+
+fn :: px getrandom loop Int Int => Int
+      px getrandom loop ptr rem =
+        | rem <= 0  = 0
+        | otherwise = px getrandom step ptr rem (px getrandom call ptr rem (sys_call 318 ptr rem 0 0 0 0))
+
+fn :: px finish getrandom Int String Int => (Int, String)
+      px finish getrandom rc raw n =
+        | rc < 0 or (str_len raw) != n = (0 - 99, "")
+        | otherwise                    = (0, raw)
+
+fn :: px getrandom checked Int => (Int, String)
+      px getrandom checked n   =
         psz = ((n / 4096) + 2) * 4096
         ptr = px alloc page psz
         mfd = px alloc mfd
-        _   = sys_call 318 ptr n 0 0 0 0
+        rc  = px getrandom loop ptr n
         raw = px peek mfd ptr n
         _   = px free page mfd ptr psz
-        raw
+        px finish getrandom rc raw n
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
@@ -498,16 +519,19 @@ fn :: sys random bytes Int => (Int, String)
         | n < 0     = (0 - 7, "")
         | n == 0    = (0, "")
         | n > 65536 = (0 - 7, "")
-        | otherwise = (0, px getrandom raw n)
+        | otherwise = px getrandom checked n
+
+fn :: px finish random list (Int, String) => (Int, [Int])
+      px finish random list (rc, raw)     =
+        | rc != 0   = (rc, [])
+        | otherwise = (0, px bytes to list loop raw 0 (str_len raw))
 
 fn :: sys random bytes list Int => (Int, [Int])
       sys random bytes list n   =
         | n < 0     = (0 - 7, [])
         | n == 0    = (0, [])
         | n > 65536 = (0 - 7, [])
-        | otherwise =
-          raw = px getrandom raw n
-          (0, px bytes to list loop raw 0 (str_len raw))
+        | otherwise = px finish random list (px getrandom checked n)
 
 -- ── Ridgun v0.9.5 Target OS / Arch & Process Probe Helpers ───
 

@@ -1,7 +1,9 @@
 -- RGLIB1
 -- SELF_HOSTED_COMPILER: ridgunc v0.9.8
--- FUNCTIONS: 84
+-- FUNCTIONS: 86
 -- TYPES: 0
+-- SUMMARY: cd_raw_byte_ub:InlineSequential
+-- SUMMARY: cd_raw_byte:InlineSequential
 -- SUMMARY: cd_hex_lut:InlineSequential
 -- SUMMARY: cd_hex_up_lut:InlineSequential
 -- SUMMARY: cd_b64_lut:InlineSequential
@@ -94,6 +96,18 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+fn :: cd raw byte ub Int => String
+      cd raw byte ub ub  =
+        | ub >= 1 and ub <= 127 = char_from_code ub
+        | otherwise =
+          efd = sys_call 290 (256 + ub) 526336 0 0 0 0
+          s   = sys_read_fd efd 8
+          _   = sys_close efd
+          str_slice s 0 1
+
+fn :: cd raw byte Int => String
+      cd raw byte b   =  cd raw byte ub (((b % 256) + 256) % 256)
+
 fn :: cd hex lut Int => String
       cd hex lut _   =  "0123456789abcdef"
 
@@ -173,7 +187,7 @@ fn :: cd hex dec loop String Int Int => String
         | otherwise =
           hi = cd hex val (str_char_at s idx)
           lo = cd hex val (str_char_at s (idx + 1))
-          (char_from_code ((hi * 16) + lo)) + (cd hex dec loop s (idx + 2) len)
+          (cd raw byte ((hi * 16) + lo)) + (cd hex dec loop s (idx + 2) len)
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
@@ -268,13 +282,13 @@ fn :: cd b64 dec step String Int Int Int => String
         | rem == 2 =
           v0 = cd b64 val (str_char_at s idx)
           v1 = cd b64 val (str_char_at s (idx + 1))
-          char_from_code (((v0 * 4) + (v1 / 16)) % 256)
+          cd raw byte (((v0 * 4) + (v1 / 16)) % 256)
         | rem == 3 =
           v0 = cd b64 val (str_char_at s idx)
           v1 = cd b64 val (str_char_at s (idx + 1))
           v2 = cd b64 val (str_char_at s (idx + 2))
           n  = (v0 * 1024) + (v1 * 16) + (v2 / 4)
-          (char_from_code ((n / 256) % 256)) + (char_from_code (n % 256))
+          (cd raw byte ((n / 256) % 256)) + (cd raw byte (n % 256))
         | otherwise =
           v0 = cd b64 val (str_char_at s idx)
           v1 = cd b64 val (str_char_at s (idx + 1))
@@ -284,7 +298,7 @@ fn :: cd b64 dec step String Int Int Int => String
           b0 = (n / 65536) % 256
           b1 = (n / 256) % 256
           b2 = n % 256
-          (char_from_code b0) + (char_from_code b1) + (char_from_code b2) + (cd b64 dec loop s (idx + 4) len)
+          (cd raw byte b0) + (cd raw byte b1) + (cd raw byte b2) + (cd b64 dec loop s (idx + 4) len)
 
 fn :: cd b64 dec loop String Int Int => String
       cd b64 dec loop s idx len = cd b64 dec step s idx len (len - idx)
@@ -340,7 +354,7 @@ fn :: url encode String => String
 
 fn :: cd url dec pct String Int Int Int Int => String
       cd url dec pct s idx len hi lo =
-        | hi >= 0 and lo >= 0 = (char_from_code ((hi * 16) + lo)) + (cd url dec loop s (idx + 3) len)
+        | hi >= 0 and lo >= 0 = (cd raw byte ((hi * 16) + lo)) + (cd url dec loop s (idx + 3) len)
         | otherwise           = "%" + (cd url dec loop s (idx + 1) len)
 
 fn :: cd url dec at String Int Int Int => String

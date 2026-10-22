@@ -239,15 +239,16 @@ fn :: str to lower String => String
 
 -- @mitigates VUL-INPUT-001
 fn :: str repeat loop String Int String => String
-      str repeat loop s n acc =
-        | n <= 0    = acc
-        | otherwise = str repeat loop s (n - 1) (acc + s)
+      str repeat loop cur n acc =
+        | n <= 0       = acc
+        | (n % 2) == 1 = str repeat loop (cur + cur) (n / 2) (acc + cur)
+        | otherwise    = str repeat loop (cur + cur) (n / 2) acc
 
 fn :: str repeat String Int => String
       str repeat s      n   =
-        | n <= 0      = ""
-        | n > 1048576 = str repeat loop s 1048576 ""
-        | otherwise   = str repeat loop s n ""
+        | n <= 0 or (str_len s) == 0 = ""
+        | n > 1048576                = str repeat loop s 1048576 ""
+        | otherwise                  = str repeat loop s n ""
 
 fn :: pad fill unit String => String
       pad fill unit pad_ch =

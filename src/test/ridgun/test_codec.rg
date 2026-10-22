@@ -5,7 +5,22 @@
 -- ============================================================
 
 import test
+import posix
 import codec
+
+fn :: rnd snd (Int, String) => String
+      rnd snd (_, s)        =  s
+
+fn :: check binary roundtrip loop Int => ()
+      check binary roundtrip loop rem =
+        | rem <= 0  = ()
+        | otherwise =
+          b = rnd snd (sys random bytes 32)
+          _ = assert_int_equals (str_len b) 32 "random 32 byte length"
+          _ = assert_str_eq (base64 decode (base64 encode b)) b "base64 binary roundtrip"
+          _ = assert_str_eq (base64url decode (base64url encode b)) b "base64url binary roundtrip"
+          _ = assert_str_eq (hex decode (hex encode b)) b "hex binary roundtrip"
+          check binary roundtrip loop (rem - 1)
 
 -- @tests TS-CODEC-001
 fn :: test rfc4648 hex and base64 => ()
@@ -39,6 +54,16 @@ fn :: test rfc4648 hex and base64 => ()
         _ = assert_false (is valid base64 "A") "invalid base64 len%4==1"
         _ = assert_false (is valid base64 "Zm$v") "invalid base64 char"
         _ = assert_str_eq (base64 decode "Zm$v") "" "invalid base64 -> empty"
+
+        -- 3. LIB-8: Binary-safe decoding for raw octets >= 0x80 and 0x00
+        raw4 = hex decode "c800ff41"
+        _    = assert_int_equals (str_len raw4) 4 "str_len (hex_decode c800ff41) == 4"
+        _    = assert_int_equals (str_char_at raw4 0) 200 "raw4[0] == 0xc8"
+        _    = assert_int_equals (str_char_at raw4 1) 0 "raw4[1] == 0x00"
+        _    = assert_int_equals (str_char_at raw4 2) 255 "raw4[2] == 0xff"
+        _    = assert_int_equals (str_char_at raw4 3) 65 "raw4[3] == 0x41"
+        _    = assert_str_eq (hex encode raw4) "c800ff41" "hex_encode raw4 == c800ff41"
+        _    = check binary roundtrip loop 10
         ()
 
 -- @tests TS-CODEC-001

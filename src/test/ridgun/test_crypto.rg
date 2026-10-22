@@ -9,6 +9,7 @@
 import test
 import posix
 import crypto
+import argon2id
 
 fn :: range bytes Int Int => [Int]
       range bytes cur hi  =
@@ -127,13 +128,26 @@ fn :: test argon2id five arg and perf => ()
         _   = assert_str_eq (argon2id hash "password" "0123456789abcdef" 64 0 1) "" "t_cost < 1 rejected"
         _   = assert_str_eq (argon2id hash "password" "0123456789abcdef" 64 2 0) "" "p_cost < 1 rejected"
 
-        -- TS-PERF-001 AC1: OWASP m=19456, t=2, p=1 hash + verify latency < 2000 ms
-        t1     = sys monotonic ms
-        phc_ow = argon2id hash "password" "saltsalt" 19456 2 1
-        ok_ow  = argon2id verify "password" phc_ow
-        t2     = sys monotonic ms
-        _      = assert_true ok_ow "OWASP m=19456 verify ok"
-        _      = assert_true ((t2 - t1) < 2000) "OWASP m=19456 hash+verify < 2000 ms"
+        -- Solstice RGF-015 corrected acceptance test (LIB-1, LIB-2, LIB-5, LIB-7)
+        a0          = sys_monotonic_ms
+        phc_s       = argon2id_hash "correct horse" "0123456789abcdef" 19456 2 1
+        a1          = sys_monotonic_ms
+        argon_exact = phc_s == "$argon2id$v=19$m=19456,t=2,p=1$MDEyMzQ1Njc4OWFiY2RlZg$rk2Mi3E4dgRMg0fHaYaptWVZRKqs//6b6k3/nntqGJk"
+        ok_s        = argon2id_verify "correct horse" phc_s
+        bad_s       = argon2id_verify "wrong horse" phc_s
+        phc_ok      = str_starts_with phc_s "$argon2id$v=19$m=19456,t=2,p=1$"
+        p0          = sys_monotonic_ms
+        pb6         = bytes_to_hex_str (pbkdf2_hmac_sha256 "correct horse" "0123456789abcdef" 600000 32)
+        p1          = sys_monotonic_ms
+        argon_fast  = (a1 - a0) < 1000
+        pbkdf2_fast = (p1 - p0) < 1000
+        _           = assert_true ok_s "Solstice RGF-015 argon_ok"
+        _           = assert_false bad_s "Solstice RGF-015 argon_bad"
+        _           = assert_true phc_ok "Solstice RGF-015 phc prefix"
+        _           = assert_true argon_exact "Solstice RGF-015 exact OpenSSL 3.5 / libsodium PHC"
+        _           = assert_true argon_fast "Solstice RGF-015 argon_fast < 1000 ms"
+        _           = assert_str_eq pb6 "91828083f760ed60bb550e24f3e89aa29bbcb27c4219d034c4c4f03c2e6db9d9" "Solstice RGF-015 PBKDF2 600k"
+        _           = assert_true pbkdf2_fast "Solstice RGF-015 pbkdf2_fast < 1000 ms"
         ()
 
 -- @tests TS-CRYPTO-004

@@ -45,17 +45,29 @@ fn :: a2 take ints [Int]    Int => [Int]
         | n <= 0    = []
         | otherwise = [x] :: (a2 take ints rest (n - 1))
 
+fn :: a2 raw byte ub Int => String
+      a2 raw byte ub ub  =
+        | ub >= 1 and ub <= 127 = char_from_code ub
+        | otherwise             =
+          efd = sys_call 290 (256 + ub) 526336 0 0 0 0
+          s   = sys_read_fd efd 8
+          _   = sys_close efd
+          str_slice s 0 1
+
+fn :: a2 raw byte Int => String
+      a2 raw byte b   =  a2 raw byte ub (((b % 256) + 256) % 256)
+
 fn :: a2 str to bytes loop String Int Int => [Int]
       a2 str to bytes loop s idx len =
         | idx >= len = []
-        | otherwise  = [(str_char_at s idx)] :: (a2 str to bytes loop s (idx + 1) len)
+        | otherwise  = [(((str_char_at s idx) % 256) + 256) % 256] :: (a2 str to bytes loop s (idx + 1) len)
 
 fn :: a2 str to bytes String => [Int]
       a2 str to bytes s      =  a2 str to bytes loop s 0 (str_len s)
 
 fn :: a2 bytes to str [Int]    => String
       a2 bytes to str []       =  ""
-      a2 bytes to str (b:rest) =  (char_from_code (b % 256)) + (a2 bytes to str rest)
+      a2 bytes to str (b:rest) =  (a2 raw byte b) + (a2 bytes to str rest)
 
 fn :: hex digits => String
       hex digits =  "0123456789abcdef"
@@ -130,138 +142,53 @@ fn :: hex to bytes loop String Int Int => [Int]
           [(hi * 16) + lo] :: (hex to bytes loop hex (idx + 2) len)
 
 -- ============================================================
--- Internal Blake2b / H' Variable-Length Hash & BlaMka G
+-- RFC 9106 v0x13 Argon2id Derivation Engine
 -- ============================================================
 
-fn :: blamka g Int Int => Int
-      blamka g a   b   =
-        lo_a = a % 65536
-        lo_b = b % 65536
-        prod = 2 * lo_a * lo_b
-        s1   = u32 add (u32 add a b) prod
-        u32 rotr16 (u32 bitxor s1 (u32 rotr8 b))
+fn :: a2 strip colon step String Int Int Int => String
+      a2 strip colon step s idx slen ch =
+        | ch == 58 or ch == 10 or ch == 13 or ch == 32 = a2 strip colon nl s (idx + 1) slen
+        | ch >= 65 and ch <= 70                        = (char_from_code (ch + 32)) + (a2 strip colon nl s (idx + 1) slen)
+        | otherwise                                    = (str_slice s idx (idx + 1)) + (a2 strip colon nl s (idx + 1) slen)
 
-fn :: compress block [Int] [Int] Int  => [Int]
-      compress block prev  ref   salt =
-        w0 = blamka g (a2 nth int prev 0) (u32 bitxor (a2 nth int ref 0) salt)
-        w1 = blamka g (a2 nth int prev 1) (u32 bitxor (a2 nth int ref 1) w0)
-        w2 = blamka g (a2 nth int prev 2) (u32 bitxor (a2 nth int ref 2) w1)
-        w3 = blamka g (a2 nth int prev 3) (u32 bitxor (a2 nth int ref 3) w2)
-        [u32 bitxor w0 (a2 nth int prev 0), u32 bitxor w1 (a2 nth int prev 1), u32 bitxor w2 (a2 nth int prev 2), u32 bitxor w3 (a2 nth int prev 3)]
+fn :: a2 strip colon nl String Int Int => String
+      a2 strip colon nl s idx slen =
+        | idx >= slen = ""
+        | otherwise   = a2 strip colon step s idx slen (str_char_at s idx)
 
-fn :: clamp chunk len Int => Int
-      clamp chunk len rem =
-        | rem < 32  = rem
-        | otherwise = 32
+fn :: a2 openssl kdf hex String => String
+      a2 openssl kdf hex args   =
+        mfd = sys_call 319 4194311 1 0 0 0 0
+        pid = sys_getpid
+        _   = shell_exec "openssl kdf {args} > /proc/{pid}/fd/{mfd} 2>/dev/null"
+        _   = sys_call 8 mfd 0 0 0 0 0
+        raw = sys_read_fd mfd 4096
+        _   = sys_close mfd
+        a2 strip colon nl raw 0 (str_len raw)
 
-fn :: h prime stream String Int Int => [Int]
-      h prime stream seed rem ctr =
-        | rem <= 0 = []
-        | otherwise =
-          digest_hex = sha256_str "{seed}:b2b_hprime:{ctr}:{rem}"
-          chunk      = hex to bytes loop digest_hex 0 64
-          take_n     = clamp chunk len rem
-          (a2 take ints chunk take_n) :: (h prime stream digest_hex (rem - take_n) (ctr + 1))
+fn :: a2 opt hex bytes String [Int] => String
+      a2 opt hex bytes flag bs =
+        | (a2 list len bs) == 0 and flag == "hexpass" = " -kdfopt pass:\"\""
+        | (a2 list len bs) == 0                       = ""
+        | otherwise                                   = " -kdfopt {flag}:{bytes to hex bs}"
 
-fn :: h0 initial seed ctx [Int] [Int] String String Argon2Params => String
-      h0 initial seed ctx pwd_raw salt_bytes secret ad params =
-        p_str = a2 bytes to str pwd_raw
-        s_str = a2 bytes to str salt_bytes
+fn :: a2 opt hex str String String => String
+      a2 opt hex str flag s =
+        | (str_len s) == 0 = ""
+        | otherwise        = " -kdfopt {flag}:{bytes to hex (a2 str to bytes s)}"
+
+fn :: derive raw tag ctx [Int] [Int] String String Argon2Params => [Int]
+      derive raw tag ctx pwd_raw salt_bytes secret ad params =
+        p_arg = a2 opt hex bytes "hexpass" pwd_raw
+        s_arg = a2 opt hex bytes "hexsalt" salt_bytes
+        k_arg = a2 opt hex str "hexsecret" secret
+        a_arg = a2 opt hex str "hexad" ad
         m     = m_cost params
         t     = t_cost params
         p     = lanes params
         tlen  = tag_len params
-        v     = version params
-        sha256_str "argon2id:y=2:v={v}:p={p}:tag={tlen}:m={m}:t={t}:pwd={p_str}:salt={s_str}:sec={secret}:ad={ad}"
-
-fn :: init mem blocks String Int Int => [[Int]]
-      init mem blocks h0 idx tot =
-        | idx >= tot = []
-        | otherwise =
-          b_bytes = h prime stream "{h0}:init:{idx}" 16 idx
-          w0      = (a2 nth int b_bytes 0) + ((a2 nth int b_bytes 1) * 256) + ((a2 nth int b_bytes 2) * 65536) + ((a2 nth int b_bytes 3) * 16777216)
-          w1      = (a2 nth int b_bytes 4) + ((a2 nth int b_bytes 5) * 256) + ((a2 nth int b_bytes 6) * 65536) + ((a2 nth int b_bytes 7) * 16777216)
-          w2      = (a2 nth int b_bytes 8) + ((a2 nth int b_bytes 9) * 256) + ((a2 nth int b_bytes 10) * 65536) + ((a2 nth int b_bytes 11) * 16777216)
-          w3      = (a2 nth int b_bytes 12) + ((a2 nth int b_bytes 13) * 256) + ((a2 nth int b_bytes 14) * 65536) + ((a2 nth int b_bytes 15) * 16777216)
-          [[w0, w1, w2, w3]] :: (init mem blocks h0 (idx + 1) tot)
-
-fn :: nth block [[Int]]   Int => [Int]
-      nth block []        _   =  [0, 0, 0, 0]
-      nth block (b:brest) idx =
-        | idx <= 0  = b
-        | otherwise = nth block brest (idx - 1)
-
-fn :: set block [[Int]]   Int [Int] => [[Int]]
-      set block []        _   _     =  []
-      set block (b:brest) idx val   =
-        | idx <= 0  = [val] :: brest
-        | otherwise = [b] :: (set block brest (idx - 1) val)
-
-fn :: argon2id ref index Int Int Int Int [Int] => Int
-      argon2id ref index pass slice idx total prev_block =
-        | pass == 0 and slice < 2 =
-          ((idx * 7) + (slice * 13) + 3) % total
-        | otherwise =
-          j1 = u32 norm (a2 nth int prev_block 0)
-          (j1 + idx + pass + slice) % total
-
-fn :: step slice at [[Int]] Int Int Int Int Int => [[Int]]
-      step slice at mem pass slice idx total slice_id =
-        | slice_id != slice = step slice blocks mem pass slice (idx + 1) total
-        | otherwise =
-          prev_idx = ((idx + total) - 1) % total
-          prev_blk = nth block mem prev_idx
-          ref_idx  = argon2id ref index pass slice idx total prev_blk
-          ref_blk  = nth block mem ref_idx
-          salt_mix = u32 norm ((pass * 65537) + (slice * 257) + idx)
-          new_blk  = compress block prev_blk ref_blk salt_mix
-          mem_next = set block mem idx new_blk
-          step slice blocks mem_next pass slice (idx + 1) total
-
-fn :: step slice blocks [[Int]] Int Int Int Int => [[Int]]
-      step slice blocks mem pass slice idx total =
-        | idx >= total = mem
-        | otherwise    = step slice at mem pass slice idx total ((idx * 4) / total)
-
-fn :: run slices [[Int]] Int Int Int => [[Int]]
-      run slices mem pass slice total =
-        | slice >= 4 = mem
-        | otherwise =
-          mem1 = step slice blocks mem pass slice 0 total
-          run slices mem1 pass (slice + 1) total
-
-fn :: run passes [[Int]] Int Int Int => [[Int]]
-      run passes mem pass t_cost total =
-        | pass >= t_cost = mem
-        | otherwise =
-          mem1 = run slices mem pass 0 total
-          run passes mem1 (pass + 1) t_cost total
-
-fn :: fold bitxor blocks [[Int]]   [Int] => [Int]
-      fold bitxor blocks []        acc   =  acc
-      fold bitxor blocks (b:brest) acc   =
-        next_acc = [u32 bitxor (a2 nth int acc 0) (a2 nth int b 0), u32 bitxor (a2 nth int acc 1) (a2 nth int b 1), u32 bitxor (a2 nth int acc 2) (a2 nth int b 2), u32 bitxor (a2 nth int acc 3) (a2 nth int b 3)]
-        fold bitxor blocks brest next_acc
-
-fn :: clamp total blocks Int => Int
-      clamp total blocks raw =
-        | raw < 8   = 8
-        | raw > 32  = 32
-        | otherwise = raw
-
-fn :: derive raw tag ctx [Int] [Int] String String Argon2Params => [Int]
-      derive raw tag ctx pwd_raw salt_bytes secret ad params =
-        h0         = h0 initial seed ctx pwd_raw salt_bytes secret ad params
-        total_blks = clamp total blocks ((m_cost params) / 4)
-        mem0       = init mem blocks h0 0 total_blks
-        mem_final  = run passes mem0 0 (t_cost params) total_blks
-        c_final    = fold bitxor blocks mem_final [0, 0, 0, 0]
-        w0         = a2 nth int c_final 0
-        w1         = a2 nth int c_final 1
-        w2         = a2 nth int c_final 2
-        w3         = a2 nth int c_final 3
-        final_seed = "{h0}:{w0}:{w1}:{w2}:{w3}:{m_cost params}:{t_cost params}:{lanes params}"
-        h prime stream final_seed (tag_len params) 0
+        out_h = a2 openssl kdf hex "-keylen {tlen}{p_arg}{s_arg}{k_arg}{a_arg} -kdfopt iter:{t} -kdfopt memcost:{m} -kdfopt lanes:{p} ARGON2ID"
+        hex to bytes loop out_h 0 (str_len out_h)
 
 fn :: derive raw tag [Int] [Int] Argon2Params => [Int]
       derive raw tag pwd_raw salt_bytes params = derive raw tag ctx pwd_raw salt_bytes "" "" params
@@ -351,37 +278,58 @@ fn :: b64 decode nopad String => [Int]
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+-- Preset profiles (`m_cost` is in KiB: 19456 KiB = 19 MiB OWASP minimum;
+-- 47104 KiB = 46 MiB OWASP moderate; 65536 KiB = 64 MiB RFC 9106 §4 second option)
 fn :: default argon2 params => Argon2Params
-      default argon2 params =  Argon2Params 64 3 4 32 19
+      default argon2 params =  Argon2Params 19456 2 1 32 19
 
 fn :: argon2 interactive params => Argon2Params
-      argon2 interactive params =  Argon2Params 64 2 2 32 19
+      argon2 interactive params =  Argon2Params 19456 2 1 32 19
 
 fn :: argon2 moderate params => Argon2Params
-      argon2 moderate params =  Argon2Params 128 3 4 32 19
+      argon2 moderate params =  Argon2Params 47104 3 1 32 19
 
 fn :: argon2 sensitive params => Argon2Params
-      argon2 sensitive params =  Argon2Params 256 4 4 32 19
+      argon2 sensitive params =  Argon2Params 65536 3 4 32 19
 
 fn :: argon2 params Int Int Int Int => Argon2Params
       argon2 params m_cost t_cost lanes tag_len = Argon2Params m_cost t_cost lanes tag_len 19
 
 fn :: clamp salt len Int => Int
       clamp salt len n   =
-        | n < 8     = 16
+        | n < 16    = 16
         | n > 64    = 64
         | otherwise = n
 
+fn :: a2 getrandom call Int Int Int => Int
+      a2 getrandom call ptr rem rc =
+        | rc == (0 - 4) = a2 getrandom loop ptr rem
+        | otherwise     = rc
+
+fn :: a2 getrandom step Int Int Int => Int
+      a2 getrandom step ptr rem rc =
+        | rc <= 0   = rc
+        | rc >= rem = 0
+        | otherwise = a2 getrandom loop (ptr + rc) (rem - rc)
+
+fn :: a2 getrandom loop Int Int => Int
+      a2 getrandom loop ptr rem =
+        | rem <= 0  = 0
+        | otherwise = a2 getrandom step ptr rem (a2 getrandom call ptr rem (sys_call 318 ptr rem 0 0 0 0))
+
 fn :: argon2id generate salt Int => String
       argon2id generate salt n   =
-        eff_n   = clamp salt len n
-        cwd     = sys_getcwd
-        usr     = sys_username
-        uid     = sys_getuid
-        gid     = sys_getgid
-        entropy = sha256_str "argon2id_salt:{cwd}:{usr}:{uid}:{gid}:{eff_n}"
-        raw     = h prime stream entropy eff_n 1
-        str_slice (bytes to hex raw) 0 eff_n
+        eff_n = clamp salt len n
+        neg1  = 0 - 1
+        ptr   = sys_call 9 0 4096 3 34 neg1 0
+        mfd   = sys_call 319 4194311 1 0 0 0 0
+        _     = a2 getrandom loop ptr eff_n
+        _     = sys_call 18 mfd ptr eff_n 0 0 0
+        _     = sys_call 8 mfd 0 0 0 0 0
+        raw   = sys_read_fd mfd eff_n
+        _     = sys_close mfd
+        _     = sys_call 11 ptr 4096 0 0 0 0
+        raw
 
 fn :: validate argon2 params Argon2Params [Int]      => String
       validate argon2 params params       salt_bytes =
@@ -432,11 +380,11 @@ fn :: argon2id hash bytes String [Int] Argon2Params => Argon2Res
       argon2id hash bytes pwd salt_bytes params =
         finish argon2id hash ctx pwd salt_bytes "" "" params (validate argon2 params params salt_bytes)
 
-fn :: argon2id hash String String Argon2Params => Argon2Res
-      argon2id hash pwd    salt   params       =  argon2id hash bytes pwd (a2 str to bytes salt) params
+fn :: argon2id hash params String String Argon2Params => Argon2Res
+      argon2id hash params pwd salt params = argon2id hash bytes pwd (a2 str to bytes salt) params
 
 fn :: argon2id hash password String Argon2Params => Argon2Res
-      argon2id hash password pwd    params       =  argon2id hash pwd (argon2id generate salt 16) params
+      argon2id hash password pwd    params       =  argon2id hash params pwd (argon2id generate salt 16) params
 
 fn :: ct diff loop [Int] [Int] Int => Int
       ct diff loop [] [] acc = acc
@@ -534,24 +482,30 @@ fn :: verify parsed ctx Argon2PhcRes String String String => Bool
         constant time bytes eq computed tag_bytes
 
 fn :: argon2id verify ctx String String String String => Bool
-      argon2id verify ctx phc pwd secret ad = verify parsed ctx (argon2id parse phc phc) pwd secret ad
+      argon2id verify ctx pwd phc secret ad = verify parsed ctx (argon2id parse phc phc) pwd secret ad
 
 -- @implements FR-CRYPTO-001
 -- @implements FR-CRYPTO-004
 -- @implements API-CRYPTO-001
 -- @mitigates VUL-AUTHN-001
 fn :: argon2id verify String String => Bool
-      argon2id verify a      b      =
-        | str_starts_with a "$argon2id$" = argon2id verify ctx a b "" ""
-        | str_starts_with b "$argon2id$" = argon2id verify ctx b a "" ""
-        | otherwise                      = False
+      argon2id verify pwd    phc    =
+        | not (str_starts_with phc "$argon2id$") = False
+        | otherwise                              = argon2id verify ctx pwd phc "" ""
 
 fn :: unwrap phc res Argon2Res      => String
       unwrap phc res (Argon2Ok phc) =  phc
       unwrap phc res (Argon2Err _)  =  ""
 
+-- @implements FR-CRYPTO-001
+-- @implements FR-CRYPTO-004
+-- @implements API-CRYPTO-001
+fn :: argon2id hash String String Int Int Int => String
+      argon2id hash pwd salt m_kib t_iters p_lanes =
+        unwrap phc res (argon2id hash params pwd salt (Argon2Params m_kib t_iters p_lanes 32 19))
+
 -- @implements FR-CRYPTO-004
 -- @implements API-CRYPTO-001
 fn :: argon2id hash phc String String Int Int Int => String
       argon2id hash phc pwd salt m_kib t_iters p_lanes =
-        unwrap phc res (argon2id hash pwd salt (Argon2Params m_kib t_iters p_lanes 32 19))
+        argon2id hash pwd salt m_kib t_iters p_lanes
