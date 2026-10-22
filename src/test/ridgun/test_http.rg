@@ -8,23 +8,23 @@ import test
 import socket
 import http
 
-fn :: req method (String, String, String) => String
-      req method (m, _, _)                =  m
+fn :: req method (String String String) => String
+      req method (m, _, _)              =  m
 
-fn :: req path (String, String, String) => String
-      req path (_, p, _)                =  p
+fn :: req path (String String String) => String
+      req path (_, p, _)              =  p
 
-fn :: req body (String, String, String) => String
-      req body (_, _, b)                =  b
+fn :: req body (String String String) => String
+      req body (_, _, b)              =  b
 
-fn :: resp code (Int, String, String) => Int
-      resp code (c, _, _)             =  c
+fn :: resp code (Int String String) => Int
+      resp code (c, _, _)           =  c
 
-fn :: resp reason (Int, String, String) => String
-      resp reason (_, r, _)             =  r
+fn :: resp reason (Int String String) => String
+      resp reason (_, r, _)           =  r
 
-fn :: resp body (Int, String, String) => String
-      resp body (_, _, b)             =  b
+fn :: resp body (Int String String) => String
+      resp body (_, _, b)           =  b
 
 -- @tests TS-HTTP-001
 fn :: test uri parsing => ()

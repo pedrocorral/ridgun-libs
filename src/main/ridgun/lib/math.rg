@@ -231,14 +231,14 @@ fn :: math mod pow Int Int Int => Int
           b0 = math mod euclid base m
           m mod pow loop b0 exp m 1
 
-fn :: m egcd loop Int Int Int Int => (Int, Int)
+fn :: m egcd loop Int Int Int Int => Int Int
       m egcd loop old_r r old_s s =
         | r == 0 = (old_r, old_s)
         | otherwise =
           q = old_r / r
           m egcd loop r (old_r - (q * r)) s (old_s - (q * s))
 
-fn :: m finish mod inv (Int, Int) Int => Int
+fn :: m finish mod inv (Int Int) Int => Int
       m finish mod inv (g, x) m =
         | g != 1    = 0 - 1
         | otherwise = math mod euclid x m

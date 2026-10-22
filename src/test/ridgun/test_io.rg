@@ -10,14 +10,14 @@ import test
 import posix
 import io
 
-fn :: pipe rc3 (Int, Int, Int) => Int
-      pipe rc3 (rc, _, _)      =  rc
+fn :: pipe rc3 (Int Int Int) => Int
+      pipe rc3 (rc, _, _)    =  rc
 
-fn :: pipe rfd3 (Int, Int, Int) => Int
-      pipe rfd3 (_, rfd, _)     =  rfd
+fn :: pipe rfd3 (Int Int Int) => Int
+      pipe rfd3 (_, rfd, _)   =  rfd
 
-fn :: pipe wfd3 (Int, Int, Int) => Int
-      pipe wfd3 (_, _, wfd)     =  wfd
+fn :: pipe wfd3 (Int Int Int) => Int
+      pipe wfd3 (_, _, wfd)   =  wfd
 
 fn :: int list len [Int]    => Int
       int list len []       =  0

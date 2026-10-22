@@ -125,7 +125,7 @@ fn :: tm finish year Int Int => Int
         | m <= 2    = y0 + 1
         | otherwise = y0
 
-fn :: tm civil from days Int Int Int Int => (Int, Int, Int, Int, Int, Int)
+fn :: tm civil from days Int Int Int Int => Int Int Int Int Int Int
       tm civil from days z hh mm ss =
         z_shift = z + 719468
         era     = tm z era z_shift
@@ -141,7 +141,7 @@ fn :: tm civil from days Int Int Int Int => (Int, Int, Int, Int, Int, Int)
 
 -- @implements FR-TIME-001
 -- @implements API-TIME-001
-fn :: time epoch to utc Int       => (Int, Int, Int, Int, Int, Int)
+fn :: time epoch to utc Int       => Int Int Int Int Int Int
       time epoch to utc epoch_sec =
         rem_raw = ((epoch_sec % 86400) + 86400) % 86400
         days    = (epoch_sec - rem_raw) / 86400
@@ -164,8 +164,8 @@ fn :: tm pad4 Int => String
         | n < 1000 = "0" + (int_to_str n)
         | otherwise = int_to_str n
 
-fn :: tm fmt utc tuple (Int, Int, Int, Int, Int, Int) => String
-      tm fmt utc tuple (y, m, d, hh, mm, ss)          =
+fn :: tm fmt utc tuple (Int Int Int Int Int Int) => String
+      tm fmt utc tuple (y, m, d, hh, mm, ss)     =
         (tm pad4 y) + "-" + (tm pad2 m) + "-" + (tm pad2 d) + "T" + (tm pad2 hh) + ":" + (tm pad2 mm) + ":" + (tm pad2 ss) + "Z"
 
 -- @implements FR-TIME-001

@@ -224,22 +224,22 @@ fn :: is safe posix path String => Bool
 
 -- ── lstat Tuple Accessors ────────────────────────────────────
 
-fn :: lstat exists (Bool, String, Int, Int, Int, String, String, Int, String) => Bool
-      lstat exists (ex, _, _, _, _, _, _, _, _) = ex
+fn :: lstat exists (Bool String Int Int Int String String Int String) => Bool
+      lstat exists (ex, _, _, _, _, _, _, _, _)                       =  ex
 
-fn :: lstat kind (Bool, String, Int, Int, Int, String, String, Int, String) => String
-      lstat kind (_, k, _, _, _, _, _, _, _) = k
+fn :: lstat kind (Bool String Int Int Int String String Int String) => String
+      lstat kind (_, k, _, _, _, _, _, _, _)                        =  k
 
-fn :: lstat mode (Bool, String, Int, Int, Int, String, String, Int, String) => Int
-      lstat mode (_, _, m, _, _, _, _, _, _) = m
+fn :: lstat mode (Bool String Int Int Int String String Int String) => Int
+      lstat mode (_, _, m, _, _, _, _, _, _)                        =  m
 
-fn :: lstat size (Bool, String, Int, Int, Int, String, String, Int, String) => Int
-      lstat size (_, _, _, _, sz, _, _, _, _) = sz
+fn :: lstat size (Bool String Int Int Int String String Int String) => Int
+      lstat size (_, _, _, _, sz, _, _, _, _)                       =  sz
 
-fn :: lstat mtime sec (Bool, String, Int, Int, Int, String, String, Int, String) => Int
-      lstat mtime sec (_, _, _, _, _, _, _, mt, _) = mt
+fn :: lstat mtime sec (Bool String Int Int Int String String Int String) => Int
+      lstat mtime sec (_, _, _, _, _, _, _, mt, _)                       =  mt
 
-fn :: lstat symlink target (Bool, String, Int, Int, Int, String, String, Int, String) => String
+fn :: lstat symlink target (Bool String Int Int Int String String Int String) => String
       lstat symlink target (_, _, _, _, _, _, _, _, target) = target
 
 -- ── Kernel Memory Bridge Helpers (mmap + memfd_create + eventfd2) ──
@@ -309,7 +309,7 @@ fn :: px peek Int Int Int => String
 
 -- ── Monotonic & Wall-Clock Time (RGF-017 / RG-010) ───────────
 
-fn :: px clock gettime Int    => (Int, Int)
+fn :: px clock gettime Int    => Int Int
       px clock gettime clk_id =
         ptr  = px alloc page 4096
         mfd  = px alloc mfd
@@ -320,11 +320,11 @@ fn :: px clock gettime Int    => (Int, Int)
         nsec = px decode u64 le raw 8
         (sec, nsec)
 
-fn :: px pair fst (Int, Int) => Int
-      px pair fst (a, _)     =  a
+fn :: px pair fst (Int Int) => Int
+      px pair fst (a, _)    =  a
 
-fn :: px pair snd (Int, Int) => Int
-      px pair snd (_, b)     =  b
+fn :: px pair snd (Int Int) => Int
+      px pair snd (_, b)    =  b
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
@@ -400,14 +400,14 @@ fn :: posix kill Int Int     => Int
 
 -- ── Kernel-Backed Anonymous Pipe via pipe2 (__NR_pipe2 = 293) ─
 
-fn :: pack pipe fds Int Int Int => (Int, Int, Int)
+fn :: pack pipe fds Int Int Int => Int Int Int
       pack pipe fds rc rfd wfd =
         | rc < 0 or rfd < 0 or wfd < 0 = (0 - 1, 0 - 1, 0 - 1)
         | otherwise                    = (0, rfd, wfd)
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
-fn :: posix pipe => (Int, Int, Int)
+fn :: posix pipe => Int Int Int
       posix pipe =
         ptr = px alloc page 4096
         mfd = px alloc mfd
@@ -517,14 +517,14 @@ fn :: px sig mask [Int]    => Int
       px sig mask []       =  0
       px sig mask (s:rest) =  (px bit shift (s - 1)) + (px sig mask rest)
 
-fn :: px finish sig watch Int => (Int, Int)
+fn :: px finish sig watch Int => Int Int
       px finish sig watch sfd =
         | sfd < 0   = (0 - 7, 0 - 1)
         | otherwise = (0, sfd)
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
-fn :: sys signal watch [Int] => (Int, Int)
+fn :: sys signal watch [Int] => Int Int
       sys signal watch sigs  =
         | not (valid signal list sigs) = (0 - 7, 0 - 1)
         | otherwise                    =
@@ -538,12 +538,12 @@ fn :: sys signal watch [Int] => (Int, Int)
           _    = px free page mfd ptr 4096
           px finish sig watch sfd
 
-fn :: px finish sig read Int String => (Int, Int)
+fn :: px finish sig read Int String => Int Int
       px finish sig read n raw =
         | n < 128   = (0 - 7, 0)
         | otherwise = (0, px decode u32 le raw 0)
 
-fn :: px wait sig after poll Int Int => (Int, Int)
+fn :: px wait sig after poll Int Int => Int Int
       px wait sig after poll handle prc =
         | prc == 0 = (0 - 2, 0)
         | prc < 0  = (0 - 7, 0)
@@ -557,7 +557,7 @@ fn :: px wait sig after poll Int Int => (Int, Int)
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
-fn :: sys signal wait Int    Int        => (Int, Int)
+fn :: sys signal wait Int    Int        => Int Int
       sys signal wait handle timeout_ms =
         | handle < 0 or timeout_ms < (0 - 1)       = (0 - 7, 0)
         | (sys_call 72 handle 1 0 0 0 0) < 0       = (0 - 7, 0)
@@ -592,12 +592,12 @@ fn :: px getrandom loop Int Int => Int
         | rem <= 0  = 0
         | otherwise = px getrandom step ptr rem (px getrandom call ptr rem (sys_call 318 ptr rem 0 0 0 0))
 
-fn :: px finish getrandom Int String Int => (Int, String)
+fn :: px finish getrandom Int String Int => Int String
       px finish getrandom rc raw n =
         | rc < 0 or (str_len raw) != n = (0 - 99, "")
         | otherwise                    = (0, raw)
 
-fn :: px getrandom checked Int => (Int, String)
+fn :: px getrandom checked Int => Int String
       px getrandom checked n   =
         psz = ((n / 4096) + 2) * 4096
         ptr = px alloc page psz
@@ -610,19 +610,19 @@ fn :: px getrandom checked Int => (Int, String)
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 -- @mitigates VUL-INPUT-001
-fn :: sys random bytes Int => (Int, String)
+fn :: sys random bytes Int => Int String
       sys random bytes n   =
         | n < 0     = (0 - 7, "")
         | n == 0    = (0, "")
         | n > 65536 = (0 - 7, "")
         | otherwise = px getrandom checked n
 
-fn :: px finish random list (Int, String) => (Int, [Int])
-      px finish random list (rc, raw)     =
+fn :: px finish random list (Int String) => Int [Int]
+      px finish random list (rc, raw)    =
         | rc != 0   = (rc, [])
         | otherwise = (0, px bytes to list loop raw 0 (str_len raw))
 
-fn :: sys random bytes list Int => (Int, [Int])
+fn :: sys random bytes list Int => Int [Int]
       sys random bytes list n   =
         | n < 0     = (0 - 7, [])
         | n == 0    = (0, [])

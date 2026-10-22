@@ -324,34 +324,34 @@ fn :: list str sort [String] => [String]
 
 -- ── Associative Key-Value Map (`[(String, String)]`) ─────────
 
-fn :: l kv key (String, String) => String
-      l kv key (k, _)           =  k
+fn :: l kv key (String String) => String
+      l kv key (k, _)          =  k
 
-fn :: l kv val (String, String) => String
-      l kv val (_, v)           =  v
+fn :: l kv val (String String) => String
+      l kv val (_, v)          =  v
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv empty => [(String, String)]
+fn :: kv empty => [String String]
       kv empty =  []
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv len [(String, String)] => Int
-      kv len []                 =  0
-      kv len (_:rest)           =  1 + (kv len rest)
+fn :: kv len [String String] => Int
+      kv len []              =  0
+      kv len (_:rest)        =  1 + (kv len rest)
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv has [(String, String)] String => Bool
-      kv has []                 _      =  False
-      kv has (pair:rest)        key    =
+fn :: kv has [String String] String => Bool
+      kv has []              _      =  False
+      kv has (pair:rest)     key    =
         | (l kv key pair) == key = True
         | otherwise              = kv has rest key
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv get or [(String, String)] String String => String
+fn :: kv get or [String String] String String => String
       kv get or [] _ fallback = fallback
       kv get or (pair:rest) key fallback =
         | (l kv key pair) == key = l kv val pair
@@ -359,40 +359,40 @@ fn :: kv get or [(String, String)] String String => String
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv get [(String, String)] String => String
-      kv get pairs              key    =  kv get or pairs key ""
+fn :: kv get [String String] String => String
+      kv get pairs           key    =  kv get or pairs key ""
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv put [(String, String)] String String => [(String, String)]
-      kv put []                 key    val    =  [(key, val)]
-      kv put (pair:rest)        key    val    =
+fn :: kv put [String String] String String => [String String]
+      kv put []              key    val    =  [(key, val)]
+      kv put (pair:rest)     key    val    =
         | (l kv key pair) == key = [(key, val)] :: rest
         | otherwise              = [pair] :: (kv put rest key val)
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv remove [(String, String)] String => [(String, String)]
-      kv remove []                 _      =  []
-      kv remove (pair:rest)        key    =
+fn :: kv remove [String String] String => [String String]
+      kv remove []              _      =  []
+      kv remove (pair:rest)     key    =
         | (l kv key pair) == key = kv remove rest key
         | otherwise              = [pair] :: (kv remove rest key)
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv keys [(String, String)] => [String]
-      kv keys []                 =  []
-      kv keys (pair:rest)        =  [(l kv key pair)] :: (kv keys rest)
+fn :: kv keys [String String] => [String]
+      kv keys []              =  []
+      kv keys (pair:rest)     =  [(l kv key pair)] :: (kv keys rest)
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv values [(String, String)] => [String]
-      kv values []                 =  []
-      kv values (pair:rest)        =  [(l kv val pair)] :: (kv values rest)
+fn :: kv values [String String] => [String]
+      kv values []              =  []
+      kv values (pair:rest)     =  [(l kv val pair)] :: (kv values rest)
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv merge [(String, String)] [(String, String)] => [(String, String)]
-      kv merge base               []                 =  base
-      kv merge base               (pair:rest)        =
+fn :: kv merge [String String] [String String] => [String String]
+      kv merge base            []              =  base
+      kv merge base            (pair:rest)     =
         kv merge (kv put base (l kv key pair) (l kv val pair)) rest

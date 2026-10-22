@@ -120,7 +120,7 @@ fn :: prng next Int  => Int
         s0 = (uu abs seed) % 2147483647
         (((s0 * 1103515245) + 12345) % 2147483647)
 
-fn :: uu prng range step Int Int Int => (Int, Int)
+fn :: uu prng range step Int Int Int => Int Int
       uu prng range step ns lo hi =
         | hi <= lo  = (ns, lo)
         | otherwise = (ns, lo + (ns % ((hi - lo) + 1)))
@@ -128,7 +128,7 @@ fn :: uu prng range step Int Int Int => (Int, Int)
 -- @implements FR-UUID-001
 -- @implements API-UUID-001
 -- @mitigates VUL-INPUT-001
-fn :: prng range Int  Int Int => (Int, Int)
+fn :: prng range Int  Int Int => Int Int
       prng range seed lo  hi  =  uu prng range step (prng next seed) lo hi
 
 -- ── RFC 9562 UUIDv4 & UUIDv7 Generation & Validation (CSPRNG + clock_gettime) ──

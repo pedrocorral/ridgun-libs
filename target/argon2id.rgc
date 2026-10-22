@@ -1,12 +1,14 @@
 -- RGLIB1
 -- SELF_HOSTED_COMPILER: ridgunc v0.9.8
--- FUNCTIONS: 79
--- TYPES: 5
+-- FUNCTIONS: 125
+-- TYPES: 10
 -- SUMMARY: a2_list_len:LazyStealableTask
 -- SUMMARY: a2_str_list_len:LazyStealableTask
 -- SUMMARY: a2_nth_int:LazyStealableTask
 -- SUMMARY: a2_nth_str:LazyStealableTask
 -- SUMMARY: a2_take_ints:LazyStealableTask
+-- SUMMARY: a2_drop_ints:LazyStealableTask
+-- SUMMARY: a2_pad_zeroes:LazyStealableTask
 -- SUMMARY: a2_raw_byte_ub:InlineSequential
 -- SUMMARY: a2_raw_byte:InlineSequential
 -- SUMMARY: a2_str_to_bytes_loop:LazyStealableTask
@@ -15,21 +17,63 @@
 -- SUMMARY: hex_digits:InlineSequential
 -- SUMMARY: byte_to_hex:InlineSequential
 -- SUMMARY: bytes_to_hex:LazyStealableTask
--- SUMMARY: byte_bitxor_loop:LazyStealableTask
--- SUMMARY: byte_bitxor:LazyStealableTask
+-- SUMMARY: a2_bitxor4:InlineSequential
+-- SUMMARY: byte_bitxor:InlineSequential
 -- SUMMARY: u32_norm_mod:InlineSequential
 -- SUMMARY: u32_norm:InlineSequential
 -- SUMMARY: u32_add:InlineSequential
--- SUMMARY: u32_bitxor:LazyStealableTask
--- SUMMARY: u32_rotr8:InlineSequential
--- SUMMARY: u32_rotr16:InlineSequential
--- SUMMARY: hex_val:InlineSequential
--- SUMMARY: hex_to_bytes_loop:LazyStealableTask
--- SUMMARY: a2_strip_colon_step:InlineSequential
--- SUMMARY: a2_strip_colon_nl:InlineSequential
--- SUMMARY: a2_openssl_kdf_hex:InlineSequential
--- SUMMARY: a2_opt_hex_bytes:LazyStealableTask
--- SUMMARY: a2_opt_hex_str:LazyStealableTask
+-- SUMMARY: u32_bitxor:InlineSequential
+-- SUMMARY: a2_u64_add:InlineSequential
+-- SUMMARY: a2_u64_bitxor:InlineSequential
+-- SUMMARY: a2_u64_rotr32:InlineSequential
+-- SUMMARY: a2_u64_rotr24:InlineSequential
+-- SUMMARY: a2_u64_rotr16:InlineSequential
+-- SUMMARY: a2_u64_rotr63:InlineSequential
+-- SUMMARY: a2_mul32_u64:InlineSequential
+-- SUMMARY: a2_f_blamka:InlineSequential
+-- SUMMARY: a2_u32_to_le4:InlineSequential
+-- SUMMARY: a2_bytes_to_u32_le:LazyStealableTask
+-- SUMMARY: a2_b2b_iv:InlineSequential
+-- SUMMARY: a2_nth_u64:LazyStealableTask
+-- SUMMARY: a2_set_u64:LazyStealableTask
+-- SUMMARY: a2_b2b_g:LazyStealableTask
+-- SUMMARY: a2_b2b_sigma:InlineSequential
+-- SUMMARY: a2_b2b_round:LazyStealableTask
+-- SUMMARY: a2_b2b_rounds:LazyStealableTask
+-- SUMMARY: a2_b2b_finalize:LazyStealableTask
+-- SUMMARY: a2_b2b_compress:LazyStealableTask
+-- SUMMARY: a2_bytes_to_m16:LazyStealableTask
+-- SUMMARY: a2_u64_list_to_bytes:LazyStealableTask
+-- SUMMARY: a2_b2b_loop:LazyStealableTask
+-- SUMMARY: a2_blake2b:LazyStealableTask
+-- SUMMARY: a2_b2b_long_loop:LazyStealableTask
+-- SUMMARY: a2_blake2b_long:LazyStealableTask
+-- SUMMARY: a2_g4:InlineSequential
+-- SUMMARY: a2_p16_w:InlineSequential
+-- SUMMARY: a2_bitxor_w16:InlineSequential
+-- SUMMARY: a2_bitxor_blk8:InlineSequential
+-- SUMMARY: a2_compress_blk8:InlineSequential
+-- SUMMARY: a2_zero_w16:InlineSequential
+-- SUMMARY: a2_zero_blk8:InlineSequential
+-- SUMMARY: a2_get_w16:InlineSequential
+-- SUMMARY: a2_get_blk8_row:InlineSequential
+-- SUMMARY: a2_get_blk8:InlineSequential
+-- SUMMARY: a2_bytes_to_u64:LazyStealableTask
+-- SUMMARY: a2_bytes_to_w16:LazyStealableTask
+-- SUMMARY: a2_bytes_to_blk8:LazyStealableTask
+-- SUMMARY: a2_w16_to_u64s:InlineSequential
+-- SUMMARY: a2_blk8_to_bytes:LazyStealableTask
+-- SUMMARY: a2_nth_blk:LazyStealableTask
+-- SUMMARY: a2_set_blk:LazyStealableTask
+-- SUMMARY: a2_init_lane_cols:LazyStealableTask
+-- SUMMARY: a2_init_all_lanes:LazyStealableTask
+-- SUMMARY: a2_make_addr_blk:InlineSequential
+-- SUMMARY: a2_calc_w_size:InlineSequential
+-- SUMMARY: a2_fill_segment:LazyStealableTask
+-- SUMMARY: a2_run_lanes:LazyStealableTask
+-- SUMMARY: a2_run_slices:LazyStealableTask
+-- SUMMARY: a2_run_passes:LazyStealableTask
+-- SUMMARY: a2_bitxor_final_lanes:LazyStealableTask
 -- SUMMARY: derive_raw_tag_ctx:LazyStealableTask
 -- SUMMARY: derive_raw_tag:LazyStealableTask
 -- SUMMARY: b64_alphabet:InlineSequential
@@ -52,10 +96,12 @@
 -- SUMMARY: a2_getrandom_loop:InlineSequential
 -- SUMMARY: argon2id_generate_salt:InlineSequential
 -- SUMMARY: validate_argon2_params:LazyStealableTask
+-- SUMMARY: finish_derive_key_checked:LazyStealableTask
 -- SUMMARY: finish_derive_key:LazyStealableTask
 -- SUMMARY: argon2id_derive_key:LazyStealableTask
 -- SUMMARY: key_res_to_hex:LazyStealableTask
 -- SUMMARY: argon2id_derive_key_hex:LazyStealableTask
+-- SUMMARY: build_phc_from_tag:LazyStealableTask
 -- SUMMARY: finish_argon2id_hash_ctx:LazyStealableTask
 -- SUMMARY: argon2id_hash_ctx:LazyStealableTask
 -- SUMMARY: argon2id_hash_bytes:LazyStealableTask
@@ -98,8 +144,14 @@ type Argon2Res    = Argon2Ok String | Argon2Err String
 type Argon2KeyRes = Argon2KeyOk [Int] | Argon2KeyErr String
 type Argon2PhcRes = Argon2PhcOk Argon2Phc | Argon2PhcErr String
 
+type A2U64  = a2_lo: Int, a2_hi: Int
+type A2G4   = a2_ga: A2U64, a2_gb: A2U64, a2_gc: A2U64, a2_gd: A2U64
+type A2W16  = w0: A2U64, w1: A2U64, w2: A2U64, w3: A2U64, w4: A2U64, w5: A2U64, w6: A2U64, w7: A2U64, w8: A2U64, w9: A2U64, w10: A2U64, w11: A2U64, w12: A2U64, w13: A2U64, w14: A2U64, w15: A2U64
+type A2Blk8 = r0: A2W16, r1: A2W16, r2: A2W16, r3: A2W16, r4: A2W16, r5: A2W16, r6: A2W16, r7: A2W16
+type A2Ctx  = r_pass: Int, s_slice: Int, l_lane: Int, p_lanes: Int, q_cols: Int, seg_len: Int, t_iters: Int
+
 -- ============================================================
--- List, String & 32-bit Modular Arithmetic Helpers (Internal)
+-- List, String & 32/64-bit Modular Arithmetic Helpers (Internal)
 -- ============================================================
 
 fn :: a2 list len [Int]    => Int
@@ -127,6 +179,17 @@ fn :: a2 take ints [Int]    Int => [Int]
       a2 take ints (x:rest) n   =
         | n <= 0    = []
         | otherwise = [x] :: (a2 take ints rest (n - 1))
+
+fn :: a2 drop ints [Int]    Int => [Int]
+      a2 drop ints []       _   =  []
+      a2 drop ints (x:rest) n   =
+        | n <= 0    = [x] :: rest
+        | otherwise = a2 drop ints rest (n - 1)
+
+fn :: a2 pad zeroes Int => [Int]
+      a2 pad zeroes n   =
+        | n <= 0    = []
+        | otherwise = [0] :: (a2 pad zeroes (n - 1))
 
 fn :: a2 raw byte ub Int => String
       a2 raw byte ub ub  =
@@ -166,17 +229,25 @@ fn :: bytes to hex [Int]    => String
       bytes to hex []       =  ""
       bytes to hex (b:rest) =  (byte to hex b) + (bytes to hex rest)
 
-fn :: byte bitxor loop Int Int Int Int => Int
-      byte bitxor loop a b bit acc =
-        | bit >= 256 = acc
-        | otherwise =
-          ba   = a % 2
-          bb   = b % 2
-          diff = (ba + bb) % 2
-          byte bitxor loop (a / 2) (b / 2) (bit * 2) (acc + (diff * bit))
+fn :: a2 bitxor4 Int Int => Int
+      a2 bitxor4 a   b   =
+        x0 = ((a % 2) + (b % 2)) % 2
+        a1 = a / 2
+        b1 = b / 2
+        x1 = ((a1 % 2) + (b1 % 2)) % 2
+        a2 = a1 / 2
+        b2 = b1 / 2
+        x2 = ((a2 % 2) + (b2 % 2)) % 2
+        a3 = a2 / 2
+        b3 = b2 / 2
+        x3 = ((a3 % 2) + (b3 % 2)) % 2
+        x0 + (x1 * 2) + (x2 * 4) + (x3 * 8)
 
 fn :: byte bitxor Int Int => Int
-      byte bitxor a   b   =  byte bitxor loop (a % 256) (b % 256) 1 0
+      byte bitxor a   b   =
+        ua = ((a % 256) + 256) % 256
+        ub = ((b % 256) + 256) % 256
+        (a2 bitxor4 (ua % 16) (ub % 16)) + ((a2 bitxor4 (ua / 16) (ub / 16)) * 16)
 
 fn :: u32 norm mod Int => Int
       u32 norm mod m   =
@@ -196,82 +267,507 @@ fn :: u32 bitxor Int Int => Int
         b0 = byte bitxor (ua % 256) (ub % 256)
         b1 = byte bitxor ((ua / 256) % 256) ((ub / 256) % 256)
         b2 = byte bitxor ((ua / 65536) % 256) ((ub / 65536) % 256)
-        b3 = byte bitxor ((ua / 16777216) % 256) ((ub / 16777216) % 256)
+        b3 = byte bitxor (ua / 16777216) (ub / 16777216)
         b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
 
-fn :: u32 rotr8 Int => Int
-      u32 rotr8 x   =
-        ux = u32 norm x
-        (ux / 256) + ((ux % 256) * 16777216)
+fn :: a2 u64 add A2U64 A2U64 => A2U64
+      a2 u64 add a     b     =
+        s0 = (a2_lo a) + (a2_lo b)
+        nl = s0 % 4294967296
+        cy = s0 / 4294967296
+        nh = ((a2_hi a) + (a2_hi b) + cy) % 4294967296
+        A2U64 nl nh
 
-fn :: u32 rotr16 Int => Int
-      u32 rotr16 x   =
-        ux = u32 norm x
-        (ux / 65536) + ((ux % 65536) * 65536)
+fn :: a2 u64 bitxor A2U64 A2U64 => A2U64
+      a2 u64 bitxor a     b     =
+        A2U64 (u32 bitxor (a2_lo a) (a2_lo b)) (u32 bitxor (a2_hi a) (a2_hi b))
 
-fn :: hex val Int => Int
-      hex val c   =
-        | c >= 48 and c <= 57  = c - 48
-        | c >= 97 and c <= 102 = (c - 97) + 10
-        | c >= 65 and c <= 70  = (c - 65) + 10
-        | otherwise            = 0
+fn :: a2 u64 rotr32 A2U64 => A2U64
+      a2 u64 rotr32 x     =  A2U64 (a2_hi x) (a2_lo x)
 
-fn :: hex to bytes loop String Int Int => [Int]
-      hex to bytes loop hex idx len =
-        | (idx + 1) >= len = []
+fn :: a2 u64 rotr24 A2U64 => A2U64
+      a2 u64 rotr24 x     =
+        xl = a2_lo x
+        xh = a2_hi x
+        A2U64 ((xl / 16777216) + ((xh % 16777216) * 256)) ((xh / 16777216) + ((xl % 16777216) * 256))
+
+fn :: a2 u64 rotr16 A2U64 => A2U64
+      a2 u64 rotr16 x     =
+        xl = a2_lo x
+        xh = a2_hi x
+        A2U64 ((xl / 65536) + ((xh % 65536) * 65536)) ((xh / 65536) + ((xl % 65536) * 65536))
+
+fn :: a2 u64 rotr63 A2U64 => A2U64
+      a2 u64 rotr63 x     =
+        xl = a2_lo x
+        xh = a2_hi x
+        A2U64 (((xl % 2147483648) * 2) + (xh / 2147483648)) (((xh % 2147483648) * 2) + (xl / 2147483648))
+
+fn :: a2 mul32 u64 Int Int => A2U64
+      a2 mul32 u64 x   y   =
+        x0 = x % 65536
+        x1 = x / 65536
+        y0 = y % 65536
+        y1 = y / 65536
+        p0 = x0 * y0
+        p1 = (x0 * y1) + (x1 * y0)
+        p2 = x1 * y1
+        s0 = p0 + ((p1 % 65536) * 65536)
+        nl = s0 % 4294967296
+        cy = s0 / 4294967296
+        nh = (p2 + (p1 / 65536) + cy) % 4294967296
+        A2U64 nl nh
+
+fn :: a2 f blamka A2U64 A2U64 => A2U64
+      a2 f blamka x     y     =
+        pr  = a2 mul32 u64 (a2_lo x) (a2_lo y)
+        two = a2 u64 add pr pr
+        a2 u64 add (a2 u64 add x y) two
+
+fn :: a2 u32 to le4 Int => [Int]
+      a2 u32 to le4 w   =
+        uw = u32 norm w
+        [uw % 256, (uw / 256) % 256, (uw / 65536) % 256, (uw / 16777216) % 256]
+
+fn :: a2 bytes to u32 le [Int] Int => Int
+      a2 bytes to u32 le bs off =
+        (a2 nth int bs off) + ((a2 nth int bs (off + 1)) * 256) + ((a2 nth int bs (off + 2)) * 65536) + ((a2 nth int bs (off + 3)) * 16777216)
+
+-- ============================================================
+-- Pure-Ridgun RFC 7693 BLAKE2b-512 & Variable-Length H' (`blake2b_long`)
+-- ============================================================
+
+fn :: a2 b2b iv => [A2U64]
+      a2 b2b iv =
+        [A2U64 4089235720 1779033703, A2U64 2227873595 3144134277, A2U64 4271175723 1013904242, A2U64 1595750129 2773480762, A2U64 2917565137 1359893119, A2U64 725511199 2600822924, A2U64 4215389547 528734635, A2U64 327033209 1541459225]
+
+fn :: a2 nth u64 [A2U64]  Int => A2U64
+      a2 nth u64 []       _   =  A2U64 0 0
+      a2 nth u64 (x:rest) idx =
+        | idx <= 0  = x
+        | otherwise = a2 nth u64 rest (idx - 1)
+
+fn :: a2 set u64 [A2U64] Int A2U64 => [A2U64]
+      a2 set u64 [] _ _ = []
+      a2 set u64 (x:rest) idx val =
+        | idx <= 0  = [val] :: rest
+        | otherwise = [x] :: (a2 set u64 rest (idx - 1) val)
+
+fn :: a2 b2b g [A2U64] Int Int Int Int A2U64 A2U64 => [A2U64]
+      a2 b2b g v a b c d mx my =
+        va0 = a2 nth u64 v a
+        vb0 = a2 nth u64 v b
+        vc0 = a2 nth u64 v c
+        vd0 = a2 nth u64 v d
+        va1 = a2 u64 add (a2 u64 add va0 vb0) mx
+        vd1 = a2 u64 rotr32 (a2 u64 bitxor vd0 va1)
+        vc1 = a2 u64 add vc0 vd1
+        vb1 = a2 u64 rotr24 (a2 u64 bitxor vb0 vc1)
+        va2 = a2 u64 add (a2 u64 add va1 vb1) my
+        vd2 = a2 u64 rotr16 (a2 u64 bitxor vd1 va2)
+        vc2 = a2 u64 add vc1 vd2
+        vb2 = a2 u64 rotr63 (a2 u64 bitxor vb1 vc2)
+        v1  = a2 set u64 v a va2
+        v2  = a2 set u64 v1 b vb2
+        v3  = a2 set u64 v2 c vc2
+        a2 set u64 v3 d vd2
+
+fn :: a2 b2b sigma Int => [Int]
+      a2 b2b sigma r   =
+        | (r % 10) == 0 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        | (r % 10) == 1 = [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3]
+        | (r % 10) == 2 = [11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4]
+        | (r % 10) == 3 = [7, 9, 3, 1, 13, 12, 11, 14, 2, 6, 5, 10, 4, 0, 15, 8]
+        | (r % 10) == 4 = [9, 0, 5, 7, 2, 4, 10, 15, 14, 1, 11, 12, 6, 8, 3, 13]
+        | (r % 10) == 5 = [2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9]
+        | (r % 10) == 6 = [12, 5, 1, 15, 14, 13, 4, 10, 0, 7, 6, 3, 9, 2, 8, 11]
+        | (r % 10) == 7 = [13, 11, 7, 14, 12, 1, 3, 9, 5, 0, 15, 4, 8, 6, 2, 10]
+        | (r % 10) == 8 = [6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5]
+        | otherwise     = [10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0]
+
+fn :: a2 b2b round [A2U64] [A2U64] Int => [A2U64]
+      a2 b2b round v m r =
+        s  = a2 b2b sigma r
+        v1 = a2 b2b g v  0 4 8  12 (a2 nth u64 m (a2 nth int s 0))  (a2 nth u64 m (a2 nth int s 1))
+        v2 = a2 b2b g v1 1 5 9  13 (a2 nth u64 m (a2 nth int s 2))  (a2 nth u64 m (a2 nth int s 3))
+        v3 = a2 b2b g v2 2 6 10 14 (a2 nth u64 m (a2 nth int s 4))  (a2 nth u64 m (a2 nth int s 5))
+        v4 = a2 b2b g v3 3 7 11 15 (a2 nth u64 m (a2 nth int s 6))  (a2 nth u64 m (a2 nth int s 7))
+        v5 = a2 b2b g v4 0 5 10 15 (a2 nth u64 m (a2 nth int s 8))  (a2 nth u64 m (a2 nth int s 9))
+        v6 = a2 b2b g v5 1 6 11 12 (a2 nth u64 m (a2 nth int s 10)) (a2 nth u64 m (a2 nth int s 11))
+        v7 = a2 b2b g v6 2 7 8  13 (a2 nth u64 m (a2 nth int s 12)) (a2 nth u64 m (a2 nth int s 13))
+        a2 b2b g v7 3 4 9 14 (a2 nth u64 m (a2 nth int s 14)) (a2 nth u64 m (a2 nth int s 15))
+
+fn :: a2 b2b rounds [A2U64] [A2U64] Int => [A2U64]
+      a2 b2b rounds v m r =
+        | r >= 12   = v
+        | otherwise = a2 b2b rounds (a2 b2b round v m r) m (r + 1)
+
+fn :: a2 b2b finalize [A2U64] [A2U64] Int => [A2U64]
+      a2 b2b finalize h v idx =
+        | idx >= 8  = []
+        | otherwise = [a2 u64 bitxor (a2 nth u64 h idx) (a2 u64 bitxor (a2 nth u64 v idx) (a2 nth u64 v (idx + 8)))] :: (a2 b2b finalize h v (idx + 1))
+
+fn :: a2 b2b compress [A2U64] [A2U64] Int Bool => [A2U64]
+      a2 b2b compress h m t is_last =
+        iv  = a2 b2b iv
+        v12 = a2 u64 bitxor (a2 nth u64 iv 4) (A2U64 t 0)
+        v14 =
+          | is_last   = a2 u64 bitxor (a2 nth u64 iv 6) (A2U64 4294967295 4294967295)
+          | otherwise = a2 nth u64 iv 6
+        v0 = h :: [a2 nth u64 iv 0, a2 nth u64 iv 1, a2 nth u64 iv 2, a2 nth u64 iv 3, v12, a2 nth u64 iv 5, v14, a2 nth u64 iv 7]
+        vf = a2 b2b rounds v0 m 0
+        a2 b2b finalize h vf 0
+
+fn :: a2 bytes to m16 [Int] Int => [A2U64]
+      a2 bytes to m16 bs idx =
+        | idx >= 16 = []
         | otherwise =
-          hi = hex val (str_char_at hex idx)
-          lo = hex val (str_char_at hex (idx + 1))
-          [(hi * 16) + lo] :: (hex to bytes loop hex (idx + 2) len)
+          off = idx * 8
+          [A2U64 (a2 bytes to u32 le bs off) (a2 bytes to u32 le bs (off + 4))] :: (a2 bytes to m16 bs (idx + 1))
+
+fn :: a2 u64 list to bytes [A2U64] => [Int]
+      a2 u64 list to bytes [] = []
+      a2 u64 list to bytes (x:rest) =
+        (a2 u32 to le4 (a2_lo x)) :: (a2 u32 to le4 (a2_hi x)) :: (a2 u64 list to bytes rest)
+
+fn :: a2 b2b loop [A2U64] [Int] Int => [A2U64]
+      a2 b2b loop h rem t =
+        | (a2 list len rem) <= 128 =
+          rlen   = a2 list len rem
+          padded = rem :: (a2 pad zeroes (128 - rlen))
+          a2 b2b compress h (a2 bytes to m16 padded 0) (t + rlen) True
+        | otherwise =
+          blk  = a2 take ints rem 128
+          rest = a2 drop ints rem 128
+          h1   = a2 b2b compress h (a2 bytes to m16 blk 0) (t + 128) False
+          a2 b2b loop h1 rest (t + 128)
+
+fn :: a2 blake2b [Int] Int    => [Int]
+      a2 blake2b msg   outlen =
+        iv   = a2 b2b iv
+        h0_0 = a2 u64 bitxor (a2 nth u64 iv 0) (A2U64 (16842752 + outlen) 0)
+        h_in = a2 set u64 iv 0 h0_0
+        h_fi = a2 b2b loop h_in msg 0
+        a2 take ints (a2 u64 list to bytes h_fi) outlen
+
+fn :: a2 b2b long loop [Int] Int Int Int => [Int]
+      a2 b2b long loop v idx r outlen =
+        | idx > r =
+          rem = outlen - (32 * r)
+          a2 blake2b v rem
+        | otherwise =
+          v_next = a2 blake2b v 64
+          (a2 take ints v_next 32) :: (a2 b2b long loop v_next (idx + 1) r outlen)
+
+fn :: a2 blake2b long [Int] Int    => [Int]
+      a2 blake2b long data  outlen =
+        | outlen <= 64 = a2 blake2b ((a2 u32 to le4 outlen) :: data) outlen
+        | otherwise =
+          r  = ((outlen + 31) / 32) - 2
+          v1 = a2 blake2b ((a2 u32 to le4 outlen) :: data) 64
+          (a2 take ints v1 32) :: (a2 b2b long loop v1 2 r outlen)
 
 -- ============================================================
--- RFC 9106 v0x13 Argon2id Derivation Engine
+-- Pure-Ridgun RFC 9106 v0x13 Argon2id Block Compression & Memory Engine
 -- ============================================================
 
-fn :: a2 strip colon step String Int Int Int => String
-      a2 strip colon step s idx slen ch =
-        | ch == 58 or ch == 10 or ch == 13 or ch == 32 = a2 strip colon nl s (idx + 1) slen
-        | ch >= 65 and ch <= 70                        = (char_from_code (ch + 32)) + (a2 strip colon nl s (idx + 1) slen)
-        | otherwise                                    = (str_slice s idx (idx + 1)) + (a2 strip colon nl s (idx + 1) slen)
+fn :: a2 g4 A2U64 A2U64 A2U64 A2U64 => A2G4
+      a2 g4 a0 b0 c0 d0 =
+        a1 = a2 f blamka a0 b0
+        d1 = a2 u64 rotr32 (a2 u64 bitxor d0 a1)
+        c1 = a2 f blamka c0 d1
+        b1 = a2 u64 rotr24 (a2 u64 bitxor b0 c1)
+        a2 = a2 f blamka a1 b1
+        d2 = a2 u64 rotr16 (a2 u64 bitxor d1 a2)
+        c2 = a2 f blamka c1 d2
+        b2 = a2 u64 rotr63 (a2 u64 bitxor b1 c2)
+        A2G4 a2 b2 c2 d2
 
-fn :: a2 strip colon nl String Int Int => String
-      a2 strip colon nl s idx slen =
-        | idx >= slen = ""
-        | otherwise   = a2 strip colon step s idx slen (str_char_at s idx)
+fn :: a2 p16 w A2W16 => A2W16
+      a2 p16 w v     =
+        c0 = a2 g4 (w0 v) (w4 v) (w8 v)  (w12 v)
+        c1 = a2 g4 (w1 v) (w5 v) (w9 v)  (w13 v)
+        c2 = a2 g4 (w2 v) (w6 v) (w10 v) (w14 v)
+        c3 = a2 g4 (w3 v) (w7 v) (w11 v) (w15 v)
+        d0 = a2 g4 (a2_ga c0) (a2_gb c1) (a2_gc c2) (a2_gd c3)
+        d1 = a2 g4 (a2_ga c1) (a2_gb c2) (a2_gc c3) (a2_gd c0)
+        d2 = a2 g4 (a2_ga c2) (a2_gb c3) (a2_gc c0) (a2_gd c1)
+        d3 = a2 g4 (a2_ga c3) (a2_gb c0) (a2_gc c1) (a2_gd c2)
+        A2W16 (a2_ga d0) (a2_ga d1) (a2_ga d2) (a2_ga d3) (a2_gb d3) (a2_gb d0) (a2_gb d1) (a2_gb d2) (a2_gc d2) (a2_gc d3) (a2_gc d0) (a2_gc d1) (a2_gd d1) (a2_gd d2) (a2_gd d3) (a2_gd d0)
 
-fn :: a2 openssl kdf hex String => String
-      a2 openssl kdf hex args   =
-        mfd = sys_call 319 4194311 1 0 0 0 0
-        pid = sys_getpid
-        _   = shell_exec "openssl kdf {args} > /proc/{pid}/fd/{mfd} 2>/dev/null"
-        _   = sys_call 8 mfd 0 0 0 0 0
-        raw = sys_read_fd mfd 4096
-        _   = sys_close mfd
-        a2 strip colon nl raw 0 (str_len raw)
+fn :: a2 bitxor w16 A2W16 A2W16 => A2W16
+      a2 bitxor w16 a     b     =
+        A2W16 (a2 u64 bitxor (w0 a) (w0 b)) (a2 u64 bitxor (w1 a) (w1 b)) (a2 u64 bitxor (w2 a) (w2 b)) (a2 u64 bitxor (w3 a) (w3 b)) (a2 u64 bitxor (w4 a) (w4 b)) (a2 u64 bitxor (w5 a) (w5 b)) (a2 u64 bitxor (w6 a) (w6 b)) (a2 u64 bitxor (w7 a) (w7 b)) (a2 u64 bitxor (w8 a) (w8 b)) (a2 u64 bitxor (w9 a) (w9 b)) (a2 u64 bitxor (w10 a) (w10 b)) (a2 u64 bitxor (w11 a) (w11 b)) (a2 u64 bitxor (w12 a) (w12 b)) (a2 u64 bitxor (w13 a) (w13 b)) (a2 u64 bitxor (w14 a) (w14 b)) (a2 u64 bitxor (w15 a) (w15 b))
 
-fn :: a2 opt hex bytes String [Int] => String
-      a2 opt hex bytes flag bs =
-        | (a2 list len bs) == 0 and flag == "hexpass" = " -kdfopt pass:\"\""
-        | (a2 list len bs) == 0                       = ""
-        | otherwise                                   = " -kdfopt {flag}:{bytes to hex bs}"
+fn :: a2 bitxor blk8 A2Blk8 A2Blk8 => A2Blk8
+      a2 bitxor blk8 a      b      =
+        A2Blk8 (a2 bitxor w16 (r0 a) (r0 b)) (a2 bitxor w16 (r1 a) (r1 b)) (a2 bitxor w16 (r2 a) (r2 b)) (a2 bitxor w16 (r3 a) (r3 b)) (a2 bitxor w16 (r4 a) (r4 b)) (a2 bitxor w16 (r5 a) (r5 b)) (a2 bitxor w16 (r6 a) (r6 b)) (a2 bitxor w16 (r7 a) (r7 b))
 
-fn :: a2 opt hex str String String => String
-      a2 opt hex str flag s =
-        | (str_len s) == 0 = ""
-        | otherwise        = " -kdfopt {flag}:{bytes to hex (a2 str to bytes s)}"
+fn :: a2 compress blk8 A2Blk8 A2Blk8 => A2Blk8
+      a2 compress blk8 x      y      =
+        r   = a2 bitxor blk8 x y
+        pr0 = a2 p16 w (r0 r)
+        pr1 = a2 p16 w (r1 r)
+        pr2 = a2 p16 w (r2 r)
+        pr3 = a2 p16 w (r3 r)
+        pr4 = a2 p16 w (r4 r)
+        pr5 = a2 p16 w (r5 r)
+        pr6 = a2 p16 w (r6 r)
+        pr7 = a2 p16 w (r7 r)
+        c0  = a2 p16 w (A2W16 (w0 pr0)  (w1 pr0)  (w0 pr1)  (w1 pr1)  (w0 pr2)  (w1 pr2)  (w0 pr3)  (w1 pr3)  (w0 pr4)  (w1 pr4)  (w0 pr5)  (w1 pr5)  (w0 pr6)  (w1 pr6)  (w0 pr7)  (w1 pr7))
+        c1  = a2 p16 w (A2W16 (w2 pr0)  (w3 pr0)  (w2 pr1)  (w3 pr1)  (w2 pr2)  (w3 pr2)  (w2 pr3)  (w3 pr3)  (w2 pr4)  (w3 pr4)  (w2 pr5)  (w3 pr5)  (w2 pr6)  (w3 pr6)  (w2 pr7)  (w3 pr7))
+        c2  = a2 p16 w (A2W16 (w4 pr0)  (w5 pr0)  (w4 pr1)  (w5 pr1)  (w4 pr2)  (w5 pr2)  (w4 pr3)  (w5 pr3)  (w4 pr4)  (w5 pr4)  (w4 pr5)  (w5 pr5)  (w4 pr6)  (w5 pr6)  (w4 pr7)  (w5 pr7))
+        c3  = a2 p16 w (A2W16 (w6 pr0)  (w7 pr0)  (w6 pr1)  (w7 pr1)  (w6 pr2)  (w7 pr2)  (w6 pr3)  (w7 pr3)  (w6 pr4)  (w7 pr4)  (w6 pr5)  (w7 pr5)  (w6 pr6)  (w7 pr6)  (w6 pr7)  (w7 pr7))
+        c4  = a2 p16 w (A2W16 (w8 pr0)  (w9 pr0)  (w8 pr1)  (w9 pr1)  (w8 pr2)  (w9 pr2)  (w8 pr3)  (w9 pr3)  (w8 pr4)  (w9 pr4)  (w8 pr5)  (w9 pr5)  (w8 pr6)  (w9 pr6)  (w8 pr7)  (w9 pr7))
+        c5  = a2 p16 w (A2W16 (w10 pr0) (w11 pr0) (w10 pr1) (w11 pr1) (w10 pr2) (w11 pr2) (w10 pr3) (w11 pr3) (w10 pr4) (w11 pr4) (w10 pr5) (w11 pr5) (w10 pr6) (w11 pr6) (w10 pr7) (w11 pr7))
+        c6  = a2 p16 w (A2W16 (w12 pr0) (w13 pr0) (w12 pr1) (w13 pr1) (w12 pr2) (w13 pr2) (w12 pr3) (w13 pr3) (w12 pr4) (w13 pr4) (w12 pr5) (w13 pr5) (w12 pr6) (w13 pr6) (w12 pr7) (w13 pr7))
+        c7  = a2 p16 w (A2W16 (w14 pr0) (w15 pr0) (w14 pr1) (w15 pr1) (w14 pr2) (w15 pr2) (w14 pr3) (w15 pr3) (w14 pr4) (w15 pr4) (w14 pr5) (w15 pr5) (w14 pr6) (w15 pr6) (w14 pr7) (w15 pr7))
+        z0  = A2W16 (w0 c0)  (w1 c0)  (w0 c1)  (w1 c1)  (w0 c2)  (w1 c2)  (w0 c3)  (w1 c3)  (w0 c4)  (w1 c4)  (w0 c5)  (w1 c5)  (w0 c6)  (w1 c6)  (w0 c7)  (w1 c7)
+        z1  = A2W16 (w2 c0)  (w3 c0)  (w2 c1)  (w3 c1)  (w2 c2)  (w3 c2)  (w2 c3)  (w3 c3)  (w2 c4)  (w3 c4)  (w2 c5)  (w3 c5)  (w2 c6)  (w3 c6)  (w2 c7)  (w3 c7)
+        z2  = A2W16 (w4 c0)  (w5 c0)  (w4 c1)  (w5 c1)  (w4 c2)  (w5 c2)  (w4 c3)  (w5 c3)  (w4 c4)  (w5 c4)  (w4 c5)  (w5 c5)  (w4 c6)  (w5 c6)  (w4 c7)  (w5 c7)
+        z3  = A2W16 (w6 c0)  (w7 c0)  (w6 c1)  (w7 c1)  (w6 c2)  (w7 c2)  (w6 c3)  (w7 c3)  (w6 c4)  (w7 c4)  (w6 c5)  (w7 c5)  (w6 c6)  (w7 c6)  (w6 c7)  (w7 c7)
+        z4  = A2W16 (w8 c0)  (w9 c0)  (w8 c1)  (w9 c1)  (w8 c2)  (w9 c2)  (w8 c3)  (w9 c3)  (w8 c4)  (w9 c4)  (w8 c5)  (w9 c5)  (w8 c6)  (w9 c6)  (w8 c7)  (w9 c7)
+        z5  = A2W16 (w10 c0) (w11 c0) (w10 c1) (w11 c1) (w10 c2) (w11 c2) (w10 c3) (w11 c3) (w10 c4) (w11 c4) (w10 c5) (w11 c5) (w10 c6) (w11 c6) (w10 c7) (w11 c7)
+        z6  = A2W16 (w12 c0) (w13 c0) (w12 c1) (w13 c1) (w12 c2) (w13 c2) (w12 c3) (w13 c3) (w12 c4) (w13 c4) (w12 c5) (w13 c5) (w12 c6) (w13 c6) (w12 c7) (w13 c7)
+        z7  = A2W16 (w14 c0) (w15 c0) (w14 c1) (w15 c1) (w14 c2) (w15 c2) (w14 c3) (w15 c3) (w14 c4) (w15 c4) (w14 c5) (w15 c5) (w14 c6) (w15 c6) (w14 c7) (w15 c7)
+        a2 bitxor blk8 (A2Blk8 z0 z1 z2 z3 z4 z5 z6 z7) r
 
+fn :: a2 zero w16 => A2W16
+      a2 zero w16 =
+        z = A2U64 0 0
+        A2W16 z z z z z z z z z z z z z z z z
+
+fn :: a2 zero blk8 => A2Blk8
+      a2 zero blk8 =
+        zw = a2 zero w16
+        A2Blk8 zw zw zw zw zw zw zw zw
+
+fn :: a2 get w16 A2W16 Int => A2U64
+      a2 get w16 row   lo  =
+        | lo < 8 =
+          | lo < 4 =
+            | lo == 0   = w0 row
+            | lo == 1   = w1 row
+            | lo == 2   = w2 row
+            | otherwise = w3 row |.
+          | otherwise =
+            | lo == 4   = w4 row
+            | lo == 5   = w5 row
+            | lo == 6   = w6 row
+            | otherwise = w7 row |.
+        | otherwise =
+          | lo < 12 =
+            | lo == 8   = w8 row
+            | lo == 9   = w9 row
+            | lo == 10  = w10 row
+            | otherwise = w11 row |.
+          | otherwise =
+            | lo == 12  = w12 row
+            | lo == 13  = w13 row
+            | lo == 14  = w14 row
+            | otherwise = w15 row
+
+fn :: a2 get blk8 row A2Blk8 Int Int => A2U64
+      a2 get blk8 row blk hi lo =
+        | hi < 4 =
+          | hi == 0   = a2 get w16 (r0 blk) lo
+          | hi == 1   = a2 get w16 (r1 blk) lo
+          | hi == 2   = a2 get w16 (r2 blk) lo
+          | otherwise = a2 get w16 (r3 blk) lo |.
+        | otherwise =
+          | hi == 4   = a2 get w16 (r4 blk) lo
+          | hi == 5   = a2 get w16 (r5 blk) lo
+          | hi == 6   = a2 get w16 (r6 blk) lo
+          | otherwise = a2 get w16 (r7 blk) lo
+
+fn :: a2 get blk8 A2Blk8 Int => A2U64
+      a2 get blk8 blk    idx =
+        a2 get blk8 row blk ((idx / 16) % 8) (idx % 16)
+
+fn :: a2 bytes to u64 [Int] Int => A2U64
+      a2 bytes to u64 bs off =
+        A2U64 (a2 bytes to u32 le bs off) (a2 bytes to u32 le bs (off + 4))
+
+fn :: a2 bytes to w16 [Int] Int => A2W16
+      a2 bytes to w16 bs off =
+        A2W16 (a2 bytes to u64 bs off) (a2 bytes to u64 bs (off + 8)) (a2 bytes to u64 bs (off + 16)) (a2 bytes to u64 bs (off + 24)) (a2 bytes to u64 bs (off + 32)) (a2 bytes to u64 bs (off + 40)) (a2 bytes to u64 bs (off + 48)) (a2 bytes to u64 bs (off + 56)) (a2 bytes to u64 bs (off + 64)) (a2 bytes to u64 bs (off + 72)) (a2 bytes to u64 bs (off + 80)) (a2 bytes to u64 bs (off + 88)) (a2 bytes to u64 bs (off + 96)) (a2 bytes to u64 bs (off + 104)) (a2 bytes to u64 bs (off + 112)) (a2 bytes to u64 bs (off + 120))
+
+fn :: a2 bytes to blk8 [Int] => A2Blk8
+      a2 bytes to blk8 bs    =
+        b0 = a2 take ints bs 128
+        r1 = a2 drop ints bs 128
+        b1 = a2 take ints r1 128
+        r2 = a2 drop ints r1 128
+        b2 = a2 take ints r2 128
+        r3 = a2 drop ints r2 128
+        b3 = a2 take ints r3 128
+        r4 = a2 drop ints r3 128
+        b4 = a2 take ints r4 128
+        r5 = a2 drop ints r4 128
+        b5 = a2 take ints r5 128
+        r6 = a2 drop ints r5 128
+        b6 = a2 take ints r6 128
+        b7 = a2 drop ints r6 128
+        A2Blk8 (a2 bytes to w16 b0 0) (a2 bytes to w16 b1 0) (a2 bytes to w16 b2 0) (a2 bytes to w16 b3 0) (a2 bytes to w16 b4 0) (a2 bytes to w16 b5 0) (a2 bytes to w16 b6 0) (a2 bytes to w16 b7 0)
+
+fn :: a2 w16 to u64s A2W16 => [A2U64]
+      a2 w16 to u64s w     =
+        [w0 w, w1 w, w2 w, w3 w, w4 w, w5 w, w6 w, w7 w, w8 w, w9 w, w10 w, w11 w, w12 w, w13 w, w14 w, w15 w]
+
+fn :: a2 blk8 to bytes A2Blk8 => [Int]
+      a2 blk8 to bytes b      =
+        u64s = (a2 w16 to u64s (r0 b)) :: (a2 w16 to u64s (r1 b)) :: (a2 w16 to u64s (r2 b)) :: (a2 w16 to u64s (r3 b)) :: (a2 w16 to u64s (r4 b)) :: (a2 w16 to u64s (r5 b)) :: (a2 w16 to u64s (r6 b)) :: (a2 w16 to u64s (r7 b))
+        a2 u64 list to bytes u64s
+
+fn :: a2 nth blk [A2Blk8] Int => A2Blk8
+      a2 nth blk []       _   =  a2 zero blk8
+      a2 nth blk (b:rest) idx =
+        | idx <= 0  = b
+        | otherwise = a2 nth blk rest (idx - 1)
+
+fn :: a2 set blk [A2Blk8] Int A2Blk8 => [A2Blk8]
+      a2 set blk [] _ _ = []
+      a2 set blk (b:rest) idx val =
+        | idx <= 0  = [val] :: rest
+        | otherwise = [b] :: (a2 set blk rest (idx - 1) val)
+
+fn :: a2 init lane cols [Int] Int Int Int => [A2Blk8]
+      a2 init lane cols h0 l col q =
+        | col >= q = []
+        | col == 0 =
+          b0 = a2 blake2b long (h0 :: (a2 u32 to le4 0) :: (a2 u32 to le4 l)) 1024
+          [a2 bytes to blk8 b0] :: (a2 init lane cols h0 l 1 q)
+        | col == 1 =
+          b1 = a2 blake2b long (h0 :: (a2 u32 to le4 1) :: (a2 u32 to le4 l)) 1024
+          [a2 bytes to blk8 b1] :: (a2 init lane cols h0 l 2 q)
+        | otherwise =
+          [a2 zero blk8] :: (a2 init lane cols h0 l (col + 1) q)
+
+fn :: a2 init all lanes [Int] Int Int Int => [A2Blk8]
+      a2 init all lanes h0 l lanes q =
+        | l >= lanes = []
+        | otherwise  = (a2 init lane cols h0 l 0 q) :: (a2 init all lanes h0 (l + 1) lanes q)
+
+fn :: a2 make addr blk A2Ctx Int => A2Blk8
+      a2 make addr blk ctx ctr =
+        zb      = a2 zero blk8
+        zw      = a2 zero w16
+        z0      = A2U64 0 0
+        m_prime = (p_lanes ctx) * (q_cols ctx)
+        in_w0   = A2W16 (A2U64 (r_pass ctx) 0) (A2U64 (l_lane ctx) 0) (A2U64 (s_slice ctx) 0) (A2U64 m_prime 0) (A2U64 (t_iters ctx) 0) (A2U64 2 0) (A2U64 ctr 0) z0 z0 z0 z0 z0 z0 z0 z0 z0
+        in_blk  = A2Blk8 in_w0 zw zw zw zw zw zw zw
+        a2 compress blk8 zb (a2 compress blk8 zb in_blk)
+
+fn :: a2 calc w size A2Ctx Int Bool => Int
+      a2 calc w size ctx idx same_lane =
+        | (r_pass ctx) == 0 =
+          | (s_slice ctx) == 0 or same_lane = ((s_slice ctx) * (seg_len ctx)) + idx - 1
+          | idx == 0                        = ((s_slice ctx) * (seg_len ctx)) - 1
+          | otherwise                       = (s_slice ctx) * (seg_len ctx) |.
+        | otherwise =
+          | same_lane = ((q_cols ctx) - (seg_len ctx)) + idx - 1
+          | idx == 0  = ((q_cols ctx) - (seg_len ctx)) - 1
+          | otherwise = (q_cols ctx) - (seg_len ctx)
+
+fn :: a2 fill segment [A2Blk8] A2Ctx Int A2Blk8 => [A2Blk8]
+      a2 fill segment mem ctx idx addr_blk =
+        | idx >= (seg_len ctx) = mem
+        | otherwise =
+          r        = r_pass ctx
+          s        = s_slice ctx
+          l        = l_lane ctx
+          p        = p_lanes ctx
+          q        = q_cols ctx
+          sl       = seg_len ctx
+          curr_col = (s * sl) + idx
+          prev_col = ((curr_col - 1) + q) % q
+          data_ind = r == 0 and s < 2
+          need_adr = data_ind and ((idx % 128) == 0 or (idx == 2 and r == 0 and s == 0))
+          addr2    =
+            | need_adr  = a2 make addr blk ctx ((idx / 128) + 1)
+            | otherwise = addr_blk
+          j_pair   =
+            | data_ind  = a2 get blk8 addr2 (idx % 128)
+            | otherwise = w0 (r0 (a2 nth blk mem ((l * q) + prev_col)))
+          j1       = a2_lo j_pair
+          j2       = a2_hi j_pair
+          ref_lane =
+            | r == 0 and s == 0 = l
+            | otherwise         = j2 % p
+          w_size   = a2 calc w size ctx idx (ref_lane == l)
+          x_val    = a2_hi (a2 mul32 u64 j1 j1)
+          y_val    = a2_hi (a2 mul32 u64 w_size x_val)
+          zz       = w_size - 1 - y_val
+          st_pos   =
+            | r == 0    = 0
+            | otherwise = ((s + 1) % 4) * sl
+          ref_col  = (st_pos + zz) % q
+          prev_blk = a2 nth blk mem ((l * q) + prev_col)
+          ref_blk  = a2 nth blk mem ((ref_lane * q) + ref_col)
+          new_blk  = a2 compress blk8 prev_blk ref_blk
+          fin_blk  =
+            | r == 0    = new_blk
+            | otherwise = a2 bitxor blk8 new_blk (a2 nth blk mem ((l * q) + curr_col))
+          mem2     = a2 set blk mem ((l * q) + curr_col) fin_blk
+          a2 fill segment mem2 ctx (idx + 1) addr2
+
+fn :: a2 run lanes [A2Blk8] A2Ctx Int => [A2Blk8]
+      a2 run lanes mem ctx l =
+        | l >= (p_lanes ctx) = mem
+        | otherwise =
+          ctx_l   = ctx with l_lane: l
+          start_j =
+            | (r_pass ctx) == 0 and (s_slice ctx) == 0 = 2
+            | otherwise                                = 0
+          mem2    = a2 fill segment mem ctx_l start_j (a2 zero blk8)
+          a2 run lanes mem2 ctx (l + 1)
+
+fn :: a2 run slices [A2Blk8] A2Ctx Int => [A2Blk8]
+      a2 run slices mem ctx s =
+        | s >= 4 = mem
+        | otherwise =
+          ctx_s = ctx with s_slice: s
+          mem2  = a2 run lanes mem ctx_s 0
+          a2 run slices mem2 ctx (s + 1)
+
+fn :: a2 run passes [A2Blk8] A2Ctx Int => [A2Blk8]
+      a2 run passes mem ctx r =
+        | r >= (t_iters ctx) = mem
+        | otherwise =
+          ctx_r = ctx with r_pass: r
+          mem2  = a2 run slices mem ctx_r 0
+          a2 run passes mem2 ctx (r + 1)
+
+fn :: a2 bitxor final lanes [A2Blk8] Int Int Int A2Blk8 => A2Blk8
+      a2 bitxor final lanes mem l lanes q acc =
+        | l >= lanes = acc
+        | otherwise  =
+          blk = a2 nth blk mem ((l * q) + (q - 1))
+          a2 bitxor final lanes mem (l + 1) lanes q (a2 bitxor blk8 acc blk)
+
+-- @implements FR-CRYPTO-001
+-- @implements FR-CRYPTO-004
+-- @implements NFR-PERF-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
 fn :: derive raw tag ctx [Int] [Int] String String Argon2Params => [Int]
       derive raw tag ctx pwd_raw salt_bytes secret ad params =
-        p_arg = a2 opt hex bytes "hexpass" pwd_raw
-        s_arg = a2 opt hex bytes "hexsalt" salt_bytes
-        k_arg = a2 opt hex str "hexsecret" secret
-        a_arg = a2 opt hex str "hexad" ad
+        sec_b = a2 str to bytes secret
+        ad_b  = a2 str to bytes ad
         m     = m_cost params
         t     = t_cost params
         p     = lanes params
         tlen  = tag_len params
-        out_h = a2 openssl kdf hex "-keylen {tlen}{p_arg}{s_arg}{k_arg}{a_arg} -kdfopt iter:{t} -kdfopt memcost:{m} -kdfopt lanes:{p} ARGON2ID"
-        hex to bytes loop out_h 0 (str_len out_h)
+        h0_in = (a2 u32 to le4 p) :: (a2 u32 to le4 tlen) :: (a2 u32 to le4 m) :: (a2 u32 to le4 t) :: (a2 u32 to le4 19) :: (a2 u32 to le4 2) :: (a2 u32 to le4 (a2 list len pwd_raw)) :: pwd_raw :: (a2 u32 to le4 (a2 list len salt_bytes)) :: salt_bytes :: (a2 u32 to le4 (a2 list len sec_b)) :: sec_b :: (a2 u32 to le4 (a2 list len ad_b)) :: ad_b
+        h0    = a2 blake2b h0_in 64
+        sl    = m / (4 * p)
+        q     = sl * 4
+        mem0  = a2 init all lanes h0 0 p q
+        ctx   = A2Ctx 0 0 0 p q sl t
+        memf  = a2 run passes mem0 ctx 0
+        c0    = a2 nth blk memf (q - 1)
+        c_fin = a2 bitxor final lanes memf 1 p q c0
+        a2 blake2b long (a2 blk8 to bytes c_fin) tlen
 
 fn :: derive raw tag [Int] [Int] Argon2Params => [Int]
       derive raw tag pwd_raw salt_bytes params = derive raw tag ctx pwd_raw salt_bytes "" "" params
@@ -311,7 +807,7 @@ fn :: b64 char val Int => Int
         | c >= 48 and c <= 57  = (c - 48) + 52
         | c == 43              = 62
         | c == 47              = 63
-        | otherwise            = -1
+        | otherwise            = 0 - 1
 
 fn :: valid b64 chars String Int Int => Bool
       valid b64 chars s idx len =
@@ -424,10 +920,17 @@ fn :: validate argon2 params Argon2Params [Int]      => String
         | (a2 list len salt_bytes) < 8                  = "salt must be at least 8 bytes"
         | otherwise                                     = ""
 
+fn :: finish derive key checked [Int] Int => Argon2KeyRes
+      finish derive key checked tag_raw exp_len =
+        | (a2 list len tag_raw) != exp_len = Argon2KeyErr "tag derivation failed"
+        | otherwise                        = Argon2KeyOk tag_raw
+
 fn :: finish derive key String [Int] Argon2Params String => Argon2KeyRes
       finish derive key pwd salt_bytes params err =
         | (str_len err) > 0 = Argon2KeyErr err
-        | otherwise         = Argon2KeyOk (derive raw tag (a2 str to bytes pwd) salt_bytes params)
+        | otherwise         =
+          tag_raw = derive raw tag (a2 str to bytes pwd) salt_bytes params
+          finish derive key checked tag_raw (tag_len params)
 
 fn :: argon2id derive key String String Argon2Params => Argon2KeyRes
       argon2id derive key pwd salt params =
@@ -436,23 +939,29 @@ fn :: argon2id derive key String String Argon2Params => Argon2KeyRes
 
 fn :: key res to hex Argon2KeyRes       => Argon2Res
       key res to hex (Argon2KeyErr err) =  Argon2Err err
-      key res to hex (Argon2KeyOk  bytes) = Argon2Ok (bytes to hex bytes)
+      key res to hex (Argon2KeyOk bytes) = Argon2Ok (bytes to hex bytes)
 
 fn :: argon2id derive key hex String String Argon2Params => Argon2Res
       argon2id derive key hex pwd salt params = key res to hex (argon2id derive key pwd salt params)
 
-fn :: finish argon2id hash ctx String [Int] String String Argon2Params String => Argon2Res
-      finish argon2id hash ctx pwd salt_bytes secret ad params err =
-        | (str_len err) > 0 = Argon2Err err
+fn :: build phc from tag [Int] [Int] Argon2Params => Argon2Res
+      build phc from tag salt_bytes tag_raw params =
+        | (a2 list len tag_raw) != (tag_len params) = Argon2Err "tag derivation failed"
         | otherwise =
-          pwd_raw  = a2 str to bytes pwd
-          tag_raw  = derive raw tag ctx pwd_raw salt_bytes secret ad params
           salt_b64 = b64 encode nopad salt_bytes
           tag_b64  = b64 encode nopad tag_raw
           m        = m_cost params
           t        = t_cost params
           p        = lanes params
           Argon2Ok "$argon2id$v=19$m={m},t={t},p={p}${salt_b64}${tag_b64}"
+
+fn :: finish argon2id hash ctx String [Int] String String Argon2Params String => Argon2Res
+      finish argon2id hash ctx pwd salt_bytes secret ad params err =
+        | (str_len err) > 0 = Argon2Err err
+        | otherwise =
+          pwd_raw = a2 str to bytes pwd
+          tag_raw = derive raw tag ctx pwd_raw salt_bytes secret ad params
+          build phc from tag salt_bytes tag_raw params
 
 fn :: argon2id hash ctx String String String String Argon2Params => Argon2Res
       argon2id hash ctx pwd salt secret ad params =
@@ -500,9 +1009,9 @@ fn :: a2 is digits loop String Int Int => Bool
 
 fn :: parse kv int String String => Int
       parse kv int item   prefix =
-        | (str_len item) <= (str_len prefix)                           = -1
-        | not (str_starts_with item prefix)                            = -1
-        | not (a2 is digits loop item (str_len prefix) (str_len item)) = -1
+        | (str_len item) <= (str_len prefix)                           = 0 - 1
+        | not (str_starts_with item prefix)                            = 0 - 1
+        | not (a2 is digits loop item (str_len prefix) (str_len item)) = 0 - 1
         | otherwise                                                    = str_to_int (str_slice item (str_len prefix) (str_len item))
 
 fn :: build parsed phc String String Argon2Params String => Argon2PhcRes

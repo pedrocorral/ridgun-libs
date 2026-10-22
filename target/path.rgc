@@ -157,7 +157,7 @@ fn :: path basename String => String
 
 -- @implements FR-PATH-001
 -- @implements API-PATH-001
-fn :: path split String => (String, String)
+fn :: path split String => String String
       path split p      =  (path dirname p, path basename p)
 
 fn :: pa ext at String Int => String

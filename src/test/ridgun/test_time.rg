@@ -7,17 +7,17 @@
 import test
 import time
 
-fn :: utc y (Int, Int, Int, Int, Int, Int) => Int
-      utc y (y, _, _, _, _, _)             =  y
+fn :: utc y (Int Int Int Int Int Int) => Int
+      utc y (y, _, _, _, _, _)        =  y
 
-fn :: utc m (Int, Int, Int, Int, Int, Int) => Int
-      utc m (_, m, _, _, _, _)             =  m
+fn :: utc m (Int Int Int Int Int Int) => Int
+      utc m (_, m, _, _, _, _)        =  m
 
-fn :: utc d (Int, Int, Int, Int, Int, Int) => Int
-      utc d (_, _, d, _, _, _)             =  d
+fn :: utc d (Int Int Int Int Int Int) => Int
+      utc d (_, _, d, _, _, _)        =  d
 
-fn :: utc hh (Int, Int, Int, Int, Int, Int) => Int
-      utc hh (_, _, _, hh, _, _)            =  hh
+fn :: utc hh (Int Int Int Int Int Int) => Int
+      utc hh (_, _, _, hh, _, _)       =  hh
 
 -- @tests TS-TIME-001
 fn :: test utc calendar and iso8601 => ()

@@ -7,11 +7,11 @@
 import test
 import uuid
 
-fn :: prng seed (Int, Int) => Int
-      prng seed (s, _)     =  s
+fn :: prng seed (Int Int) => Int
+      prng seed (s, _)    =  s
 
-fn :: prng val (Int, Int) => Int
-      prng val (_, v)     =  v
+fn :: prng val (Int Int) => Int
+      prng val (_, v)    =  v
 
 -- @tests TS-UUID-001
 fn :: test uuidv4 and uuidv7 => ()

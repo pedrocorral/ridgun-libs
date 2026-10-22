@@ -26,8 +26,8 @@ Applications need memory-hard password hashing and constant-time password verifi
 - Any Ridgun module importing `argon2id`.
 
 ## Constraints & edge cases
-- PHC Base64 encoding and decoding must use standard RFC 4648 alphabet without `=` padding characters, as required by the PHC string format specification.
-- Internal Blake2b and 64-bit word arithmetic remain private/internal implementation details of `argon2id`.
+- PHC Base64 encoding and decoding must use standard RFC 4648 alphabet without `=` padding characters, as required by the PHC string format specification, and must never emit or accept a PHC string with an empty `<tag_b64>` segment (`RG-051`).
+- Internal Blake2b and 64-bit word arithmetic remain 100% in-process pure-Ridgun implementation details of `argon2id` (`RG-050`, zero external subprocesses).
 
 ## Data & privacy
 - Password and derived tag bytes are processed in-memory and never logged (`VUL-LOG-001` / `VUL-SECRET-001`).

@@ -28,6 +28,7 @@ Ridgun's compiler built-ins provide core primitives (`str_len`, `str_concat`, `s
 ## Constraints & edge cases
 - `str_replace s "" new` must not loop infinitely; it returns `s` unchanged.
 - `str_split "" sep` returns `[""]` when `sep` is non-empty, matching standard split semantics.
+- `str_repeat s n` supports multi-megabyte repetitions via binary-doubling without an artificial `1048576` cap (`RG-052`).
 
 ## Data & privacy
 - Pure in-memory string transformations.

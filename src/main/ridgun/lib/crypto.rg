@@ -13,6 +13,11 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+import argon2id
+
+type CB16  = cs0: String, cs1: String, cs2: String, cs3: String, cs4: String, cs5: String, cs6: String, cs7: String, cs8: String, cs9: String, cs10: String, cs11: String, cs12: String, cs13: String, cs14: String, cs15: String
+type CB256 = cr0: CB16, cr1: CB16, cr2: CB16, cr3: CB16, cr4: CB16, cr5: CB16, cr6: CB16, cr7: CB16, cr8: CB16, cr9: CB16, cr10: CB16, cr11: CB16, cr12: CB16, cr13: CB16, cr14: CB16, cr15: CB16
+
 -- ── RGF-019 Raw Byte Manipulation (`byte_str`, `bytes_from_list`, `bytes_to_list`) ──
 
 fn :: norm byte mod Int => Int
@@ -319,64 +324,138 @@ fn :: be32 bytes Int => String
         b3 = un % 256
         bytes from list [b0, b1, b2, b3]
 
-fn :: pbkdf2 iter loop String String String Int Int => String
-      pbkdf2 iter loop password u_prev acc idx total_iters =
-        | idx >= total_iters = acc
+fn :: c build b16 Int  => CB16
+      c build b16 base =
+        CB16 (byte str norm base) (byte str norm (base + 1)) (byte str norm (base + 2)) (byte str norm (base + 3)) (byte str norm (base + 4)) (byte str norm (base + 5)) (byte str norm (base + 6)) (byte str norm (base + 7)) (byte str norm (base + 8)) (byte str norm (base + 9)) (byte str norm (base + 10)) (byte str norm (base + 11)) (byte str norm (base + 12)) (byte str norm (base + 13)) (byte str norm (base + 14)) (byte str norm (base + 15))
+
+fn :: c build b256 => CB256
+      c build b256 =
+        CB256 (c build b16 0) (c build b16 16) (c build b16 32) (c build b16 48) (c build b16 64) (c build b16 80) (c build b16 96) (c build b16 112) (c build b16 128) (c build b16 144) (c build b16 160) (c build b16 176) (c build b16 192) (c build b16 208) (c build b16 224) (c build b16 240)
+
+fn :: c get b16 CB16 Int => String
+      c get b16 row  lo  =
+        | lo < 8 =
+          | lo < 4 =
+            | lo == 0   = cs0 row
+            | lo == 1   = cs1 row
+            | lo == 2   = cs2 row
+            | otherwise = cs3 row |.
+          | otherwise =
+            | lo == 4   = cs4 row
+            | lo == 5   = cs5 row
+            | lo == 6   = cs6 row
+            | otherwise = cs7 row |.
+        | otherwise =
+          | lo < 12 =
+            | lo == 8   = cs8 row
+            | lo == 9   = cs9 row
+            | lo == 10  = cs10 row
+            | otherwise = cs11 row |.
+          | otherwise =
+            | lo == 12  = cs12 row
+            | lo == 13  = cs13 row
+            | lo == 14  = cs14 row
+            | otherwise = cs15 row
+
+fn :: c get b256 CB256 Int Int => String
+      c get b256 tbl hi lo =
+        | hi < 8 =
+          | hi < 4 =
+            | hi == 0   = c get b16 (cr0 tbl) lo
+            | hi == 1   = c get b16 (cr1 tbl) lo
+            | hi == 2   = c get b16 (cr2 tbl) lo
+            | otherwise = c get b16 (cr3 tbl) lo |.
+          | otherwise =
+            | hi == 4   = c get b16 (cr4 tbl) lo
+            | hi == 5   = c get b16 (cr5 tbl) lo
+            | hi == 6   = c get b16 (cr6 tbl) lo
+            | otherwise = c get b16 (cr7 tbl) lo |.
+        | otherwise =
+          | hi < 12 =
+            | hi == 8   = c get b16 (cr8 tbl) lo
+            | hi == 9   = c get b16 (cr9 tbl) lo
+            | hi == 10  = c get b16 (cr10 tbl) lo
+            | otherwise = c get b16 (cr11 tbl) lo |.
+          | otherwise =
+            | hi == 12  = c get b16 (cr12 tbl) lo
+            | hi == 13  = c get b16 (cr13 tbl) lo
+            | hi == 14  = c get b16 (cr14 tbl) lo
+            | otherwise = c get b16 (cr15 tbl) lo
+
+fn :: c hex val fast Int => Int
+      c hex val fast c   =
+        | c <= 57   = c - 48
+        | c >= 97   = c - 87
+        | otherwise = c - 55
+
+fn :: c hex pair CB256 String Int => String
+      c hex pair tbl h off =
+        c get b256 tbl (c hex val fast (str_char_at h off)) (c hex val fast (str_char_at h (off + 1)))
+
+fn :: c hex2raw32 CB256 String => String
+      c hex2raw32 tbl   h      =
+        (c hex pair tbl h 0) + (c hex pair tbl h 2) + (c hex pair tbl h 4) + (c hex pair tbl h 6) + (c hex pair tbl h 8) + (c hex pair tbl h 10) + (c hex pair tbl h 12) + (c hex pair tbl h 14) + (c hex pair tbl h 16) + (c hex pair tbl h 18) + (c hex pair tbl h 20) + (c hex pair tbl h 22) + (c hex pair tbl h 24) + (c hex pair tbl h 26) + (c hex pair tbl h 28) + (c hex pair tbl h 30) + (c hex pair tbl h 32) + (c hex pair tbl h 34) + (c hex pair tbl h 36) + (c hex pair tbl h 38) + (c hex pair tbl h 40) + (c hex pair tbl h 42) + (c hex pair tbl h 44) + (c hex pair tbl h 46) + (c hex pair tbl h 48) + (c hex pair tbl h 50) + (c hex pair tbl h 52) + (c hex pair tbl h 54) + (c hex pair tbl h 56) + (c hex pair tbl h 58) + (c hex pair tbl h 60) + (c hex pair tbl h 62)
+
+fn :: c bitxor4 Int Int => Int
+      c bitxor4 a   b   =
+        x0 = ((a % 2) + (b % 2)) % 2
+        a1 = a / 2
+        b1 = b / 2
+        x1 = ((a1 % 2) + (b1 % 2)) % 2
+        a2 = a1 / 2
+        b2 = b1 / 2
+        x2 = ((a2 % 2) + (b2 % 2)) % 2
+        a3 = a2 / 2
+        b3 = b2 / 2
+        x3 = ((a3 % 2) + (b3 % 2)) % 2
+        x0 + (x1 * 2) + (x2 * 4) + (x3 * 8)
+
+fn :: c bitxor nibs hex64 [Int] String Int => [Int]
+      c bitxor nibs hex64 [] _ _ = []
+      c bitxor nibs hex64 (n:rest) h idx =
+        [c bitxor4 n (c hex val fast (str_char_at h idx))] :: (c bitxor nibs hex64 rest h (idx + 1))
+
+fn :: c hex to nibs String Int => [Int]
+      c hex to nibs h idx =
+        | idx >= 64 = []
+        | otherwise = [c hex val fast (str_char_at h idx)] :: (c hex to nibs h (idx + 1))
+
+fn :: c nibs to raw CB256 [Int] => String
+      c nibs to raw _ [] = ""
+      c nibs to raw _ (_:[]) = ""
+      c nibs to raw tbl (hi:lo:rest) =
+        (c get b256 tbl hi lo) + (c nibs to raw tbl rest)
+
+fn :: c list to raw CB256 [Int] => String
+      c list to raw _ [] = ""
+      c list to raw tbl (b:rest) =
+        ub = norm byte b
+        (c get b256 tbl (ub / 16) (ub % 16)) + (c list to raw tbl rest)
+
+fn :: pbkdf2 iter loop CB256 String String String [Int] Int Int => [Int]
+      pbkdf2 iter loop tbl ipad opad u_raw acc_nibs idx total_iters =
+        | idx >= total_iters = acc_nibs
         | otherwise          =
-          u_next   = hmac sha256 password u_prev
-          acc_next = bitxor byte strings acc u_next
-          pbkdf2 iter loop password u_next acc_next (idx + 1) total_iters
+          in_h  = sha256_str (ipad + u_raw)
+          out_h = sha256_str (opad + (c hex2raw32 tbl in_h))
+          u_nxt = c hex2raw32 tbl out_h
+          acc2  = c bitxor nibs hex64 acc_nibs out_h 0
+          pbkdf2 iter loop tbl ipad opad u_nxt acc2 (idx + 1) total_iters
 
-fn :: pbkdf2 block String String Int Int => String
-      pbkdf2 block password salt iterations block_idx =
-        u1 = hmac sha256 password (salt + (be32 bytes block_idx))
-        pbkdf2 iter loop password u1 u1 1 iterations
+fn :: pbkdf2 block CB256 String String String Int Int => String
+      pbkdf2 block tbl ipad opad salt iterations block_idx =
+        in_h  = sha256_str (ipad + salt + (be32 bytes block_idx))
+        u1_h  = sha256_str (opad + (c hex2raw32 tbl in_h))
+        u1_r  = c hex2raw32 tbl u1_h
+        nibs  = pbkdf2 iter loop tbl ipad opad u1_r (c hex to nibs u1_h 0) 1 iterations
+        c nibs to raw tbl nibs
 
-fn :: pbkdf2 blocks loop String String Int Int Int String => String
-      pbkdf2 blocks loop password salt iterations block_idx dk_len acc =
+fn :: pbkdf2 blocks loop CB256 String String String Int Int Int String => String
+      pbkdf2 blocks loop tbl ipad opad salt iterations block_idx dk_len acc =
         | (str_len acc) >= dk_len = byte slice acc 0 dk_len
         | otherwise               =
-          blk = pbkdf2 block password salt iterations block_idx
-          pbkdf2 blocks loop password salt iterations (block_idx + 1) dk_len (acc + blk)
-
-fn :: c strip colon step String Int Int Int => String
-      c strip colon step s idx slen ch =
-        | ch == 58 or ch == 10 or ch == 13 or ch == 32 = c strip colon nl s (idx + 1) slen
-        | ch >= 65 and ch <= 70                        = (char_from_code (ch + 32)) + (c strip colon nl s (idx + 1) slen)
-        | otherwise                                    = (str_slice s idx (idx + 1)) + (c strip colon nl s (idx + 1) slen)
-
-fn :: c strip colon nl String Int Int => String
-      c strip colon nl s idx slen =
-        | idx >= slen = ""
-        | otherwise   = c strip colon step s idx slen (str_char_at s idx)
-
-fn :: c openssl kdf hex String => String
-      c openssl kdf hex args   =
-        mfd = sys_call 319 4194311 1 0 0 0 0
-        pid = sys_getpid
-        _   = shell_exec "openssl kdf {args} > /proc/{pid}/fd/{mfd} 2>/dev/null"
-        _   = sys_call 8 mfd 0 0 0 0 0
-        raw = sys_read_fd mfd 4096
-        _   = sys_close mfd
-        c strip colon nl raw 0 (str_len raw)
-
-fn :: c opt hex arg String String => String
-      c opt hex arg flag val =
-        | (str_len val) == 0 and flag == "hexpass" = " -kdfopt pass:\"\""
-        | (str_len val) == 0                       = ""
-        | otherwise                                = " -kdfopt {flag}:{bytes_to_hex_str val}"
-
-fn :: c finish pbkdf2 fast String String Int Int String => String
-      c finish pbkdf2 fast pwd salt iterations dk_len out_h =
-        | (str_len out_h) == (dk_len * 2) = hex to byte str out_h
-        | otherwise                       = pbkdf2 blocks loop pwd salt iterations 1 dk_len ""
-
-fn :: c kdf pbkdf2 fast String String Int Int => String
-      c kdf pbkdf2 fast pwd salt iterations dk_len =
-        p_arg = c opt hex arg "hexpass" pwd
-        s_arg = c opt hex arg "hexsalt" salt
-        out_h = c openssl kdf hex "-keylen {dk_len} -kdfopt digest:SHA256{p_arg}{s_arg} -kdfopt iter:{iterations} PBKDF2"
-        c finish pbkdf2 fast pwd salt iterations dk_len out_h
+          blk = pbkdf2 block tbl ipad opad salt iterations block_idx
+          pbkdf2 blocks loop tbl ipad opad salt iterations (block_idx + 1) dk_len (acc + blk)
 
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
@@ -385,154 +464,12 @@ fn :: c kdf pbkdf2 fast String String Int Int => String
 fn :: pbkdf2 hmac sha256 String String Int Int => String
       pbkdf2 hmac sha256 pwd salt iterations dk_len =
         | iterations < 1 or dk_len < 1 = ""
-        | iterations <= 16             = pbkdf2 blocks loop pwd salt iterations 1 dk_len ""
-        | otherwise                    = c kdf pbkdf2 fast pwd salt iterations dk_len
-
--- ── RGF-015 Solstice 5-Arg Argon2id API (`argon2id_hash`, `argon2id_verify`) ──
-
-fn :: b64table Int => String
-      b64table _   =  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-
-fn :: c b64 ch Int => String
-      c b64 ch idx =  str_slice (b64table 0) (idx % 64) ((idx % 64) + 1)
-
-fn :: c b64 encode [Int]           => String
-      c b64 encode []              =  ""
-      c b64 encode (b0:[])         =
-        c0 = b0 / 4
-        c1 = (b0 % 4) * 16
-        (c b64 ch c0) + (c b64 ch c1)
-      c b64 encode (b0:b1:[])      =
-        c0 = b0 / 4
-        c1 = ((b0 % 4) * 16) + (b1 / 16)
-        c2 = (b1 % 16) * 4
-        (c b64 ch c0) + (c b64 ch c1) + (c b64 ch c2)
-      c b64 encode (b0:b1:b2:rest) =
-        c0 = b0 / 4
-        c1 = ((b0 % 4) * 16) + (b1 / 16)
-        c2 = ((b1 % 16) * 4) + (b2 / 64)
-        c3 = b2 % 64
-        (c b64 ch c0) + (c b64 ch c1) + (c b64 ch c2) + (c b64 ch c3) + (c b64 encode rest)
-
-fn :: c b64 val Int => Int
-      c b64 val c   =
-        | c >= 65 and c <= 90  = c - 65
-        | c >= 97 and c <= 122 = (c - 97) + 26
-        | c >= 48 and c <= 57  = (c - 48) + 52
-        | c == 43              = 62
-        | c == 47              = 63
-        | otherwise            = 0 - 1
-
-fn :: c b64 decode rem String Int Int Int => [Int]
-      c b64 decode rem s idx slen rem =
-        | rem <= 0 = []
-        | rem == 2 =
-          v0 = c b64 val (str_char_at s idx)
-          v1 = c b64 val (str_char_at s (idx + 1))
-          [((v0 * 4) + (v1 / 16)) % 256]
-        | rem == 3 =
-          v0 = c b64 val (str_char_at s idx)
-          v1 = c b64 val (str_char_at s (idx + 1))
-          v2 = c b64 val (str_char_at s (idx + 2))
-          [((v0 * 4) + (v1 / 16)) % 256, (((v1 % 16) * 16) + (v2 / 4)) % 256]
-        | otherwise =
-          v0 = c b64 val (str_char_at s idx)
-          v1 = c b64 val (str_char_at s (idx + 1))
-          v2 = c b64 val (str_char_at s (idx + 2))
-          v3 = c b64 val (str_char_at s (idx + 3))
-          b0 = ((v0 * 4) + (v1 / 16)) % 256
-          b1 = (((v1 % 16) * 16) + (v2 / 4)) % 256
-          b2 = (((v2 % 4) * 64) + v3) % 256
-          [b0, b1, b2] :: (c b64 decode loop s (idx + 4) slen)
-
-fn :: c b64 decode loop String Int Int => [Int]
-      c b64 decode loop s idx slen =
-        c b64 decode rem s idx slen (slen - idx)
-
-fn :: c b64 decode String => [Int]
-      c b64 decode s      =
-        c b64 decode loop s 0 (str_len s)
-
-fn :: c argon2 derive raw ctx String String String String Int Int Int Int => [Int]
-      c argon2 derive raw ctx pwd salt secret ad m_kib t_iters p_lanes tag_len =
-        p_arg  = c opt hex arg "hexpass" pwd
-        s_arg  = c opt hex arg "hexsalt" salt
-        k_arg  = c opt hex arg "hexsecret" secret
-        a_arg  = c opt hex arg "hexad" ad
-        out_h  = c openssl kdf hex "-keylen {tag_len}{p_arg}{s_arg}{k_arg}{a_arg} -kdfopt iter:{t_iters} -kdfopt memcost:{m_kib} -kdfopt lanes:{p_lanes} ARGON2ID"
-        hex str to bytes loop out_h 0 (str_len out_h)
-
--- @implements FR-CRYPTO-004
--- @implements NFR-PERF-001
--- @implements API-CRYPTO-001
--- @implements DM-Argon2
--- @mitigates VUL-AUTHN-001
--- @mitigates VUL-INPUT-001
-fn :: argon2id hash String String Int Int Int => String
-      argon2id hash pwd salt m_kib t_iters p_lanes =
-        | (str_len salt) < 8 or t_iters < 1 or p_lanes < 1 or p_lanes > 255 or m_kib < (8 * p_lanes) = ""
-        | otherwise =
-          salt_b64 = c b64 encode (bytes to list salt)
-          tag_raw  = c argon2 derive raw ctx pwd salt "" "" m_kib t_iters p_lanes 32
-          tag_b64  = c b64 encode tag_raw
-          "$argon2id$v=19$m={m_kib},t={t_iters},p={p_lanes}${salt_b64}${tag_b64}"
-
-fn :: c split ch String Int Int Int Int => [String]
-      c split ch s ch start idx slen =
-        | idx >= slen               = [str_slice s start slen]
-        | (str_char_at s idx) == ch = [str_slice s start idx] :: (c split ch s ch (idx + 1) (idx + 1) slen)
-        | otherwise                 = c split ch s ch start (idx + 1) slen
-
-fn :: c nth str [String] Int => String
-      c nth str []       _   =  ""
-      c nth str (x:rest) idx =
-        | idx <= 0  = x
-        | otherwise = c nth str rest (idx - 1)
-
-fn :: c str list len [String] => Int
-      c str list len []       =  0
-      c str list len (_:rest) =  1 + (c str list len rest)
-
-fn :: c parse kv String String => Int
-      c parse kv item   prefix =
-        | (str_len item) <= (str_len prefix) = 0 - 1
-        | not (str_starts_with item prefix)  = 0 - 1
-        | otherwise                          = str_to_int (str_slice item (str_len prefix) (str_len item))
-
-fn :: c verify phc decoded String String String Int Int Int Int => Bool
-      c verify phc decoded pwd salt_raw tag_b64 m_kib t_iters p_lanes tlen =
-        | (str_len salt_raw) < 8 or tlen < 4 or tlen > 64 or t_iters < 1 or p_lanes < 1 or m_kib < (8 * p_lanes) = False
-        | otherwise =
-          comp_raw = c argon2 derive raw ctx pwd salt_raw "" "" m_kib t_iters p_lanes tlen
-          comp_b64 = c b64 encode comp_raw
-          ct equal comp_b64 tag_b64
-
-fn :: c verify phc parts String [String] => Bool
-      c verify phc parts pwd parts =
-        | (c str list len parts) != 6       = False
-        | (c nth str parts 0) != ""         = False
-        | (c nth str parts 1) != "argon2id" = False
-        | (c nth str parts 2) != "v=19"     = False
-        | otherwise                         =
-          p_str    = c nth str parts 3
-          kvs      = c split ch p_str 44 0 0 (str_len p_str)
-          m_kib    = c parse kv (c nth str kvs 0) "m="
-          t_iters  = c parse kv (c nth str kvs 1) "t="
-          p_lanes  = c parse kv (c nth str kvs 2) "p="
-          salt_b64 = c nth str parts 4
-          tag_b64  = c nth str parts 5
-          salt_raw = bytes from list (c b64 decode salt_b64)
-          tag_raw  = c b64 decode tag_b64
-          c verify phc decoded pwd salt_raw tag_b64 m_kib t_iters p_lanes (c list len tag_raw)
-
--- @implements FR-CRYPTO-004
--- @implements NFR-PERF-001
--- @implements API-CRYPTO-001
--- @mitigates VUL-AUTHN-001
-fn :: argon2id verify String String => Bool
-      argon2id verify pwd    phc    =
-        | not (str_starts_with phc "$argon2id$") = False
-        | otherwise                              = c verify phc parts pwd (c split ch phc 36 0 0 (str_len phc))
+        | otherwise                    =
+          tbl     = c build b256
+          k_block = normalize hmac key pwd
+          ipad_s  = c list to raw tbl (bitxor key pad k_block 54)
+          opad_s  = c list to raw tbl (bitxor key pad k_block 92)
+          pbkdf2 blocks loop tbl ipad_s opad_s salt iterations 1 dk_len ""
 
 -- ── RFC 8439 ChaCha20 Stream Cipher (`chacha20_block`, `chacha20_xor`) ──
 
@@ -790,7 +727,7 @@ fn :: aead seal String String String String => String
           tag_bs   = poly1305 aead mac otk aad_bs ct_bs
           bytes from list (ct_bs :: tag_bs)
 
-fn :: decrypt verified aead Bool [Int] [Int] [Int] => (Int, String)
+fn :: decrypt verified aead Bool [Int] [Int] [Int] => Int String
       decrypt verified aead False _ _ _ = (0 - 12, "")
       decrypt verified aead True key_bs nonce_bs ct_bs =
         pt_bs = chacha20 bitxor loop key_bs nonce_bs 1 ct_bs
@@ -800,7 +737,7 @@ fn :: decrypt verified aead Bool [Int] [Int] [Int] => (Int, String)
 -- @implements API-CRYPTO-001
 -- @mitigates VUL-AUTHN-001
 -- @mitigates VUL-INPUT-001
-fn :: aead open String String String String => (Int, String)
+fn :: aead open String String String String => Int String
       aead open key nonce aad ciphertext_and_tag =
         | (str_len key) != 32 or (str_len nonce) != 12 or (str_len ciphertext_and_tag) < 16 = (0 - 7, "")
         | otherwise =

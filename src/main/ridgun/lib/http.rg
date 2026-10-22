@@ -86,7 +86,7 @@ fn :: ht default port String => Int
         | scheme == "http" or scheme == "ws"   = 80
         | otherwise                            = 0
 
-fn :: ht split host port String Int Int => (String, Int)
+fn :: ht split host port String Int Int => String Int
       ht split host port auth colon_idx def_port =
         | colon_idx < 0 = (auth, def_port)
         | otherwise =
@@ -94,21 +94,21 @@ fn :: ht split host port String Int Int => (String, Int)
           p = ht parse int or (str_slice auth (colon_idx + 1) (str_len auth)) def_port
           (h, p)
 
-fn :: ht split path query String Int => (String, String)
+fn :: ht split path query String Int => String String
       ht split path query pq q_idx =
         | q_idx < 0 = (pq, "")
         | otherwise = (str_slice pq 0 q_idx, str_slice pq (q_idx + 1) (str_len pq))
 
-fn :: ht split auth rest String Int => (String, String)
+fn :: ht split auth rest String Int => String String
       ht split auth rest rem slash_idx =
         | slash_idx < 0 = (rem, "/")
         | otherwise     = (str_slice rem 0 slash_idx, str_slice rem slash_idx (str_len rem))
 
-fn :: ht finish uri String (String, Int) (String, String) => (String, String, Int, String, String)
+fn :: ht finish uri String (String Int) (String String) => String String Int String String
       ht finish uri scheme (host, port) (path, query) =
         (scheme, host, port, path, query)
 
-fn :: ht parse uri after scheme String String => (String, String, Int, String, String)
+fn :: ht parse uri after scheme String String => String String Int String String
       ht parse uri after scheme scheme rem =
         ap       = ht split auth rest rem (ht index of rem "/")
         auth     = ht pair key ap
@@ -118,7 +118,7 @@ fn :: ht parse uri after scheme String String => (String, String, Int, String, S
         pq       = ht split path query pq_raw (ht index of pq_raw "?")
         ht finish uri scheme hp pq
 
-fn :: ht parse uri at String Int => (String, String, Int, String, String)
+fn :: ht parse uri at String Int => String String Int String String
       ht parse uri at raw sep_idx =
         | sep_idx < 0 =
           pq = ht split path query raw (ht index of raw "?")
@@ -130,23 +130,23 @@ fn :: ht parse uri at String Int => (String, String, Int, String, String)
 
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
-fn :: uri parse String => (String, String, Int, String, String)
+fn :: uri parse String => String String Int String String
       uri parse raw    =  ht parse uri at raw (ht index of raw "://")
 
-fn :: ht u1 (String, String, Int, String, String) => String
-      ht u1 (s, _, _, _, _)                       =  s
+fn :: ht u1 (String String Int String String) => String
+      ht u1 (s, _, _, _, _)                   =  s
 
-fn :: ht u2 (String, String, Int, String, String) => String
-      ht u2 (_, h, _, _, _)                       =  h
+fn :: ht u2 (String String Int String String) => String
+      ht u2 (_, h, _, _, _)                   =  h
 
-fn :: ht u3 (String, String, Int, String, String) => Int
-      ht u3 (_, _, p, _, _)                       =  p
+fn :: ht u3 (String String Int String String) => Int
+      ht u3 (_, _, p, _, _)                   =  p
 
-fn :: ht u4 (String, String, Int, String, String) => String
-      ht u4 (_, _, _, pt, _)                      =  pt
+fn :: ht u4 (String String Int String String) => String
+      ht u4 (_, _, _, pt, _)                  =  pt
 
-fn :: ht u5 (String, String, Int, String, String) => String
-      ht u5 (_, _, _, _, q)                       =  q
+fn :: ht u5 (String String Int String String) => String
+      ht u5 (_, _, _, _, q)                   =  q
 
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
@@ -198,13 +198,13 @@ fn :: http status text Int  => String
         | code == 503 = "Service Unavailable"
         | otherwise   = "Unknown"
 
-fn :: ht pair key (String, String) => String
-      ht pair key (k, _)           =  k
+fn :: ht pair key (String String) => String
+      ht pair key (k, _)          =  k
 
-fn :: ht pair val (String, String) => String
-      ht pair val (_, v)           =  v
+fn :: ht pair val (String String) => String
+      ht pair val (_, v)          =  v
 
-fn :: ht hdr get lower [(String, String)] String => String
+fn :: ht hdr get lower [String String] String => String
       ht hdr get lower [] _ = ""
       ht hdr get lower (pair:rest) lkey =
         | (ht to lower (ht pair key pair)) == lkey = ht pair val pair
@@ -212,8 +212,8 @@ fn :: ht hdr get lower [(String, String)] String => String
 
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
-fn :: http header get [(String, String)] String => String
-      http header get headers            name   =  ht hdr get lower headers (ht to lower name)
+fn :: http header get [String String] String => String
+      http header get headers         name   =  ht hdr get lower headers (ht to lower name)
 
 fn :: ht extract bearer String => String
       ht extract bearer auth   =
@@ -223,20 +223,20 @@ fn :: ht extract bearer String => String
 
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
-fn :: http bearer token [(String, String)] => String
-      http bearer token headers            =  ht extract bearer (http header get headers "Authorization")
+fn :: http bearer token [String String] => String
+      http bearer token headers         =  ht extract bearer (http header get headers "Authorization")
 
 -- ── HTTP/1.1 Request & Response Formatting & Parsing ─────────
 
-fn :: ht fmt headers [(String, String)] => String
-      ht fmt headers []                 =  ""
-      ht fmt headers (pair:rest)        =
+fn :: ht fmt headers [String String] => String
+      ht fmt headers []              =  ""
+      ht fmt headers (pair:rest)     =
         k = ht strip crlf (ht pair key pair)
         v = ht strip crlf (ht pair val pair)
         k + ": " + v + "\r\n" + (ht fmt headers rest)
 
-fn :: ht auto cl [(String, String)] String => String
-      ht auto cl headers            body   =
+fn :: ht auto cl [String String] String => String
+      ht auto cl headers         body   =
         | (str_len body) == 0                                  = ""
         | (str_len (http header get headers "Content-Length")) > 0 = ""
         | otherwise                                            = "Content-Length: " + (int_to_str (str_len body)) + "\r\n"
@@ -244,7 +244,7 @@ fn :: ht auto cl [(String, String)] String => String
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
 -- @mitigates VUL-INPUT-001
-fn :: http build request String String [(String, String)] String => String
+fn :: http build request String String [String String] String => String
       http build request method path headers body =
         m  = ht strip crlf method
         p  = ht strip crlf path
@@ -254,7 +254,7 @@ fn :: http build request String String [(String, String)] String => String
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
 -- @mitigates VUL-INPUT-001
-fn :: http build response Int [(String, String)] String => String
+fn :: http build response Int [String String] String => String
       http build response code headers body =
         reason = http status text code
         cl     = ht auto cl headers body
@@ -266,7 +266,7 @@ fn :: ht split lines loop String Int Int Int => [String]
         | (str_char_at s idx) == 10 = [(ht strip crlf (str_slice s start idx))] :: (ht split lines loop s (idx + 1) (idx + 1) len)
         | otherwise                 = ht split lines loop s start (idx + 1) len
 
-fn :: ht parse hdr line String Int => [(String, String)]
+fn :: ht parse hdr line String Int => [String String]
       ht parse hdr line line cidx =
         | cidx <= 0 = []
         | otherwise =
@@ -274,24 +274,24 @@ fn :: ht parse hdr line String Int => [(String, String)]
           v = ht trim (str_slice line (cidx + 1) (str_len line))
           [(k, v)]
 
-fn :: ht parse hdr lines [String] => [(String, String)]
+fn :: ht parse hdr lines [String] => [String String]
       ht parse hdr lines []       =  []
       ht parse hdr lines (l:rest) =
         | (str_len l) == 0 = ht parse hdr lines rest
         | otherwise        = (ht parse hdr line l (ht index of l ":")) :: (ht parse hdr lines rest)
 
-fn :: ht split head body String Int Int => (String, String)
+fn :: ht split head body String Int Int => String String
       ht split head body raw crlf_idx lf_idx =
         | crlf_idx >= 0 = (str_slice raw 0 crlf_idx, str_slice raw (crlf_idx + 4) (str_len raw))
         | lf_idx >= 0   = (str_slice raw 0 lf_idx, str_slice raw (lf_idx + 2) (str_len raw))
         | otherwise     = (raw, "")
 
-fn :: ht parse req rem String String Int => (String, String)
+fn :: ht parse req rem String String Int => String String
       ht parse req rem method rem sp2 =
         | sp2 < 0   = (method, rem)
         | otherwise = (method, str_slice rem 0 sp2)
 
-fn :: ht parse req line String Int => (String, String)
+fn :: ht parse req line String Int => String String
       ht parse req line line sp1 =
         | sp1 <= 0 = ("", "")
         | otherwise =
@@ -299,20 +299,20 @@ fn :: ht parse req line String Int => (String, String)
           rem    = str_slice line (sp1 + 1) (str_len line)
           ht parse req rem method rem (ht index of rem " ")
 
-fn :: ht parse req parts [String] String => (String, String, String)
+fn :: ht parse req parts [String] String => String String String
       ht parse req parts [] body = ("", "", body)
       ht parse req parts (f:_) body =
         mp = ht parse req line f (ht index of f " ")
         (ht pair key mp, ht pair val mp, body)
 
-fn :: ht parse hdr parts [String] => [(String, String)]
+fn :: ht parse hdr parts [String] => [String String]
       ht parse hdr parts []       =  []
       ht parse hdr parts (_:rest) =  ht parse hdr lines rest
 
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
 -- @mitigates VUL-INPUT-001
-fn :: http parse headers String => [(String, String)]
+fn :: http parse headers String => [String String]
       http parse headers raw    =
         hb    = ht split head body raw (ht index of raw "\r\n\r\n") (ht index of raw "\n\n")
         head  = ht pair key hb
@@ -322,7 +322,7 @@ fn :: http parse headers String => [(String, String)]
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
 -- @mitigates VUL-INPUT-001
-fn :: http parse request String => (String, String, String)
+fn :: http parse request String => String String String
       http parse request raw    =
         hb    = ht split head body raw (ht index of raw "\r\n\r\n") (ht index of raw "\n\n")
         head  = ht pair key hb
@@ -330,25 +330,25 @@ fn :: http parse request String => (String, String, String)
         lines = ht split lines loop head 0 0 (str_len head)
         ht parse req parts lines body
 
-fn :: ht parse status rem String Int => (Int, String)
+fn :: ht parse status rem String Int => Int String
       ht parse status rem rem sp2 =
         | sp2 < 0   = (ht parse int or rem 0, "")
         | otherwise = (ht parse int or (str_slice rem 0 sp2) 0, str_slice rem (sp2 + 1) (str_len rem))
 
-fn :: ht parse status line String Int => (Int, String)
+fn :: ht parse status line String Int => Int String
       ht parse status line line sp1 =
         | sp1 <= 0 = (0, "")
         | otherwise =
           rem = str_slice line (sp1 + 1) (str_len line)
           ht parse status rem rem (ht index of rem " ")
 
-fn :: ht st code (Int, String) => Int
-      ht st code (c, _)        =  c
+fn :: ht st code (Int String) => Int
+      ht st code (c, _)       =  c
 
-fn :: ht st text (Int, String) => String
-      ht st text (_, t)        =  t
+fn :: ht st text (Int String) => String
+      ht st text (_, t)       =  t
 
-fn :: ht parse resp parts [String] String => (Int, String, String)
+fn :: ht parse resp parts [String] String => Int String String
       ht parse resp parts [] body = (0, "", body)
       ht parse resp parts (f:_) body =
         st = ht parse status line f (ht index of f " ")
@@ -357,7 +357,7 @@ fn :: ht parse resp parts [String] String => (Int, String, String)
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
 -- @mitigates VUL-INPUT-001
-fn :: http parse response String => (Int, String, String)
+fn :: http parse response String => Int String String
       http parse response raw    =
         hb    = ht split head body raw (ht index of raw "\r\n\r\n") (ht index of raw "\n\n")
         head  = ht pair key hb
@@ -367,12 +367,12 @@ fn :: http parse response String => (Int, String, String)
 
 -- ── Live Kernel TCP HTTP/1.1 Client (`http_request_tcp`, `http_get`, `http_post`) ──
 
-fn :: ht ensure hdr [(String, String)] String String => [(String, String)]
+fn :: ht ensure hdr [String String] String String => [String String]
       ht ensure hdr headers key val =
         | (str_len (http header get headers key)) > 0 = headers
         | otherwise                                   = headers :: [(key, val)]
 
-fn :: ht read tcp step Int Int String (Int, String) => String
+fn :: ht read tcp step Int Int String (Int String) => String
       ht read tcp step fd timeout_ms acc (rc, chunk) =
         | rc != 0   = acc
         | otherwise = ht read tcp loop fd timeout_ms (acc + chunk)
@@ -381,13 +381,13 @@ fn :: ht read tcp loop Int Int String => String
       ht read tcp loop fd timeout_ms acc =
         ht read tcp step fd timeout_ms acc (sys recv fd 16384 timeout_ms)
 
-fn :: ht resp code (Int, String, String) => Int
-      ht resp code (c, _, _)             =  c
+fn :: ht resp code (Int String String) => Int
+      ht resp code (c, _, _)           =  c
 
-fn :: ht resp body (Int, String, String) => String
-      ht resp body (_, _, b)             =  b
+fn :: ht resp body (Int String String) => String
+      ht resp body (_, _, b)           =  b
 
-fn :: ht finish tcp resp String => (Int, Int, String)
+fn :: ht finish tcp resp String => Int Int String
       ht finish tcp resp raw    =
         | (str_len raw) == 0 = (0 - 1, 0, "")
         | otherwise =
@@ -395,7 +395,7 @@ fn :: ht finish tcp resp String => (Int, Int, String)
           code = ht resp code pr
           (0, code, raw)
 
-fn :: ht send read step Int Int (Int, Int) => (Int, Int, String)
+fn :: ht send read step Int Int (Int Int) => Int Int String
       ht send read step cfd timeout_ms (s_rc, _) =
         | s_rc != 0 =
           _ = sys_close cfd
@@ -405,7 +405,7 @@ fn :: ht send read step Int Int (Int, Int) => (Int, Int, String)
           _   = sys_close cfd
           ht finish tcp resp raw
 
-fn :: ht connect send tcp Int Int String Int => (Int, Int, String)
+fn :: ht connect send tcp Int Int String Int => Int Int String
       ht connect send tcp c_rc cfd wire timeout_ms =
         | c_rc != 0 = (c_rc, 0, "")
         | otherwise = ht send read step cfd timeout_ms (sys send cfd wire timeout_ms)
@@ -413,7 +413,7 @@ fn :: ht connect send tcp Int Int String Int => (Int, Int, String)
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
 -- @mitigates VUL-INPUT-001
-fn :: http request tcp String Int String String [(String, String)] String Int => (Int, Int, String)
+fn :: http request tcp String Int String String [String String] String Int => Int Int String
       http request tcp host port method path headers body timeout_ms =
         c_res = sys tcp connect host port timeout_ms
         hdrs1 = ht ensure hdr headers "Host" host
@@ -431,7 +431,7 @@ fn :: ht build target path String String => String
         | (str_len q) == 0 = ht pick path p
         | otherwise        = (ht pick path p) + "?" + q
 
-fn :: ht exec url req (String, String, Int, String, String) String [(String, String)] String Int => (Int, Int, String)
+fn :: ht exec url req (String String Int String String) String [String String] String Int => Int Int String
       ht exec url req (scheme, host, port, p, q) method headers body timeout_ms =
         | scheme != "http" or (str_len host) == 0 or port <= 0 = (0 - 7, 0, "")
         | otherwise                                            = http request tcp host port method (ht build target path p q) headers body timeout_ms
@@ -439,33 +439,33 @@ fn :: ht exec url req (String, String, Int, String, String) String [(String, Str
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
 -- @mitigates VUL-INPUT-001
-fn :: http get String Int        => (Int, Int, String)
+fn :: http get String Int        => Int Int String
       http get url    timeout_ms =
         ht exec url req (uri parse url) "GET" [] "" timeout_ms
 
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
 -- @mitigates VUL-INPUT-001
-fn :: http post String String String Int => (Int, Int, String)
+fn :: http post String String String Int => Int Int String
       http post url content_type body timeout_ms =
         ht exec url req (uri parse url) "POST" [("Content-Type", content_type)] body timeout_ms
 
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
-fn :: http resp rc (Int, Int, String) => Int
-      http resp rc (rc, _, _)         =  rc
+fn :: http resp rc (Int Int String) => Int
+      http resp rc (rc, _, _)       =  rc
 
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
-fn :: http resp status (Int, Int, String) => Int
-      http resp status (_, st, _)         =  st
+fn :: http resp status (Int Int String) => Int
+      http resp status (_, st, _)       =  st
 
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
-fn :: http resp headers (Int, Int, String) => [(String, String)]
-      http resp headers (_, _, raw)        =  http parse headers raw
+fn :: http resp headers (Int Int String) => [String String]
+      http resp headers (_, _, raw)      =  http parse headers raw
 
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
-fn :: http resp body (Int, Int, String) => String
-      http resp body (_, _, raw)        =  ht resp body (http parse response raw)
+fn :: http resp body (Int Int String) => String
+      http resp body (_, _, raw)      =  ht resp body (http parse response raw)

@@ -206,8 +206,8 @@ fn :: is symlink String => Bool
           tlen = str_len (lstat symlink target st)
           (lstat exists st) and (kind == "symlink" or kind == "link" or tlen > 0)
 
-fn :: extract size (Bool, String, Int, Int, Int, String, String, Int, String) => Int
-      extract size st =
+fn :: extract size (Bool String Int Int Int String String Int String) => Int
+      extract size st                                                 =
         | not (lstat exists st) = 0 - 1
         | otherwise             = lstat size st
 
@@ -218,8 +218,8 @@ fn :: file size String => Int
         | not (is safe posix path path) = 0 - 1
         | otherwise                     = extract size (file_lstat path)
 
-fn :: extract mtime (Bool, String, Int, Int, Int, String, String, Int, String) => Int
-      extract mtime st =
+fn :: extract mtime (Bool String Int Int Int String String Int String) => Int
+      extract mtime st                                                 =
         | not (lstat exists st) = 0 - 1
         | otherwise             = lstat mtime sec st
 
@@ -230,8 +230,8 @@ fn :: file mtime String => Int
         | not (is safe posix path path) = 0 - 1
         | otherwise                     = extract mtime (file_lstat path)
 
-fn :: extract mode (Bool, String, Int, Int, Int, String, String, Int, String) => Int
-      extract mode st =
+fn :: extract mode (Bool String Int Int Int String String Int String) => Int
+      extract mode st                                                 =
         | not (lstat exists st) = 0 - 1
         | otherwise             = lstat mode st
 

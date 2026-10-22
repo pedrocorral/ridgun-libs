@@ -12,7 +12,7 @@ tests: [TS-CRYPTO-004]
 # FR-CRYPTO-004 — Provide Solstice RGF-015 RFC 9106 Argon2id 5-arg API and RFC 8439 ChaCha20-Poly1305 AEAD
 
 ## Statement
-The `crypto` and `argon2id` libraries SHALL provide the Solstice `RGF-015` 5-argument `argon2id_hash password salt m_kib t_iters p_lanes => String` and `argon2id_verify password phc => Bool` backed by RFC 7693 64-bit Blake2b / RFC 9106 Argon2id, and RFC 8439 ChaCha20-Poly1305 authenticated encryption with associated data (`aead_seal key nonce aad plaintext => String` and `aead_open key nonce aad ciphertext_and_tag => (Int, String)`).
+The `crypto` and `argon2id` libraries SHALL provide the Solstice `RGF-015` 5-argument `argon2id_hash password salt m_kib t_iters p_lanes => String` and `argon2id_verify password phc => Bool` backed by 100% in-process pure-Ridgun RFC 7693 64-bit Blake2b / RFC 9106 Argon2id (`RG-043`, `RG-050`, `RG-051`), and RFC 8439 ChaCha20-Poly1305 authenticated encryption with associated data (`aead_seal key nonce aad plaintext => String` and `aead_open key nonce aad ciphertext_and_tag => Int String`).
 
 ## Rationale
 Applications need both RFC 9106 Argon2id with the exact 5-argument `(password, salt, m_kib, t_iters, p_lanes)` and `(password, phc)` signature convention and RFC 8439 ChaCha20-Poly1305 authenticated encryption for encrypting tokens, session state, and storage blobs with tamper detection.

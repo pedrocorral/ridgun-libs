@@ -142,7 +142,11 @@ fn :: test_argon2id_key_derivation_salting_and_rehash => ()
         ctx_phc   = unwrap a2 phc ctx_res
         _         = assert ok (argon2id verify ctx "user-password" ctx_phc "app-pepper-key" "tenant:42")
         _         = assert eq (argon2id verify ctx "user-password" ctx_phc "wrong-pepper" "tenant:42") False
-        assert eq (argon2id verify ctx "user-password" ctx_phc "app-pepper-key" "tenant:99") False
+        _         = assert eq (argon2id verify ctx "user-password" ctx_phc "app-pepper-key" "tenant:99") False
+
+        -- RG-051: PHC string with empty tag segment must be rejected by parse & verify
+        _         = assert eq (is phc parsed ok (argon2id parse phc "$argon2id$v=19$m=64,t=2,p=1$c2FsdHNhbHRzYWx0c2FsdA$")) False
+        assert eq (argon2id verify "correct horse" "$argon2id$v=19$m=64,t=2,p=1$c2FsdHNhbHRzYWx0c2FsdA$") False
 
 fn :: main => ()
       main =

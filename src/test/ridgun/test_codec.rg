@@ -8,8 +8,8 @@ import test
 import posix
 import codec
 
-fn :: rnd snd (Int, String) => String
-      rnd snd (_, s)        =  s
+fn :: rnd snd (Int String) => String
+      rnd snd (_, s)       =  s
 
 fn :: check binary roundtrip loop Int => ()
       check binary roundtrip loop rem =

@@ -373,29 +373,29 @@ fn :: cd url dec loop String Int Int => String
 fn :: url decode String => String
       url decode s      =  cd url dec loop s 0 (str_len s)
 
-fn :: cd pair key (String, String) => String
-      cd pair key (k, _)           =  k
+fn :: cd pair key (String String) => String
+      cd pair key (k, _)          =  k
 
-fn :: cd pair val (String, String) => String
-      cd pair val (_, v)           =  v
+fn :: cd pair val (String String) => String
+      cd pair val (_, v)          =  v
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
-fn :: query string encode [(String, String)] => String
-      query string encode []                 =  ""
-      query string encode (pair:[])          =  (url encode (cd pair key pair)) + "=" + (url encode (cd pair val pair))
-      query string encode (pair:rest)        =
+fn :: query string encode [String String] => String
+      query string encode []              =  ""
+      query string encode (pair:[])       =  (url encode (cd pair key pair)) + "=" + (url encode (cd pair val pair))
+      query string encode (pair:rest)     =
         (url encode (cd pair key pair)) + "=" + (url encode (cd pair val pair)) + "&" + (query string encode rest)
 
-fn :: cd parse kv at String Int => (String, String)
+fn :: cd parse kv at String Int => String String
       cd parse kv at item eq_idx =
         | eq_idx < 0 = (url decode item, "")
         | otherwise  = (url decode (str_slice item 0 eq_idx), url decode (str_slice item (eq_idx + 1) (str_len item)))
 
-fn :: cd parse kv item String => (String, String)
+fn :: cd parse kv item String => String String
       cd parse kv item item   =  cd parse kv at item (cd index of item "=")
 
-fn :: cd parse qs list [String] => [(String, String)]
+fn :: cd parse qs list [String] => [String String]
       cd parse qs list []       =  []
       cd parse qs list (x:rest) =
         | (str_len x) == 0 = cd parse qs list rest
@@ -406,14 +406,14 @@ fn :: cd strip leading q String => String
         | str_starts_with qs "?" = str_slice qs 1 (str_len qs)
         | otherwise              = qs
 
-fn :: cd decode clean qs String => [(String, String)]
+fn :: cd decode clean qs String => [String String]
       cd decode clean qs clean  =
         | (str_len clean) == 0 = []
         | otherwise            = cd parse qs list (cd split char loop clean 38 0 0 (str_len clean))
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
-fn :: query string decode String => [(String, String)]
+fn :: query string decode String => [String String]
       query string decode qs     =  cd decode clean qs (cd strip leading q qs)
 
 -- ── RFC 8259 Lightweight JSON Formatting & Field Extraction ──
@@ -489,26 +489,26 @@ fn :: cd join json items [String] => String
 fn :: json array [String] => String
       json array items    =  "[" + (cd join json items items) + "]"
 
-fn :: cd join json pairs [(String, String)] => String
-      cd join json pairs []                 =  ""
-      cd join json pairs (pair:[])          =  (json quote (cd pair key pair)) + ":" + (cd pair val pair)
-      cd join json pairs (pair:rest)        =
+fn :: cd join json pairs [String String] => String
+      cd join json pairs []              =  ""
+      cd join json pairs (pair:[])       =  (json quote (cd pair key pair)) + ":" + (cd pair val pair)
+      cd join json pairs (pair:rest)     =
         (json quote (cd pair key pair)) + ":" + (cd pair val pair) + "," + (cd join json pairs rest)
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
-fn :: json object [(String, String)] => String
-      json object pairs              =  "{" + (cd join json pairs pairs) + "}"
+fn :: json object [String String] => String
+      json object pairs           =  "{" + (cd join json pairs pairs) + "}"
 
-fn :: cd quote pair vals [(String, String)] => [(String, String)]
-      cd quote pair vals []                 =  []
-      cd quote pair vals (pair:rest)        =
+fn :: cd quote pair vals [String String] => [String String]
+      cd quote pair vals []              =  []
+      cd quote pair vals (pair:rest)     =
         [(cd pair key pair, json quote (cd pair val pair))] :: (cd quote pair vals rest)
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
-fn :: json str object [(String, String)] => String
-      json str object pairs              =  json object (cd quote pair vals pairs)
+fn :: json str object [String String] => String
+      json str object pairs           =  json object (cd quote pair vals pairs)
 
 fn :: cd is json ws Int => Bool
       cd is json ws c   =  c == 32 or c == 9 or c == 10 or c == 13 or c == 58

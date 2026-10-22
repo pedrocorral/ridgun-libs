@@ -8,6 +8,7 @@
 -- @tests TS-OBS-001
 
 import test
+import str
 import crypto
 import socket
 
@@ -242,23 +243,23 @@ fn :: test_sock_advanced_ops_dns_cidr_and_polling => ()
         _         = assert eq ( is addr ok (sock local addr (sock tcp))) False
         assert eq (is addr ok (sock peer addr (sock tcp))) False
 
-fn :: tup2 fst (Int, Int) => Int
-      tup2 fst (a, _)     =  a
+fn :: tup2 fst (Int Int) => Int
+      tup2 fst (a, _)    =  a
 
-fn :: tup2 snd (Int, Int) => Int
-      tup2 snd (_, b)     =  b
+fn :: tup2 snd (Int Int) => Int
+      tup2 snd (_, b)    =  b
 
-fn :: tup2 str (Int, String) => String
-      tup2 str (_, s)        =  s
+fn :: tup2 str (Int String) => String
+      tup2 str (_, s)       =  s
 
-fn :: tup2 rc (Int, String) => Int
-      tup2 rc (rc, _)       =  rc
+fn :: tup2 rc (Int String) => Int
+      tup2 rc (rc, _)      =  rc
 
-fn :: tup3 rc (Int, Int, String) => Int
-      tup3 rc (rc, _, _)         =  rc
+fn :: tup3 rc (Int Int String) => Int
+      tup3 rc (rc, _, _)       =  rc
 
-fn :: tup3 fd (Int, Int, String) => Int
-      tup3 fd (_, fd, _)         =  fd
+fn :: tup3 fd (Int Int String) => Int
+      tup3 fd (_, fd, _)       =  fd
 
 -- @tests TS-SOCK-004
 -- @tests TS-SEC-001
@@ -397,6 +398,37 @@ fn :: test_sock_rgf001_kernel_tcp_and_unix => ()
         _      = assert_int_equals (sys_close usfd) 0 "sys_close usfd"
         _      = assert_int_equals (sys_close ulfd) 0 "sys_close ulfd"
         _      = assert_int_equals (shell_exec "rm -f '{upath}'") 0 "unlink AF_UNIX socket"
+
+        -- 5. RG-049: sys_send honours timeout_ms when peer never reads (8 MiB send with timeout_ms=1000)
+        tl_res = sys tcp listen "127.0.0.1" 0 8
+        tlfd   = tup2 snd tl_res
+        tlport = sys local port tlfd
+        tc_res = sys tcp connect "127.0.0.1" tlport 500
+        tcfd   = tup2 snd tc_res
+        ta_res = sys accept tlfd 500
+        tsfd   = tup3 fd ta_res
+        big8m  = str repeat "x" 8000000
+        ts0    = sys_time_ms
+        tsnd   = sys send tsfd big8m 1000
+        ts1    = sys_time_ms
+        dt_ms  = ts1 - ts0
+        _      = assert_int_equals (tup2 fst tsnd) (0 - 2) "RG-049: sys_send 8 MiB to non-reading peer times out -> -2"
+        _      = assert_true ((tup2 snd tsnd) > 0) "RG-049: sys_send returns partial bytes sent > 0 on timeout"
+        _      = assert_true (dt_ms >= 800 and dt_ms <= 2500) "RG-049: sys_send timeout elapsed ~1000 ms"
+        _      = assert_int_equals (sys_close tcfd) 0 "sys_close tcfd"
+        _      = assert_int_equals (sys_close tsfd) 0 "sys_close tsfd"
+        _      = assert_int_equals (sys_close tlfd) 0 "sys_close tlfd"
+
+        -- 6. Wish (multi-core): SO_REUSEPORT allows two TCP listeners on the same (ip, port)
+        rp1    = sys tcp listen reuseport "127.0.0.1" 0 16
+        _      = assert_int_equals (tup2 fst rp1) 0 "sys_tcp_listen_reuseport 1 ok"
+        rp_fd1 = tup2 snd rp1
+        rp_prt = sys local port rp_fd1
+        rp2    = sys tcp listen reuseport "127.0.0.1" rp_prt 16
+        _      = assert_int_equals (tup2 fst rp2) 0 "sys_tcp_listen_reuseport 2 on same port ok"
+        rp_fd2 = tup2 snd rp2
+        _      = assert_int_equals (sys_close rp_fd1) 0 "sys_close rp_fd1"
+        _      = assert_int_equals (sys_close rp_fd2) 0 "sys_close rp_fd2"
         ()
 
 fn :: main => ()

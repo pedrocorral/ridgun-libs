@@ -204,7 +204,6 @@ fn :: str repeat loop String Int String => String
 fn :: str repeat String Int => String
       str repeat s      n   =
         | n <= 0 or (str_len s) == 0 = ""
-        | n > 1048576                = str repeat loop s 1048576 ""
         | otherwise                  = str repeat loop s n ""
 
 fn :: pad fill unit String => String

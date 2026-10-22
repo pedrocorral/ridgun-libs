@@ -27,7 +27,7 @@ Cryptographic protocols, binary wire framing, and password-based key derivation 
 
 ## Constraints & edge cases
 - `ct_equal` returns `False` immediately only when lengths differ, and otherwise XOR-accumulates every byte without early exit.
-- `pbkdf2_hmac_sha256` supports arbitrary `dk_len` across multiple 32-byte SHA-256 blocks.
+- `pbkdf2_hmac_sha256` supports arbitrary `dk_len` across multiple 32-byte SHA-256 blocks and executes 100% in-process in pure Ridgun (`RG-050`, zero external subprocesses).
 
 ## Data & privacy
 - Keys and passwords remain in local call-frame memory only.

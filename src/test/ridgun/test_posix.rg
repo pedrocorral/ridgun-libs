@@ -20,19 +20,19 @@ fn :: is poll error PollStatus    => Bool
       is poll error (PollError _) =  True
       is poll error _             =  False
 
-fn :: tuple3 status (Int, Int, Int) => Int
-      tuple3 status (st, _, _)      =  st
+fn :: tuple3 status (Int Int Int) => Int
+      tuple3 status (st, _, _)    =  st
 
-fn :: tuple3 rfd (Int, Int, Int) => Int
-      tuple3 rfd (_, rfd, _)     =  rfd
+fn :: tuple3 rfd (Int Int Int) => Int
+      tuple3 rfd (_, rfd, _)   =  rfd
 
-fn :: tuple3 wfd (Int, Int, Int) => Int
-      tuple3 wfd (_, _, wfd)     =  wfd
+fn :: tuple3 wfd (Int Int Int) => Int
+      tuple3 wfd (_, _, wfd)   =  wfd
 
-fn :: pair fst (A, B) => A
+fn :: pair fst (A B)  => A
       pair fst (a, _) =  a
 
-fn :: pair snd (A, B) => B
+fn :: pair snd (A B)  => B
       pair snd (_, b) =  b
 
 -- @tests TS-POSIX-001
