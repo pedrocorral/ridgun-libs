@@ -3,8 +3,8 @@ id: TS-WS-001
 title: Verify RFC 6455 WebSocket handshake accept-key computation, frame encoding/decoding, and XOR masking
 level: unit
 covers: [FR-WS-001, API-WS-001]
-status: planned
-automated_in: []
+status: automated
+automated_in: ["src/test/ridgun/test ws.rg"]
 ---
 # TS-WS-001 — Verify RFC 6455 WebSocket handshake accept-key computation, frame encoding/decoding, and XOR masking
 

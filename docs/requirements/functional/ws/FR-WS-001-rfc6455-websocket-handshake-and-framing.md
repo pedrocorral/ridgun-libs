@@ -2,10 +2,10 @@
 id: FR-WS-001
 title: Provide RFC 6455 WebSocket handshake accept-key computation, frame encoding/decoding, and XOR masking
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: WS
-depends_on: [FR-CODEC-001]
+depends_on: []
 related: [ADR-0002, DM-WebSocket, API-WS-001, VUL-INPUT-001]
 tests: [TS-WS-001]
 ---

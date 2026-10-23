@@ -2,10 +2,10 @@
 id: FR-JWT-001
 title: Provide RFC 7519 HS256 JWT and ChaCha20-Poly1305 encrypted token signing, constant-time verification, and claim validation
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: JWT
-depends_on: [FR-CRYPTO-003, FR-CRYPTO-004, FR-CODEC-001]
+depends_on: []
 related: [ADR-0002, DM-Jwt, API-JWT-001, VUL-AUTHN-001, VUL-INPUT-001]
 tests: [TS-JWT-001]
 ---

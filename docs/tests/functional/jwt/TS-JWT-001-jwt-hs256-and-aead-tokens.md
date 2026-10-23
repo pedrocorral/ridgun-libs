@@ -3,8 +3,8 @@ id: TS-JWT-001
 title: Verify RFC 7519 HS256 JWT and ChaCha20-Poly1305 encrypted token signing, constant-time verification, and claim validation
 level: unit
 covers: [FR-JWT-001, API-JWT-001]
-status: planned
-automated_in: []
+status: automated
+automated_in: ["src/test/ridgun/test jwt.rg"]
 ---
 # TS-JWT-001 — Verify RFC 7519 HS256 JWT and ChaCha20-Poly1305 encrypted token signing, constant-time verification, and claim validation
 

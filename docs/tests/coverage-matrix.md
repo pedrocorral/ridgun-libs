@@ -15,7 +15,7 @@
 | API-INI-001 | TS-INI-001 | src/main/ridgun/lib/ini.rg | src/test/ridgun/test ini.rg | ok |
 | API-IO-001 | TS-IO-001 | src/main/ridgun/lib/io.rg | src/test/ridgun/test io.rg | ok |
 | API-JSON-001 | TS-JSON-001 | src/main/ridgun/lib/json.rg | src/test/ridgun/test json.rg | ok |
-| API-JWT-001 | TS-JWT-001 | — | — | no code, spec not automated |
+| API-JWT-001 | TS-JWT-001 | src/main/ridgun/lib/jwt.rg | src/test/ridgun/test jwt.rg | ok |
 | API-LINALG-001 | TS-LINALG-001 | — | — | no code, spec not automated |
 | API-LIST-001 | TS-LIST-001 | src/main/ridgun/lib/list.rg | src/test/ridgun/test list.rg | ok |
 | API-LOG-001 | TS-LOG-001 | src/main/ridgun/lib/log.rg | src/test/ridgun/test log.rg | ok |
@@ -30,7 +30,7 @@
 | API-TMPL-001 | TS-TMPL-001 | — | — | no code, spec not automated |
 | API-TST-001 | TS-TST-001 | src/main/ridgun/lib/test.rg | src/test/ridgun/test test.rg | ok |
 | API-UUID-001 | TS-UUID-001 | src/main/ridgun/lib/uuid.rg | src/test/ridgun/test uuid.rg | ok |
-| API-WS-001 | TS-WS-001 | — | — | no code, spec not automated |
+| API-WS-001 | TS-WS-001 | src/main/ridgun/lib/ws.rg | src/test/ridgun/test ws.rg | ok |
 | FR-AGENT-001 | TS-AGENT-001 | src/main/ridgun/lib/agent.rg, src/main/ridgun/lib/net_agent.rg, src/main/ridgun/lib/pool.rg | src/test/ridgun/test agent.rg | ok |
 | FR-BTREE-001 | TS-BTREE-001 | src/main/ridgun/lib/btree.rg | src/test/ridgun/test btree.rg | ok |
 | FR-CLI-001 | TS-CLI-001 | src/main/ridgun/lib/cli.rg | src/test/ridgun/test cli.rg | ok |
@@ -48,7 +48,7 @@
 | FR-IO-001 | TS-IO-001 | src/main/ridgun/lib/io.rg | src/test/ridgun/test io.rg | ok |
 | FR-IO-002 | TS-IO-002 | src/main/ridgun/lib/io.rg | src/test/ridgun/test io.rg | ok |
 | FR-JSON-001 | TS-JSON-001 | src/main/ridgun/lib/json.rg | src/test/ridgun/test json.rg | ok |
-| FR-JWT-001 | TS-JWT-001 | — | — | no code, spec not automated |
+| FR-JWT-001 | TS-JWT-001 | src/main/ridgun/lib/jwt.rg | src/test/ridgun/test jwt.rg | ok |
 | FR-LINALG-001 | TS-LINALG-001 | — | — | no code, spec not automated |
 | FR-LIST-001 | TS-LIST-001 | src/main/ridgun/lib/list.rg | src/test/ridgun/test list.rg | ok |
 | FR-LOG-001 | TS-LOG-001 | src/main/ridgun/lib/log.rg | src/test/ridgun/test log.rg | ok |
@@ -67,7 +67,7 @@
 | FR-TMPL-001 | TS-TMPL-001 | — | — | no code, spec not automated |
 | FR-TST-001 | TS-TST-001 | src/main/ridgun/lib/test.rg | src/test/ridgun/test test.rg | ok |
 | FR-UUID-001 | TS-UUID-001 | src/main/ridgun/lib/uuid.rg | src/test/ridgun/test uuid.rg | ok |
-| FR-WS-001 | TS-WS-001 | — | — | no code, spec not automated |
+| FR-WS-001 | TS-WS-001 | src/main/ridgun/lib/ws.rg | src/test/ridgun/test ws.rg | ok |
 | NFR-OBS-001 | TS-OBS-001 | src/main/ridgun/lib/log.rg, src/main/ridgun/lib/socket.rg, src/main/ridgun/lib/test.rg | src/test/ridgun/test socket.rg, src/test/ridgun/test test.rg | ok |
 | NFR-PERF-001 | TS-PERF-001 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg, src/main/ridgun/lib/io.rg | src/test/ridgun/test crypto.rg, src/test/ridgun/test io.rg | ok |
 | NFR-SEC-001 | TS-SEC-001 | src/main/ridgun/lib/socket.rg | src/test/ridgun/test socket.rg | ok |
