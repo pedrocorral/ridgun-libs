@@ -1,0 +1,644 @@
+-- RGLIB1
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.8
+-- FUNCTIONS: 76
+-- TYPES: 0
+-- SUMMARY: la_abs:InlineSequential
+-- SUMMARY: la_max:InlineSequential
+-- SUMMARY: la_isqrt_step:InlineSequential
+-- SUMMARY: la_isqrt_loop:InlineSequential
+-- SUMMARY: la_isqrt:InlineSequential
+-- SUMMARY: la_exp_neg_scaled:InlineSequential
+-- SUMMARY: linalg_vec_len:InlineSequential
+-- SUMMARY: linalg_mat_rows:InlineSequential
+-- SUMMARY: linalg_mat_cols:InlineSequential
+-- SUMMARY: la_transpose_col_loop:LazyStealableTask
+-- SUMMARY: la_transpose_row_loop:LazyStealableTask
+-- SUMMARY: linalg_transpose:LazyStealableTask
+-- SUMMARY: la_trace_loop:LazyStealableTask
+-- SUMMARY: linalg_trace:LazyStealableTask
+-- SUMMARY: la_diag_loop:LazyStealableTask
+-- SUMMARY: linalg_diag:LazyStealableTask
+-- SUMMARY: la_identity_loop:LazyStealableTask
+-- SUMMARY: linalg_identity:LazyStealableTask
+-- SUMMARY: la_dot_loop:LazyStealableTask
+-- SUMMARY: linalg_dot:LazyStealableTask
+-- SUMMARY: la_outer_col_loop:LazyStealableTask
+-- SUMMARY: la_outer_row_loop:LazyStealableTask
+-- SUMMARY: linalg_outer:LazyStealableTask
+-- SUMMARY: la_matvec_row_dot:LazyStealableTask
+-- SUMMARY: la_matvec_loop:LazyStealableTask
+-- SUMMARY: linalg_matvec:LazyStealableTask
+-- SUMMARY: linalg_matmul:KernelWorkerJob
+-- SUMMARY: la_norm_l1_loop:LazyStealableTask
+-- SUMMARY: linalg_norm_l1:LazyStealableTask
+-- SUMMARY: linalg_norm_l2_sq:LazyStealableTask
+-- SUMMARY: linalg_norm_l2:LazyStealableTask
+-- SUMMARY: la_norm_linf_loop:LazyStealableTask
+-- SUMMARY: linalg_norm_linf:LazyStealableTask
+-- SUMMARY: la_frob_col_loop:LazyStealableTask
+-- SUMMARY: la_frob_row_loop:LazyStealableTask
+-- SUMMARY: linalg_frobenius_norm:LazyStealableTask
+-- SUMMARY: la_norm_vec_loop:LazyStealableTask
+-- SUMMARY: la_normalize_vec_step:LazyStealableTask
+-- SUMMARY: linalg_normalize_vec:LazyStealableTask
+-- SUMMARY: la_cosine_step:LazyStealableTask
+-- SUMMARY: linalg_cosine_similarity:LazyStealableTask
+-- SUMMARY: la_clone_mat_col:LazyStealableTask
+-- SUMMARY: la_clone_mat_row:LazyStealableTask
+-- SUMMARY: la_clone_vec_loop:LazyStealableTask
+-- SUMMARY: la_find_pivot_step:InlineSequential
+-- SUMMARY: la_find_pivot_row:InlineSequential
+-- SUMMARY: la_swap_mat_rows_loop:LazyStealableTask
+-- SUMMARY: la_swap_vec_elems:InlineSequential
+-- SUMMARY: la_ff_elim_b_loop:LazyStealableTask
+-- SUMMARY: la_ff_elim_col_loop:LazyStealableTask
+-- SUMMARY: la_ff_elim_a_loop:LazyStealableTask
+-- SUMMARY: la_next_piv:InlineSequential
+-- SUMMARY: la_solve_loop:LazyStealableTask
+-- SUMMARY: la_backsub_sum:LazyStealableTask
+-- SUMMARY: la_backsub_div:InlineSequential
+-- SUMMARY: la_backsub_loop:LazyStealableTask
+-- SUMMARY: linalg_solve:LazyStealableTask
+-- SUMMARY: la_bareiss_step_loop:LazyStealableTask
+-- SUMMARY: la_bareiss_row_loop:LazyStealableTask
+-- SUMMARY: la_pivot_sign:InlineSequential
+-- SUMMARY: la_bareiss_piv_step:LazyStealableTask
+-- SUMMARY: la_bareiss_loop:LazyStealableTask
+-- SUMMARY: linalg_det:LazyStealableTask
+-- SUMMARY: la_relu_scalar:InlineSequential
+-- SUMMARY: la_relu_loop:LazyStealableTask
+-- SUMMARY: linalg_relu:LazyStealableTask
+-- SUMMARY: la_sigmoid_scalar:LazyStealableTask
+-- SUMMARY: la_sigmoid_loop:LazyStealableTask
+-- SUMMARY: linalg_sigmoid:LazyStealableTask
+-- SUMMARY: la_max_vec_loop:LazyStealableTask
+-- SUMMARY: la_sum_vec_loop:LazyStealableTask
+-- SUMMARY: la_exp_shifted_loop:LazyStealableTask
+-- SUMMARY: la_softmax_scale_loop:LazyStealableTask
+-- SUMMARY: la_argmax_vec_loop:LazyStealableTask
+-- SUMMARY: la_softmax_finish:LazyStealableTask
+-- SUMMARY: linalg_softmax:LazyStealableTask
+-- ============================================================
+-- src/main/ridgun/lib/linalg.rg
+-- Pure-Ridgun Typed Tensor Linear Algebra, Norms, Linear Solver & Neural Activations Library (LINALG)
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+-- @implements DM-Tensor
+-- @mitigates VUL-INPUT-001
+-- ============================================================
+
+-- ── Internal Scalar Helpers ──────────────────────────────────
+
+fn :: la abs Int => Int
+      la abs x   =
+        | x < 0     = 0 - x
+        | otherwise = x
+
+fn :: la max Int Int => Int
+      la max a   b   =
+        | a >= b    = a
+        | otherwise = b
+
+fn :: la isqrt step Int Int Int => Int
+      la isqrt step n x nx =
+        | nx >= x   = x
+        | otherwise = la isqrt loop n nx
+
+fn :: la isqrt loop Int Int => Int
+      la isqrt loop n x =
+        la isqrt step n x ((x + (n / x)) / 2)
+
+fn :: la isqrt Int => Int
+      la isqrt n   =
+        | n <= 0    = 0
+        | n < 4     = 1
+        | otherwise = la isqrt loop n (n / 2)
+
+-- Scaled exp(x) * 1000000 for integer x in [-16..0] (shift-invariant softmax & sigmoid)
+fn :: la exp neg scaled Int => Int
+      la exp neg scaled x   =
+        | x >= 0          = 1000000
+        | x == (0 - 1)    = 367879
+        | x == (0 - 2)    = 135335
+        | x == (0 - 3)    = 49787
+        | x == (0 - 4)    = 18316
+        | x == (0 - 5)    = 6738
+        | x == (0 - 6)    = 2479
+        | x == (0 - 7)    = 912
+        | x == (0 - 8)    = 335
+        | x == (0 - 9)    = 123
+        | x == (0 - 10)   = 45
+        | x == (0 - 11)   = 17
+        | x == (0 - 12)   = 6
+        | x == (0 - 13)   = 2
+        | x == (0 - 14)   = 1
+        | otherwise       = 0
+
+-- ── Dimension Introspection (`row_count`, `col_count`) ───────
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg vec len Tensor[Real * n] => Int
+      linalg vec len (Tensor[Real * n] v) = n
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg mat rows Tensor[Real * r * c] => Int
+      linalg mat rows (Tensor[Real * r * c] m) = r
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg mat cols Tensor[Real * r * c] => Int
+      linalg mat cols (Tensor[Real * r * c] m) = c
+
+-- ── Matrix Transpose, Trace, Diagonal & Identity ─────────────
+
+fn :: la transpose col loop Tensor[Real * r * c] Tensor[Real * c * r] Int Int Int => Tensor[Real * c * r]
+      la transpose col loop m out i j cols =
+        | j >= cols = out
+        | otherwise =
+          out_(j, i) = m_(i, j)
+          la transpose col loop m out i (j + 1) cols
+
+fn :: la transpose row loop Tensor[Real * r * c] Tensor[Real * c * r] Int Int Int => Tensor[Real * c * r]
+      la transpose row loop m out i rows cols =
+        | i >= rows = out
+        | otherwise =
+          out2 = la transpose col loop m out i 0 cols
+          la transpose row loop m out2 (i + 1) rows cols
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg transpose Tensor[Real * r * c] => Tensor[Real * c * r]
+      linalg transpose (Tensor[Real * r * c] m) =
+        out = Tensor[Real * c * r]
+        la transpose row loop m out 0 r c
+
+fn :: la trace loop Tensor[Real * r * c] Int Int Int => Int
+      la trace loop m idx n acc =
+        | idx >= n  = acc
+        | otherwise = la trace loop m (idx + 1) n (acc + m_(idx, idx))
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg trace Tensor[Real * r * c] => Int
+      linalg trace (Tensor[Real * r * c] m) =
+        la trace loop m 0 r 0
+
+fn :: la diag loop Tensor[Real * r * c] Tensor[Real * r] Int Int => Tensor[Real * r]
+      la diag loop m out idx n =
+        | idx >= n  = out
+        | otherwise =
+          out_(idx) = m_(idx, idx)
+          la diag loop m out (idx + 1) n
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg diag Tensor[Real * r * c] => Tensor[Real * r]
+      linalg diag (Tensor[Real * r * c] m) =
+        out = Tensor[Real * r]
+        la diag loop m out 0 r
+
+fn :: la identity loop Tensor[Real * n * n] Int Int => Tensor[Real * n * n]
+      la identity loop out idx n =
+        | idx >= n  = out
+        | otherwise =
+          out_(idx, idx) = 1
+          la identity loop out (idx + 1) n
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+-- @mitigates VUL-INPUT-001
+fn :: linalg identity Int => Tensor[Real * n * n]
+      linalg identity dim =
+        n   = la max 1 dim
+        out = Tensor[Real * n * n]
+        la identity loop out 0 n
+
+-- ── Dot Product, Outer Product, Matrix-Vector & Matrix-Matrix Ops ──
+
+fn :: la dot loop Tensor[Real * n] Tensor[Real * n] Int Int Int => Int
+      la dot loop a b idx n acc =
+        | idx >= n  = acc
+        | otherwise = la dot loop a b (idx + 1) n (acc + (a_(idx) * b_(idx)))
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg dot Tensor[Real * n] Tensor[Real * n] => Int
+      linalg dot (Tensor[Real * n] a) (Tensor[Real * n] b) =
+        la dot loop a b 0 n 0
+
+fn :: la outer col loop Tensor[Real * r] Tensor[Real * c] Tensor[Real * r * c] Int Int Int => Tensor[Real * r * c]
+      la outer col loop a b out i j cols =
+        | j >= cols = out
+        | otherwise =
+          out_(i, j) = a_(i) * b_(j)
+          la outer col loop a b out i (j + 1) cols
+
+fn :: la outer row loop Tensor[Real * r] Tensor[Real * c] Tensor[Real * r * c] Int Int Int => Tensor[Real * r * c]
+      la outer row loop a b out i rows cols =
+        | i >= rows = out
+        | otherwise =
+          out2 = la outer col loop a b out i 0 cols
+          la outer row loop a b out2 (i + 1) rows cols
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg outer Tensor[Real * r] Tensor[Real * c] => Tensor[Real * r * c]
+      linalg outer (Tensor[Real * r] a) (Tensor[Real * c] b) =
+        out = Tensor[Real * r * c]
+        la outer row loop a b out 0 r c
+
+fn :: la matvec row dot Tensor[Real * r * c] Tensor[Real * c] Int Int Int Int => Int
+      la matvec row dot m v row j cols acc =
+        | j >= cols = acc
+        | otherwise = la matvec row dot m v row (j + 1) cols (acc + (m_(row, j) * v_(j)))
+
+fn :: la matvec loop Tensor[Real * r * c] Tensor[Real * c] Tensor[Real * r] Int Int Int => Tensor[Real * r]
+      la matvec loop m v out i rows cols =
+        | i >= rows = out
+        | otherwise =
+          out_(i) = la matvec row dot m v i 0 cols 0
+          la matvec loop m v out (i + 1) rows cols
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg matvec Tensor[Real * r * c] Tensor[Real * c] => Tensor[Real * r]
+      linalg matvec (Tensor[Real * r * c] m) (Tensor[Real * c] v) =
+        out = Tensor[Real * r]
+        la matvec loop m v out 0 r c
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg matmul Tensor[Real * r * k] Tensor[Real * k * c] => Tensor[Real * r * c]
+      linalg matmul a b =
+        a_ik @ b_kj
+
+-- ── Vector & Matrix Norms (`norm_l1`, `norm_l2`, `norm_linf`, `frobenius`) ──
+
+fn :: la norm l1 loop Tensor[Real * n] Int Int Int => Int
+      la norm l1 loop v idx n acc =
+        | idx >= n  = acc
+        | otherwise = la norm l1 loop v (idx + 1) n (acc + (la abs v_(idx)))
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg norm l1 Tensor[Real * n] => Int
+      linalg norm l1 (Tensor[Real * n] v) =
+        la norm l1 loop v 0 n 0
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg norm l2 sq Tensor[Real * n] => Int
+      linalg norm l2 sq (Tensor[Real * n] v) =
+        la dot loop v v 0 n 0
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg norm l2 Tensor[Real * n] => Int
+      linalg norm l2 (Tensor[Real * n] v) =
+        la isqrt (la dot loop v v 0 n 0)
+
+fn :: la norm linf loop Tensor[Real * n] Int Int Int => Int
+      la norm linf loop v idx n best =
+        | idx >= n  = best
+        | otherwise = la norm linf loop v (idx + 1) n (la max best (la abs v_(idx)))
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg norm linf Tensor[Real * n] => Int
+      linalg norm linf (Tensor[Real * n] v) =
+        la norm linf loop v 0 n 0
+
+fn :: la frob col loop Tensor[Real * r * c] Int Int Int Int => Int
+      la frob col loop m i j cols acc =
+        | j >= cols = acc
+        | otherwise =
+          x = m_(i, j)
+          la frob col loop m i (j + 1) cols (acc + (x * x))
+
+fn :: la frob row loop Tensor[Real * r * c] Int Int Int Int => Int
+      la frob row loop m i rows cols acc =
+        | i >= rows = acc
+        | otherwise = la frob row loop m (i + 1) rows cols (la frob col loop m i 0 cols acc)
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg frobenius norm Tensor[Real * r * c] => Int
+      linalg frobenius norm (Tensor[Real * r * c] m) =
+        la isqrt (la frob row loop m 0 r c 0)
+
+fn :: la norm vec loop Tensor[Real * n] Tensor[Real * n] Int Int Int => Tensor[Real * n]
+      la norm vec loop v out norm_val idx n =
+        | idx >= n  = out
+        | otherwise =
+          out_(idx) = (v_(idx) * 1000) / norm_val
+          la norm vec loop v out norm_val (idx + 1) n
+
+fn :: la normalize vec step Tensor[Real * n] Tensor[Real * n] Int Int => Tensor[Real * n]
+      la normalize vec step v out norm_value n =
+        | norm_value <= 0 = out
+        | otherwise       = la norm vec loop v out norm_value 0 n
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+-- @mitigates VUL-INPUT-001
+fn :: linalg normalize vec Tensor[Real * n] => Tensor[Real * n]
+      linalg normalize vec (Tensor[Real * n] v) =
+        la normalize vec step v (Tensor[Real * n]) (linalg norm l2 v) n
+
+fn :: la cosine step Tensor[Real * n] Tensor[Real * n] Int Int => Int
+      la cosine step a b na nb =
+        | na <= 0 or nb <= 0 = 0
+        | otherwise          = ((linalg dot a b) * 1000) / (na * nb)
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+-- @mitigates VUL-INPUT-001
+fn :: linalg cosine similarity Tensor[Real * n] Tensor[Real * n] => Int
+      linalg cosine similarity (Tensor[Real * n] a) (Tensor[Real * n] b) =
+        la cosine step a b (linalg norm l2 a) (linalg norm l2 b)
+
+-- ── Determinants & Fraction-Free Gaussian Elimination Solver (`linalg solve`) ──
+
+fn :: la clone mat col Tensor[Real * r * c] Tensor[Real * n * n] Int Int Int => Tensor[Real * n * n]
+      la clone mat col src dst i j n =
+        | j >= n    = dst
+        | otherwise =
+          dst_(i, j) = src_(i, j)
+          la clone mat col src dst i (j + 1) n
+
+fn :: la clone mat row Tensor[Real * r * c] Tensor[Real * n * n] Int Int => Tensor[Real * n * n]
+      la clone mat row src dst i n =
+        | i >= n    = dst
+        | otherwise =
+          dst2 = la clone mat col src dst i 0 n
+          la clone mat row src dst2 (i + 1) n
+
+fn :: la clone vec loop Tensor[Real * n] Tensor[Real * n] Int Int => Tensor[Real * n]
+      la clone vec loop src dst i n =
+        | i >= n    = dst
+        | otherwise =
+          dst_(i) = src_(i)
+          la clone vec loop src dst (i + 1) n
+
+fn :: la find pivot step Tensor[Real * n * n] Int Int Int Int Int Int => Int
+      la find pivot step a k row n best_row best_val cur =
+        | cur > best_val = la find pivot row a k (row + 1) n row cur
+        | otherwise      = la find pivot row a k (row + 1) n best_row best_val
+
+fn :: la find pivot row Tensor[Real * n * n] Int Int Int Int Int => Int
+      la find pivot row a k row n best_row best_val =
+        | row >= n  = best_row
+        | otherwise = la find pivot step a k row n best_row best_val (la abs a_(row, k))
+
+fn :: la swap mat rows loop Tensor[Real * n * n] Int Int Int Int => Tensor[Real * n * n]
+      la swap mat rows loop a r1 r2 j n =
+        | r1 == r2 or j >= n = a
+        | otherwise          =
+          tmp       = a_(r1, j)
+          a_(r1, j) = a_(r2, j)
+          a_(r2, j) = tmp
+          la swap mat rows loop a r1 r2 (j + 1) n
+
+fn :: la swap vec elems Tensor[Real * n] Int Int => Tensor[Real * n]
+      la swap vec elems b r1 r2 =
+        | r1 == r2  = b
+        | otherwise =
+          tmp    = b_(r1)
+          b_(r1) = b_(r2)
+          b_(r2) = tmp
+          b
+
+fn :: la ff elim b loop Tensor[Real * n * n] Tensor[Real * n] Int Int Int Int Int => Tensor[Real * n]
+      la ff elim b loop a b k row prev_piv n piv =
+        | row >= n or piv == 0 = b
+        | otherwise            =
+          aik     = a_(row, k)
+          b_(row) = ((piv * b_(row)) - (aik * b_(k))) / prev_piv
+          la ff elim b loop a b k (row + 1) prev_piv n piv
+
+fn :: la ff elim col loop Tensor[Real * n * n] Int Int Int Int Int Int Int => Tensor[Real * n * n]
+      la ff elim col loop a k row piv aik prev_piv j n =
+        | j >= n    = a
+        | otherwise =
+          a_(row, j) = ((piv * a_(row, j)) - (aik * a_(k, j))) / prev_piv
+          la ff elim col loop a k row piv aik prev_piv (j + 1) n
+
+fn :: la ff elim a loop Tensor[Real * n * n] Int Int Int Int Int => Tensor[Real * n * n]
+      la ff elim a loop a k row prev_piv n piv =
+        | row >= n or piv == 0 = a
+        | otherwise            =
+          aik        = a_(row, k)
+          a_(row, k) = 0
+          a2         = la ff elim col loop a k row piv aik prev_piv (k + 1) n
+          la ff elim a loop a2 k (row + 1) prev_piv n piv
+
+fn :: la next piv Int Int => Int
+      la next piv piv prev_piv =
+        | piv == 0  = prev_piv
+        | otherwise = piv
+
+fn :: la solve loop Tensor[Real * n * n] Tensor[Real * n] Int Int Int => Tensor[Real * n]
+      la solve loop a b k prev_piv n =
+        | k >= n    = la backsub loop a b (Tensor[Real * n]) (n - 1) n
+        | otherwise =
+          piv_row = la find pivot row a k (k + 1) n k (la abs a_(k, k))
+          a_sw    = la swap mat rows loop a k piv_row 0 n
+          b_sw    = la swap vec elems b k piv_row
+          piv     = a_sw_(k, k)
+          b_el    = la ff elim b loop a_sw b_sw k (k + 1) prev_piv n piv
+          a_el    = la ff elim a loop a_sw k (k + 1) prev_piv n piv
+          la solve loop a_el b_el (k + 1) (la next piv piv prev_piv) n
+
+fn :: la backsub sum Tensor[Real * n * n] Tensor[Real * n] Int Int Int Int => Int
+      la backsub sum a x row j n acc =
+        | j >= n    = acc
+        | otherwise = la backsub sum a x row (j + 1) n (acc + (a_(row, j) * x_(j)))
+
+fn :: la backsub div Int Int Int => Int
+      la backsub div b_val s piv =
+        | piv == 0  = 0
+        | otherwise = (b_val - s) / piv
+
+fn :: la backsub loop Tensor[Real * n * n] Tensor[Real * n] Tensor[Real * n] Int Int => Tensor[Real * n]
+      la backsub loop a b x row n =
+        | row < 0   = x
+        | otherwise =
+          s       = la backsub sum a x row (row + 1) n 0
+          x_(row) = la backsub div b_(row) s a_(row, row)
+          la backsub loop a b x (row - 1) n
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+-- @mitigates VUL-INPUT-001
+fn :: linalg solve Tensor[Real * n * c] Tensor[Real * n] => Tensor[Real * n]
+      linalg solve (Tensor[Real * n * c] a) (Tensor[Real * n] b) =
+        work_a = la clone mat row a (Tensor[Real * n * n]) 0 n
+        work_b = la clone vec loop b (Tensor[Real * n]) 0 n
+        la solve loop work_a work_b 0 1 n
+
+fn :: la bareiss step loop Tensor[Real * n * n] Int Int Int Int Int Int => Tensor[Real * n * n]
+      la bareiss step loop a k i j piv prev_piv n =
+        | j >= n    = a
+        | otherwise =
+          a_(i, j) = ((piv * a_(i, j)) - (a_(i, k) * a_(k, j))) / prev_piv
+          la bareiss step loop a k i (j + 1) piv prev_piv n
+
+fn :: la bareiss row loop Tensor[Real * n * n] Int Int Int Int Int => Tensor[Real * n * n]
+      la bareiss row loop a k i piv prev_piv n =
+        | i >= n    = a
+        | otherwise =
+          a2 = la bareiss step loop a k i (k + 1) piv prev_piv n
+          a2_(i, k) = 0
+          la bareiss row loop a2 k (i + 1) piv prev_piv n
+
+fn :: la pivot sign Int Int Int => Int
+      la pivot sign piv_row k sign =
+        | piv_row == k = sign
+        | otherwise    = 0 - sign
+
+fn :: la bareiss piv step Tensor[Real * n * n] Int Int Int Int Int => Int
+      la bareiss piv step a_sw k prev_piv nsign n piv =
+        | piv == 0  = 0
+        | otherwise =
+          a_el = la bareiss row loop a_sw k (k + 1) piv prev_piv n
+          la bareiss loop a_el (k + 1) piv nsign n
+
+fn :: la bareiss loop Tensor[Real * n * n] Int Int Int Int => Int
+      la bareiss loop a k prev_piv sign n =
+        | k >= (n - 1) = sign * a_(n - 1, n - 1)
+        | otherwise    =
+          piv_row = la find pivot row a k (k + 1) n k (la abs a_(k, k))
+          nsign   = la pivot sign piv_row k sign
+          a_sw    = la swap mat rows loop a k piv_row 0 n
+          la bareiss piv step a_sw k prev_piv nsign n a_sw_(k, k)
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg det Tensor[Real * n * c] => Int
+      linalg det (Tensor[Real * n * c] m) =
+        | n <= 0 or n != c = 0
+        | n == 1           = m_(0, 0)
+        | otherwise        =
+          work = la clone mat row m (Tensor[Real * n * n]) 0 n
+          la bareiss loop work 0 1 1 n
+
+-- ── Neural Activations (`linalg relu`, `linalg sigmoid`, `linalg softmax`) ──
+
+fn :: la relu scalar Int => Int
+      la relu scalar x   =
+        | x <= 0    = 0
+        | otherwise = x
+
+fn :: la relu loop Tensor[Real * n] Tensor[Real * n] Int Int => Tensor[Real * n]
+      la relu loop v out idx n =
+        | idx >= n  = out
+        | otherwise =
+          out_(idx) = la relu scalar v_(idx)
+          la relu loop v out (idx + 1) n
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg relu Tensor[Real * n] => Tensor[Real * n]
+      linalg relu (Tensor[Real * n] v) =
+        la relu loop v (Tensor[Real * n]) 0 n
+
+-- Permille (0..1000) sigmoid: sigmoid(0) = 500, sigmoid(-x) + sigmoid(x) = 1000
+fn :: la sigmoid scalar Int => Int
+      la sigmoid scalar x   =
+        | x == 0 = 500
+        | x > 0  =
+          en = la exp neg scaled (0 - x)
+          (1000000 * 1000) / (1000000 + en)
+        | otherwise =
+          1000 - (la sigmoid scalar (0 - x))
+
+fn :: la sigmoid loop Tensor[Real * n] Tensor[Real * n] Int Int => Tensor[Real * n]
+      la sigmoid loop v out idx n =
+        | idx >= n  = out
+        | otherwise =
+          out_(idx) = la sigmoid scalar v_(idx)
+          la sigmoid loop v out (idx + 1) n
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+fn :: linalg sigmoid Tensor[Real * n] => Tensor[Real * n]
+      linalg sigmoid (Tensor[Real * n] v) =
+        la sigmoid loop v (Tensor[Real * n]) 0 n
+
+fn :: la max vec loop Tensor[Real * n] Int Int Int => Int
+      la max vec loop v idx n best =
+        | idx >= n  = best
+        | otherwise = la max vec loop v (idx + 1) n (la max best v_(idx))
+
+fn :: la sum vec loop Tensor[Real * n] Int Int Int => Int
+      la sum vec loop v idx n acc =
+        | idx >= n  = acc
+        | otherwise = la sum vec loop v (idx + 1) n (acc + v_(idx))
+
+fn :: la exp shifted loop Tensor[Real * n] Tensor[Real * n] Int Int Int => Tensor[Real * n]
+      la exp shifted loop v out max_val idx n =
+        | idx >= n  = out
+        | otherwise =
+          out_(idx) = la exp neg scaled (v_(idx) - max_val)
+          la exp shifted loop v out max_val (idx + 1) n
+
+fn :: la softmax scale loop Tensor[Real * n] Tensor[Real * n] Int Int Int => Tensor[Real * n]
+      la softmax scale loop exps out tot idx n =
+        | idx >= n  = out
+        | otherwise =
+          out_(idx) = (exps_(idx) * 1000) / tot
+          la softmax scale loop exps out tot (idx + 1) n
+
+fn :: la argmax vec loop Tensor[Real * n] Int Int Int Int => Int
+      la argmax vec loop v idx n best_idx best_val =
+        | idx >= n           = best_idx
+        | v_(idx) > best_val = la argmax vec loop v (idx + 1) n idx v_(idx)
+        | otherwise          = la argmax vec loop v (idx + 1) n best_idx best_val
+
+fn :: la softmax finish Tensor[Real * n] Tensor[Real * n] Int Int => Tensor[Real * n]
+      la softmax finish v exps n tot =
+        | tot <= 0  = Tensor[Real * n]
+        | otherwise =
+          out            = la softmax scale loop exps (Tensor[Real * n]) tot 0 n
+          sum_p          = la sum vec loop out 0 n 0
+          best_idx       = la argmax vec loop v 1 n 0 v_(0)
+          out_(best_idx) = out_(best_idx) + (1000 - sum_p)
+          out
+
+-- @implements FR-LINALG-001
+-- @implements API-LINALG-001
+-- @implements DM-Linalg
+-- @mitigates VUL-INPUT-001
+fn :: linalg softmax Tensor[Real * n] => Tensor[Real * n]
+      linalg softmax (Tensor[Real * n] v) =
+        | n <= 0    = Tensor[Real * n]
+        | otherwise =
+          max_v = la max vec loop v 1 n v_(0)
+          exps  = la exp shifted loop v (Tensor[Real * n]) max_v 0 n
+          tot   = la sum vec loop exps 0 n 0
+          la softmax finish v exps n tot

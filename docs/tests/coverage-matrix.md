@@ -16,7 +16,7 @@
 | API-IO-001 | TS-IO-001 | src/main/ridgun/lib/io.rg | src/test/ridgun/test io.rg | ok |
 | API-JSON-001 | TS-JSON-001 | src/main/ridgun/lib/json.rg | src/test/ridgun/test json.rg | ok |
 | API-JWT-001 | TS-JWT-001 | src/main/ridgun/lib/jwt.rg | src/test/ridgun/test jwt.rg | ok |
-| API-LINALG-001 | TS-LINALG-001 | — | — | no code, spec not automated |
+| API-LINALG-001 | TS-LINALG-001 | src/main/ridgun/lib/linalg.rg | src/test/ridgun/test linalg.rg | ok |
 | API-LIST-001 | TS-LIST-001 | src/main/ridgun/lib/list.rg | src/test/ridgun/test list.rg | ok |
 | API-LOG-001 | TS-LOG-001 | src/main/ridgun/lib/log.rg | src/test/ridgun/test log.rg | ok |
 | API-MATH-001 | TS-MATH-001 | src/main/ridgun/lib/math.rg | src/test/ridgun/test math.rg | ok |
@@ -49,7 +49,7 @@
 | FR-IO-002 | TS-IO-002 | src/main/ridgun/lib/io.rg | src/test/ridgun/test io.rg | ok |
 | FR-JSON-001 | TS-JSON-001 | src/main/ridgun/lib/json.rg | src/test/ridgun/test json.rg | ok |
 | FR-JWT-001 | TS-JWT-001 | src/main/ridgun/lib/jwt.rg | src/test/ridgun/test jwt.rg | ok |
-| FR-LINALG-001 | TS-LINALG-001 | — | — | no code, spec not automated |
+| FR-LINALG-001 | TS-LINALG-001 | src/main/ridgun/lib/linalg.rg | src/test/ridgun/test linalg.rg | ok |
 | FR-LIST-001 | TS-LIST-001 | src/main/ridgun/lib/list.rg | src/test/ridgun/test list.rg | ok |
 | FR-LOG-001 | TS-LOG-001 | src/main/ridgun/lib/log.rg | src/test/ridgun/test log.rg | ok |
 | FR-MATH-001 | TS-MATH-001 | src/main/ridgun/lib/math.rg | src/test/ridgun/test math.rg | ok |

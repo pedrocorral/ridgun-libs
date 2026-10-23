@@ -1,9 +1,9 @@
 ---
 id: TASK-0026
 title: Implement linalg.rg typed Tensor linear algebra, norms, linear solver, and neural activations library
-status: pending
+status: completed
 priority: must
-owner: unassigned
+owner: agent-001
 implements: [FR-LINALG-001, API-LINALG-001, DM-Linalg]
 tests: [TS-LINALG-001]
 mitigates: [VUL-INPUT-001]
@@ -15,6 +15,8 @@ scope:
 context_files:
   - docs/requirements/functional/linalg/FR-LINALG-001-tensor-linear-algebra-and-activations.md
   - docs/requirements/api/linalg/API-LINALG-001-linalg-module-contract.md
+claimed: 2026-10-23T20:37:54Z
+claimed_by: agent gemini@solarfall
 ---
 # TASK-0026 — Implement `linalg.rg` typed Tensor linear algebra, norms, linear solver, and neural activations library
 

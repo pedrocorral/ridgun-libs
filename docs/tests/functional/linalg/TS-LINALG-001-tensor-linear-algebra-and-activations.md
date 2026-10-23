@@ -3,8 +3,8 @@ id: TS-LINALG-001
 title: Verify typed Tensor linear algebra operations, vector/matrix norms, linear solver, and neural activations
 level: unit
 covers: [FR-LINALG-001, API-LINALG-001]
-status: planned
-automated_in: []
+status: automated
+automated_in: [src/test/ridgun/test linalg.rg]
 ---
 # TS-LINALG-001 — Verify typed Tensor linear algebra operations, vector/matrix norms, linear solver, and neural activations
 
