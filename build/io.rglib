@@ -1,0 +1,1029 @@
+-- RGLIB1
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.8
+-- FUNCTIONS: 131
+-- TYPES: 4
+-- SUMMARY: poll_in:InlineSequential
+-- SUMMARY: poll_out:InlineSequential
+-- SUMMARY: poll_err:InlineSequential
+-- SUMMARY: poll_hup:InlineSequential
+-- SUMMARY: poll_nval:InlineSequential
+-- SUMMARY: sig_hup:InlineSequential
+-- SUMMARY: sig_int:InlineSequential
+-- SUMMARY: sig_quit:InlineSequential
+-- SUMMARY: sig_kill:InlineSequential
+-- SUMMARY: sig_usr1:InlineSequential
+-- SUMMARY: sig_usr2:InlineSequential
+-- SUMMARY: sig_pipe:InlineSequential
+-- SUMMARY: sig_alrm:InlineSequential
+-- SUMMARY: sig_term:InlineSequential
+-- SUMMARY: sig_chld:InlineSequential
+-- SUMMARY: o_rdonly:InlineSequential
+-- SUMMARY: o_wronly:InlineSequential
+-- SUMMARY: o_rdwr:InlineSequential
+-- SUMMARY: o_creat:InlineSequential
+-- SUMMARY: o_excl:InlineSequential
+-- SUMMARY: o_trunc:InlineSequential
+-- SUMMARY: o_append:InlineSequential
+-- SUMMARY: o_nonblock:InlineSequential
+-- SUMMARY: o_cloexec:InlineSequential
+-- SUMMARY: is_bad_posix_code:InlineSequential
+-- SUMMARY: has_unsafe_posix_char:LazyStealableTask
+-- SUMMARY: is_safe_posix_path_len:LazyStealableTask
+-- SUMMARY: is_safe_posix_path:LazyStealableTask
+-- SUMMARY: lstat_exists:InlineSequential
+-- SUMMARY: lstat_kind:InlineSequential
+-- SUMMARY: lstat_mode:InlineSequential
+-- SUMMARY: lstat_size:InlineSequential
+-- SUMMARY: lstat_mtime_sec:InlineSequential
+-- SUMMARY: lstat_symlink_target:InlineSequential
+-- SUMMARY: px_raw_byte_ub:InlineSequential
+-- SUMMARY: px_raw_byte:InlineSequential
+-- SUMMARY: px_u64_le:InlineSequential
+-- SUMMARY: px_decode_u32_le:InlineSequential
+-- SUMMARY: px_decode_u64_le:InlineSequential
+-- SUMMARY: px_alloc_page:InlineSequential
+-- SUMMARY: px_free_page:InlineSequential
+-- SUMMARY: px_alloc_mfd:InlineSequential
+-- SUMMARY: px_poke:InlineSequential
+-- SUMMARY: px_peek:InlineSequential
+-- SUMMARY: px_clock_gettime:InlineSequential
+-- SUMMARY: px_pair_fst:InlineSequential
+-- SUMMARY: px_pair_snd:InlineSequential
+-- SUMMARY: sys_monotonic_ms:InlineSequential
+-- SUMMARY: sys_monotonic_ns:InlineSequential
+-- SUMMARY: sys_wall_time_ms:InlineSequential
+-- SUMMARY: map_poll_rc:InlineSequential
+-- SUMMARY: wait_fd:InlineSequential
+-- SUMMARY: posix_open:LazyStealableTask
+-- SUMMARY: posix_close:InlineSequential
+-- SUMMARY: posix_read:InlineSequential
+-- SUMMARY: posix_write:InlineSequential
+-- SUMMARY: posix_kill:InlineSequential
+-- SUMMARY: pack_pipe_fds:InlineSequential
+-- SUMMARY: posix_pipe:InlineSequential
+-- SUMMARY: posix_mkdir:LazyStealableTask
+-- SUMMARY: posix_chmod:LazyStealableTask
+-- SUMMARY: posix_chdir:LazyStealableTask
+-- SUMMARY: px_syscall1_path:InlineSequential
+-- SUMMARY: px_syscall2_path:InlineSequential
+-- SUMMARY: sys_rmdir:LazyStealableTask
+-- SUMMARY: sys_unlink:LazyStealableTask
+-- SUMMARY: sys_rename:LazyStealableTask
+-- SUMMARY: sys_symlink:LazyStealableTask
+-- SUMMARY: sys_readlink:LazyStealableTask
+-- SUMMARY: valid_signal_list:LazyStealableTask
+-- SUMMARY: valid_signal_rest:LazyStealableTask
+-- SUMMARY: px_bit_shift:LazyStealableTask
+-- SUMMARY: px_sig_mask:LazyStealableTask
+-- SUMMARY: px_finish_sig_watch:InlineSequential
+-- SUMMARY: sys_signal_watch:LazyStealableTask
+-- SUMMARY: px_finish_sig_read:InlineSequential
+-- SUMMARY: px_wait_sig_after_poll:InlineSequential
+-- SUMMARY: sys_signal_wait:InlineSequential
+-- SUMMARY: posix_notify_signal:InlineSequential
+-- SUMMARY: px_bytes_to_list_loop:LazyStealableTask
+-- SUMMARY: px_getrandom_call:InlineSequential
+-- SUMMARY: px_getrandom_step:InlineSequential
+-- SUMMARY: px_getrandom_loop:InlineSequential
+-- SUMMARY: px_finish_getrandom:InlineSequential
+-- SUMMARY: px_getrandom_checked:InlineSequential
+-- SUMMARY: sys_random_bytes:InlineSequential
+-- SUMMARY: px_finish_random_list:LazyStealableTask
+-- SUMMARY: sys_random_bytes_list:LazyStealableTask
+-- SUMMARY: path_separator:InlineSequential
+-- SUMMARY: null_device_for:InlineSequential
+-- SUMMARY: null_device:InlineSequential
+-- SUMMARY: process_exists:InlineSequential
+-- SUMMARY: format_io_error:InlineSequential
+-- SUMMARY: format_io_result:InlineSequential
+-- SUMMARY: map_read_bytes:InlineSequential
+-- SUMMARY: read_fd_after_poll:InlineSequential
+-- SUMMARY: read_fd:InlineSequential
+-- SUMMARY: read_fd_max_timeout:InlineSequential
+-- SUMMARY: map_write_rc:InlineSequential
+-- SUMMARY: write_fd_after_poll:InlineSequential
+-- SUMMARY: write_fd:InlineSequential
+-- SUMMARY: write_fd_data_timeout:InlineSequential
+-- SUMMARY: has_null_char:LazyStealableTask
+-- SUMMARY: pad_ms_three:InlineSequential
+-- SUMMARY: format_timeout_sec:InlineSequential
+-- SUMMARY: map_exec_rc:InlineSequential
+-- SUMMARY: io_exec_timeout:LazyStealableTask
+-- SUMMARY: exec_with_timeout:LazyStealableTask
+-- SUMMARY: read_existing_or_empty:InlineSequential
+-- SUMMARY: append_file:LazyStealableTask
+-- SUMMARY: file_exists:LazyStealableTask
+-- SUMMARY: is_file:LazyStealableTask
+-- SUMMARY: is_dir:LazyStealableTask
+-- SUMMARY: is_symlink:LazyStealableTask
+-- SUMMARY: extract_size:InlineSequential
+-- SUMMARY: file_size:LazyStealableTask
+-- SUMMARY: extract_mtime:InlineSequential
+-- SUMMARY: file_mtime:LazyStealableTask
+-- SUMMARY: extract_mode:InlineSequential
+-- SUMMARY: file_mode:LazyStealableTask
+-- SUMMARY: io_read_file_safe:LazyStealableTask
+-- SUMMARY: split_lines_loop:LazyStealableTask
+-- SUMMARY: split_non_empty_lines:LazyStealableTask
+-- SUMMARY: io_read_lines:LazyStealableTask
+-- SUMMARY: str_list_is_empty:InlineSequential
+-- SUMMARY: join_lines_nl:LazyStealableTask
+-- SUMMARY: io_write_lines:LazyStealableTask
+-- SUMMARY: io_wrap_chunk:InlineSequential
+-- SUMMARY: io_read_after_poll:InlineSequential
+-- SUMMARY: io_read_poll_step:InlineSequential
+-- SUMMARY: io_read_with_timeout:InlineSequential
+-- ============================================================
+-- src/main/ridgun/lib/posix.rg
+-- Pure-Ridgun POSIX Descriptors, Poll, Signals, Clocks & Random Library (POSIX)
+-- @implements FR-POSIX-001
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+-- @implements DM-PosixStatus
+-- @mitigates VUL-INJ-002
+-- @mitigates VUL-INPUT-001
+-- ============================================================
+
+-- ── Poll & Process Status ADTs ───────────────────────────────
+
+-- @implements FR-POSIX-001
+-- @implements DM-PosixStatus
+type PollStatus = PollReady Int | PollTimeout | PollError Int
+
+-- @implements FR-POSIX-001
+-- @implements DM-PosixStatus
+type ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int
+
+-- ── Standard POSIX Poll Event Constants ──────────────────────
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: poll in => Int
+      poll in =  1
+
+fn :: poll_out => Int
+      poll_out =  4
+
+fn :: poll err => Int
+      poll err =  8
+
+fn :: poll hup => Int
+      poll hup =  16
+
+fn :: poll nval => Int
+      poll nval =  32
+
+-- ── Standard POSIX Signal Constants (Linux x86_64 / ARM64) ───
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: sig hup => Int
+      sig hup =  1
+
+fn :: sig int => Int
+      sig int =  2
+
+fn :: sig quit => Int
+      sig quit =  3
+
+fn :: sig kill => Int
+      sig kill =  9
+
+fn :: sig usr1 => Int
+      sig usr1 =  10
+
+fn :: sig usr2 => Int
+      sig usr2 =  12
+
+fn :: sig pipe => Int
+      sig pipe =  13
+
+fn :: sig alrm => Int
+      sig alrm =  14
+
+fn :: sig term => Int
+      sig term =  15
+
+fn :: sig chld => Int
+      sig chld =  17
+
+-- ── Standard POSIX Open Flag Constants ───────────────────────
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: o rdonly => Int
+      o rdonly =  0
+
+fn :: o wronly => Int
+      o wronly =  1
+
+fn :: o rdwr => Int
+      o rdwr =  2
+
+fn :: o creat => Int
+      o creat =  64
+
+fn :: o excl => Int
+      o excl =  128
+
+fn :: o trunc => Int
+      o trunc =  512
+
+fn :: o append => Int
+      o append =  1024
+
+fn :: o nonblock => Int
+      o nonblock =  2048
+
+fn :: o cloexec => Int
+      o cloexec =  524288
+
+-- ── Path Safety Validation (VUL-INJ-002 / VUL-INPUT-001) ─────
+
+fn :: is bad posix code Int => Bool
+      is bad posix code c   =
+        c == 0 or c == 10 or c == 13 or c == 59 or c == 96 or c == 124 or c == 38 or c == 36 or c == 39 or c == 34
+
+-- @mitigates VUL-INJ-002
+-- @mitigates VUL-INPUT-001
+fn :: has unsafe posix char String Int Int => Bool
+      has unsafe posix char s idx slen =
+        | idx >= slen                           = False
+        | is bad posix code (str char at s idx) = True
+        | otherwise                             = has unsafe posix char s (idx + 1) slen
+
+fn :: is safe posix path len String Int => Bool
+      is safe posix path len path plen =
+        | plen == 0 or plen > 4096 = False
+        | otherwise                = not (has unsafe posix char path 0 plen)
+
+fn :: is safe posix path String => Bool
+      is safe posix path path   =
+        is safe posix path len path (str len path)
+
+-- ── lstat Tuple Accessors ────────────────────────────────────
+
+fn :: lstat exists (Bool String Int Int Int String String Int String) => Bool
+      lstat exists (ex, _, _, _, _, _, _, _, _)                       =  ex
+
+fn :: lstat kind (Bool String Int Int Int String String Int String) => String
+      lstat kind (_, k, _, _, _, _, _, _, _)                        =  k
+
+fn :: lstat mode (Bool String Int Int Int String String Int String) => Int
+      lstat mode (_, _, m, _, _, _, _, _, _)                        =  m
+
+fn :: lstat size (Bool String Int Int Int String String Int String) => Int
+      lstat size (_, _, _, _, sz, _, _, _, _)                       =  sz
+
+fn :: lstat mtime sec (Bool String Int Int Int String String Int String) => Int
+      lstat mtime sec (_, _, _, _, _, _, _, mt, _)                       =  mt
+
+fn :: lstat symlink target (Bool String Int Int Int String String Int String) => String
+      lstat symlink target (_, _, _, _, _, _, _, _, target) = target
+
+-- ── Kernel Memory Bridge Helpers (mmap + memfd_create + eventfd2) ──
+
+fn :: px raw byte ub Int => String
+      px raw byte ub ub  =
+        | ub >= 1 and ub <= 127 = char from code ub
+        | otherwise =
+          efd = sys call 290 (256 + ub) 526336 0 0 0 0
+          s   = sys read fd efd 8
+          _   = sys close efd
+          str slice s 0 1
+
+fn :: px raw byte Int => String
+      px raw byte b   =  px raw byte ub (((b % 256) + 256) % 256)
+
+fn :: px u64 le Int => String
+      px u64 le val =
+        | val <= 0 =
+          b0 = px raw byte 0
+          b0 + b0 + b0 + b0 + b0 + b0 + b0 + b0
+        | otherwise =
+          efd = sys call 290 val 526336 0 0 0 0
+          s   = sys read fd efd 8
+          _   = sys close efd
+          s
+
+fn :: px decode u32 le String Int => Int
+      px decode u32 le s off =
+        b0 = str char at s off
+        b1 = str char at s (off + 1)
+        b2 = str char at s (off + 2)
+        b3 = str char at s (off + 3)
+        b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
+
+fn :: px decode u64 le String Int => Int
+      px decode u64 le s off =
+        lo = px decode u32 le s off
+        hi = px decode u32 le s (off + 4)
+        lo + (hi * 4294967296)
+
+fn :: px alloc page Int => Int
+      px alloc page sz  =
+        neg1 = 0 - 1
+        sys call 9 0 sz 3 34 neg1 0
+
+fn :: px free page Int Int Int => Int
+      px free page mfd ptr sz =
+        _ = sys close mfd
+        sys call 11 ptr sz 0 0 0 0
+
+fn :: px alloc mfd => Int
+      px alloc mfd =  sys call 319 4194311 1 0 0 0 0
+
+fn :: px poke Int Int String => Int
+      px poke mfd ptr s      =
+        slen = str len s
+        _    = sys call 8 mfd 0 0 0 0 0
+        _    = sys write fd mfd s
+        sys call 17 mfd ptr slen 0 0 0
+
+fn :: px peek Int Int Int => String
+      px peek mfd ptr len =
+        _ = sys call 18 mfd ptr len 0 0 0
+        _ = sys call 8 mfd 0 0 0 0 0
+        sys read fd mfd len
+
+-- ── Monotonic & Wall-Clock Time (RGF-017 / RG-010) ───────────
+
+fn :: px clock gettime Int    => Int Int
+      px clock gettime clk_id =
+        ptr  = px alloc page 4096
+        mfd  = px alloc mfd
+        _    = sys call 228 clk_id ptr 0 0 0 0
+        raw  = px peek mfd ptr 16
+        _    = px free page mfd ptr 4096
+        sec  = px decode u64 le raw 0
+        nsec = px decode u64 le raw 8
+        (sec, nsec)
+
+fn :: px pair fst (Int Int) => Int
+      px pair fst (a, _)    =  a
+
+fn :: px pair snd (Int Int) => Int
+      px pair snd (_, b)    =  b
+
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+fn :: sys monotonic ms => Int
+      sys monotonic ms =
+        ts = px clock gettime 1
+        ((px pair fst ts) * 1000) + ((px pair snd ts) / 1000000)
+
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+fn :: sys monotonic ns => Int
+      sys monotonic ns =
+        ts = px clock gettime 1
+        ((px pair fst ts) * 1000000000) + (px pair snd ts)
+
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+fn :: sys wall time ms => Int
+      sys wall time ms =
+        ts = px clock gettime 0
+        ((px pair fst ts) * 1000) + ((px pair snd ts) / 1000000)
+
+-- ── Descriptor Waiting & Typed POSIX Wrappers (FR-POSIX-001) ─
+
+fn :: map poll rc Int => PollStatus
+      map poll rc rc  =
+        | rc == 0   = PollTimeout
+        | rc < 0    = PollError (0 - rc)
+        | otherwise = PollReady rc
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: wait fd Int Int    Int        => PollStatus
+      wait fd fd  events timeout_ms =
+        | fd < 0               = PollError 9
+        | timeout_ms < (0 - 1) = PollError 22
+        | otherwise            = map poll rc (sys poll fd events timeout_ms)
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: posix open String Int   Int  => Int
+      posix open path   flags mode =
+        | not (is safe posix path path) = 0 - 22
+        | otherwise                     = sys open path flags mode
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: posix close Int => Int
+      posix close fd  =
+        | fd < 0    = 0 - 9
+        | otherwise = sys close fd
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: posix read Int Int       => String
+      posix read fd  max_bytes =
+        | fd < 0 or max_bytes <= 0 = ""
+        | otherwise                = sys read fd fd max_bytes
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: posix write Int String => Int
+      posix write fd  data   =
+        | fd < 0    = 0 - 9
+        | otherwise = sys write fd fd data
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: posix kill Int Int     => Int
+      posix kill pid sig_num =
+        | pid <= 0 or sig_num <= 0 or sig_num > 64 = 0 - 22
+        | otherwise                                = sys kill pid sig_num
+
+-- ── Kernel-Backed Anonymous Pipe via pipe2 (__NR_pipe2 = 293) ─
+
+fn :: pack pipe fds Int Int Int => Int Int Int
+      pack pipe fds rc rfd wfd =
+        | rc < 0 or rfd < 0 or wfd < 0 = (0 - 1, 0 - 1, 0 - 1)
+        | otherwise                    = (0, rfd, wfd)
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: posix pipe => Int Int Int
+      posix pipe =
+        ptr = px alloc page 4096
+        mfd = px alloc mfd
+        rc  = sys call 293 ptr 526336 0 0 0 0
+        raw = px peek mfd ptr 8
+        _   = px free page mfd ptr 4096
+        rfd = px decode u32 le raw 0
+        wfd = px decode u32 le raw 4
+        pack pipe fds rc rfd wfd
+
+-- ── RG-010 Filesystem & Process Operations ───────────────────
+
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+fn :: posix mkdir String => Bool
+      posix mkdir path   =
+        | not (is safe posix path path) = False
+        | otherwise                     = (sys mkdir path 493) == 0
+
+fn :: posix chmod String Int  => Bool
+      posix chmod path   mode =
+        | not (is safe posix path path) = False
+        | otherwise                     = (sys chmod path mode) == 0
+
+fn :: posix chdir String => Bool
+      posix chdir path   =
+        | not (is safe posix path path) = False
+        | otherwise                     = (sys chdir path) == 0
+
+fn :: px syscall1 path Int String => Int
+      px syscall1 path nr  path   =
+        ptr = px alloc page 4096
+        mfd = px alloc mfd
+        b0  = px raw byte 0
+        _   = px poke mfd ptr (path + b0)
+        rc  = sys call nr ptr 0 0 0 0 0
+        _   = px free page mfd ptr 4096
+        rc
+
+fn :: px syscall2 path Int String String => Int
+      px syscall2 path nr p1 p2 =
+        ptr   = px alloc page 4096
+        mfd   = px alloc mfd
+        b0    = px raw byte 0
+        p2048 = ptr + 2048
+        _     = px poke mfd ptr (p1 + b0)
+        _     = px poke mfd p2048 (p2 + b0)
+        rc    = sys call nr ptr p2048 0 0 0 0
+        _     = px free page mfd ptr 4096
+        rc
+
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+fn :: sys rmdir String => Bool
+      sys rmdir path   =
+        | not (is safe posix path path) = False
+        | otherwise                     = (px syscall1 path 84 path) == 0
+
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+fn :: sys unlink String => Bool
+      sys unlink path   =
+        | not (is safe posix path path) = False
+        | otherwise                     = (px syscall1 path 87 path) == 0
+
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+fn :: sys rename String String   => Bool
+      sys rename old_p  new_path =
+        | not (is safe posix path old_p) or not (is safe posix path new_path) = False
+        | otherwise = (px syscall2 path 82 old_p new_path) == 0
+
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+fn :: sys symlink String String    => Bool
+      sys symlink target link_path =
+        | not (is safe posix path target) or not (is safe posix path link_path) = False
+        | otherwise = (px syscall2 path 88 target link_path) == 0
+
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+fn :: sys readlink String => String
+      sys readlink path   =
+        | not (is safe posix path path) = ""
+        | otherwise                     = lstat symlink target (file lstat path)
+
+-- ── RGF-018 Signal Watching & Waiting (rt_sigprocmask + signalfd4) ──
+
+fn :: valid signal list [Int]    => Bool
+      valid signal list []       =  False
+      valid signal list (s:rest) =
+        | s < 1 or s > 64 or s == 9 or s == 19 = False
+        | otherwise                            = valid signal rest rest
+
+fn :: valid signal rest [Int]    => Bool
+      valid signal rest []       =  True
+      valid signal rest (s:rest) =
+        | s < 1 or s > 64 or s == 9 or s == 19 = False
+        | otherwise                            = valid signal rest rest
+
+fn :: px bit shift Int => Int
+      px bit shift n   =
+        | n <= 0    = 1
+        | otherwise = 2 * (px bit shift (n - 1))
+
+fn :: px sig mask [Int]    => Int
+      px sig mask []       =  0
+      px sig mask (s:rest) =  (px bit shift (s - 1)) + (px sig mask rest)
+
+fn :: px finish sig watch Int => Int Int
+      px finish sig watch sfd =
+        | sfd < 0   = (0 - 7, 0 - 1)
+        | otherwise = (0, sfd)
+
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+fn :: sys signal watch [Int] => Int Int
+      sys signal watch sigs  =
+        | not (valid signal list sigs) = (0 - 7, 0 - 1)
+        | otherwise                    =
+          ptr  = px alloc page 4096
+          mfd  = px alloc mfd
+          mask = px sig mask sigs
+          neg1 = 0 - 1
+          _    = px poke mfd ptr (px u64 le mask)
+          _    = sys call 14 0 ptr 0 8 0 0
+          sfd  = sys call 289 neg1 ptr 8 526336 0 0
+          _    = px free page mfd ptr 4096
+          px finish sig watch sfd
+
+fn :: px finish sig read Int String => Int Int
+      px finish sig read n raw =
+        | n < 128   = (0 - 7, 0)
+        | otherwise = (0, px decode u32 le raw 0)
+
+fn :: px wait sig after poll Int Int => Int Int
+      px wait sig after poll handle prc =
+        | prc == 0 = (0 - 2, 0)
+        | prc < 0  = (0 - 7, 0)
+        | otherwise =
+          ptr = px alloc page 4096
+          mfd = px alloc mfd
+          n   = sys call 0 handle ptr 128 0 0 0
+          raw = px peek mfd ptr 16
+          _   = px free page mfd ptr 4096
+          px finish sig read n raw
+
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+fn :: sys signal wait Int    Int        => Int Int
+      sys signal wait handle timeout_ms =
+        | handle < 0 or timeout_ms < (0 - 1)       = (0 - 7, 0)
+        | (sys call 72 handle 1 0 0 0 0) < 0       = (0 - 7, 0)
+        | otherwise                                = px wait sig after poll handle (sys poll handle 1 timeout_ms)
+
+fn :: posix notify signal Int    Int    => Int
+      posix notify signal target sig_no =
+        posix kill target sig_no
+
+-- ── RGF-014 Cryptographic Random Bytes (getrandom __NR_getrandom = 318) ──
+
+fn :: px bytes to list loop String Int Int => [Int]
+      px bytes to list loop s idx slen =
+        | idx >= slen = []
+        | otherwise   =
+          b = ((str char at s idx) % 256 + 256) % 256
+          [b] :: (px bytes to list loop s (idx + 1) slen)
+
+fn :: px getrandom call Int Int Int => Int
+      px getrandom call ptr rem rc =
+        | rc == (0 - 4) = px getrandom loop ptr rem
+        | otherwise     = rc
+
+fn :: px getrandom step Int Int Int => Int
+      px getrandom step ptr rem rc =
+        | rc <= 0   = rc
+        | rc >= rem = 0
+        | otherwise = px getrandom loop (ptr + rc) (rem - rc)
+
+fn :: px getrandom loop Int Int => Int
+      px getrandom loop ptr rem =
+        | rem <= 0  = 0
+        | otherwise = px getrandom step ptr rem (px getrandom call ptr rem (sys call 318 ptr rem 0 0 0 0))
+
+fn :: px finish getrandom Int String Int => Int String
+      px finish getrandom rc raw n =
+        | rc < 0 or (str len raw) != n = (0 - 99, "")
+        | otherwise                    = (0, raw)
+
+fn :: px getrandom checked Int => Int String
+      px getrandom checked n   =
+        psz = ((n / 4096) + 2) * 4096
+        ptr = px alloc page psz
+        mfd = px alloc mfd
+        rc  = px getrandom loop ptr n
+        raw = px peek mfd ptr n
+        _   = px free page mfd ptr psz
+        px finish getrandom rc raw n
+
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+-- @mitigates VUL-INPUT-001
+fn :: sys random bytes Int => Int String
+      sys random bytes n   =
+        | n < 0     = (0 - 7, "")
+        | n == 0    = (0, "")
+        | n > 65536 = (0 - 7, "")
+        | otherwise = px getrandom checked n
+
+fn :: px finish random list (Int String) => Int [Int]
+      px finish random list (rc, raw)    =
+        | rc != 0   = (rc, [])
+        | otherwise = (0, px bytes to list loop raw 0 (str len raw))
+
+fn :: sys random bytes list Int => Int [Int]
+      sys random bytes list n   =
+        | n < 0     = (0 - 7, [])
+        | n == 0    = (0, [])
+        | n > 65536 = (0 - 7, [])
+        | otherwise = px finish random list (px getrandom checked n)
+
+-- ── Ridgun v0.9.5 Target OS / Arch & Process Probe Helpers ───
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: path separator SysOs   => String
+      path separator Windows =  "\\"
+      path separator _       =  "/"
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: null device for SysOs   => String
+      null device for Windows =  "NUL"
+      null device for _       =  "/dev/null"
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: null device => String
+      null device =  null device for (sys os)
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: process exists Int => Bool
+      process exists pid =
+        | pid <= 0  = False
+        | otherwise = (sys kill pid 0) == 0
+
+-- ============================================================
+-- src/main/ridgun/lib/io.rg
+-- Pure-Ridgun High-Level Timeout-Bounded I/O, Metadata & Streams Library (IO)
+-- @implements FR-IO-001
+-- @implements FR-IO-002
+-- @implements NFR-PERF-001
+-- @implements API-IO-001
+-- @implements DM-IoResult
+-- @mitigates VUL-INJ-002
+-- @mitigates VUL-INPUT-001
+-- ============================================================
+
+-- import posix
+
+-- ── Extensible I/O Error & Result Sum Types (§5.1) ───────────
+
+-- @implements FR-IO-001
+-- @implements DM-IoResult
+type IoError = Timeout Int | Eof | SysErr Int String | NotFound String
+
+-- @implements FR-IO-001
+-- @implements DM-IoResult
+type IoResult = String | Int | Timeout Int | Eof | SysErr Int String | NotFound String | IoErr IoError | IoOk String | IoTimeout | IoEof | IoError Int
+
+-- @implements FR-IO-001
+-- @implements API-IO-001
+fn :: format io error IoError            => String
+      format io error (Timeout ms)       =  "timeout after {ms} ms"
+      format io error Eof                =  "unexpected end of file"
+      format io error (SysErr c op_name) =  "syscall error {c} in {op_name}"
+      format io error (NotFound path)    =  "file not found: {path}"
+      format io error _                  =  "unknown io error"
+
+fn :: format io result IoResult           => String
+      format io result (String s)         =  "ok:str:{s}"
+      format io result (IoOk s)           =  "ok:str:{s}"
+      format io result (Int n)            =  "ok:int:{n}"
+      format io result (Timeout ms)       =  "err:timeout after {ms} ms"
+      format io result IoTimeout          =  "err:timeout"
+      format io result Eof                =  "err:unexpected end of file"
+      format io result IoEof              =  "err:unexpected end of file"
+      format io result (IoError c)        =  "err:io error {c}"
+      format io result (SysErr c op_name) =  "err:syscall error {c} in {op_name}"
+      format io result (NotFound path)    =  "err:file not found: {path}"
+      format io result (IoErr err)        =  "err:" + (format io error err)
+      format io result _                  =  "err:unknown io error"
+
+-- ── Timeout-Bounded Descriptor Read & Write (§5.2) ───────────
+
+fn :: map read bytes String => IoResult
+      map read bytes data   =
+        | (str len data) == 0 = Eof
+        | otherwise           = String data
+
+-- @implements FR-IO-001
+-- @implements API-IO-001
+fn :: read fd after poll PollStatus Int Int Int => IoResult
+      read fd after poll (PollReady _) fd max_bytes _ = map read bytes (posix read fd max_bytes)
+      read fd after poll PollTimeout _ _ timeout_ms = Timeout timeout_ms
+      read fd after poll (PollError code) _ _ _ = SysErr code "poll"
+
+-- @implements FR-IO-001
+-- @implements NFR-PERF-001
+-- @implements API-IO-001
+-- @mitigates VUL-INPUT-001
+fn :: read fd Int Int       Int        => IoResult
+      read fd fd  max_bytes timeout_ms =
+        | fd < 0         = SysErr 9 "read"
+        | max_bytes <= 0 = SysErr 22 "read"
+        | otherwise      =
+          status = wait fd fd (poll in) timeout_ms
+          read fd after poll status fd max_bytes timeout_ms
+
+-- @implements FR-IO-001
+-- @implements NFR-PERF-001
+-- @implements API-IO-001
+op :: read fd Int max Int       timeout Int        => IoResult
+      read fd fd  max max_bytes timeout timeout_ms =
+        read fd fd max_bytes timeout_ms
+
+fn :: map write rc Int => IoResult
+      map write rc rc  =
+        | rc < 0    = SysErr (0 - rc) "write"
+        | otherwise = Int rc
+
+-- @implements FR-IO-001
+-- @implements API-IO-001
+fn :: write fd after poll PollStatus Int String Int => IoResult
+      write fd after poll (PollReady _) fd data _ = map write rc (posix write fd data)
+      write fd after poll PollTimeout _ _ timeout_ms = Timeout timeout_ms
+      write fd after poll (PollError code) _ _ _ = SysErr code "poll"
+
+-- @implements FR-IO-001
+-- @implements NFR-PERF-001
+-- @implements API-IO-001
+fn :: write fd Int String Int        => IoResult
+      write fd fd  data   timeout_ms =
+        | fd < 0    = SysErr 9 "write"
+        | otherwise =
+          status = wait fd fd poll_out timeout_ms
+          write fd after poll status fd data timeout_ms
+
+-- @implements FR-IO-001
+-- @implements NFR-PERF-001
+-- @implements API-IO-001
+op :: write fd Int data String  timeout Int        => IoResult
+      write fd fd  data payload timeout timeout_ms =
+        write fd fd payload timeout_ms
+
+-- ── Timeout-Bounded Command Execution (§5.2) ─────────────────
+
+fn :: has null char String Int Int => Bool
+      has null char s idx slen =
+        | idx >= slen              = False
+        | (str char at s idx) == 0 = True
+        | otherwise                = has null char s (idx + 1) slen
+
+fn :: pad ms three Int => String
+      pad ms three rem =
+        | rem < 10  = "00{rem}"
+        | rem < 100 = "0{rem}"
+        | otherwise = "{rem}"
+
+fn :: format timeout sec Int => String
+      format timeout sec ms  =
+        secs = ms / 1000
+        rem  = ms % 1000
+        p    = pad ms three rem
+        "{secs}.{p}s"
+
+fn :: map exec rc Int Int        => IoResult
+      map exec rc rc  timeout_ms =
+        | rc == 124 or rc == 137 = Timeout timeout_ms
+        | rc < 0                 = SysErr (0 - rc) "exec"
+        | otherwise              = Int rc
+
+-- @implements FR-IO-001
+-- @implements NFR-PERF-001
+-- @implements API-IO-001
+-- @mitigates VUL-INJ-002
+fn :: io exec timeout String Int        => IoResult
+      io exec timeout cmd    timeout_ms =
+        | (str len cmd) == 0 or (has null char cmd 0 (str len cmd)) = SysErr 22 "exec"
+        | timeout_ms <= 0                                           = Timeout timeout_ms
+        | otherwise                                                 =
+          tspec = format timeout sec timeout_ms
+          rc    = shell exec "timeout -k 0.01s {tspec} sh -c \"{cmd}\" >/dev/null 2>&1"
+          map exec rc rc timeout_ms
+
+-- @implements FR-IO-001
+-- @implements API-IO-001
+fn :: exec with timeout String Int        => IoResult
+      exec with timeout cmd    timeout_ms =
+        io exec timeout cmd timeout_ms
+
+-- ── RG-010 File Operations & Metadata Predicates ─────────────
+
+fn :: read existing or empty String => String
+      read existing or empty path   =
+        | lstat exists (file lstat path) = read file path
+        | otherwise                      = ""
+
+-- @implements FR-IO-002
+-- @implements API-IO-001
+fn :: append file String String => Int
+      append file path   data   =
+        | not (is safe posix path path) = 0 - 22
+        | otherwise                     =
+          prev = read existing or empty path
+          _    = write file path (prev + data)
+          0
+
+-- @implements FR-IO-002
+-- @implements API-IO-001
+fn :: file exists String => Bool
+      file exists path   =
+        | not (is safe posix path path) = False
+        | otherwise                     = lstat exists (file lstat path)
+
+-- @implements FR-IO-002
+-- @implements API-IO-001
+fn :: is file String => Bool
+      is file path   =
+        | not (is safe posix path path) = False
+        | otherwise                     =
+          st = file lstat path
+          (lstat exists st) and ((lstat kind st) == "file")
+
+-- @implements FR-IO-002
+-- @implements API-IO-001
+fn :: is dir String => Bool
+      is dir path   =
+        | not (is safe posix path path) = False
+        | otherwise                     =
+          st = file lstat path
+          (lstat exists st) and ((lstat kind st) == "dir")
+
+-- @implements FR-IO-002
+-- @implements API-IO-001
+fn :: is symlink String => Bool
+      is symlink path   =
+        | not (is safe posix path path) = False
+        | otherwise                     =
+          st   = file lstat path
+          kind = lstat kind st
+          tlen = str len (lstat symlink target st)
+          (lstat exists st) and (kind == "symlink" or kind == "link" or tlen > 0)
+
+fn :: extract size (Bool String Int Int Int String String Int String) => Int
+      extract size st                                                 =
+        | not (lstat exists st) = 0 - 1
+        | otherwise             = lstat size st
+
+-- @implements FR-IO-002
+-- @implements API-IO-001
+fn :: file size String => Int
+      file size path   =
+        | not (is safe posix path path) = 0 - 1
+        | otherwise                     = extract size (file lstat path)
+
+fn :: extract mtime (Bool String Int Int Int String String Int String) => Int
+      extract mtime st                                                 =
+        | not (lstat exists st) = 0 - 1
+        | otherwise             = lstat mtime sec st
+
+-- @implements FR-IO-002
+-- @implements API-IO-001
+fn :: file mtime String => Int
+      file mtime path   =
+        | not (is safe posix path path) = 0 - 1
+        | otherwise                     = extract mtime (file lstat path)
+
+fn :: extract mode (Bool String Int Int Int String String Int String) => Int
+      extract mode st                                                 =
+        | not (lstat exists st) = 0 - 1
+        | otherwise             = lstat mode st
+
+-- @implements FR-IO-002
+-- @implements API-IO-001
+fn :: file mode String => Int
+      file mode path   =
+        | not (is safe posix path path) = 0 - 1
+        | otherwise                     = extract mode (file lstat path)
+
+-- ── Safe File Read & Line-Stream Helpers ─────────────────────
+
+-- @implements FR-IO-002
+-- @implements API-IO-001
+-- @mitigates VUL-INPUT-001
+fn :: io read file safe String => IoResult
+      io read file safe path   =
+        | not (is safe posix path path)        = SysErr 22 "read_file"
+        | not (lstat exists (file lstat path)) = NotFound path
+        | otherwise                            = String (read file path)
+
+fn :: split lines loop String Int Int Int => [String]
+      split lines loop s idx start slen =
+        | idx >= slen =
+          | start == slen = []
+          | otherwise     = [str slice s start slen] |.
+        | (str char at s idx) == 10 =
+          line = str slice s start idx
+          [line] :: (split lines loop s (idx + 1) (idx + 1) slen)
+        | otherwise =
+          split lines loop s (idx + 1) start slen
+
+fn :: split non empty lines String Int => [String]
+      split non empty lines raw rlen =
+        | rlen == 0 = []
+        | otherwise = split lines loop raw 0 0 rlen
+
+-- @implements FR-IO-002
+-- @implements API-IO-001
+fn :: io read lines String => [String]
+      io read lines path   =
+        | not (is safe posix path path)        = []
+        | not (lstat exists (file lstat path)) = []
+        | otherwise                            =
+          raw = read file path
+          split non empty lines raw (str len raw)
+
+fn :: str list is empty [String] => Bool
+      str list is empty []       =  True
+      str list is empty (_:_)    =  False
+
+fn :: join lines nl [String]    => String
+      join lines nl []          =  ""
+      join lines nl (line:rest) =
+        | str list is empty rest = line + "\n"
+        | otherwise              = line + "\n" + (join lines nl rest)
+
+-- @implements FR-IO-002
+-- @implements API-IO-001
+fn :: io write lines String [String] => Int
+      io write lines path   lines    =
+        | not (is safe posix path path) = 0 - 22
+        | otherwise                     =
+          _ = write file path (join lines nl lines)
+          0
+
+-- ── Ridgun v0.9.5 PAL & Ambient Deadline `io read with timeout` (§3.1) ────
+
+fn :: io wrap chunk String => IoResult
+      io wrap chunk ""     =  IoEof
+      io wrap chunk s      =  IoOk s
+
+fn :: io read after poll Int Int => IoResult
+      io read after poll fd ev =
+        | ev == 0 =
+          _ = sys close fd
+          IoTimeout
+        | ev < 0 =
+          _ = sys close fd
+          IoError ev
+        | otherwise =
+          chunk = sys read fd fd 65536
+          _     = sys close fd
+          io wrap chunk chunk
+
+fn :: io read poll step Int => IoResult
+      io read poll step fd  =
+        | fd < 0    = IoError fd
+        | otherwise =
+          ev = sys poll fd 1 (0 - 1)
+          io read after poll fd ev
+
+-- @implements FR-IO-001
+-- @implements API-IO-001
+fn :: io read with timeout String Int => IoResult
+      io read with timeout path wait_ms =
+        with timeout wait_ms do
+          fd = sys open path 2048 0
+          io read poll step fd

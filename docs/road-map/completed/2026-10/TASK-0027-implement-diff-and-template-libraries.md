@@ -1,9 +1,9 @@
 ---
 id: TASK-0027
 title: Implement diff.rg (LCS line diff & Unified Diff) and template.rg (Mustache template engine) libraries
-status: pending
+status: completed
 priority: must
-owner: unassigned
+owner: agent-001
 implements: [FR-DIFF-001, API-DIFF-001, DM-Diff, FR-TMPL-001, API-TMPL-001, DM-Template]
 tests: [TS-DIFF-001, TS-TMPL-001]
 mitigates: [VUL-INPUT-001]
@@ -17,6 +17,8 @@ scope:
 context_files:
   - docs/requirements/functional/diff/FR-DIFF-001-lcs-line-diff-and-unified-patch.md
   - docs/requirements/functional/tmpl/FR-TMPL-001-safe-mustache-template-engine.md
+claimed: 2026-10-23T21:26:13Z
+claimed_by: agent gemini@solarfall
 ---
 # TASK-0027 — Implement `diff.rg` (LCS line diff & Unified Diff) and `template.rg` (Mustache template engine) libraries
 

@@ -1,7 +1,7 @@
 ---
 id: API-DIFF-001
 title: Public module contract for diff (diff.rglib / libdiff.so)
-status: approved
+status: implemented
 implements: [FR-DIFF-001]
 auth: none
 ---

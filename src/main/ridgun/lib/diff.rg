@@ -1,0 +1,217 @@
+-- ============================================================
+-- src/main/ridgun/lib/diff.rg
+-- Pure-Ridgun Longest Common Subsequence (LCS) Line Diff, Unified Diff & Patch Library (DIFF)
+-- @implements FR-DIFF-001
+-- @implements API-DIFF-001
+-- @implements DM-Diff
+-- @mitigates VUL-INPUT-001
+-- ============================================================
+
+type DiffEdit = diff_op: String, line_text: String, old_line_no: Int, new_line_no: Int
+
+type DiffStats = equal_count: Int, insert_count: Int, delete_count: Int
+
+-- ── Internal Helpers ─────────────────────────────────────────
+
+fn :: df_max Int Int => Int
+      df_max a   b
+        | a >= b = a
+        | otherwise = b
+
+fn :: df_int_to_str_pos Int => String
+      df_int_to_str_pos n
+        | n == 0 = ""
+        | otherwise = (df_int_to_str_pos (n / 10)) + (char_from_code ((n % 10) + 48))
+
+fn :: df_int_to_str Int => String
+      df_int_to_str n
+        | n == 0 = "0"
+        | n < 0 = "-" + (df_int_to_str_pos (0 - n))
+        | otherwise = df_int_to_str_pos n
+
+fn :: df_rev [String] [String] => [String]
+      df_rev []       acc      =  acc
+      df_rev (x:xs)   acc      =  df_rev xs ([x] :: acc)
+
+fn :: df_rev_ints [Int]  [Int] => [Int]
+      df_rev_ints []     acc   =  acc
+      df_rev_ints (x:xs) acc   =  df_rev_ints xs ([x] :: acc)
+
+fn :: df_split_lines_loop String Int Int Int [String] => [String]
+      df_split_lines_loop s idx n start acc
+        | idx >= n = df_rev ([str_slice s start n] :: acc) []
+        | (str_char_at s idx) == 10 = df_split_lines_loop s (idx + 1) n (idx + 1) ([str_slice s start idx] :: acc)
+        | otherwise = df_split_lines_loop s (idx + 1) n start acc
+
+fn :: df_split_lines String => [String]
+      df_split_lines s
+        | (str_len s) == 0 = []
+        | otherwise = df_split_lines_loop s 0 (str_len s) 0 []
+
+fn :: df_zeros Int [Int] => [Int]
+      df_zeros n   acc
+        | n <= 0 = acc
+        | otherwise = df_zeros (n - 1) ([0] :: acc)
+
+fn :: df_nth_int [Int]  Int => Int
+      df_nth_int []     _   =  0
+      df_nth_int (x:xs) idx
+        | idx <= 0 = x
+        | otherwise = df_nth_int xs (idx - 1)
+
+fn :: df_head_int [Int] => Int
+      df_head_int []    =  0
+      df_head_int (x:_) =  x
+
+fn :: df_cell_val String String Int Int Int => Int
+      df_cell_val old_line b diag down right_val
+        | old_line == b = diag + 1
+        | otherwise = df_max down right_val
+
+fn :: df_build_row String [String] [Int] Int [Int] => [Int]
+      df_build_row _ [] _ _ acc = acc
+      df_build_row old_line (b:bs) (diag:next_rest) right_val acc =
+        cell = df_cell_val old_line b diag (df_head_int next_rest) right_val
+        df_build_row old_line bs next_rest cell ([cell] :: acc)
+      df_build_row _ (_:_) [] _ acc = acc
+
+fn :: df_build_dp [String] [String] [[Int]] => [[Int]]
+      df_build_dp []       _        rows    =  rows
+      df_build_dp (a:as)   rev_new  (next_row:rest_rows) =
+        next_rev = df_rev_ints next_row []
+        curr_row = df_build_row a rev_new next_rev 0 [0]
+        df_build_dp as rev_new ([curr_row, next_row] :: rest_rows)
+      df_build_dp (_:_)    _        []      =  []
+
+fn :: df_tail_rows [[Int]] => [[Int]]
+      df_tail_rows []      =  []
+      df_tail_rows (_:rs)  =  rs
+
+fn :: df_head_row [[Int]] => [Int]
+      df_head_row []      =  []
+      df_head_row (r:_)   =  r
+
+fn :: df_rev_edits [DiffEdit] [DiffEdit] => [DiffEdit]
+      df_rev_edits []         acc        =  acc
+      df_rev_edits (e:es)     acc        =  df_rev_edits es ([e] :: acc)
+
+fn :: df_backtrack [String] [String] [[Int]] Int Int Int [DiffEdit] => [DiffEdit]
+      df_backtrack [] [] _ _ _ _ acc = df_rev_edits acc []
+      df_backtrack [] (b:bs) rows j old_no new_no acc =
+        ed = DiffEdit "insert" b 0 new_no
+        df_backtrack [] bs rows (j + 1) old_no (new_no + 1) ([ed] :: acc)
+      df_backtrack (a:as) [] rows j old_no new_no acc =
+        ed = DiffEdit "delete" a old_no 0
+        df_backtrack as [] (df_tail_rows rows) j (old_no + 1) new_no ([ed] :: acc)
+      df_backtrack (a:as) (b:bs) rows j old_no new_no acc =
+        df_backtrack_step a as b bs rows j old_no new_no acc
+
+fn :: df_backtrack_step String [String] String [String] [[Int]] Int Int Int [DiffEdit] => [DiffEdit]
+      df_backtrack_step a as b bs rows j old_no new_no acc
+        | a == b =
+          df_backtrack as bs (df_tail_rows rows) (j + 1) (old_no + 1) (new_no + 1) ([DiffEdit "equal" a old_no new_no] :: acc)
+        | otherwise =
+          df_backtrack_branch a as b bs rows (df_tail_rows rows) j old_no new_no (df_nth_int (df_head_row (df_tail_rows rows)) j) (df_nth_int (df_head_row rows) (j + 1)) acc
+
+fn :: df_backtrack_branch String [String] String [String] [[Int]] [[Int]] Int Int Int Int Int [DiffEdit] => [DiffEdit]
+      df_backtrack_branch a as b bs rows next_rows j old_no new_no del_score ins_score acc
+        | del_score >= ins_score =
+          df_backtrack as ([b] :: bs) next_rows j (old_no + 1) new_no ([DiffEdit "delete" a old_no 0] :: acc)
+        | otherwise =
+          df_backtrack ([a] :: as) bs rows (j + 1) old_no (new_no + 1) ([DiffEdit "insert" b 0 new_no] :: acc)
+
+fn :: df_list_length [String] => Int
+      df_list_length []       =  0
+      df_list_length (_:xs)   =  1 + (df_list_length xs)
+
+-- ── Public API ───────────────────────────────────────────────
+
+-- @implements FR-DIFF-001
+-- @implements API-DIFF-001
+-- @implements DM-Diff
+-- @mitigates VUL-INPUT-001
+fn :: diff lines [String]  [String]  => [DiffEdit]
+      diff lines old_lines new_lines =
+        rev_old = df_rev old_lines []
+        rev_new = df_rev new_lines []
+        zero_row = df_zeros ((df_list_length new_lines) + 1) []
+        dp_rows = df_build_dp rev_old rev_new [zero_row]
+        df_backtrack old_lines new_lines dp_rows 0 1 1 []
+
+-- @implements FR-DIFF-001
+-- @implements API-DIFF-001
+fn :: diff text String String => [DiffEdit]
+      diff text old_s  new_s  =  diff lines (df_split_lines old_s) (df_split_lines new_s)
+
+fn :: df_stats_loop [DiffEdit] Int Int Int => DiffStats
+      df_stats_loop []         eq  ins del =  DiffStats eq ins del
+      df_stats_loop (e:es)     eq  ins del
+        | (diff_op e) == "equal" = df_stats_loop es (eq + 1) ins del
+        | (diff_op e) == "insert" = df_stats_loop es eq (ins + 1) del
+        | otherwise = df_stats_loop es eq ins (del + 1)
+
+-- @implements FR-DIFF-001
+-- @implements API-DIFF-001
+fn :: diff stats [DiffEdit] => DiffStats
+      diff stats edits      =  df_stats_loop edits 0 0 0
+
+-- @implements FR-DIFF-001
+-- @implements API-DIFF-001
+fn :: diff edit distance String String => Int
+      diff edit distance old_s  new_s  =
+        st = diff stats (diff text old_s new_s)
+        (insert_count st) + (delete_count st)
+
+-- @implements FR-DIFF-001
+-- @implements API-DIFF-001
+fn :: diff has changes [DiffEdit] => Bool
+      diff has changes []         =  False
+      diff has changes (e:es)
+        | (diff_op e) == "equal" = diff has changes es
+        | otherwise = True
+
+fn :: df_format_unified_lines [DiffEdit] String => String
+      df_format_unified_lines []         acc    =  acc
+      df_format_unified_lines (e:es)     acc
+        | (diff_op e) == "equal" = df_format_unified_lines es (acc + " " + (line_text e) + (char_from_code 10))
+        | (diff_op e) == "delete" = df_format_unified_lines es (acc + "-" + (line_text e) + (char_from_code 10))
+        | otherwise = df_format_unified_lines es (acc + "+" + (line_text e) + (char_from_code 10))
+
+fn :: df_hunk_start Int => Int
+      df_hunk_start cnt
+        | cnt == 0 = 0
+        | otherwise = 1
+
+fn :: df_unified_header String    String    Int     Int     => String
+      df_unified_header old_label new_label old_cnt new_cnt =
+        old_start = df_hunk_start old_cnt
+        new_start = df_hunk_start new_cnt
+        nl = char_from_code 10
+        "--- " + old_label + nl + "+++ " + new_label + nl + "@@ -" + (df_int_to_str old_start) + "," + (df_int_to_str old_cnt) + " +" + (df_int_to_str new_start) + "," + (df_int_to_str new_cnt) + " @@" + nl
+
+-- @implements FR-DIFF-001
+-- @implements API-DIFF-001
+fn :: diff unified String String String String => String
+      diff unified old_label new_label old_s new_s =
+        edits = diff text old_s new_s
+        st = diff stats edits
+        old_cnt = (equal_count st) + (delete_count st)
+        new_cnt = (equal_count st) + (insert_count st)
+        hdr = df_unified_header old_label new_label old_cnt new_cnt
+        df_format_unified_lines edits hdr
+
+fn :: df_apply_collect [DiffEdit] [String] => [String]
+      df_apply_collect []         acc      =  df_rev acc []
+      df_apply_collect (e:es)     acc
+        | (diff_op e) == "delete" = df_apply_collect es acc
+        | otherwise = df_apply_collect es ([line_text e] :: acc)
+
+fn :: df_join_lines [String] => String
+      df_join_lines []       =  ""
+      df_join_lines (x:[])   =  x
+      df_join_lines (x:xs)   =  x + (char_from_code 10) + (df_join_lines xs)
+
+-- @implements FR-DIFF-001
+-- @implements API-DIFF-001
+fn :: diff apply [DiffEdit] => String
+      diff apply edits      =  df_join_lines (df_apply_collect edits [])

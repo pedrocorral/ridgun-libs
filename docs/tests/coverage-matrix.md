@@ -8,7 +8,7 @@
 | API-CODEC-001 | TS-CODEC-001 | src/main/ridgun/lib/codec.rg | src/test/ridgun/test codec.rg | ok |
 | API-CRYPTO-001 | TS-CRYPTO-003 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test crypto.rg | ok |
 | API-CSV-001 | TS-CSV-001 | src/main/ridgun/lib/csv.rg | src/test/ridgun/test csv.rg | ok |
-| API-DIFF-001 | TS-DIFF-001 | — | — | no code, spec not automated |
+| API-DIFF-001 | TS-DIFF-001 | src/main/ridgun/lib/diff.rg | src/test/ridgun/test diff.rg | ok |
 | API-FMT-001 | TS-FMT-001 | src/main/ridgun/lib/fmt.rg | src/test/ridgun/test fmt.rg | ok |
 | API-GLOB-001 | TS-GLOB-001 | src/main/ridgun/lib/glob.rg | src/test/ridgun/test glob.rg | ok |
 | API-HTTP-001 | TS-HTTP-001 | src/main/ridgun/lib/http.rg | src/test/ridgun/test http.rg | ok |
@@ -27,7 +27,7 @@
 | API-STR-001 | TS-STR-001 | src/main/ridgun/lib/str.rg | src/test/ridgun/test str.rg | ok |
 | API-TENSOR-001 | TS-TENSOR-001 | src/main/ridgun/lib/tensor.rg | src/test/ridgun/test tensor.rg | ok |
 | API-TIME-001 | TS-TIME-001 | src/main/ridgun/lib/time.rg | src/test/ridgun/test time.rg | ok |
-| API-TMPL-001 | TS-TMPL-001 | — | — | no code, spec not automated |
+| API-TMPL-001 | TS-TMPL-001 | src/main/ridgun/lib/template.rg | src/test/ridgun/test template.rg | ok |
 | API-TST-001 | TS-TST-001 | src/main/ridgun/lib/test.rg | src/test/ridgun/test test.rg | ok |
 | API-UUID-001 | TS-UUID-001 | src/main/ridgun/lib/uuid.rg | src/test/ridgun/test uuid.rg | ok |
 | API-WS-001 | TS-WS-001 | src/main/ridgun/lib/ws.rg | src/test/ridgun/test ws.rg | ok |
@@ -40,7 +40,7 @@
 | FR-CRYPTO-003 | TS-CRYPTO-003 | src/main/ridgun/lib/crypto.rg | src/test/ridgun/test crypto.rg | ok |
 | FR-CRYPTO-004 | TS-CRYPTO-004 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test crypto.rg | ok |
 | FR-CSV-001 | TS-CSV-001 | src/main/ridgun/lib/csv.rg | src/test/ridgun/test csv.rg | ok |
-| FR-DIFF-001 | TS-DIFF-001 | — | — | no code, spec not automated |
+| FR-DIFF-001 | TS-DIFF-001 | src/main/ridgun/lib/diff.rg | src/test/ridgun/test diff.rg | ok |
 | FR-FMT-001 | TS-FMT-001 | src/main/ridgun/lib/fmt.rg, src/test/ridgun/test fmt.rg | src/test/ridgun/test fmt.rg | ok |
 | FR-GLOB-001 | TS-GLOB-001 | src/main/ridgun/lib/glob.rg | src/test/ridgun/test glob.rg | ok |
 | FR-HTTP-001 | TS-HTTP-001 | src/main/ridgun/lib/http.rg | src/test/ridgun/test http.rg | ok |
@@ -64,7 +64,7 @@
 | FR-STR-001 | TS-STR-001 | src/main/ridgun/lib/str.rg | src/test/ridgun/test str.rg | ok |
 | FR-TENSOR-001 | TS-TENSOR-001 | src/main/ridgun/lib/tensor.rg | src/test/ridgun/test tensor.rg | ok |
 | FR-TIME-001 | TS-TIME-001 | src/main/ridgun/lib/time.rg | src/test/ridgun/test time.rg | ok |
-| FR-TMPL-001 | TS-TMPL-001 | — | — | no code, spec not automated |
+| FR-TMPL-001 | TS-TMPL-001 | src/main/ridgun/lib/template.rg | src/test/ridgun/test template.rg | ok |
 | FR-TST-001 | TS-TST-001 | src/main/ridgun/lib/test.rg | src/test/ridgun/test test.rg | ok |
 | FR-UUID-001 | TS-UUID-001 | src/main/ridgun/lib/uuid.rg | src/test/ridgun/test uuid.rg | ok |
 | FR-WS-001 | TS-WS-001 | src/main/ridgun/lib/ws.rg | src/test/ridgun/test ws.rg | ok |

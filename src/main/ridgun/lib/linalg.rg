@@ -26,7 +26,7 @@ fn :: la isqrt step Int Int Int => Int
         | otherwise = la isqrt loop n nx
 
 fn :: la isqrt loop Int Int => Int
-      la isqrt loop n x =
+      la isqrt loop n   x   =
         la isqrt step n x ((x + (n / x)) / 2)
 
 fn :: la isqrt Int => Int
@@ -373,7 +373,7 @@ fn :: la ff elim a loop Tensor[Real * n * n] Int Int Int Int Int => Tensor[Real 
           a2         = la ff elim col loop a k row piv aik prev_piv (k + 1) n
           la ff elim a loop a2 k (row + 1) prev_piv n piv
 
-fn :: la next piv Int Int => Int
+fn :: la next piv Int Int      => Int
       la next piv piv prev_piv =
         | piv == 0  = prev_piv
         | otherwise = piv

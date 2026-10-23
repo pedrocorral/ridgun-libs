@@ -1,0 +1,175 @@
+-- RGLIB1
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.8
+-- FUNCTIONS: 23
+-- TYPES: 1
+-- SUMMARY: csv_delim_code:InlineSequential
+-- SUMMARY: csv_append_final_row:InlineSequential
+-- SUMMARY: csv_parse_quoted:LazyStealableTask
+-- SUMMARY: csv_parse_unquoted:LazyStealableTask
+-- SUMMARY: csv_parse_with_delim:LazyStealableTask
+-- SUMMARY: csv_parse:LazyStealableTask
+-- SUMMARY: tsv_parse:LazyStealableTask
+-- SUMMARY: csv_build_table:InlineSequential
+-- SUMMARY: csv_parse_table:LazyStealableTask
+-- SUMMARY: csv_needs_quotes_loop:LazyStealableTask
+-- SUMMARY: csv_double_quotes_loop:LazyStealableTask
+-- SUMMARY: csv_format_cell:LazyStealableTask
+-- SUMMARY: csv_join_row:LazyStealableTask
+-- SUMMARY: csv_join_rows:LazyStealableTask
+-- SUMMARY: csv_stringify_with_delim:LazyStealableTask
+-- SUMMARY: csv_stringify:LazyStealableTask
+-- SUMMARY: tsv_stringify:LazyStealableTask
+-- SUMMARY: csv_nth_str:LazyStealableTask
+-- SUMMARY: csv_nth_row:LazyStealableTask
+-- SUMMARY: csv_col:LazyStealableTask
+-- SUMMARY: csv_find_header_idx:LazyStealableTask
+-- SUMMARY: csv_get_by_header:LazyStealableTask
+-- SUMMARY: csv_row_to_map:LazyStealableTask
+-- ============================================================
+-- src/main/ridgun/lib/csv.rg
+-- Pure-Ridgun RFC 4180 CSV & TSV Parser, Serializer & Header Lookup Library (CSV)
+-- @implements FR-CSV-001
+-- @implements API-CSV-001
+-- @implements DM-Csv
+-- @mitigates VUL-INPUT-001
+-- ============================================================
+
+type CsvTable = headers: [String], rows: [[String]], delimiter_char: String, has_headers: Bool
+
+-- ── RFC 4180 State-Machine Parser ────────────────────────────
+
+fn :: csv_delim_code String => Int
+      csv_delim_code ""     =  44
+      csv_delim_code d      =  str_char_at d 0
+
+fn :: csv_append_final_row [[String]] [String] String => [[String]]
+      csv_append_final_row rows       []       ""     =  rows
+      csv_append_final_row rows       cur_row  cell   =  rows :: [cur_row :: [cell]]
+
+fn :: csv_parse_quoted String Int Int Int String [String] [[String]] => [[String]]
+      csv_parse_quoted s pos len d_code cell cur_row rows
+        | pos >= len = csv_append_final_row rows cur_row cell
+        | (str_char_at s pos) == 34 AND (pos + 1) < len AND (str_char_at s (pos + 1)) == 34 = csv_parse_quoted s (pos + 2) len d_code (cell + (char_from_code 34)) cur_row rows
+        | (str_char_at s pos) == 34 = csv_parse_unquoted s (pos + 1) len d_code cell cur_row rows
+        | otherwise = csv_parse_quoted s (pos + 1) len d_code (cell + (str_slice s pos (pos + 1))) cur_row rows
+
+fn :: csv_parse_unquoted String Int Int Int String [String] [[String]] => [[String]]
+      csv_parse_unquoted s pos len d_code cell cur_row rows
+        | pos >= len = csv_append_final_row rows cur_row cell
+        | (str_char_at s pos) == 34 AND cell == "" = csv_parse_quoted s (pos + 1) len d_code "" cur_row rows
+        | (str_char_at s pos) == d_code = csv_parse_unquoted s (pos + 1) len d_code "" (cur_row :: [cell]) rows
+        | (str_char_at s pos) == 13 AND (pos + 1) < len AND (str_char_at s (pos + 1)) == 10 = csv_parse_unquoted s (pos + 2) len d_code "" [] (rows :: [cur_row :: [cell]])
+        | (str_char_at s pos) == 10 OR (str_char_at s pos) == 13 = csv_parse_unquoted s (pos + 1) len d_code "" [] (rows :: [cur_row :: [cell]])
+        | otherwise = csv_parse_unquoted s (pos + 1) len d_code (cell + (str_slice s pos (pos + 1))) cur_row rows
+
+-- @implements FR-CSV-001
+-- @implements API-CSV-001
+fn :: csv parse with delim String String => [[String]]
+      csv parse with delim s delim =
+        csv_parse_unquoted s 0 (str_len s) (csv_delim_code delim) "" [] []
+
+-- @implements FR-CSV-001
+-- @implements API-CSV-001
+fn :: csv parse String => [[String]]
+      csv parse s      =  csv parse with delim s ","
+
+-- @implements FR-CSV-001
+-- @implements API-CSV-001
+fn :: tsv parse String => [[String]]
+      tsv parse s      =  csv parse with delim s (char_from_code 9)
+
+fn :: csv_build_table [[String]] Bool  => CsvTable
+      csv_build_table []         has_h =  CsvTable [] [] "," has_h
+      csv_build_table (h:rest)   True  =  CsvTable h rest "," True
+      csv_build_table all_rows   False =  CsvTable [] all_rows "," False
+
+-- @implements FR-CSV-001
+-- @implements API-CSV-001
+fn :: csv parse table String Bool  => CsvTable
+      csv parse table s      has_h =  csv_build_table (csv parse s) has_h
+
+-- ── RFC 4180 Serialization & Escaping ────────────────────────
+
+fn :: csv_needs_quotes_loop String Int Int Int    => Bool
+      csv_needs_quotes_loop s      pos len d_code
+        | pos >= len = False
+        | (str_char_at s pos) == d_code OR (str_char_at s pos) == 34 OR (str_char_at s pos) == 10 OR (str_char_at s pos) == 13 = True
+        | otherwise = csv_needs_quotes_loop s (pos + 1) len d_code
+
+fn :: csv_double_quotes_loop String Int Int String => String
+      csv_double_quotes_loop s      pos len acc
+        | pos >= len = acc
+        | (str_char_at s pos) == 34 = csv_double_quotes_loop s (pos + 1) len (acc + (char_from_code 34) + (char_from_code 34))
+        | otherwise = csv_double_quotes_loop s (pos + 1) len (acc + (str_slice s pos (pos + 1)))
+
+fn :: csv_format_cell String Int    => String
+      csv_format_cell cell   d_code
+        | csv_needs_quotes_loop cell 0 (str_len cell) d_code = (char_from_code 34) + (csv_double_quotes_loop cell 0 (str_len cell) "") + (char_from_code 34)
+        | otherwise = cell
+
+fn :: csv_join_row [String] String Int    => String
+      csv_join_row []       _      _      =  ""
+      csv_join_row (c:[])   _      d_code =  csv_format_cell c d_code
+      csv_join_row (c:cs)   delim  d_code =  (csv_format_cell c d_code) + delim + (csv_join_row cs delim d_code)
+
+fn :: csv_join_rows [[String]] String Int    => String
+      csv_join_rows []         _      _      =  ""
+      csv_join_rows (r:rs)     delim  d_code =  (csv_join_row r delim d_code) + (char_from_code 10) + (csv_join_rows rs delim d_code)
+
+-- @implements FR-CSV-001
+-- @implements API-CSV-001
+fn :: csv stringify with delim [[String]] String => String
+      csv stringify with delim rows delim =
+        csv_join_rows rows delim (csv_delim_code delim)
+
+-- @implements FR-CSV-001
+-- @implements API-CSV-001
+fn :: csv stringify [[String]] => String
+      csv stringify rows       =  csv stringify with delim rows ","
+
+-- @implements FR-CSV-001
+-- @implements API-CSV-001
+fn :: tsv stringify [[String]] => String
+      tsv stringify rows       =  csv stringify with delim rows (char_from_code 9)
+
+-- ── Column Extraction & Header-Mapped Lookup ─────────────────
+
+fn :: csv_nth_str [String] Int => String
+      csv_nth_str []       _   =  ""
+      csv_nth_str (x:xs)   idx
+        | idx < 0 = ""
+        | idx == 0 = x
+        | otherwise = csv_nth_str xs (idx - 1)
+
+fn :: csv_nth_row [[String]] Int => [String]
+      csv_nth_row []         _   =  []
+      csv_nth_row (r:rs)     idx
+        | idx < 0 = []
+        | idx == 0 = r
+        | otherwise = csv_nth_row rs (idx - 1)
+
+-- @implements FR-CSV-001
+-- @implements API-CSV-001
+fn :: csv col [[String]] Int     => [String]
+      csv col []         _       =  []
+      csv col (r:rs)     col_idx =  [csv_nth_str r col_idx] :: (csv col rs col_idx)
+
+fn :: csv_find_header_idx [String] String Int => Int
+      csv_find_header_idx []       _      _   =  -1
+      csv_find_header_idx (h:hs)   target idx
+        | h == target = idx
+        | otherwise = csv_find_header_idx hs target (idx + 1)
+
+-- @implements FR-CSV-001
+-- @implements API-CSV-001
+fn :: csv get by header CsvTable Int String => String
+      csv get by header tbl row_idx col_name =
+        c_idx = csv_find_header_idx (headers tbl) col_name 0
+        csv_nth_str (csv_nth_row (rows tbl) row_idx) c_idx
+
+-- @implements FR-CSV-001
+-- @implements API-CSV-001
+fn :: csv row to map [String] [String] => [String String]
+      csv row to map [] _ = []
+      csv row to map _ [] = []
+      csv row to map (h:hs) (v:vs) = [(h, v)] :: (csv row to map hs vs)

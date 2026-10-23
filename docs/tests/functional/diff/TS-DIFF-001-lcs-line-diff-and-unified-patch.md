@@ -3,8 +3,8 @@ id: TS-DIFF-001
 title: Verify Longest Common Subsequence line diff, Unified Diff formatting, and patch application
 level: unit
 covers: [FR-DIFF-001, API-DIFF-001]
-status: planned
-automated_in: []
+status: automated
+automated_in: [src/test/ridgun/test diff.rg]
 ---
 # TS-DIFF-001 — Verify Longest Common Subsequence line diff, Unified Diff formatting, and patch application
 

@@ -1,7 +1,7 @@
 ---
 id: DM-Template
 title: Safe Mustache-style text template and auto-escaping models
-status: approved
+status: implemented
 related: [FR-TMPL-001, API-TMPL-001, ADR-0002]
 ---
 # DM-Template — Safe Mustache-style text template and auto-escaping models

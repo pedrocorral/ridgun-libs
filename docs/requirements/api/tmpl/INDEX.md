@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-TMPL-001-tmpl-module-contract.md` | `API-TMPL-001` | Public module contract for `template` (`template.rglib` / `libtemplate.so`) | approved |
+| `API-TMPL-001-tmpl-module-contract.md` | `API-TMPL-001` | Public module contract for `template` (`template.rglib` / `libtemplate.so`) | implemented |

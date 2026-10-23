@@ -1,18 +1,18 @@
 # ridgun-libs
 
-Pure-Ridgun (`v0.9.10`) standard and system library suite. Every module compiles to portable Ridgun library bundles (`.rglib` / `.rgc`) and native ELF64 shared objects (`.so`) using `stable` and `ridgunc` with zero C dependencies or `libc`.
+Pure-Ridgun (`v0.9.16`) standard and system library suite. Every module compiles to portable Ridgun library bundles (`.rglib` / `.rgc`) and native ELF64 shared objects (`.so`) using `stable` and `ridgunc` with zero C dependencies or `libc`.
 
 ---
 
 ## Overview
 
-`ridgun-libs` provides **17 foundational libraries** across **16 domains** for Ridgun applications, CLI utilities (`unix-tools`), and network servers (`Solstice`):
+`ridgun-libs` provides **32 foundational libraries** across **28 domains** for Ridgun applications, CLI utilities (`unix-tools`), and network servers (`Solstice`):
 
 | Module | Source | Bundles (`target/bundles/` & `target/`) | Domain | Summary |
 |---|---|---|---|---|
 | **`socket`** | `src/main/ridgun/lib/socket.rg` | `socket.rglib`, `socket.rgc`, `libsocket.so` | `SOCK` | High-level `Socket` ADT (`TCP`, `UDP`, `AF_UNIX`, framing, line I/O, CIDR, `/etc/hosts` + RFC 1035 UDP port 53 DNS resolution, polling) and Solstice `RGF-001` descriptor-based kernel socket API (`sys_resolve_ipv4`, `sys_tcp_listen`, `sys_tcp_listen_reuseport`, `sys_unix_listen`, `sys_accept`, `sys_tcp_connect`, `sys_unix_connect`, `sys_send`, `sys_recv`, `sys_shutdown_write`). |
 | **`crypto`** | `src/main/ridgun/lib/crypto.rg` | `crypto.rglib`, `crypto.rgc`, `libcrypto.so` | `CRYPTO` | Raw byte/bitwise primitives (`RGF-019`), FIPS 180-4 SHA-256, RFC 2104 HMAC-SHA-256, constant-time equality (`ct_equal`), 100% in-process RFC 8018 PBKDF2-HMAC-SHA-256, 5-argument RFC 9106 Argon2id (`argon2id_hash`, `argon2id_verify`), and RFC 8439 ChaCha20-Poly1305 AEAD (`aead_seal`, `aead_open`). |
-| **`argon2id`** | `src/main/ridgun/lib/argon2id.rg` | `argon2id.rglib`, `argon2id.rgc`, `libargon2id.so` | `CRYPTO` | 100% in-process pure-Ridgun RFC 9106 Argon2id PHC password hashing, RFC 7693 Blake2b, OWASP parameter presets, pepper/associated-data context hashing, key derivation (`argon2id_derive_key`), and rehash detection (`argon2id_needs_rehash`). |
+| **`argon2id`** | `src/main/ridgun/lib/argon2id.rg` | `argon2id.rglib`, `argon2id.rgc`, `libargon2id.so` | `CRYPTO` | 100% in-process pure-Ridgun RFC 9106 Argon2id PHC password hashing over native `Tensor[U64 * 8 * 16]` blocks, RFC 7693 Blake2b, OWASP parameter presets, pepper/associated-data context hashing, key derivation (`argon2id_derive_key`), and rehash detection (`argon2id_needs_rehash`). |
 | **`posix`** | `src/main/ridgun/lib/posix.rg` | `posix.rglib`, `posix.rgc`, `libposix.so` | `POSIX` | 2-layer Platform Abstraction Layer (`SysOs`, `SysArch`), normalized open/poll/signal constants, `PollStatus` (`wait_fd`), `ProcStatus`, monotonic/wall clocks (`RGF-017`), signal watchers (`RGF-018`), CSPRNG (`sys_random_bytes`), and `RG-010` filesystem/process wrappers. |
 | **`io`** | `src/main/ridgun/lib/io.rg` | `io.rglib`, `io.rgc`, `libio.so` | `IO` | Extensible `IoError` and `IoResult` ADTs, deadline-aware descriptor reads/writes (`io_read_with_timeout`, `read_fd ... timeout`, `write_fd ... timeout`), timeout-bounded command execution (`exec_with_timeout`), line streams, and file metadata predicates. |
 | **`str`** | `src/main/ridgun/lib/str.rg` | `str.rglib`, `str.rgc`, `libstr.so` | `STR` | String search (`str_index_of`), trimming (`str_trim`, `str_trim_left`, `str_trim_right`), replacement (`str_replace`), splitting (`str_split`), ASCII case conversion (`str_to_upper`, `str_to_lower`), joining, repeating, and padding. |
@@ -26,7 +26,22 @@ Pure-Ridgun (`v0.9.10`) standard and system library suite. Every module compiles
 | **`glob`** | `src/main/ridgun/lib/glob.rg` | `glob.rglib`, `glob.rgc`, `libglob.so` | `GLOB` | Wildcard (`*`, `?`) and bracket character class (`[a-z]`, `[!0-9]`, `[^a-z]`) pattern matching (`glob_match`, `glob_match_ci`) and list filtering (`glob_filter`, `glob_any_match`). |
 | **`uuid`** | `src/main/ridgun/lib/uuid.rg` | `uuid.rglib`, `uuid.rgc`, `libuuid.so` | `UUID` | RFC 9562 `UUIDv4` and time-ordered `UUIDv7` generation and validation (`uuid_v4`, `uuid_v7`, `uuid_v7_at`, `uuid_is_valid`, `uuid_version`), non-cryptographic checksums (`fnv1a_32`, `adler32`, `crc32`), and deterministic seeded PRNG (`prng_next`, `prng_range`). |
 | **`http`** | `src/main/ridgun/lib/http.rg` | `http.rglib`, `http.rgc`, `libhttp.so` | `HTTP` | RFC 3986 URI parsing (`uri_parse`, `uri_scheme`, `uri_host`, `uri_port`, `uri_path`, `uri_query`), RFC 9112 HTTP/1.1 request/response wire formatting, parsing, and header inspection (`http_status_text`, `http_build_request`, `http_parse_request`, `http_build_response`, `http_parse_response`, `http_parse_headers`, `http_header_get`, `http_bearer_token`), and live kernel TCP HTTP/1.1 client (`http_request_tcp`, `http_get`, `http_post`). |
-| **`test`** | `src/main/ridgun/lib/test.rg` | `test.rglib`, `test.rgc`, `libtest.so` | `TST` | Unit and functional test assertion primitives (`assert_equals`, `assert_int_equals`, `assert_str_eq`, `assert_true`, `assert_false`, `assert_eq`, `assert_ne`, `assert_ok`). |
+| **`agent`** | `src/main/ridgun/lib/agent.rg` | `agent.rglib`, `agent.rgc`, `libagent.so` | `AGENT` | Native actor concurrency (`agent`, `send ... to`, `receive from`, `try receive from`, `stop`), key-value actor store, token-bucket rate limiter, and supervision helpers. |
+| **`pool`** | `src/main/ridgun/lib/pool.rg` | `pool.rglib`, `pool.rgc`, `libpool.so` | `AGENT` | Bounded worker pool and work-stealing actor task dispatcher. |
+| **`net_agent`** | `src/main/ridgun/lib/net_agent.rg` | `net_agent.rglib`, `net_agent.rgc`, `libnet_agent.so` | `AGENT` | Socket connection actor supervisor and non-blocking event-loop bridge. |
+| **`tensor`** | `src/main/ridgun/lib/tensor.rg` | `tensor.rglib`, `tensor.rgc`, `libtensor.so` | `TENSOR` | Multi-dimensional `Tensor[...]` views, slicing, elementwise reductions, and `BlaMka` 64-bit tensor primitives. |
+| **`fmt`** | `src/main/ridgun/lib/fmt.rg` | `fmt.rglib`, `fmt.rgc`, `libfmt.so` | `FMT` | Configurable canonical 2D tabular Ridgun source formatter (`FmtConfig`) and multi-target syntax highlighter (`FmtPlain`, `FmtTty`, `FmtTrueColor`, `FmtHtmlInline`, `FmtHtmlCss`, `FmtMarkdown`, `FmtPango`, `FmtLatex`, `FmtRtf`). |
+| **`json`** | `src/main/ridgun/lib/json.rg` | `json.rglib`, `json.rgc`, `libjson.so` | `JSON` | Recursive RFC 8259 `JsonVal` AST parser (`json_parse`), compact/pretty serializer (`json_stringify`, `json_pretty`), and dot-path queries (`json_get_path`, `json_get_str`, `json_get_int`, `json_get_bool`). |
+| **`csv`** | `src/main/ridgun/lib/csv.rg` | `csv.rglib`, `csv.rgc`, `libcsv.so` | `CSV` | RFC 4180 state-machine CSV & TSV parser (`csv_parse`, `tsv_parse`, `csv_parse_table`), serializer (`csv_stringify`, `tsv_stringify`), and header-indexed column/row lookups. |
+| **`ini`** | `src/main/ridgun/lib/ini.rg` | `ini.rglib`, `ini.rgc`, `libini.so` | `INI` | Sectioned INI and `.env` configuration parser (`ini_parse`, `dotenv_parse`), typed getters (`ini_get`, `ini_get_int`, `ini_get_bool`), setter (`ini_set`), and serializer (`ini_stringify`). |
+| **`regex`** | `src/main/ridgun/lib/regex.rg` | `regex.rglib`, `regex.rgc`, `libregex.so` | `REGEX` | Linear-time $O(N \cdot M)$ Thompson NFA regular expression engine (`regex_match`, `regex_is_match`, `regex_find`, `regex_find_all`, `regex_replace`, `regex_replace_all`, `regex_split`, `regex_escape`) with ReDoS immunity. |
+| **`btree`** | `src/main/ridgun/lib/btree.rg` | `btree.rglib`, `btree.rgc`, `libbtree.so` | `BTREE` | Persistent $O(\log N)$ weight-balanced `BTreeMap` (`btree_insert`, `btree_get`, `btree_remove`, `btree_range`), `BTreeSet` (`bset_union`, `bset_intersect`, `bset_diff`), and `MinHeap` priority queue. |
+| **`jwt`** | `src/main/ridgun/lib/jwt.rg` | `jwt.rglib`, `jwt.rgc`, `libjwt.so` | `JWT` | RFC 7519 `HS256` JSON Web Tokens (`jwt_sign_hs256`, `jwt_verify_hs256`, `jwt_decode_unverified`) with constant-time MAC verification and `ChaCha20-Poly1305` encrypted tokens (`token_seal`, `token_open`). |
+| **`ws`** | `src/main/ridgun/lib/ws.rg` | `ws.rglib`, `ws.rgc`, `libws.so` | `WS` | RFC 6455 WebSocket handshake (`ws_accept_key`, `ws_build_upgrade_request`, `ws_build_upgrade_response`), 16/64-bit length frame codec, and XOR payload masking (`ws_mask_payload`, `ws_encode_frame`, `ws_decode_frame`). |
+| **`linalg`** | `src/main/ridgun/lib/linalg.rg` | `linalg.rglib`, `linalg.rgc`, `liblinalg.so` | `LINALG` | Typed `Tensor[Real]` linear algebra (`linalg_transpose`, `linalg_trace`, `linalg_diag`, `linalg_identity`, `linalg_dot`, `linalg_outer`, `linalg_matvec`, `linalg_matmul`), norms (`L1`, `L2`, `Linf`, Frobenius, `linalg_cosine_similarity`), Bareiss exact linear solver & determinant (`linalg_solve`, `linalg_det`), and neural activations (`linalg_relu`, `linalg_sigmoid`, `linalg_softmax`). |
+| **`diff`** | `src/main/ridgun/lib/diff.rg` | `diff.rglib`, `diff.rgc`, `libdiff.so` | `DIFF` | Longest Common Subsequence (LCS) line diff (`diff_lines`, `diff_text`, `diff_edit_distance`, `diff_stats`), Unified Diff formatter (`diff_unified`), and lossless patch application (`diff_apply`). |
+| **`template`** | `src/main/ridgun/lib/template.rg` | `template.rglib`, `template.rgc`, `libtemplate.so` | `TMPL` | Safe Mustache-style text template engine (`tmpl_render`, `tmpl_render_html`, `tmpl_render_latex`, `tmpl_render_with_escape`) with HTML/LaTeX auto-escaping, raw `{{{var}}}`, comments `{{! ... }}`, and nested `{{#sec}}`/`{{^sec}}` conditional sections. |
+| **`test`** | `src/main/ridgun/lib/test.rg` | `test.rglib`, `test.rgc`, `libtest.so` | `TST` | Unit and functional test assertion primitives (`assert_equals`, `assert_int_equals`, `assert_str_eq`, `assert_true`, `assert_false`, `assert_eq`, `assert_not`, `assert_ok`). |
 
 ---
 
@@ -46,10 +61,10 @@ Run all commands from the repository root:
 # 1. Format all source and test files using canonical Ridgun tabular alignment
 stable format
 
-# 2. Type-check and statically analyze all 17 library modules
+# 2. Type-check and statically analyze all 32 library modules
 stable check
 
-# 3. Run all 17 automated test suites in src/test/ridgun/
+# 3. Run all 30 automated test suites in src/test/ridgun/
 stable test
 
 # 4. Build all .rglib, .rgc, and native ELF64 .so bundles into target/ and target/bundles/
@@ -57,8 +72,8 @@ stable bundle
 ```
 
 Expected output from `stable check` and `stable test`:
-- `Checked 17 module(s) — 0 errors.`
-- `Passed 17/17 test suite(s) — 0 failures.`
+- `Checked 32 module(s) — 0 errors.`
+- `Passed 30/30 test suite(s) — 0 failures.`
 
 ---
 

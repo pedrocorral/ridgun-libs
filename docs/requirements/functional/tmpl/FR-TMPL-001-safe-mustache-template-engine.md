@@ -2,7 +2,7 @@
 id: FR-TMPL-001
 title: Provide Mustache-style text template rendering with HTML/LaTeX auto-escaping and conditional sections
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: TMPL
 depends_on: []

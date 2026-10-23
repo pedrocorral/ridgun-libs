@@ -260,7 +260,7 @@ fn :: a2 u64 to le8 U64 => [Int]
         (a2 u32 to le4 (x and 0xFFFFFFFF)) :: (a2 u32 to le4 ((x shr 32) and 0xFFFFFFFF))
 
 fn :: a2 h8 to bytes Tensor[U64 * 16] => [Int]
-      a2 h8 to bytes h =
+      a2 h8 to bytes h                =
         (a2 u64 to le8 h_(0)) :: (a2 u64 to le8 h_(1)) :: (a2 u64 to le8 h_(2)) :: (a2 u64 to le8 h_(3)) :: (a2 u64 to le8 h_(4)) :: (a2 u64 to le8 h_(5)) :: (a2 u64 to le8 h_(6)) :: (a2 u64 to le8 h_(7))
 
 fn :: a2 b2b loop Tensor[U64 * 16] [Int] Int => Tensor[U64 * 16]
@@ -316,7 +316,7 @@ fn :: a2 blamka g U64 U64 U64 U64 => U64 U64 U64 U64
         (a, b, c, d)
 
 fn :: a2 blamka p16 Tensor[U64 * 16] => ()
-      a2 blamka p16 v =
+      a2 blamka p16 v                =
         v_(0), v_(4), v_(8),  v_(12) = a2 blamka g v_(0) v_(4) v_(8)  v_(12)
         v_(1), v_(5), v_(9),  v_(13) = a2 blamka g v_(1) v_(5) v_(9)  v_(13)
         v_(2), v_(6), v_(10), v_(14) = a2 blamka g v_(2) v_(6) v_(10) v_(14)
@@ -346,7 +346,7 @@ fn :: a2 blamka cols loop Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]
         | otherwise = a2 blamka cols loop (a2 blamka col pair z j) (j + 1)
 
 fn :: a2 bitxor blk8 Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 * 8 * 16]
-      a2 bitxor blk8 a b =  a_ij xor b_ij
+      a2 bitxor blk8 a b = a_ij xor b_ij
 
 fn :: a2 compress blk8 Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 * 8 * 16]
       a2 compress blk8 x y =
@@ -357,7 +357,7 @@ fn :: a2 compress blk8 Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 *
         z2_ij xor r_ij
 
 fn :: a2 get blk8 Tensor[U64 * 8 * 16] Int => U64
-      a2 get blk8 blk idx =
+      a2 get blk8 blk                  idx =
         blk_((idx / 16) % 8, idx % 16)
 
 fn :: a2 bytes to blk8 row Tensor[U64 * 8 * 16] Int [Int] Int => Tensor[U64 * 8 * 16]
@@ -391,7 +391,7 @@ fn :: a2 blk8 to bytes loop Tensor[U64 * 8 * 16] Int => [Int]
         | otherwise = (a2 blk8 row to bytes b r 0) :: (a2 blk8 to bytes loop b (r + 1))
 
 fn :: a2 blk8 to bytes Tensor[U64 * 8 * 16] => [Int]
-      a2 blk8 to bytes b =
+      a2 blk8 to bytes b                    =
         a2 blk8 to bytes loop b 0
 
 fn :: a2 zero mem => A2Mem

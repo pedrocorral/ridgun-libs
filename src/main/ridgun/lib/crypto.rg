@@ -384,7 +384,7 @@ fn :: c hex2raw32 CT16 String => String
         w0 + w1
 
 fn :: c hex8 word String Int => U64
-      c hex8 word h off =
+      c hex8 word h      off =
         n0 = c hex nib (str char at h off)
         n1 = c hex nib (str char at h (off + 1))
         n2 = c hex nib (str char at h (off + 2))
@@ -396,7 +396,7 @@ fn :: c hex8 word String Int => U64
         (n0 shl 28) or (n1 shl 24) or (n2 shl 20) or (n3 shl 16) or (n4 shl 12) or (n5 shl 8) or (n6 shl 4) or n7
 
 fn :: c bxor acc8 Tensor[U64 * 8] String => Tensor[U64 * 8]
-      c bxor acc8 acc h =
+      c bxor acc8 acc             h      =
         acc_(0) = acc_(0) xor (c hex8 word h 0)
         acc_(1) = acc_(1) xor (c hex8 word h 8)
         acc_(2) = acc_(2) xor (c hex8 word h 16)
@@ -703,7 +703,7 @@ fn :: ca2 u64 to le8 U64 => [Int]
         (ca2 u32 to le4 (x and 0xFFFFFFFF)) :: (ca2 u32 to le4 ((x shr 32) and 0xFFFFFFFF))
 
 fn :: ca2 h8 to bytes Tensor[U64 * 16] => [Int]
-      ca2 h8 to bytes h =
+      ca2 h8 to bytes h                =
         (ca2 u64 to le8 h_(0)) :: (ca2 u64 to le8 h_(1)) :: (ca2 u64 to le8 h_(2)) :: (ca2 u64 to le8 h_(3)) :: (ca2 u64 to le8 h_(4)) :: (ca2 u64 to le8 h_(5)) :: (ca2 u64 to le8 h_(6)) :: (ca2 u64 to le8 h_(7))
 
 fn :: ca2 b2b loop Tensor[U64 * 16] [Int] Int => Tensor[U64 * 16]
@@ -747,7 +747,7 @@ fn :: ca2 bitxor blk8 Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 * 
         a_ij xor b_ij
 
 fn :: ca2 get blk8 Tensor[U64 * 8 * 16] Int => U64
-      ca2 get blk8 blk idx =
+      ca2 get blk8 blk                  idx =
         blk_((idx / 16) % 8, idx % 16)
 
 fn :: ca2 bytes to blk8 row Tensor[U64 * 8 * 16] [Int] Int Int => Tensor[U64 * 8 * 16]
@@ -780,7 +780,7 @@ fn :: ca2 blk8 to bytes loop Tensor[U64 * 8 * 16] Int => [Int]
         | otherwise = (ca2 blk8 row to bytes b r 0) :: (ca2 blk8 to bytes loop b (r + 1))
 
 fn :: ca2 blk8 to bytes Tensor[U64 * 8 * 16] => [Int]
-      ca2 blk8 to bytes b =
+      ca2 blk8 to bytes b                    =
         ca2 blk8 to bytes loop b 0
 
 fn :: ca2 zero mem => CT16
@@ -1169,7 +1169,7 @@ fn :: chacha qr Int Int Int Int => Int Int Int Int
         (a2, b2, c2, d2)
 
 fn :: chacha double round Tensor[Int * 16] => Tensor[Int * 16]
-      chacha double round st =
+      chacha double round st               =
         st_(0), st_(4), st_(8),  st_(12) = chacha qr st_(0) st_(4) st_(8)  st_(12)
         st_(1), st_(5), st_(9),  st_(13) = chacha qr st_(1) st_(5) st_(9)  st_(13)
         st_(2), st_(6), st_(10), st_(14) = chacha qr st_(2) st_(6) st_(10) st_(14)
@@ -1181,7 +1181,7 @@ fn :: chacha double round Tensor[Int * 16] => Tensor[Int * 16]
         st
 
 fn :: chacha rounds loop Tensor[Int * 16] Int => Tensor[Int * 16]
-      chacha rounds loop st idx =
+      chacha rounds loop st               idx =
         | idx >= 10 = st
         | otherwise = chacha rounds loop (chacha double round st) (idx + 1)
 

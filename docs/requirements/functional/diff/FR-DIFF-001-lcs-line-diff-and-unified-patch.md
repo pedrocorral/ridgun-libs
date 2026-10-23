@@ -2,7 +2,7 @@
 id: FR-DIFF-001
 title: Provide Longest Common Subsequence line diff, Unified Diff formatting, and patch application
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: DIFF
 depends_on: []

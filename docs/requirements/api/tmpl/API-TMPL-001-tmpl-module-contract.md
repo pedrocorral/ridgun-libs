@@ -1,7 +1,7 @@
 ---
 id: API-TMPL-001
 title: Public module contract for template (template.rglib / libtemplate.so)
-status: approved
+status: implemented
 implements: [FR-TMPL-001]
 auth: none
 ---

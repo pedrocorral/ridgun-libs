@@ -1,4 +1,4 @@
--- RGLIB1
+RGC1
 -- SELF_HOSTED_COMPILER: ridgunc v0.9.8
 -- FUNCTIONS: 182
 -- TYPES: 10
@@ -735,31 +735,31 @@ fn :: sock set options Socket SockOpts => SockRes
         | not (is_open s)                                       = SockErr "socket is closed"
         | (timeout_ms new_opts) < 0                             = SockErr "timeout_ms cannot be negative"
         | (rcvbuf new_opts) <= 0 or (sndbuf new_opts) <= 0      = SockErr "buffer sizes must be > 0"
-        | otherwise                                             = SockOk (s with opts: new_opts)
+        | otherwise                                             = SockOk (s with opts = new_opts)
 
 fn :: sock set timeout Socket Int => SockRes
       sock set timeout s      ms  =
         | not (is_open s) = SockErr "socket is closed"
         | ms < 0          = SockErr "timeout_ms cannot be negative"
-        | otherwise       = SockOk (s with opts: ((opts s) with timeout_ms: ms))
+        | otherwise       = SockOk (s with opts = ((opts s) with timeout_ms = ms))
 
 fn :: sock set tcp nodelay Socket Bool => SockRes
       sock set tcp nodelay s enabled =
         | not (is_open s)           = SockErr "socket is closed"
         | (sock_type s) != "stream" = SockErr "tcp_nodelay requires stream socket"
-        | otherwise                 = SockOk (s with opts: ((opts s) with tcp_nodelay: enabled))
+        | otherwise                 = SockOk (s with opts = ((opts s) with tcp_nodelay = enabled))
 
 fn :: sock set broadcast Socket Bool    => SockRes
       sock set broadcast s      enabled =
         | not (is_open s)          = SockErr "socket is closed"
         | (sock_type s) != "dgram" = SockErr "broadcast requires dgram socket"
-        | otherwise                = SockOk (s with opts: ((opts s) with broadcast: enabled))
+        | otherwise                = SockOk (s with opts = ((opts s) with broadcast = enabled))
 
 fn :: sock set buf sizes Socket Int Int => SockRes
       sock set buf sizes s rcv snd =
         | not (is_open s)     = SockErr "socket is closed"
         | rcv <= 0 or snd <= 0 = SockErr "buffer sizes must be > 0"
-        | otherwise           = SockOk (s with opts: ((opts s) with rcvbuf: rcv, sndbuf: snd))
+        | otherwise           = SockOk (s with opts = ((opts s) with rcvbuf = rcv, sndbuf = snd))
 
 fn :: sock local addr Socket => SockAddrRes
       sock local addr s      =
@@ -777,9 +777,9 @@ fn :: sock shutdown Socket String => SockRes
       sock shutdown s      how    =
         | not (is_open s)      = SockErr "socket is closed"
         | not (is_connected s) = SockErr "socket is not connected"
-        | how == "rd"          = SockOk (s with can_read: False)
-        | how == "wr"          = SockOk (s with can_write: False)
-        | how == "rdwr"        = SockOk (s with can_read: False, can_write: False)
+        | how == "rd"          = SockOk (s with can_read = False)
+        | how == "wr"          = SockOk (s with can_write = False)
+        | how == "rdwr"        = SockOk (s with can_read = False, can_write = False)
         | otherwise            = SockErr "invalid shutdown mode (expected rd, wr, or rdwr)"
 
 fn :: sock poll Socket => SockPoll
@@ -800,8 +800,9 @@ fn :: sock bind Socket SockAddr => SockRes
         | not (is_open s)             = SockErr "socket is closed"
         | (family s) != (family addr) = SockErr "socket family mismatch on bind"
         | otherwise =
-          _ = bind unix marker addr
-          SockOk (s with local_addr: addr)
+          _  = bind unix marker addr
+          s2 = s with local_addr = addr
+          SockOk s2
 
 fn :: sock listen Socket Int     => SockRes
       sock listen s      backlog =
@@ -809,19 +810,19 @@ fn :: sock listen Socket Int     => SockRes
         | (sock_type s) != "stream"         = SockErr "only stream sockets can listen"
         | backlog < 1                       = SockErr "backlog must be >= 1"
         | (family (local_addr s)) == "none" = SockErr "socket must be bound before listen"
-        | otherwise                         = SockOk (s with is_listening: True)
+        | otherwise                         = SockOk (s with is_listening = True)
 
 fn :: sock connect Socket SockAddr => SockRes
       sock connect s      addr     =
         | not (is_open s)             = SockErr "socket is closed"
         | (family s) != (family addr) = SockErr "socket family mismatch on connect"
-        | otherwise                   = SockOk (s with remote_addr: addr, is_connected: True, can_read: True, can_write: True)
+        | otherwise                   = SockOk (s with remote_addr = addr, is_connected = True, can_read = True, can_write = True)
 
 fn :: sock accept Socket => SockRes
       sock accept srv    =
         | not (is_open srv)      = SockErr "socket is closed"
         | not (is_listening srv) = SockErr "socket is not listening"
-        | otherwise              = SockOk (srv with sock_id: ((sock_id srv) + 100), is_listening: False, is_connected: True, can_read: True, can_write: True)
+        | otherwise              = SockOk (srv with sock_id = ((sock_id srv) + 100), is_listening = False, is_connected = True, can_read = True, can_write = True)
 
 fn :: sock connect pair Socket Socket => SockPairRes
       sock connect pair client srv    =
@@ -829,14 +830,14 @@ fn :: sock connect pair Socket Socket => SockPairRes
         | not (is_listening srv)                    = SockPairErr "server socket is not listening"
         | (family client) != (family srv)           = SockPairErr "socket family mismatch"
         | otherwise =
-          cli_conn = client with remote_addr: (local_addr srv), is_connected: True, can_read: True, can_write: True
-          srv_peer = srv with sock_id: ((sock_id srv) + 100), remote_addr: (local_addr client), is_listening: False, is_connected: True, can_read: True, can_write: True
+          cli_conn = client with remote_addr = (local_addr srv), is_connected = True, can_read = True, can_write = True
+          srv_peer = srv with sock_id = ((sock_id srv) + 100), remote_addr = (local_addr client), is_listening = False, is_connected = True, can_read = True, can_write = True
           SockPairOk cli_conn srv_peer
 
 fn :: sock close Socket => SockRes
       sock close s      =
         | not (is_open s) = SockErr "socket already closed"
-        | otherwise       = SockOk (s with is_open: False, is_listening: False, is_connected: False, can_read: False, can_write: False, rx_buf: [], tx_buf: [])
+        | otherwise       = SockOk (s with is_open = False, is_listening = False, is_connected = False, can_read = False, can_write = False, rx_buf = [], tx_buf = [])
 
 -- ============================================================
 -- Stream, Datagram, Exact & Framed Data Transfer (FR-SOCK-002, FR-SOCK-003)
@@ -851,7 +852,7 @@ fn :: sock send bytes Socket [Int] => SockRes
         | not (is_connected s)       = SockErr "socket is not connected"
         | not (can_write s)          = SockErr "socket write half is shut down"
         | not (all valid bytes data) = SockErr "invalid byte value outside 0..255"
-        | otherwise                  = SockOk (s with tx_buf: ((tx_buf s) :: data))
+        | otherwise                  = SockOk (s with tx_buf = ((tx_buf s) :: data))
 
 fn :: sock send all Socket [Int] => SockRes
       sock send all s      data  =  sock send bytes s data
@@ -860,8 +861,8 @@ fn :: sock pipe transfer Socket Socket => SockPairRes
       sock pipe transfer sender rcvr   =
         | not (is_open sender) or not (is_open rcvr) = SockPairErr "socket is closed"
         | otherwise =
-          s_clean   = sender with tx_buf: []
-          r_updated = rcvr with rx_buf: ((rx_buf rcvr) :: (tx_buf sender))
+          s_clean   = sender with tx_buf = []
+          r_updated = rcvr with rx_buf = ((rx_buf rcvr) :: (tx_buf sender))
           SockPairOk s_clean r_updated
 
 fn :: sock recv bytes Socket Int       => SockRecvBytesRes
@@ -872,7 +873,8 @@ fn :: sock recv bytes Socket Int       => SockRecvBytesRes
         | max_bytes < 1        = SockBytesErr "max_bytes must be >= 1"
         | otherwise =
           buf = rx_buf s
-          SockBytesOk (s with rx_buf: (drop ints buf max_bytes)) (take ints buf max_bytes)
+          s2  = s with rx_buf = (drop ints buf max_bytes)
+          SockBytesOk s2 (take ints buf max_bytes)
 
 fn :: sock recv exact Socket Int       => SockRecvBytesRes
       sock recv exact s      exact_len =
@@ -883,7 +885,8 @@ fn :: sock recv exact Socket Int       => SockRecvBytesRes
         | (int list len (rx_buf s)) < exact_len = SockBytesErr "insufficient bytes for sock_recv_exact"
         | otherwise =
           buf = rx_buf s
-          SockBytesOk (s with rx_buf: (drop ints buf exact_len)) (take ints buf exact_len)
+          s2  = s with rx_buf = (drop ints buf exact_len)
+          SockBytesOk s2 (take ints buf exact_len)
 
 fn :: sock send str Socket String => SockRes
       sock send str s      text   =  sock send bytes s (str to byte list text)
@@ -902,15 +905,15 @@ fn :: sock send to Socket [Int] SockAddr => SockRes
         | (sock_type s) != "dgram"      = SockErr "sock send to requires dgram socket"
         | (family s) != (family target) = SockErr "socket family mismatch"
         | not (all valid bytes payload) = SockErr "invalid byte value outside 0..255"
-        | otherwise                     = SockOk (s with remote_addr: target, tx_buf: payload)
+        | otherwise                     = SockOk (s with remote_addr = target, tx_buf = payload)
 
 fn :: sock deliver dgram Socket Socket => SockPairRes
       sock deliver dgram sender rcvr   =
         | not (is_open sender) or not (is_open rcvr)                  = SockPairErr "socket is closed"
         | (sock_type sender) != "dgram" or (sock_type rcvr) != "dgram" = SockPairErr "requires dgram sockets"
         | otherwise =
-          s_clean = sender with tx_buf: []
-          r_dgram = rcvr with rx_buf: (tx_buf sender), dgram_sender: (local_addr sender)
+          s_clean = sender with tx_buf = []
+          r_dgram = rcvr with rx_buf = (tx_buf sender), dgram_sender = (local_addr sender)
           SockPairOk s_clean r_dgram
 
 fn :: sock recv from Socket Int       => SockRecvFromRes
@@ -919,7 +922,7 @@ fn :: sock recv from Socket Int       => SockRecvFromRes
         | not (can_read s)         = SockFromErr "socket read half is shut down"
         | (sock_type s) != "dgram" = SockFromErr "sock recv from requires dgram socket"
         | max_bytes < 1            = SockFromErr "max_bytes must be >= 1"
-        | otherwise                = SockFromOk (s with rx_buf: []) (take ints (rx_buf s) max_bytes) (dgram_sender s)
+        | otherwise                = SockFromOk (s with rx_buf = []) (take ints (rx_buf s) max_bytes) (dgram_sender s)
 
 fn :: encode be32 Int => [Int]
       encode be32 n   =  [(n / 16777216) % 256, (n / 65536) % 256, (n / 256) % 256, n % 256]
@@ -935,7 +938,7 @@ fn :: unpack frame body Socket [Int] Int Int => SockRecvBytesRes
       unpack frame body s rem flen max_bytes =
         | flen < 0 or flen > max_bytes = SockBytesErr "frame exceeds max_bytes limit"
         | (int list len rem) < flen    = SockBytesErr "incomplete frame payload"
-        | otherwise                    = SockBytesOk (s with rx_buf: (drop ints rem flen)) (take ints rem flen)
+        | otherwise                    = SockBytesOk (s with rx_buf = (drop ints rem flen)) (take ints rem flen)
 
 fn :: unpack frame buf Socket [Int] Int => SockRecvBytesRes
       unpack frame buf s buf max_bytes =
@@ -963,7 +966,7 @@ fn :: unpack line buf Socket [Int] Int Int => SockRecvStrRes
       unpack line buf s buf nl_idx max_bytes =
         | nl_idx < 0         = SockStrErr "newline delimiter not found"
         | nl_idx > max_bytes = SockStrErr "line exceeds max_bytes limit"
-        | otherwise          = SockStrOk (s with rx_buf: (drop ints buf (nl_idx + 1))) (byte list to str (take ints buf nl_idx))
+        | otherwise          = SockStrOk (s with rx_buf = (drop ints buf (nl_idx + 1))) (byte list to str (take ints buf nl_idx))
 
 fn :: sock recv line Socket Int       => SockRecvStrRes
       sock recv line s      max_bytes =

@@ -1,7 +1,7 @@
 ---
 id: DM-Diff
 title: Longest Common Subsequence line diff edit script and Unified Diff models
-status: approved
+status: implemented
 related: [FR-DIFF-001, API-DIFF-001, ADR-0002]
 ---
 # DM-Diff — Longest Common Subsequence line diff edit script and Unified Diff models

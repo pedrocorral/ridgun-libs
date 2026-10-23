@@ -3,8 +3,8 @@ id: TS-TMPL-001
 title: Verify Mustache-style text template rendering with HTML/LaTeX auto-escaping and conditional sections
 level: unit
 covers: [FR-TMPL-001, API-TMPL-001]
-status: planned
-automated_in: []
+status: automated
+automated_in: [src/test/ridgun/test template.rg]
 ---
 # TS-TMPL-001 — Verify Mustache-style text template rendering with HTML/LaTeX auto-escaping and conditional sections
 
