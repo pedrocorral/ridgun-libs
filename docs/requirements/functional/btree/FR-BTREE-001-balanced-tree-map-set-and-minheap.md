@@ -2,7 +2,7 @@
 id: FR-BTREE-001
 title: Provide O(log N) balanced binary search tree Map, Set, and MinHeap priority queue
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: BTREE
 depends_on: []

@@ -3,8 +3,8 @@ id: TS-BTREE-001
 title: Verify O(log N) balanced binary search tree Map, Set, and MinHeap priority queue
 level: unit
 covers: [FR-BTREE-001, API-BTREE-001]
-status: planned
-automated_in: []
+status: automated
+automated_in: ["src/test/ridgun/test btree.rg"]
 ---
 # TS-BTREE-001 — Verify O(log N) balanced binary search tree Map, Set, and MinHeap priority queue
 

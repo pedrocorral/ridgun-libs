@@ -3,7 +3,7 @@
 | Requirement | Test specs | Implemented in | Tested in | Gap |
 |---|---|---|---|---|
 | API-AGENT-001 | TS-AGENT-001 | src/main/ridgun/lib/agent.rg, src/main/ridgun/lib/net_agent.rg, src/main/ridgun/lib/pool.rg | src/test/ridgun/test agent.rg | ok |
-| API-BTREE-001 | TS-BTREE-001 | — | — | no code, spec not automated |
+| API-BTREE-001 | TS-BTREE-001 | src/main/ridgun/lib/btree.rg | src/test/ridgun/test btree.rg | ok |
 | API-CLI-001 | TS-CLI-001 | src/main/ridgun/lib/cli.rg | src/test/ridgun/test cli.rg | ok |
 | API-CODEC-001 | TS-CODEC-001 | src/main/ridgun/lib/codec.rg | src/test/ridgun/test codec.rg | ok |
 | API-CRYPTO-001 | TS-CRYPTO-003 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test crypto.rg | ok |
@@ -32,7 +32,7 @@
 | API-UUID-001 | TS-UUID-001 | src/main/ridgun/lib/uuid.rg | src/test/ridgun/test uuid.rg | ok |
 | API-WS-001 | TS-WS-001 | — | — | no code, spec not automated |
 | FR-AGENT-001 | TS-AGENT-001 | src/main/ridgun/lib/agent.rg, src/main/ridgun/lib/net_agent.rg, src/main/ridgun/lib/pool.rg | src/test/ridgun/test agent.rg | ok |
-| FR-BTREE-001 | TS-BTREE-001 | — | — | no code, spec not automated |
+| FR-BTREE-001 | TS-BTREE-001 | src/main/ridgun/lib/btree.rg | src/test/ridgun/test btree.rg | ok |
 | FR-CLI-001 | TS-CLI-001 | src/main/ridgun/lib/cli.rg | src/test/ridgun/test cli.rg | ok |
 | FR-CODEC-001 | TS-CODEC-001 | src/main/ridgun/lib/codec.rg | src/test/ridgun/test codec.rg | ok |
 | FR-CRYPTO-001 | TS-CRYPTO-001 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test argon2id.rg | ok |
