@@ -1,4 +1,4 @@
-RGC1
+-- RGLIB1
 -- SELF_HOSTED_COMPILER: ridgunc v0.9.8
 -- FUNCTIONS: 12
 -- TYPES: 0
@@ -12,7 +12,7 @@ RGC1
 -- SUMMARY: assert_str_eq:InlineSequential
 -- SUMMARY: assert_int_equals:InlineSequential
 -- SUMMARY: assert_ok:InlineSequential
--- SUMMARY: assert:InlineSequential
+-- SUMMARY: assert_not:InlineSequential
 -- SUMMARY: assert_eq:InlineSequential
 -- ============================================================
 -- src/main/ridgun/lib/test.rg
