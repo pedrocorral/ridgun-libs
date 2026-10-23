@@ -21,3 +21,4 @@ Read this when: working on a domain. Skip when: the domain is not yours.
 | `http/` | RFC 3986 URI & RFC 9112 HTTP/1.1 request/response parser and builder library (`FR-HTTP-001`) | Working on `http.rg` |
 | `agent/` | Native Agent Model lifecycle, timeout-bounded messaging, batch dispatch & stateful actors library (`FR-AGENT-001`) | Working on `agent.rg` |
 | `tensor/` | Typed `Tensor[...]` dimension inspection, subscript row/column views, bitwise Hadamard ops & Einstein contraction library (`FR-TENSOR-001`) | Working on `tensor.rg` |
+| `fmt/` | Configurable 2D Ridgun source code formatter & multi-target syntax highlighting library (`FR-FMT-001`) | Working on `fmt.rg` |

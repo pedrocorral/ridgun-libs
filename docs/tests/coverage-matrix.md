@@ -6,6 +6,7 @@
 | API-CLI-001 | TS-CLI-001 | src/main/ridgun/lib/cli.rg | src/test/ridgun/test cli.rg | ok |
 | API-CODEC-001 | TS-CODEC-001 | src/main/ridgun/lib/codec.rg | src/test/ridgun/test codec.rg | ok |
 | API-CRYPTO-001 | TS-CRYPTO-003 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test crypto.rg | ok |
+| API-FMT-001 | TS-FMT-001 | src/main/ridgun/lib/fmt.rg | src/test/ridgun/test fmt.rg | ok |
 | API-GLOB-001 | TS-GLOB-001 | src/main/ridgun/lib/glob.rg | src/test/ridgun/test glob.rg | ok |
 | API-HTTP-001 | TS-HTTP-001 | src/main/ridgun/lib/http.rg | src/test/ridgun/test http.rg | ok |
 | API-IO-001 | TS-IO-001 | src/main/ridgun/lib/io.rg | src/test/ridgun/test io.rg | ok |
@@ -27,6 +28,7 @@
 | FR-CRYPTO-002 | TS-CRYPTO-002 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test argon2id.rg | ok |
 | FR-CRYPTO-003 | TS-CRYPTO-003 | src/main/ridgun/lib/crypto.rg | src/test/ridgun/test crypto.rg | ok |
 | FR-CRYPTO-004 | TS-CRYPTO-004 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test crypto.rg | ok |
+| FR-FMT-001 | TS-FMT-001 | src/main/ridgun/lib/fmt.rg, src/test/ridgun/test fmt.rg | src/test/ridgun/test fmt.rg | ok |
 | FR-GLOB-001 | TS-GLOB-001 | src/main/ridgun/lib/glob.rg | src/test/ridgun/test glob.rg | ok |
 | FR-HTTP-001 | TS-HTTP-001 | src/main/ridgun/lib/http.rg | src/test/ridgun/test http.rg | ok |
 | FR-IO-001 | TS-IO-001 | src/main/ridgun/lib/io.rg | src/test/ridgun/test io.rg | ok |

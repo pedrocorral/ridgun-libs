@@ -21,3 +21,4 @@ Read this when: working in a domain.
 | `http/` | Test specifications for `HTTP` (`FR-HTTP-001`) | Testing `http.rg` |
 | `agent/` | Test specifications for `AGENT` (`FR-AGENT-001`) | Testing `agent.rg` |
 | `tensor/` | Test specifications for `TENSOR` (`FR-TENSOR-001`) | Testing `tensor.rg` |
+| `fmt/` | Test specifications for `FMT` (`FR-FMT-001`) | Testing `fmt.rg` |

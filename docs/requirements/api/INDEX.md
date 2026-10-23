@@ -21,3 +21,4 @@ Read this when: implementing or consuming a library's public module interface. S
 | `http/` | Public API contract for `http.rg` (`API-HTTP-001`) | Consuming or editing `http` |
 | `agent/` | Public API contract for `agent.rg` (`API-AGENT-001`) | Consuming or editing `agent` |
 | `tensor/` | Public API contract for `tensor.rg` (`API-TENSOR-001`) | Consuming or editing `tensor` |
+| `fmt/` | Public API contract for `fmt.rg` (`API-FMT-001`) | Consuming or editing `fmt` |

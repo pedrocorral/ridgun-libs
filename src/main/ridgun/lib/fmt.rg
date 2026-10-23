@@ -1,0 +1,1123 @@
+-- ============================================================
+-- src/main/ridgun/lib/fmt.rg
+-- Configurable 2D Ridgun Source Code Formatter & Multi-Target Syntax Highlighter
+-- @implements FR-FMT-001
+-- @implements API-FMT-001
+-- @implements DM-Formatter
+-- @mitigates VUL-INPUT-001
+-- Generalises `stable`'s canonical 2D formatter with configurable geometry
+-- and optional syntax highlighting for TTY, TrueColor, HTML, CSS, Markdown,
+-- Pango Markup, LaTeX Verbatim, and RTF.
+-- ============================================================
+
+type FmtTarget = FmtPlain | FmtTty | FmtTrueColor | FmtHtmlInline | FmtHtmlCss | FmtMarkdown | FmtPango | FmtLatex | FmtRtf
+
+type FmtTheme = FmtThemeNone | FmtThemeDark | FmtThemeLight
+
+type FmtConfig = indent_width: Int, max_align_params: Int, max_line_width: Int, is_aligned: Bool, target_format: FmtTarget, color_theme: FmtTheme
+
+type FmtToken = FmtTok String Int
+
+type FmtSig = NoSig | SigInfo String [String] String String [Int] Int Int
+
+type FmtClause = NoClause | ClauseInfo [String] Bool String
+
+type FmtWhereBind = NoWhereBind | WhereBindInfo String String
+
+-- ── Configuration Constructors ───────────────────────────────
+
+fn :: default fmt config => FmtConfig
+      default fmt config =  FmtConfig 2 4 80 True FmtPlain FmtThemeNone
+
+fn :: fmt config Int Int Int Bool FmtTarget FmtTheme => FmtConfig
+      fmt config indent_w max_params max_w aligned target theme =
+        FmtConfig (fmt_max 1 indent_w) (fmt_max 0 max_params) (fmt_max 20 max_w) aligned target theme
+
+-- ── Basic Integer & List Helpers ─────────────────────────────
+
+fn :: fmt_max Int Int => Int
+      fmt_max a   b
+        | a >= b = a
+        | otherwise = b
+
+fn :: fmt_str_list_len [String] => Int
+      fmt_str_list_len []       =  0
+      fmt_str_list_len (_:xs)   =  1 + (fmt_str_list_len xs)
+
+fn :: fmt_str_head [String] => String
+      fmt_str_head []       =  ""
+      fmt_str_head (x:_)    =  x
+
+fn :: fmt_int_at [Int]  Int => Int
+      fmt_int_at []     _   =  -1
+      fmt_int_at (x:_)  0   =  x
+      fmt_int_at (_:xs) idx =  fmt_int_at xs (idx - 1)
+
+fn :: fmt_spaces Int => String
+      fmt_spaces n
+        | n <= 0 = ""
+        | otherwise = " " + (fmt_spaces (n - 1))
+
+-- ── Whitespace & Line Splitting Helpers ──────────────────────
+
+fn :: fmt_is_hspace Int => Bool
+      fmt_is_hspace c   =  c == 32 OR c == 9 OR c == 13
+
+fn :: fmt_leading_indent_loop String Int Int => Int
+      fmt_leading_indent_loop s      pos len
+        | pos >= len = len
+        | (str_char_at s pos) == 32 OR (str_char_at s pos) == 9 = fmt_leading_indent_loop s (pos + 1) len
+        | otherwise = pos
+
+fn :: fmt_leading_indent String => Int
+      fmt_leading_indent s      =  fmt_leading_indent_loop s 0 (str_len s)
+
+fn :: fmt_trim_left_loop String Int Int => String
+      fmt_trim_left_loop s      pos len
+        | pos >= len = ""
+        | fmt_is_hspace (str_char_at s pos) = fmt_trim_left_loop s (pos + 1) len
+        | otherwise = str_slice s pos len
+
+fn :: fmt_trim_left String => String
+      fmt_trim_left s      =  fmt_trim_left_loop s 0 (str_len s)
+
+fn :: fmt_trim_right_loop String Int     => String
+      fmt_trim_right_loop s      end_pos
+        | end_pos <= 0 = ""
+        | fmt_is_hspace (str_char_at s (end_pos - 1)) = fmt_trim_right_loop s (end_pos - 1)
+        | otherwise = str_slice s 0 end_pos
+
+fn :: fmt_trim_right String => String
+      fmt_trim_right s      =  fmt_trim_right_loop s (str_len s)
+
+fn :: fmt_trim String => String
+      fmt_trim s      =  fmt_trim_left (fmt_trim_right s)
+
+fn :: fmt_split_raw_lines_loop String Int Int Int Int [String] => [String]
+      fmt_split_raw_lines_loop s pos len line_start quote_st acc
+        | pos >= len AND line_start == len = acc
+        | pos >= len = acc :: [fmt_trim_right (str_slice s line_start len)]
+        | quote_st == 34 AND (str_char_at s pos) == 92 = fmt_split_raw_lines_loop s (pos + 2) len line_start 34 acc
+        | quote_st == 34 AND (str_char_at s pos) == 34 = fmt_split_raw_lines_loop s (pos + 1) len line_start 0 acc
+        | quote_st == 34 = fmt_split_raw_lines_loop s (pos + 1) len line_start 34 acc
+        | quote_st == 39 AND (str_char_at s pos) == 39 = fmt_split_raw_lines_loop s (pos + 1) len line_start 0 acc
+        | quote_st == 39 = fmt_split_raw_lines_loop s (pos + 1) len line_start 39 acc
+        | quote_st == 45 AND (str_char_at s pos) == 10 = fmt_split_raw_lines_loop s (pos + 1) len (pos + 1) 0 (acc :: [fmt_trim_right (str_slice s line_start pos)])
+        | quote_st == 45 = fmt_split_raw_lines_loop s (pos + 1) len line_start 45 acc
+        | (str_char_at s pos) == 10 = fmt_split_raw_lines_loop s (pos + 1) len (pos + 1) 0 (acc :: [fmt_trim_right (str_slice s line_start pos)])
+        | (str_char_at s pos) == 45 AND (pos + 1) < len AND (str_char_at s (pos + 1)) == 45 = fmt_split_raw_lines_loop s (pos + 2) len line_start 45 acc
+        | (str_char_at s pos) == 34 = fmt_split_raw_lines_loop s (pos + 1) len line_start 34 acc
+        | (str_char_at s pos) == 39 = fmt_split_raw_lines_loop s (pos + 1) len line_start 39 acc
+        | otherwise = fmt_split_raw_lines_loop s (pos + 1) len line_start 0 acc
+
+fn :: fmt_split_raw_lines String => [String]
+      fmt_split_raw_lines s      =  fmt_split_raw_lines_loop s 0 (str_len s) 0 0 []
+
+fn :: fmt_join_lines [String] => String
+      fmt_join_lines []       =  ""
+      fmt_join_lines (l:[])   =  l + (char_from_code 10)
+      fmt_join_lines (l:ls)   =  l + (char_from_code 10) + (fmt_join_lines ls)
+
+-- ── Quote-Aware Comment Splitting (`-- ...`) ─────────────────
+
+fn :: fmt_skip_quoted String Int Int Int      => Int
+      fmt_skip_quoted s      pos len quote_ch
+        | pos >= len = len
+        | (str_char_at s pos) == 92 = fmt_skip_quoted s (pos + 2) len quote_ch
+        | (str_char_at s pos) == quote_ch = pos + 1
+        | otherwise = fmt_skip_quoted s (pos + 1) len quote_ch
+
+fn :: fmt_find_comment_col String Int Int => Int
+      fmt_find_comment_col s      pos len
+        | pos >= len = -1
+        | (str_char_at s pos) == 34 = fmt_find_comment_col s (fmt_skip_quoted s (pos + 1) len 34) len
+        | (str_char_at s pos) == 39 = fmt_find_comment_col s (fmt_skip_quoted s (pos + 1) len 39) len
+        | (pos + 1) < len AND (str_char_at s pos) == 45 AND (str_char_at s (pos + 1)) == 45 = pos
+        | otherwise = fmt_find_comment_col s (pos + 1) len
+
+fn :: fmt_strip_comment String => String
+      fmt_strip_comment line   =
+        c_col = fmt_find_comment_col line 0 (str_len line)
+        fmt_strip_comment_at line c_col
+
+fn :: fmt_strip_comment_at String Int   => String
+      fmt_strip_comment_at line   -1    =  fmt_trim_right line
+      fmt_strip_comment_at line   c_col =  fmt_trim_right (str_slice line 0 c_col)
+
+fn :: fmt_extract_comment String => String
+      fmt_extract_comment line   =
+        c_col = fmt_find_comment_col line 0 (str_len line)
+        fmt_extract_comment_at line c_col
+
+fn :: fmt_extract_comment_at String Int   => String
+      fmt_extract_comment_at _      -1    =  ""
+      fmt_extract_comment_at line   c_col =  fmt_trim_right (str_slice line c_col (str_len line))
+
+-- ── Line Token Scanner (`ridgun--scan-tokens-with-cols`) ─────
+
+fn :: fmt_skip_hspace String Int Int => Int
+      fmt_skip_hspace s      pos len
+        | pos >= len = len
+        | fmt_is_hspace (str_char_at s pos) = fmt_skip_hspace s (pos + 1) len
+        | otherwise = pos
+
+fn :: fmt_scan_group_end String Int Int Int   => Int
+      fmt_scan_group_end s      pos len depth
+        | pos >= len = len
+        | (str_char_at s pos) == 34 = fmt_scan_group_end s (fmt_skip_quoted s (pos + 1) len 34) len depth
+        | (str_char_at s pos) == 39 = fmt_scan_group_end s (fmt_skip_quoted s (pos + 1) len 39) len depth
+        | (str_char_at s pos) == 40 OR (str_char_at s pos) == 91 = fmt_scan_group_end s (pos + 1) len (depth + 1)
+        | ((str_char_at s pos) == 41 OR (str_char_at s pos) == 93) AND depth <= 1 = pos + 1
+        | (str_char_at s pos) == 41 OR (str_char_at s pos) == 93 = fmt_scan_group_end s (pos + 1) len (depth - 1)
+        | otherwise = fmt_scan_group_end s (pos + 1) len depth
+
+fn :: fmt_scan_word_end String Int Int Int   => Int
+      fmt_scan_word_end s      pos len depth
+        | pos >= len = len
+        | depth == 0 AND (fmt_is_hspace (str_char_at s pos)) = pos
+        | (str_char_at s pos) == 34 = fmt_scan_word_end s (fmt_skip_quoted s (pos + 1) len 34) len depth
+        | (str_char_at s pos) == 39 = fmt_scan_word_end s (fmt_skip_quoted s (pos + 1) len 39) len depth
+        | (str_char_at s pos) == 40 OR (str_char_at s pos) == 91 = fmt_scan_word_end s (pos + 1) len (depth + 1)
+        | (str_char_at s pos) == 41 OR (str_char_at s pos) == 93 = fmt_scan_word_end s (pos + 1) len (fmt_max 0 (depth - 1))
+        | otherwise = fmt_scan_word_end s (pos + 1) len depth
+
+fn :: fmt_scan_token_end String Int Int Int => Int
+      fmt_scan_token_end s      pos len ch
+        | ch == 34 OR ch == 39 = fmt_skip_quoted s (pos + 1) len ch
+        | ch == 40 OR ch == 91 = fmt_scan_group_end s (pos + 1) len 1
+        | otherwise = fmt_scan_word_end s pos len 0
+
+fn :: fmt_scan_tokens_loop String Int Int [FmtToken] => [FmtToken]
+      fmt_scan_tokens_loop s      pos len acc        =
+        p = fmt_skip_hspace s pos len
+        fmt_scan_tokens_at s p len acc
+
+fn :: fmt_scan_tokens_at String Int Int [FmtToken] => [FmtToken]
+      fmt_scan_tokens_at s      p   len acc
+        | p >= len = acc
+        | otherwise = fmt_scan_tokens_at_step s p len acc (fmt_scan_token_end s p len (str_char_at s p))
+
+fn :: fmt_scan_tokens_at_step String Int Int [FmtToken] Int => [FmtToken]
+      fmt_scan_tokens_at_step s p len acc end_p =
+        tok_s = str_slice s p end_p
+        fmt_scan_tokens_loop s end_p len (acc :: [FmtTok tok_s p])
+
+fn :: fmt_scan_tokens String => [FmtToken]
+      fmt_scan_tokens line   =  fmt_scan_tokens_loop line 0 (str_len line) []
+
+-- ── Signature Parsing (`fn ::` / `op ::`) ────────────────────
+
+fn :: fmt_split_sig_arrow [FmtToken] [String] => (Bool, [String], String, Int)
+      fmt_split_sig_arrow []         _        =  (False, [], "", 0)
+      fmt_split_sig_arrow ((FmtTok tok col):rest) lhs_acc
+        | tok == "=>" OR tok == "->" = (True, lhs_acc, tok, col)
+        | otherwise = fmt_split_sig_arrow rest (lhs_acc :: [tok])
+
+fn :: fmt_is_sig_type_tok String => Bool
+      fmt_is_sig_type_tok ""     =  False
+      fmt_is_sig_type_tok tok    =
+        ch = str_char_at tok 0
+        (ch >= 65 AND ch <= 90) OR ch == 91 OR ch == 40
+
+fn :: fmt_all_type_toks [String] => Bool
+      fmt_all_type_toks []       =  True
+      fmt_all_type_toks (t:rest)
+        | fmt_is_sig_type_tok t = fmt_all_type_toks rest
+        | otherwise = False
+
+fn :: fmt_is_bare_fn_lhs [String]       => Bool
+      fmt_is_bare_fn_lhs (first_w:rest)
+        | NOT (fmt_is_sig_type_tok first_w) = fmt_all_type_toks rest
+      fmt_is_bare_fn_lhs _              =  False
+
+fn :: fmt_infer_bare_kind [String] => String
+      fmt_infer_bare_kind lhs_strs
+        | fmt_is_bare_fn_lhs lhs_strs = "bare_fn"
+        | otherwise = "bare_op"
+
+fn :: fmt_parse_sig_line String => FmtSig
+      fmt_parse_sig_line line   =
+        clean = fmt_strip_comment line
+        cmt = fmt_extract_comment line
+        toks = fmt_scan_tokens clean
+        fmt_parse_sig_tokens (fmt_leading_indent line) clean cmt toks
+
+fn :: fmt_parse_sig_tokens Int String String [FmtToken] => FmtSig
+      fmt_parse_sig_tokens _   clean  cmt    ((FmtTok kind _):(FmtTok "::" _):rest)
+        | kind == "fn" OR kind == "op" = fmt_finish_sig_parse clean cmt kind (fmt_split_sig_arrow rest [])
+      fmt_parse_sig_tokens 0   clean  cmt    ((FmtTok w col):rest)
+        | w == "type" OR w == "expand" OR w == "import" OR w == "global" OR w == "context" OR w == "shared" OR w == "hardware" OR (str_starts_with w "@") OR (str_starts_with w "--") OR (str_starts_with w "|") = NoSig
+        | otherwise = fmt_finish_bare_sig_parse clean cmt (fmt_split_sig_arrow ([FmtTok w col] :: rest) [])
+      fmt_parse_sig_tokens _   _      _      _          =  NoSig
+
+fn :: fmt_finish_bare_sig_parse String String (Bool, [String], String, Int) => FmtSig
+      fmt_finish_bare_sig_parse _ _ (False, _, _, _) = NoSig
+      fmt_finish_bare_sig_parse _ _ (True, [], _, _) = NoSig
+      fmt_finish_bare_sig_parse clean cmt (True, lhs_strs, arrow_s, arrow_col)
+        | arrow_s == "=>" = fmt_finish_sig_parse clean cmt (fmt_infer_bare_kind lhs_strs) (True, lhs_strs, arrow_s, arrow_col)
+        | otherwise = NoSig
+
+fn :: fmt_finish_sig_parse String String String (Bool, [String], String, Int) => FmtSig
+      fmt_finish_sig_parse _ _ _ (False, _, _, _) = NoSig
+      fmt_finish_sig_parse _ _ _ (True, [], _, _) = NoSig
+      fmt_finish_sig_parse clean cmt kind (True, lhs_strs, arrow_s, arrow_col) =
+        ret_start = arrow_col + (str_len arrow_s)
+        ret_core = fmt_trim (str_slice clean ret_start (str_len clean))
+        ret_full = fmt_append_comment ret_core cmt
+        SigInfo kind lhs_strs arrow_s ret_full [] 0 0
+
+fn :: fmt_append_comment String String => String
+      fmt_append_comment core   ""     =  core
+      fmt_append_comment ""     cmt    =  cmt
+      fmt_append_comment core   cmt    =  core + " " + cmt
+
+-- ── Clause & `where` Binding Recognition ─────────────────────
+
+fn :: fmt_has_fat_arrow [FmtToken] => Bool
+      fmt_has_fat_arrow []         =  False
+      fmt_has_fat_arrow ((FmtTok "=>" _):_) = True
+      fmt_has_fat_arrow (_:rest)   =  fmt_has_fat_arrow rest
+
+fn :: fmt_is_top_decl_line String => Bool
+      fmt_is_top_decl_line line   =
+        ind = fmt_leading_indent line
+        tr = fmt_trim line
+        toks = fmt_scan_tokens (fmt_strip_comment tr)
+        fmt_is_top_decl_toks ind tr toks
+
+fn :: fmt_is_top_decl_toks Int String [FmtToken] => Bool
+      fmt_is_top_decl_toks _   tr     _
+        | str_starts_with tr "@" = True
+      fmt_is_top_decl_toks ind _      ((FmtTok w col):rest)
+        | w == "fn" OR w == "op" OR w == "type" OR w == "expand" OR w == "import" OR w == "global" OR w == "context" OR w == "shared" OR w == "hardware" = True
+        | ind == 0 AND (NOT (str_starts_with w "--")) AND (NOT (str_starts_with w "|")) = fmt_has_fat_arrow ([FmtTok w col] :: rest)
+        | otherwise = False
+      fmt_is_top_decl_toks _   _      []         =  False
+
+fn :: fmt_op_tokens_match [String]       [String]       => Bool
+      fmt_op_tokens_match []             []             =  True
+      fmt_op_tokens_match (s_tok:s_rest) (c_tok:c_rest)
+        | fmt_is_sig_type_tok s_tok = fmt_op_tokens_match s_rest c_rest
+        | s_tok == c_tok = fmt_op_tokens_match s_rest c_rest
+        | otherwise = False
+      fmt_op_tokens_match _              _              =  False
+
+fn :: fmt_is_bare_kind String => Bool
+      fmt_is_bare_kind kind   =  kind == "bare_fn" OR kind == "bare_op"
+
+fn :: fmt_sig_base_col String => Int
+      fmt_sig_base_col kind
+        | fmt_is_bare_kind kind = 0
+        | otherwise = 6
+
+fn :: fmt_sig_base_col_from FmtSig => Int
+      fmt_sig_base_col_from (SigInfo kind _ _ _ _ _ _) = fmt_sig_base_col kind
+      fmt_sig_base_col_from _      =  6
+
+fn :: fmt_clause_matches_sig String    [String] [String]   => Bool
+      fmt_clause_matches_sig _         _        []         =  False
+      fmt_clause_matches_sig "fn"      sig_lhs  clause_lhs =
+        (fmt_str_list_len clause_lhs) == (fmt_str_list_len sig_lhs) AND (fmt_str_head clause_lhs) == (fmt_str_head sig_lhs)
+      fmt_clause_matches_sig "bare_fn" sig_lhs  clause_lhs =
+        (fmt_str_list_len clause_lhs) == (fmt_str_list_len sig_lhs) AND (fmt_str_head clause_lhs) == (fmt_str_head sig_lhs)
+      fmt_clause_matches_sig "op"      sig_lhs  clause_lhs =
+        (fmt_str_list_len clause_lhs) == (fmt_str_list_len sig_lhs) AND (fmt_op_tokens_match sig_lhs clause_lhs)
+      fmt_clause_matches_sig "bare_op" sig_lhs  clause_lhs =
+        (fmt_str_list_len clause_lhs) == (fmt_str_list_len sig_lhs) AND (fmt_op_tokens_match sig_lhs clause_lhs)
+      fmt_clause_matches_sig _         _        _          =  False
+
+fn :: fmt_split_clause_eq [FmtToken] [String] => ([String], Bool, Int)
+      fmt_split_clause_eq []         lhs_acc  =  (lhs_acc, False, 0)
+      fmt_split_clause_eq ((FmtTok "=" col):_) lhs_acc = (lhs_acc, True, col)
+      fmt_split_clause_eq ((FmtTok tok _):rest) lhs_acc = fmt_split_clause_eq rest (lhs_acc :: [tok])
+
+fn :: fmt_next_nonblank_is_guard [String] => Bool
+      fmt_next_nonblank_is_guard []       =  False
+      fmt_next_nonblank_is_guard (l:ls)   =
+        clean = fmt_trim (fmt_strip_comment l)
+        fmt_check_guard_line clean ls
+
+fn :: fmt_check_guard_line String [String] => Bool
+      fmt_check_guard_line ""     ls       =  fmt_next_nonblank_is_guard ls
+      fmt_check_guard_line clean  _        =
+        (str_starts_with clean "|") AND (NOT (str_starts_with clean "||"))
+
+fn :: fmt_parse_clause_line FmtSig String Bool          => FmtClause
+      fmt_parse_clause_line NoSig  _      _             =  NoClause
+      fmt_parse_clause_line (SigInfo kind sig_lhs _ _ _ _ _) line next_is_guard
+        | str_contains line (char_from_code 10) = NoClause
+        | otherwise = fmt_parse_clause_clean kind sig_lhs line (fmt_strip_comment line) (fmt_trim (fmt_strip_comment line)) next_is_guard
+
+fn :: fmt_parse_clause_clean String [String] String String String Bool => FmtClause
+      fmt_parse_clause_clean _ _ _ _ "" _ = NoClause
+      fmt_parse_clause_clean kind sig_lhs line clean tr next_is_guard
+        | (str_starts_with tr "|") OR (str_starts_with tr "--") OR (fmt_is_top_decl_line tr) = NoClause
+        | otherwise = fmt_check_clause_split kind sig_lhs line next_is_guard (fmt_split_clause_eq (fmt_scan_tokens clean) [])
+
+fn :: fmt_check_clause_split String [String] String Bool ([String], Bool, Int) => FmtClause
+      fmt_check_clause_split kind sig_lhs line next_is_guard (clause_lhs, has_eq, eq_col)
+        | (fmt_clause_matches_sig kind sig_lhs clause_lhs) AND (has_eq OR next_is_guard) = fmt_build_clause_info line clause_lhs has_eq eq_col
+        | otherwise = NoClause
+
+fn :: fmt_build_clause_info String [String]   Bool  Int    => FmtClause
+      fmt_build_clause_info line   clause_lhs True  eq_col =
+        rhs = fmt_trim (str_slice line (eq_col + 1) (str_len line))
+        ClauseInfo clause_lhs True rhs
+      fmt_build_clause_info _      clause_lhs False _      =
+        ClauseInfo clause_lhs False ""
+
+fn :: fmt_find_where_arrow [FmtToken] => Int
+      fmt_find_where_arrow []         =  -1
+      fmt_find_where_arrow ((FmtTok "->" col):_) = col
+      fmt_find_where_arrow (_:rest)   =  fmt_find_where_arrow rest
+
+fn :: fmt_parse_where_line String Bool  => FmtWhereBind
+      fmt_parse_where_line _      False =  NoWhereBind
+      fmt_parse_where_line line   True  =
+        clean = fmt_strip_comment line
+        tr = fmt_trim clean
+        fmt_parse_where_clean line clean tr
+
+fn :: fmt_parse_where_clean String String String => FmtWhereBind
+      fmt_parse_where_clean _      _      ""     =  NoWhereBind
+      fmt_parse_where_clean line   clean  tr
+        | (str_starts_with tr "|") OR (tr == "where") OR (fmt_is_top_decl_line tr) = NoWhereBind
+        | otherwise = fmt_build_where_bind line clean (fmt_find_where_arrow (fmt_scan_tokens clean))
+
+fn :: fmt_build_where_bind String String Int       => FmtWhereBind
+      fmt_build_where_bind _      _      -1        =  NoWhereBind
+      fmt_build_where_bind line   clean  arrow_col =
+        lhs = fmt_trim (str_slice clean 0 arrow_col)
+        rhs = fmt_trim (str_slice line (arrow_col + 2) (str_len line))
+        fmt_check_where_nonempty lhs rhs
+
+fn :: fmt_check_where_nonempty String String => FmtWhereBind
+      fmt_check_where_nonempty ""     _      =  NoWhereBind
+      fmt_check_where_nonempty _      ""     =  NoWhereBind
+      fmt_check_where_nonempty lhs    rhs    =  WhereBindInfo lhs rhs
+
+-- ── Group Column Geometry Calculation (Config-Aware) ─────────
+
+fn :: fmt_map_str_lens [String] => [Int]
+      fmt_map_str_lens []       =  []
+      fmt_map_str_lens (s:ss)   =  [str_len s] :: (fmt_map_str_lens ss)
+
+fn :: fmt_slot_width Int Int   => Int
+      fmt_slot_width w   s_len
+        | s_len > 18 = w
+        | otherwise = fmt_max w s_len
+
+fn :: fmt_max_widths [Int]  [String] => [Int]
+      fmt_max_widths []     _        =  []
+      fmt_max_widths ws     []       =  ws
+      fmt_max_widths (w:ws) (s:ss)   =  [fmt_slot_width w (str_len s)] :: (fmt_max_widths ws ss)
+
+fn :: fmt_build_col_starts [Int]  Int     => [Int]
+      fmt_build_col_starts []     _       =  []
+      fmt_build_col_starts (w:ws) cur_col =  [cur_col] :: (fmt_build_col_starts ws (cur_col + w + 1))
+
+fn :: fmt_end_col [Int]  Int     => Int
+      fmt_end_col []     cur_col =  cur_col
+      fmt_end_col (w:ws) cur_col =  fmt_end_col ws (cur_col + w + 1)
+
+fn :: fmt_scan_group_widths FmtSig [String] [Int] Int Bool Int => ([Int], Int)
+      fmt_scan_group_widths _ [] widths max_where _ _ = (widths, max_where)
+      fmt_scan_group_widths sig (line:rest) widths max_where in_where ind_w =
+        tr_clean = fmt_trim (fmt_strip_comment line)
+        next_is_guard = fmt_next_nonblank_is_guard rest
+        cl = fmt_parse_clause_line sig line next_is_guard
+        wb = fmt_parse_where_line line in_where
+        fmt_scan_group_step sig tr_clean rest widths max_where in_where ind_w cl wb
+
+fn :: fmt_scan_group_step FmtSig String [String] [Int] Int Bool Int FmtClause FmtWhereBind => ([Int], Int)
+      fmt_scan_group_step sig _ rest widths max_where _ ind_w (ClauseInfo c_lhs _ _) _ =
+        fmt_scan_group_widths sig rest (fmt_max_widths widths c_lhs) max_where False ind_w
+      fmt_scan_group_step sig _ rest widths max_where in_where ind_w NoClause (WhereBindInfo w_lhs _) =
+        w_end = (fmt_sig_base_col_from sig) + (2 * ind_w) + (str_len w_lhs) + 1
+        fmt_scan_group_widths sig rest widths (fmt_max max_where w_end) in_where ind_w
+      fmt_scan_group_step sig tr_clean rest widths max_where in_where ind_w NoClause NoWhereBind
+        | tr_clean == "where" = fmt_scan_group_widths sig rest widths max_where True ind_w
+        | str_starts_with tr_clean "|" = fmt_scan_group_widths sig rest widths max_where False ind_w
+        | otherwise = fmt_scan_group_widths sig rest widths max_where in_where ind_w
+
+fn :: fmt_compute_group_geometry FmtSig [String]    FmtConfig => FmtSig
+      fmt_compute_group_geometry NoSig  _           _         =  NoSig
+      fmt_compute_group_geometry (SigInfo kind lhs_strs arrow_s ret_s _ _ _) group_lines cfg =
+        init_widths = fmt_map_str_lens lhs_strs
+        base_sig = SigInfo kind lhs_strs arrow_s ret_s [] 0 0
+        scan_res = fmt_scan_group_widths base_sig group_lines init_widths 0 False (indent_width cfg)
+        fmt_finish_group_geometry kind lhs_strs arrow_s ret_s scan_res cfg
+
+fn :: fmt_count_op_params [String]   => Int
+      fmt_count_op_params []         =  0
+      fmt_count_op_params (tok:rest)
+        | fmt_is_sig_type_tok tok = 1 + (fmt_count_op_params rest)
+        | otherwise = fmt_count_op_params rest
+
+fn :: fmt_count_sig_params String    [String] => Int
+      fmt_count_sig_params "fn"      lhs_strs =  (fmt_str_list_len lhs_strs) - 1
+      fmt_count_sig_params "bare_fn" lhs_strs =  (fmt_str_list_len lhs_strs) - 1
+      fmt_count_sig_params _         lhs_strs =  fmt_count_op_params lhs_strs
+
+fn :: fmt_finish_group_geometry String [String] String String ([Int], Int) FmtConfig => FmtSig
+      fmt_finish_group_geometry kind lhs_strs arrow_s ret_s (widths, max_where) cfg =
+        base_col = fmt_sig_base_col kind
+        sig_cols = fmt_build_col_starts widths base_col
+        end_col = fmt_end_col widths base_col
+        arrow_col = fmt_max end_col max_where
+        ret_col = arrow_col + (str_len arrow_s) + 1
+        total_sig_len = ret_col + (str_len ret_s)
+        num_params = fmt_count_sig_params kind lhs_strs
+        fmt_select_group_geometry kind lhs_strs arrow_s ret_s sig_cols arrow_col ret_col num_params total_sig_len cfg
+
+fn :: fmt_select_group_geometry String [String] String String [Int] Int Int Int Int FmtConfig => FmtSig
+      fmt_select_group_geometry kind lhs_strs arrow_s ret_s sig_cols arrow_col ret_col num_params total_sig_len cfg
+        | (NOT (is_aligned cfg)) OR num_params > (max_align_params cfg) OR total_sig_len > (max_line_width cfg) = SigInfo kind lhs_strs arrow_s ret_s [] 0 0
+        | otherwise = SigInfo kind lhs_strs arrow_s ret_s sig_cols arrow_col ret_col
+
+-- ── Line Formatting Functions ────────────────────────────────
+
+fn :: fmt_pad_lhs_tokens [String]   [Int]    Int String => String
+      fmt_pad_lhs_tokens []         _        _   acc    =  acc
+      fmt_pad_lhs_tokens (tok:rest) sig_cols idx acc    =
+        target_col = fmt_int_at sig_cols idx
+        pad_n = fmt_max 1 (target_col - (str_len acc))
+        fmt_pad_lhs_tokens rest sig_cols (idx + 1) (acc + (fmt_spaces pad_n) + tok)
+
+fn :: fmt_sig_prefix String    String    => String
+      fmt_sig_prefix "bare_fn" first_tok =  first_tok
+      fmt_sig_prefix "bare_op" first_tok =  first_tok
+      fmt_sig_prefix kind      first_tok =  kind + " :: " + first_tok
+
+fn :: fmt_format_sig_line FmtSig => String
+      fmt_format_sig_line NoSig  =  ""
+      fmt_format_sig_line (SigInfo _ [] _ _ _ _ _) = ""
+      fmt_format_sig_line (SigInfo kind (first_tok:rest_toks) arrow_s ret_s sig_cols arrow_col _) =
+        lhs_out = fmt_pad_lhs_tokens rest_toks sig_cols 1 (fmt_sig_prefix kind first_tok)
+        pad_arrow = fmt_max 1 (arrow_col - (str_len lhs_out))
+        lhs_out + (fmt_spaces pad_arrow) + arrow_s + " " + ret_s
+
+fn :: fmt_format_clause_line FmtSig [String] Bool   String => String
+      fmt_format_clause_line _      []       _      _      =  ""
+      fmt_format_clause_line (SigInfo kind _ _ _ sig_cols arrow_col ret_col) (first_tok:rest_toks) has_eq rhs =
+        base_pad = fmt_spaces (fmt_sig_base_col kind)
+        lhs_out = fmt_pad_lhs_tokens rest_toks sig_cols 1 (base_pad + first_tok)
+        fmt_finish_clause_rhs lhs_out has_eq rhs arrow_col ret_col
+
+fn :: fmt_finish_clause_rhs String Bool String Int Int => String
+      fmt_finish_clause_rhs lhs_out False _ _ _ = lhs_out
+      fmt_finish_clause_rhs lhs_out True "" arrow_col _ =
+        pad_eq = fmt_max 1 (arrow_col - (str_len lhs_out))
+        lhs_out + (fmt_spaces pad_eq) + "="
+      fmt_finish_clause_rhs lhs_out True rhs arrow_col ret_col =
+        pad_eq = fmt_max 1 (arrow_col - (str_len lhs_out))
+        with_eq = lhs_out + (fmt_spaces pad_eq) + "="
+        pad_rhs = fmt_max 1 (ret_col - (str_len with_eq))
+        with_eq + (fmt_spaces pad_rhs) + rhs
+
+fn :: fmt_format_where_line FmtSig String String Int   => String
+      fmt_format_where_line NoSig  lhs    rhs    ind_w =  (fmt_spaces (2 * ind_w)) + lhs + " -> " + rhs
+      fmt_format_where_line (SigInfo kind _ _ _ _ arrow_col ret_col) lhs rhs ind_w =
+        lhs_out = (fmt_spaces ((fmt_sig_base_col kind) + (2 * ind_w))) + lhs
+        pad_arrow = fmt_max 1 (arrow_col - (str_len lhs_out))
+        with_arrow = lhs_out + (fmt_spaces pad_arrow) + "->"
+        pad_rhs = fmt_max 1 (ret_col - (str_len with_arrow))
+        with_arrow + (fmt_spaces pad_rhs) + rhs
+
+-- ── Structural Block & Group Formatting ──────────────────────
+
+fn :: fmt_line_opens_block String    => Bool
+      fmt_line_opens_block prev_text =
+        clean = fmt_trim (fmt_strip_comment prev_text)
+        len = str_len clean
+        fmt_check_block_opener clean len
+
+fn :: fmt_check_block_opener String Int => Bool
+      fmt_check_block_opener clean  len
+        | len == 0 = False
+        | clean == "where" OR clean == "do" = True
+        | (str_char_at clean (len - 1)) == 61 AND (len < 2 OR ((str_char_at clean (len - 2)) != 61 AND (str_char_at clean (len - 2)) != 33 AND (str_char_at clean (len - 2)) != 60 AND (str_char_at clean (len - 2)) != 62)) = True
+        | len >= 6 AND (str_slice clean (len - 6) len) == " where" = True
+        | len >= 3 AND (str_slice clean (len - 3) len) == " do" = True
+        | otherwise = False
+
+fn :: fmt_line_closes_block String    => Bool
+      fmt_line_closes_block prev_text =
+        clean = fmt_trim (fmt_strip_comment prev_text)
+        len = str_len clean
+        (len >= 2 AND (str_slice clean (len - 2) len) == "|.") OR (len >= 3 AND (str_slice clean (len - 3) len) == "||.")
+
+fn :: fmt_guard_indent Int Int Int String Int => Int
+      fmt_guard_indent base_g orig_indent prev_indent prev_text ind_w =
+        prev_clean = fmt_trim (fmt_strip_comment prev_text)
+        fmt_guard_indent_clean base_g orig_indent prev_indent prev_text prev_clean ind_w
+
+fn :: fmt_guard_indent_clean Int Int Int String String Int => Int
+      fmt_guard_indent_clean base_g orig_indent prev_indent prev_text prev_clean ind_w
+        | str_starts_with prev_clean "||" = base_g
+        | fmt_line_opens_block prev_text = fmt_max base_g (prev_indent + ind_w)
+        | fmt_line_closes_block prev_text AND orig_indent >= base_g AND orig_indent < prev_indent = orig_indent
+        | fmt_line_closes_block prev_text = fmt_max base_g (prev_indent - ind_w)
+        | str_starts_with prev_clean "|" = fmt_max base_g prev_indent
+        | otherwise = base_g
+
+fn :: fmt_format_group_body FmtSig [String] Int String Bool FmtConfig => [String]
+      fmt_format_group_body _ [] _ _ _ _ = []
+      fmt_format_group_body geom (line:rest) prev_indent prev_text in_where cfg =
+        tr = fmt_trim line
+        tr_clean = fmt_trim (fmt_strip_comment line)
+        orig_indent = fmt_leading_indent line
+        next_is_guard = fmt_next_nonblank_is_guard rest
+        cl = fmt_parse_clause_line geom line next_is_guard
+        wb = fmt_parse_where_line line in_where
+        fmt_format_group_line geom line tr tr_clean orig_indent rest prev_indent prev_text in_where cfg cl wb
+
+fn :: fmt_format_group_line FmtSig String String String Int [String] Int String Bool FmtConfig FmtClause FmtWhereBind => [String]
+      fmt_format_group_line geom _ "" _ _ rest prev_indent prev_text in_where cfg _ _ =
+        [""] :: (fmt_format_group_body geom rest prev_indent prev_text in_where cfg)
+      fmt_format_group_line geom _ tr _ 0 rest prev_indent prev_text in_where cfg _ _
+        | str_starts_with tr "--" = [tr] :: (fmt_format_group_body geom rest prev_indent prev_text in_where cfg)
+      fmt_format_group_line geom _ _ _ _ rest _ _ _ cfg (ClauseInfo c_lhs has_eq rhs) _ =
+        f_line = fmt_format_clause_line geom c_lhs has_eq rhs
+        [f_line] :: (fmt_format_group_body geom rest (fmt_sig_base_col_from geom) f_line False cfg)
+      fmt_format_group_line geom _ _ _ _ rest _ _ in_where cfg NoClause (WhereBindInfo w_lhs w_rhs) =
+        ind_w = indent_width cfg
+        f_line = fmt_format_where_line geom w_lhs w_rhs ind_w
+        [f_line] :: (fmt_format_group_body geom rest ((fmt_sig_base_col_from geom) + (2 * ind_w)) f_line in_where cfg)
+      fmt_format_group_line geom _ tr tr_clean orig_indent rest prev_indent prev_text in_where cfg NoClause NoWhereBind
+        | tr_clean == "where" = [(fmt_spaces ((fmt_sig_base_col_from geom) + (indent_width cfg))) + tr] :: (fmt_format_group_body geom rest ((fmt_sig_base_col_from geom) + (indent_width cfg)) "where" True cfg)
+        | str_starts_with tr_clean "||" = [(fmt_spaces ((fmt_sig_base_col_from geom) + (indent_width cfg))) + tr] :: (fmt_format_group_body geom rest ((fmt_sig_base_col_from geom) + (indent_width cfg)) tr False cfg)
+        | str_starts_with tr_clean "|" = fmt_format_guard_line geom tr orig_indent rest prev_indent prev_text cfg (indent_width cfg)
+        | str_starts_with tr "--" = [fmt_indent_body_line prev_indent prev_text tr (indent_width cfg)] :: (fmt_format_group_body geom rest prev_indent prev_text in_where cfg)
+        | otherwise = [fmt_indent_body_line prev_indent prev_text tr (indent_width cfg)] :: (fmt_format_group_body geom rest (fmt_next_body_indent prev_indent prev_text (indent_width cfg)) tr in_where cfg)
+
+fn :: fmt_format_guard_line FmtSig String Int [String] Int String FmtConfig Int => [String]
+      fmt_format_guard_line geom tr orig_indent rest prev_indent prev_text cfg ind_w =
+        base_g = (fmt_sig_base_col_from geom) + ind_w
+        g_ind = fmt_guard_indent base_g orig_indent prev_indent prev_text ind_w
+        [(fmt_spaces g_ind) + tr] :: (fmt_format_group_body geom rest g_ind tr False cfg)
+
+fn :: fmt_next_body_indent Int         String    Int   => Int
+      fmt_next_body_indent prev_indent prev_text ind_w =
+        prev_clean = fmt_trim (fmt_strip_comment prev_text)
+        fmt_next_body_indent_clean prev_indent prev_text prev_clean ind_w
+
+fn :: fmt_next_body_indent_clean Int         String    String     Int   => Int
+      fmt_next_body_indent_clean prev_indent prev_text prev_clean ind_w
+        | fmt_line_opens_block prev_text = prev_indent + ind_w
+        | fmt_line_closes_block prev_text = fmt_max (6 + ind_w) (prev_indent - ind_w)
+        | (str_starts_with prev_clean "|") AND (NOT (str_starts_with prev_clean "||")) = fmt_max (6 + ind_w) (prev_indent - ind_w)
+        | otherwise = prev_indent
+
+fn :: fmt_indent_body_line Int         String    String Int   => String
+      fmt_indent_body_line prev_indent prev_text tr     ind_w =
+        ind = fmt_next_body_indent prev_indent prev_text ind_w
+        (fmt_spaces ind) + tr
+
+-- ── Top-Level File Partitioning into Groups ──────────────────
+
+fn :: fmt_take_group_lines [String] [String] => ([String], [String])
+      fmt_take_group_lines []       acc      =  (acc, [])
+      fmt_take_group_lines (l:ls)   acc
+        | fmt_is_top_decl_line l = (acc, [l] :: ls)
+        | otherwise = fmt_take_group_lines ls (acc :: [l])
+
+fn :: fmt_format_top_lines [String] Int String FmtConfig => [String]
+      fmt_format_top_lines [] _ _ _ = []
+      fmt_format_top_lines (line:rest) prev_indent prev_text cfg =
+        sig = fmt_parse_sig_line line
+        fmt_dispatch_top_line line rest prev_indent prev_text cfg sig
+
+fn :: fmt_dispatch_top_line String [String] Int String FmtConfig FmtSig => [String]
+      fmt_dispatch_top_line _ rest _ _ cfg (SigInfo kind lhs_strs arrow_s ret_s cols a_col r_col) =
+        grp_split = fmt_take_group_lines rest []
+        fmt_run_sig_group (SigInfo kind lhs_strs arrow_s ret_s cols a_col r_col) grp_split cfg
+      fmt_dispatch_top_line line rest prev_indent prev_text cfg NoSig =
+        tr = fmt_trim line
+        fmt_format_non_sig_top tr rest prev_indent prev_text cfg
+
+fn :: fmt_run_sig_group FmtSig  ([String], [String]) FmtConfig => [String]
+      fmt_run_sig_group raw_sig (grp_lines, rem_lines) cfg     =
+        geom = fmt_compute_group_geometry raw_sig grp_lines cfg
+        sig_line = fmt_format_sig_line geom
+        body_lines = fmt_format_group_body geom grp_lines (fmt_sig_base_col_from geom) "" False cfg
+        [sig_line] :: body_lines :: (fmt_format_top_lines rem_lines 0 "" cfg)
+
+fn :: fmt_format_non_sig_top String [String] Int String FmtConfig => [String]
+      fmt_format_non_sig_top "" rest prev_indent prev_text cfg =
+        [""] :: (fmt_format_top_lines rest prev_indent prev_text cfg)
+      fmt_format_non_sig_top tr rest _ _ cfg
+        | fmt_is_top_decl_line tr = [tr] :: (fmt_format_top_lines rest 0 tr cfg)
+      fmt_format_non_sig_top tr rest prev_indent prev_text cfg
+        | str_starts_with tr "--" = [tr] :: (fmt_format_top_lines rest prev_indent prev_text cfg)
+        | otherwise =
+          ind_w = indent_width cfg
+          [fmt_indent_body_line prev_indent prev_text tr ind_w] :: (fmt_format_top_lines rest (fmt_next_body_indent prev_indent prev_text ind_w) tr cfg)
+
+-- ── Lexical Token Classification & Syntax Highlighting ───────
+
+fn :: fmt_is_digit Int => Bool
+      fmt_is_digit c   =  c >= 48 AND c <= 57
+
+fn :: fmt_is_upper Int => Bool
+      fmt_is_upper c   =  c >= 65 AND c <= 90
+
+fn :: fmt_is_lower Int => Bool
+      fmt_is_lower c   =  c >= 97 AND c <= 122
+
+fn :: fmt_is_ident_char Int => Bool
+      fmt_is_ident_char c   =  (fmt_is_upper c) OR (fmt_is_lower c) OR (fmt_is_digit c) OR c == 95
+
+fn :: fmt_is_keyword String => Bool
+      fmt_is_keyword w      =
+        w == "fn" OR w == "op" OR w == "type" OR w == "expand" OR w == "import" OR w == "module" OR w == "where" OR w == "otherwise" OR w == "with" OR w == "do" OR w == "mut" OR w == "in" OR w == "agent" OR w == "send" OR w == "to" OR w == "receive" OR w == "from" OR w == "try" OR w == "stop" OR w == "timeout" OR w == "global" OR w == "context" OR w == "shared" OR w == "hardware" OR w == "atomic" OR w == "region" OR w == "limit" OR w == "map" OR w == "filter" OR w == "fold"
+
+fn :: fmt_is_logic_op String => Bool
+      fmt_is_logic_op w      =
+        w == "AND" OR w == "OR" OR w == "XOR" OR w == "NOT" OR w == "and" OR w == "or" OR w == "xor" OR w == "not" OR w == "shl" OR w == "shr" OR w == "rotr" OR w == "rotl"
+
+fn :: fmt_is_bool_lit String => Bool
+      fmt_is_bool_lit w      =  w == "True" OR w == "False"
+
+fn :: fmt_classify_word String Bool  => String
+      fmt_classify_word ""     _     =  "plain"
+      fmt_classify_word w      in_fn
+        | fmt_is_keyword w = "keyword"
+        | fmt_is_logic_op w = "logic"
+        | fmt_is_bool_lit w = "bool"
+        | fmt_is_upper (str_char_at w 0) = "type"
+        | fmt_is_digit (str_char_at w 0) = "number"
+        | in_fn = "function"
+        | otherwise = "plain"
+
+-- ── Escaping for HTML, Pango, LaTeX, and RTF ─────────────────
+
+fn :: fmt_escape_html_loop String Int Int String => String
+      fmt_escape_html_loop s      pos len acc
+        | pos >= len = acc
+        | (str_char_at s pos) == 38 = fmt_escape_html_loop s (pos + 1) len (acc + "&amp;")
+        | (str_char_at s pos) == 60 = fmt_escape_html_loop s (pos + 1) len (acc + "&lt;")
+        | (str_char_at s pos) == 62 = fmt_escape_html_loop s (pos + 1) len (acc + "&gt;")
+        | otherwise = fmt_escape_html_loop s (pos + 1) len (acc + (str_slice s pos (pos + 1)))
+
+fn :: fmt_escape_html String => String
+      fmt_escape_html s      =  fmt_escape_html_loop s 0 (str_len s) ""
+
+fn :: fmt_escape_latex_loop String Int Int String => String
+      fmt_escape_latex_loop s      pos len acc
+        | pos >= len = acc
+        | (str_char_at s pos) == 92 = fmt_escape_latex_loop s (pos + 1) len (acc + (char_from_code 92) + "textbackslash" + (char_from_code 123) + (char_from_code 125))
+        | (str_char_at s pos) == 123 = fmt_escape_latex_loop s (pos + 1) len (acc + (char_from_code 92) + (char_from_code 123))
+        | (str_char_at s pos) == 125 = fmt_escape_latex_loop s (pos + 1) len (acc + (char_from_code 92) + (char_from_code 125))
+        | otherwise = fmt_escape_latex_loop s (pos + 1) len (acc + (str_slice s pos (pos + 1)))
+
+fn :: fmt_escape_latex String => String
+      fmt_escape_latex s      =  fmt_escape_latex_loop s 0 (str_len s) ""
+
+fn :: fmt_escape_rtf_loop String Int Int String => String
+      fmt_escape_rtf_loop s      pos len acc
+        | pos >= len = acc
+        | (str_char_at s pos) == 92 = fmt_escape_rtf_loop s (pos + 1) len (acc + (char_from_code 92) + (char_from_code 92))
+        | (str_char_at s pos) == 123 = fmt_escape_rtf_loop s (pos + 1) len (acc + (char_from_code 92) + (char_from_code 123))
+        | (str_char_at s pos) == 125 = fmt_escape_rtf_loop s (pos + 1) len (acc + (char_from_code 92) + (char_from_code 125))
+        | otherwise = fmt_escape_rtf_loop s (pos + 1) len (acc + (str_slice s pos (pos + 1)))
+
+fn :: fmt_escape_rtf String => String
+      fmt_escape_rtf s      =  fmt_escape_rtf_loop s 0 (str_len s) ""
+
+fn :: fmt_escape_for_target String FmtTarget     => String
+      fmt_escape_for_target s      FmtHtmlInline =  fmt_escape_html s
+      fmt_escape_for_target s      FmtHtmlCss    =  fmt_escape_html s
+      fmt_escape_for_target s      FmtPango      =  fmt_escape_html s
+      fmt_escape_for_target s      FmtLatex      =  fmt_escape_latex s
+      fmt_escape_for_target s      FmtRtf        =  fmt_escape_rtf s
+      fmt_escape_for_target s      _             =  s
+
+-- ── Palette & Span Rendering per Target and Theme ────────────
+
+fn :: fmt_cat_css_class String     => String
+      fmt_cat_css_class "keyword"  =  "rg-kw"
+      fmt_cat_css_class "logic"    =  "rg-logic"
+      fmt_cat_css_class "function" =  "rg-fn"
+      fmt_cat_css_class "type"     =  "rg-type"
+      fmt_cat_css_class "string"   =  "rg-str"
+      fmt_cat_css_class "interp"   =  "rg-interp"
+      fmt_cat_css_class "number"   =  "rg-num"
+      fmt_cat_css_class "bool"     =  "rg-bool"
+      fmt_cat_css_class "operator" =  "rg-op"
+      fmt_cat_css_class "pragma"   =  "rg-pragma"
+      fmt_cat_css_class "comment"  =  "rg-cmt"
+      fmt_cat_css_class _          =  ""
+
+fn :: fmt_cat_ansi16 String     => String
+      fmt_cat_ansi16 "keyword"  =  "1;35"
+      fmt_cat_ansi16 "logic"    =  "1;35"
+      fmt_cat_ansi16 "function" =  "1;34"
+      fmt_cat_ansi16 "type"     =  "33"
+      fmt_cat_ansi16 "string"   =  "32"
+      fmt_cat_ansi16 "interp"   =  "36"
+      fmt_cat_ansi16 "number"   =  "36"
+      fmt_cat_ansi16 "bool"     =  "1;36"
+      fmt_cat_ansi16 "operator" =  "36"
+      fmt_cat_ansi16 "pragma"   =  "1;32"
+      fmt_cat_ansi16 "comment"  =  "90"
+      fmt_cat_ansi16 _          =  ""
+
+fn :: fmt_cat_rgb String     FmtTheme      => String
+      fmt_cat_rgb _          FmtThemeNone  =  ""
+      fmt_cat_rgb "keyword"  FmtThemeDark  =  "198;120;221"
+      fmt_cat_rgb "logic"    FmtThemeDark  =  "198;120;221"
+      fmt_cat_rgb "function" FmtThemeDark  =  "97;175;239"
+      fmt_cat_rgb "type"     FmtThemeDark  =  "229;192;123"
+      fmt_cat_rgb "string"   FmtThemeDark  =  "152;195;121"
+      fmt_cat_rgb "interp"   FmtThemeDark  =  "86;182;194"
+      fmt_cat_rgb "number"   FmtThemeDark  =  "209;154;102"
+      fmt_cat_rgb "bool"     FmtThemeDark  =  "209;154;102"
+      fmt_cat_rgb "operator" FmtThemeDark  =  "86;182;194"
+      fmt_cat_rgb "pragma"   FmtThemeDark  =  "127;132;142"
+      fmt_cat_rgb "comment"  FmtThemeDark  =  "92;99;112"
+      fmt_cat_rgb "keyword"  FmtThemeLight =  "166;38;164"
+      fmt_cat_rgb "logic"    FmtThemeLight =  "166;38;164"
+      fmt_cat_rgb "function" FmtThemeLight =  "64;120;242"
+      fmt_cat_rgb "type"     FmtThemeLight =  "193;132;1"
+      fmt_cat_rgb "string"   FmtThemeLight =  "80;161;79"
+      fmt_cat_rgb "interp"   FmtThemeLight =  "1;132;188"
+      fmt_cat_rgb "number"   FmtThemeLight =  "152;104;1"
+      fmt_cat_rgb "bool"     FmtThemeLight =  "152;104;1"
+      fmt_cat_rgb "operator" FmtThemeLight =  "1;132;188"
+      fmt_cat_rgb "pragma"   FmtThemeLight =  "105;108;119"
+      fmt_cat_rgb "comment"  FmtThemeLight =  "160;161;167"
+      fmt_cat_rgb _          _             =  ""
+
+fn :: fmt_cat_hex String     FmtTheme      => String
+      fmt_cat_hex _          FmtThemeNone  =  ""
+      fmt_cat_hex "keyword"  FmtThemeDark  =  "c678dd"
+      fmt_cat_hex "logic"    FmtThemeDark  =  "c678dd"
+      fmt_cat_hex "function" FmtThemeDark  =  "61afef"
+      fmt_cat_hex "type"     FmtThemeDark  =  "e5c07b"
+      fmt_cat_hex "string"   FmtThemeDark  =  "98c379"
+      fmt_cat_hex "interp"   FmtThemeDark  =  "56b6c2"
+      fmt_cat_hex "number"   FmtThemeDark  =  "d19a66"
+      fmt_cat_hex "bool"     FmtThemeDark  =  "d19a66"
+      fmt_cat_hex "operator" FmtThemeDark  =  "56b6c2"
+      fmt_cat_hex "pragma"   FmtThemeDark  =  "7f848e"
+      fmt_cat_hex "comment"  FmtThemeDark  =  "5c6370"
+      fmt_cat_hex "keyword"  FmtThemeLight =  "a626a4"
+      fmt_cat_hex "logic"    FmtThemeLight =  "a626a4"
+      fmt_cat_hex "function" FmtThemeLight =  "4078f2"
+      fmt_cat_hex "type"     FmtThemeLight =  "c18401"
+      fmt_cat_hex "string"   FmtThemeLight =  "50a14f"
+      fmt_cat_hex "interp"   FmtThemeLight =  "0184bc"
+      fmt_cat_hex "number"   FmtThemeLight =  "986801"
+      fmt_cat_hex "bool"     FmtThemeLight =  "986801"
+      fmt_cat_hex "operator" FmtThemeLight =  "0184bc"
+      fmt_cat_hex "pragma"   FmtThemeLight =  "696c77"
+      fmt_cat_hex "comment"  FmtThemeLight =  "a0a1a7"
+      fmt_cat_hex _          _             =  ""
+
+fn :: fmt_cat_is_bold String     => Bool
+      fmt_cat_is_bold "keyword"  =  True
+      fmt_cat_is_bold "logic"    =  True
+      fmt_cat_is_bold "function" =  True
+      fmt_cat_is_bold "bool"     =  True
+      fmt_cat_is_bold "pragma"   =  True
+      fmt_cat_is_bold _          =  False
+
+fn :: fmt_cat_rtf_idx String     => String
+      fmt_cat_rtf_idx "keyword"  =  "1"
+      fmt_cat_rtf_idx "logic"    =  "1"
+      fmt_cat_rtf_idx "function" =  "2"
+      fmt_cat_rtf_idx "type"     =  "3"
+      fmt_cat_rtf_idx "string"   =  "4"
+      fmt_cat_rtf_idx "interp"   =  "5"
+      fmt_cat_rtf_idx "number"   =  "6"
+      fmt_cat_rtf_idx "bool"     =  "6"
+      fmt_cat_rtf_idx "operator" =  "5"
+      fmt_cat_rtf_idx "pragma"   =  "7"
+      fmt_cat_rtf_idx "comment"  =  "8"
+      fmt_cat_rtf_idx _          =  ""
+
+fn :: fmt_span_css String String => String
+      fmt_span_css esc    ""     =  esc
+      fmt_span_css esc    cls    =  "<span class=\"" + cls + "\">" + esc + "</span>"
+
+fn :: fmt_span_tty String String => String
+      fmt_span_tty text   ""     =  text
+      fmt_span_tty text   code   =  (char_from_code 27) + "[" + code + "m" + text + (char_from_code 27) + "[0m"
+
+fn :: fmt_span_truecolor String String Bool  => String
+      fmt_span_truecolor text   ""     _     =  text
+      fmt_span_truecolor text   rgb    True  =  (char_from_code 27) + "[1;38;2;" + rgb + "m" + text + (char_from_code 27) + "[0m"
+      fmt_span_truecolor text   rgb    False =  (char_from_code 27) + "[38;2;" + rgb + "m" + text + (char_from_code 27) + "[0m"
+
+fn :: fmt_span_html_inline String String Bool  => String
+      fmt_span_html_inline esc    ""     _     =  esc
+      fmt_span_html_inline esc    hex    True  =  "<span style=\"color:#" + hex + ";font-weight:bold\">" + esc + "</span>"
+      fmt_span_html_inline esc    hex    False =  "<span style=\"color:#" + hex + "\">" + esc + "</span>"
+
+fn :: fmt_span_pango String String Bool  => String
+      fmt_span_pango esc    ""     _     =  esc
+      fmt_span_pango esc    hex    True  =  "<span foreground=\"#" + hex + "\" weight=\"bold\">" + esc + "</span>"
+      fmt_span_pango esc    hex    False =  "<span foreground=\"#" + hex + "\">" + esc + "</span>"
+
+fn :: fmt_span_latex String String Bool  => String
+      fmt_span_latex esc    ""     _     =  esc
+      fmt_span_latex esc    hex    True  =
+        bs = char_from_code 92
+        lb = char_from_code 123
+        rb = char_from_code 125
+        bs + "textbf" + lb + bs + "textcolor[HTML]" + lb + hex + rb + lb + esc + rb + rb
+      fmt_span_latex esc    hex    False =
+        bs = char_from_code 92
+        lb = char_from_code 123
+        rb = char_from_code 125
+        bs + "textcolor[HTML]" + lb + hex + rb + lb + esc + rb
+
+fn :: fmt_span_rtf String String Bool  => String
+      fmt_span_rtf esc    ""     _     =  esc
+      fmt_span_rtf esc    cidx   True  =
+        (char_from_code 123) + (char_from_code 92) + "cf" + cidx + (char_from_code 92) + "b " + esc + (char_from_code 125)
+      fmt_span_rtf esc    cidx   False =
+        (char_from_code 123) + (char_from_code 92) + "cf" + cidx + " " + esc + (char_from_code 125)
+
+fn :: fmt_render_span String String  FmtTarget     FmtTheme     => String
+      fmt_render_span text   "plain" target        _            =  fmt_escape_for_target text target
+      fmt_render_span text   _       FmtPlain      _            =  text
+      fmt_render_span text   _       FmtMarkdown   _            =  text
+      fmt_render_span text   cat     FmtHtmlCss    _            =  fmt_span_css (fmt_escape_html text) (fmt_cat_css_class cat)
+      fmt_render_span text   _       target        FmtThemeNone =  fmt_escape_for_target text target
+      fmt_render_span text   cat     FmtTty        _            =  fmt_span_tty text (fmt_cat_ansi16 cat)
+      fmt_render_span text   cat     FmtTrueColor  theme        =  fmt_span_truecolor text (fmt_cat_rgb cat theme) (fmt_cat_is_bold cat)
+      fmt_render_span text   cat     FmtHtmlInline theme        =  fmt_span_html_inline (fmt_escape_html text) (fmt_cat_hex cat theme) (fmt_cat_is_bold cat)
+      fmt_render_span text   cat     FmtPango      theme        =  fmt_span_pango (fmt_escape_html text) (fmt_cat_hex cat theme) (fmt_cat_is_bold cat)
+      fmt_render_span text   cat     FmtLatex      theme        =  fmt_span_latex (fmt_escape_latex text) (fmt_cat_hex cat theme) (fmt_cat_is_bold cat)
+      fmt_render_span text   cat     FmtRtf        _            =  fmt_span_rtf (fmt_escape_rtf text) (fmt_cat_rtf_idx cat) (fmt_cat_is_bold cat)
+
+-- ── Single-Line Scanner & Highlighter ────────────────────────
+
+fn :: fmt_scan_ident_end String Int Int => Int
+      fmt_scan_ident_end s      pos len
+        | pos >= len = len
+        | fmt_is_ident_char (str_char_at s pos) = fmt_scan_ident_end s (pos + 1) len
+        | otherwise = pos
+
+fn :: fmt_scan_space_end String Int Int => Int
+      fmt_scan_space_end s      pos len
+        | pos >= len = len
+        | fmt_is_hspace (str_char_at s pos) = fmt_scan_space_end s (pos + 1) len
+        | otherwise = pos
+
+fn :: fmt_find_close_brace String Int Int => Int
+      fmt_find_close_brace s      pos len
+        | pos >= len = -1
+        | (str_char_at s pos) == 125 = pos + 1
+        | (str_char_at s pos) == 34 OR (str_char_at s pos) == 123 = -1
+        | otherwise = fmt_find_close_brace s (pos + 1) len
+
+fn :: fmt_render_nonempty String String FmtTarget FmtTheme => String
+      fmt_render_nonempty ""     _      _         _        =  ""
+      fmt_render_nonempty seg_s  cat    target    theme    =  fmt_render_span seg_s cat target theme
+
+fn :: fmt_highlight_dquote_brace String Int Int Int Int FmtTarget FmtTheme String => String
+      fmt_highlight_dquote_brace s pos end_pos seg_start -1 target theme acc =
+        fmt_highlight_dquote_loop s (pos + 1) end_pos seg_start target theme acc
+      fmt_highlight_dquote_brace s pos end_pos seg_start close_p target theme acc =
+        pre_out = fmt_render_nonempty (str_slice s seg_start pos) "string" target theme
+        interp_out = fmt_render_span (str_slice s pos close_p) "interp" target theme
+        fmt_highlight_dquote_loop s close_p end_pos close_p target theme (acc + pre_out + interp_out)
+
+fn :: fmt_highlight_dquote_loop String Int Int Int FmtTarget FmtTheme String => String
+      fmt_highlight_dquote_loop s pos end_pos seg_start target theme acc
+        | pos >= end_pos = acc + (fmt_render_nonempty (str_slice s seg_start end_pos) "string" target theme)
+        | (str_char_at s pos) == 92 = fmt_highlight_dquote_loop s (pos + 2) end_pos seg_start target theme acc
+        | (str_char_at s pos) == 123 =
+          fmt_highlight_dquote_brace s pos end_pos seg_start (fmt_find_close_brace s (pos + 1) (end_pos - 1)) target theme acc
+        | otherwise = fmt_highlight_dquote_loop s (pos + 1) end_pos seg_start target theme acc
+
+fn :: fmt_multi_op_at String Int Int => String
+      fmt_multi_op_at s      pos len
+        | (pos + 5) <= len AND (str_slice s pos (pos + 5)) == "||map" = "||map"
+        | (pos + 2) <= len AND ((str_slice s pos (pos + 2)) == "::" OR (str_slice s pos (pos + 2)) == "=>" OR (str_slice s pos (pos + 2)) == "->" OR (str_slice s pos (pos + 2)) == "||" OR (str_slice s pos (pos + 2)) == "==" OR (str_slice s pos (pos + 2)) == "!=" OR (str_slice s pos (pos + 2)) == "<=" OR (str_slice s pos (pos + 2)) == ">=") = str_slice s pos (pos + 2)
+        | otherwise = ""
+
+fn :: fmt_is_single_op Int => Bool
+      fmt_is_single_op ch  =
+        ch == 61 OR ch == 124 OR ch == 64 OR ch == 43 OR ch == 45 OR ch == 42 OR ch == 47 OR ch == 37 OR ch == 60 OR ch == 62
+
+fn :: fmt_comment_cat String => String
+      fmt_comment_cat cmt
+        | (str_starts_with cmt "-- @implements") OR (str_starts_with cmt "-- @tests") OR (str_starts_with cmt "-- @mitigates") = "pragma"
+        | otherwise = "comment"
+
+fn :: fmt_hl_space_step String Int Int Bool FmtTarget FmtTheme String Int => String
+      fmt_hl_space_step s pos len in_fn target theme acc sp_end =
+        sp_s = fmt_escape_for_target (str_slice s pos sp_end) target
+        fmt_highlight_line_loop s sp_end len in_fn target theme (acc + sp_s)
+
+fn :: fmt_hl_dquote_step String Int Int FmtTarget FmtTheme String Int => String
+      fmt_hl_dquote_step s pos len target theme acc q_end =
+        str_out = fmt_highlight_dquote_loop s pos q_end pos target theme ""
+        fmt_highlight_line_loop s q_end len False target theme (acc + str_out)
+
+fn :: fmt_hl_squote_step String Int Int FmtTarget FmtTheme String Int => String
+      fmt_hl_squote_step s pos len target theme acc q_end =
+        str_out = fmt_render_span (str_slice s pos q_end) "string" target theme
+        fmt_highlight_line_loop s q_end len False target theme (acc + str_out)
+
+fn :: fmt_hl_pragma_step String Int Int FmtTarget FmtTheme String Int => String
+      fmt_hl_pragma_step s pos len target theme acc w_end =
+        prag_out = fmt_render_span (str_slice s pos w_end) "pragma" target theme
+        fmt_highlight_line_loop s w_end len False target theme (acc + prag_out)
+
+fn :: fmt_hl_mop_step String Int Int FmtTarget FmtTheme String String => String
+      fmt_hl_mop_step s pos len target theme acc mop =
+        op_out = fmt_render_span mop "operator" target theme
+        fmt_highlight_line_loop s (pos + (str_len mop)) len (mop == "::") target theme (acc + op_out)
+
+fn :: fmt_hl_ident_step String Int Int Bool FmtTarget FmtTheme String Int => String
+      fmt_hl_ident_step s pos len in_fn target theme acc w_end =
+        w = str_slice s pos w_end
+        cat = fmt_classify_word w in_fn
+        w_out = fmt_render_span w cat target theme
+        fmt_highlight_line_loop s w_end len (in_fn AND cat == "function") target theme (acc + w_out)
+
+fn :: fmt_highlight_line_loop String Int Int Bool FmtTarget FmtTheme String => String
+      fmt_highlight_line_loop s pos len in_fn target theme acc
+        | pos >= len = acc
+        | fmt_is_hspace (str_char_at s pos) = fmt_hl_space_step s pos len in_fn target theme acc (fmt_scan_space_end s pos len)
+        | (pos + 1) < len AND (str_char_at s pos) == 45 AND (str_char_at s (pos + 1)) == 45 = acc + (fmt_render_span (str_slice s pos len) (fmt_comment_cat (str_slice s pos len)) target theme)
+        | (str_char_at s pos) == 34 = fmt_hl_dquote_step s pos len target theme acc (fmt_skip_quoted s (pos + 1) len 34)
+        | (str_char_at s pos) == 39 = fmt_hl_squote_step s pos len target theme acc (fmt_skip_quoted s (pos + 1) len 39)
+        | (str_char_at s pos) == 64 AND (pos + 1) < len AND (fmt_is_ident_char (str_char_at s (pos + 1))) = fmt_hl_pragma_step s pos len target theme acc (fmt_scan_ident_end s (pos + 1) len)
+        | (fmt_multi_op_at s pos len) != "" = fmt_hl_mop_step s pos len target theme acc (fmt_multi_op_at s pos len)
+        | fmt_is_ident_char (str_char_at s pos) = fmt_hl_ident_step s pos len in_fn target theme acc (fmt_scan_ident_end s pos len)
+        | fmt_is_single_op (str_char_at s pos) = fmt_highlight_line_loop s (pos + 1) len False target theme (acc + (fmt_render_span (str_slice s pos (pos + 1)) "operator" target theme))
+        | otherwise = fmt_highlight_line_loop s (pos + 1) len False target theme (acc + (fmt_escape_for_target (str_slice s pos (pos + 1)) target))
+
+fn :: fmt_line_starts_clause String => Bool
+      fmt_line_starts_clause line   =
+        ind = fmt_leading_indent line
+        tr = fmt_trim line
+        ind == 6 AND tr != "" AND (fmt_is_lower (str_char_at tr 0)) AND (NOT (fmt_is_keyword (fmt_str_head (fmt_map_tok_strs (fmt_scan_tokens tr)))))
+
+fn :: fmt_map_tok_strs [FmtToken] => [String]
+      fmt_map_tok_strs []         =  []
+      fmt_map_tok_strs ((FmtTok s _):rest) = [s] :: (fmt_map_tok_strs rest)
+
+fn :: fmt highlight line String FmtTarget FmtTheme => String
+      fmt highlight line line FmtPlain _ = line
+      fmt highlight line line FmtMarkdown _ = line
+      fmt highlight line line target theme =
+        fmt_highlight_line_loop line 0 (str_len line) (fmt_line_starts_clause line) target theme ""
+
+fn :: fmt_highlight_lines [String] FmtTarget FmtTheme => [String]
+      fmt_highlight_lines []       _         _        =  []
+      fmt_highlight_lines (l:ls)   target    theme    =
+        [fmt highlight line l target theme] :: (fmt_highlight_lines ls target theme)
+
+fn :: fmt_join_rtf_lines [String] => String
+      fmt_join_rtf_lines []       =  ""
+      fmt_join_rtf_lines (l:[])   =  l + "\\line" + (char_from_code 10)
+      fmt_join_rtf_lines (l:ls)   =  l + "\\line" + (char_from_code 10) + (fmt_join_rtf_lines ls)
+
+-- ── Document Wrappers per Target ─────────────────────────────
+
+fn :: fmt_html_pre_open FmtTheme      => String
+      fmt_html_pre_open FmtThemeLight =  "<pre class=\"ridgun-code\" style=\"background:#fafafa;color:#383a42;padding:12px;border-radius:6px;overflow-x:auto\"><code class=\"language-ridgun\">"
+      fmt_html_pre_open FmtThemeDark  =  "<pre class=\"ridgun-code\" style=\"background:#282c34;color:#abb2bf;padding:12px;border-radius:6px;overflow-x:auto\"><code class=\"language-ridgun\">"
+      fmt_html_pre_open FmtThemeNone  =  "<pre class=\"ridgun-code\"><code class=\"language-ridgun\">"
+
+fn :: fmt_rtf_colortbl FmtTheme      => String
+      fmt_rtf_colortbl FmtThemeLight =
+        '{\colortbl;\red166\green38\blue164;\red64\green120\blue242;\red193\green132\blue1;\red80\green161\blue79;\red1\green132\blue188;\red152\green104\blue1;\red105\green108\blue119;\red160\green161\blue167;}'
+      fmt_rtf_colortbl _             =
+        '{\colortbl;\red198\green120\blue221;\red97\green175\blue239;\red229\green192\blue123;\red152\green195\blue121;\red86\green182\blue194;\red209\green154\blue102;\red127\green132\blue142;\red92\green99\blue112;}'
+
+fn :: fmt_wrap_target_doc [String] FmtTarget     FmtTheme => String
+      fmt_wrap_target_doc lines    FmtPlain      _        =  fmt_join_lines lines
+      fmt_wrap_target_doc lines    FmtTty        _        =  fmt_join_lines lines
+      fmt_wrap_target_doc lines    FmtTrueColor  _        =  fmt_join_lines lines
+      fmt_wrap_target_doc lines    FmtHtmlInline theme    =
+        (fmt_html_pre_open theme) + (char_from_code 10) + (fmt_join_lines lines) + "</code></pre>" + (char_from_code 10)
+      fmt_wrap_target_doc lines    FmtHtmlCss    _        =
+        "<pre class=\"ridgun-code\"><code class=\"language-ridgun\">" + (char_from_code 10) + (fmt_join_lines lines) + "</code></pre>" + (char_from_code 10)
+      fmt_wrap_target_doc lines    FmtMarkdown   _        =
+        "```ridgun" + (char_from_code 10) + (fmt_join_lines lines) + "```" + (char_from_code 10)
+      fmt_wrap_target_doc lines    FmtPango      _        =
+        "<tt>" + (char_from_code 10) + (fmt_join_lines lines) + "</tt>" + (char_from_code 10)
+      fmt_wrap_target_doc lines    FmtLatex      _        =
+        '\begin{Verbatim}[commandchars=\\\{\}]' + (char_from_code 10) + (fmt_join_lines lines) + '\end{Verbatim}' + (char_from_code 10)
+      fmt_wrap_target_doc lines    FmtRtf        theme    =
+        '{\rtf1\ansi\deff0{\fonttbl{\f0 Courier New;}}' + (fmt_rtf_colortbl theme) + '\f0\fs20 ' + (char_from_code 10) + (fmt_join_rtf_lines lines) + '}' + (char_from_code 10)
+
+fn :: fmt html stylesheet FmtTheme      => String
+      fmt html stylesheet FmtThemeLight =
+        nl = char_from_code 10
+        '<style>' + nl + '.ridgun-code { background: #fafafa; color: #383a42; padding: 12px; border-radius: 6px; overflow-x: auto; }' + nl + '.rg-kw, .rg-logic { color: #a626a4; font-weight: bold; }' + nl + '.rg-fn { color: #4078f2; font-weight: bold; }' + nl + '.rg-type { color: #c18401; }' + nl + '.rg-str { color: #50a14f; }' + nl + '.rg-interp, .rg-op { color: #0184bc; }' + nl + '.rg-num { color: #986801; }' + nl + '.rg-bool { color: #986801; font-weight: bold; }' + nl + '.rg-pragma { color: #696c77; font-weight: bold; }' + nl + '.rg-cmt { color: #a0a1a7; font-style: italic; }' + nl + '</style>' + nl
+      fmt html stylesheet _             =
+        nl = char_from_code 10
+        '<style>' + nl + '.ridgun-code { background: #282c34; color: #abb2bf; padding: 12px; border-radius: 6px; overflow-x: auto; }' + nl + '.rg-kw, .rg-logic { color: #c678dd; font-weight: bold; }' + nl + '.rg-fn { color: #61afef; font-weight: bold; }' + nl + '.rg-type { color: #e5c07b; }' + nl + '.rg-str { color: #98c379; }' + nl + '.rg-interp, .rg-op { color: #56b6c2; }' + nl + '.rg-num { color: #d19a66; }' + nl + '.rg-bool { color: #d19a66; font-weight: bold; }' + nl + '.rg-pragma { color: #7f848e; font-weight: bold; }' + nl + '.rg-cmt { color: #5c6370; font-style: italic; }' + nl + '</style>' + nl
+
+-- ── Public Entry Points ──────────────────────────────────────
+
+fn :: fmt source with config String FmtConfig => String
+      fmt source with config src cfg =
+        raw_lines = fmt_split_raw_lines src
+        formatted_lines = fmt_format_top_lines raw_lines 0 "" cfg
+        target = target_format cfg
+        theme = color_theme cfg
+        highlighted = fmt_highlight_lines formatted_lines target theme
+        fmt_wrap_target_doc highlighted target theme
+
+fn :: format ridgun source String => String
+      format ridgun source src    =  fmt source with config src (default fmt config)
+
+fn :: fmt to tty with theme String FmtTheme => String
+      fmt to tty with theme src theme =
+        fmt source with config src (FmtConfig 2 4 80 True FmtTty theme)
+
+fn :: fmt to tty String => String
+      fmt to tty src    =  fmt to tty with theme src FmtThemeDark
+
+fn :: fmt to truecolor with theme String FmtTheme => String
+      fmt to truecolor with theme src theme =
+        fmt source with config src (FmtConfig 2 4 80 True FmtTrueColor theme)
+
+fn :: fmt to truecolor String => String
+      fmt to truecolor src    =  fmt to truecolor with theme src FmtThemeDark
+
+fn :: fmt to html with theme String FmtTheme => String
+      fmt to html with theme src theme =
+        fmt source with config src (FmtConfig 2 4 80 True FmtHtmlInline theme)
+
+fn :: fmt to html String => String
+      fmt to html src    =  fmt to html with theme src FmtThemeDark
+
+fn :: fmt to html css String => String
+      fmt to html css src    =
+        fmt source with config src (FmtConfig 2 4 80 True FmtHtmlCss FmtThemeDark)
+
+fn :: fmt to markdown String => String
+      fmt to markdown src    =
+        fmt source with config src (FmtConfig 2 4 80 True FmtMarkdown FmtThemeNone)
+
+fn :: fmt to pango with theme String FmtTheme => String
+      fmt to pango with theme src theme =
+        fmt source with config src (FmtConfig 2 4 80 True FmtPango theme)
+
+fn :: fmt to pango String => String
+      fmt to pango src    =  fmt to pango with theme src FmtThemeDark
+
+fn :: fmt to latex with theme String FmtTheme => String
+      fmt to latex with theme src theme =
+        fmt source with config src (FmtConfig 2 4 80 True FmtLatex theme)
+
+fn :: fmt to latex String => String
+      fmt to latex src    =  fmt to latex with theme src FmtThemeDark
+
+fn :: fmt to rtf with theme String FmtTheme => String
+      fmt to rtf with theme src theme =
+        fmt source with config src (FmtConfig 2 4 80 True FmtRtf theme)
+
+fn :: fmt to rtf String => String
+      fmt to rtf src    =  fmt to rtf with theme src FmtThemeDark

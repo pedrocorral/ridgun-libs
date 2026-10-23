@@ -57,3 +57,9 @@ Conventions: `snake_case`; ids end in `_id`; timestamps end in `_at` (UTC ISO-86
 | col_count | Int | Number of columns `c` in a 2D typed tensor (`>= 0`) | TENSOR | `tensor.rg`, `crypto.rg` |
 | row_idx | Int | Zero-based row subscript index (`0..row_count-1`) | TENSOR | `tensor.rg`, `crypto.rg` |
 | col_idx | Int | Zero-based column subscript index (`0..col_count-1`) | TENSOR | `tensor.rg`, `crypto.rg` |
+| indent_width | Int | Spaces per structural indentation level (`>= 1`, default `2`) | FMT | `fmt.rg` |
+| max_align_params | Int | Maximum parameter count eligible for 2D tabular column alignment (`>= 0`, default `4`) | FMT | `fmt.rg` |
+| max_line_width | Int | Maximum line width in columns for 2D signature/clause alignment (`>= 20`, default `80`) | FMT | `fmt.rg` |
+| is_aligned | Bool | Whether 2D tabular signature, clause, and `where` alignment is enabled | FMT | `fmt.rg` |
+| target_format | String | Output format identifier (`plain`, `tty`, `truecolor`, `html_inline`, `html_css`, `markdown`, `pango`, `latex`, `rtf`) | FMT | `fmt.rg` |
+| color_theme | String | Syntax highlighting theme identifier (`none`, `dark`, `light`) | FMT | `fmt.rg` |

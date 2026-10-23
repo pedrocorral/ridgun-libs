@@ -25,5 +25,6 @@ status: approved
 | URI & HTTP/1.1 Protocol Library | Pure-Ridgun RFC 3986 URI parsing (`scheme`, `host`, `port`, `path`, `query`) and RFC 9112 HTTP/1.1 request/response building, parsing, headers, and status reason phrases | HTTP |
 | Agent Concurrency Library | Pure-Ridgun Native Agent Model (`Agent In Out`, `agent`, `send ... to`, `receive from`, `try receive from`, `stop`, `agent alive`) lifecycle, request-reply, timeout-bounded polling, batch dispatch, relay, and stateful Counter, Log, and Key-Value agents | AGENT |
 | Typed Tensor & Linear Algebra Library | Pure-Ridgun first-class typed tensors (`Tensor[Int * r * c]`, `Tensor[U64 * r * c]`, `Tensor[Real * r * c]`, `Tensor[Byte * n]`), dimension-binding patterns, subscript row/column views (`m_(r,)`, `m_(,c)`), in-place `map f in`, bitwise Hadamard operations (`a_ij xor b_ij`), and Einstein matrix contraction (`a_ik @ b_kj`) | TENSOR |
+| Source Code Formatter & Rich Syntax Highlighter Library | Pure-Ridgun configurable 2D tabular source formatter (generalising `stable format`) and optional lexical syntax highlighter emitting Plain Text, ANSI 16-color TTY, 24-bit TrueColor, Inline HTML, CSS-class HTML, Markdown, Pango Markup, LaTeX, and RTF | FMT |
 
 Domain codes are UPPERCASE, ≤ 8 chars, and name folders in `functional/`, `api/`, and `docs/tests/*/`.

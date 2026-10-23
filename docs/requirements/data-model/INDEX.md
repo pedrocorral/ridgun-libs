@@ -10,3 +10,4 @@ Read this when: persistence, API schemas, migrations, or core library ADT defini
 | `DM-IoResult.md` | Extensible `IoError` and `IoResult` high-level I/O model | Working on `io.rg` |
 | `DM-Agent.md` | `AgentStatus`, `AgentReply`, `KvCmd`, and stateful actor concurrency model | Working on `agent.rg` |
 | `DM-Tensor.md` | Typed `Tensor[...]` dimension bindings, subscript views, and `BlaMka` block model | Working on `tensor.rg`, `crypto.rg`, `argon2id.rg` |
+| `DM-Formatter.md` | `FmtConfig`, `FmtTarget`, `FmtTheme`, and syntax token model | Working on `fmt.rg` |
