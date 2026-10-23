@@ -22,7 +22,7 @@
 | API-MATH-001 | TS-MATH-001 | src/main/ridgun/lib/math.rg | src/test/ridgun/test math.rg | ok |
 | API-PATH-001 | TS-PATH-001 | src/main/ridgun/lib/path.rg | src/test/ridgun/test path.rg | ok |
 | API-POSIX-001 | TS-POSIX-001 | src/main/ridgun/lib/posix.rg | src/test/ridgun/test posix.rg | ok |
-| API-REGEX-001 | TS-REGEX-001 | — | — | no code, spec not automated |
+| API-REGEX-001 | TS-REGEX-001 | src/main/ridgun/lib/regex.rg | src/test/ridgun/test regex.rg | ok |
 | API-SOCK-001 | TS-SOCK-004 | src/main/ridgun/lib/socket.rg | src/test/ridgun/test socket.rg | ok |
 | API-STR-001 | TS-STR-001 | src/main/ridgun/lib/str.rg | src/test/ridgun/test str.rg | ok |
 | API-TENSOR-001 | TS-TENSOR-001 | src/main/ridgun/lib/tensor.rg | src/test/ridgun/test tensor.rg | ok |
@@ -56,7 +56,7 @@
 | FR-PATH-001 | TS-PATH-001 | src/main/ridgun/lib/path.rg | src/test/ridgun/test path.rg | ok |
 | FR-POSIX-001 | TS-POSIX-001 | src/main/ridgun/lib/posix.rg | src/test/ridgun/test posix.rg | ok |
 | FR-POSIX-002 | TS-POSIX-002 | src/main/ridgun/lib/posix.rg | src/test/ridgun/test posix.rg | ok |
-| FR-REGEX-001 | TS-REGEX-001 | — | — | no code, spec not automated |
+| FR-REGEX-001 | TS-REGEX-001 | src/main/ridgun/lib/regex.rg | src/test/ridgun/test regex.rg | ok |
 | FR-SOCK-001 | TS-SOCK-001 | src/main/ridgun/lib/socket.rg | src/test/ridgun/test socket.rg | ok |
 | FR-SOCK-002 | TS-SOCK-002 | src/main/ridgun/lib/socket.rg | src/test/ridgun/test socket.rg | ok |
 | FR-SOCK-003 | TS-SOCK-003 | src/main/ridgun/lib/socket.rg | src/test/ridgun/test socket.rg | ok |

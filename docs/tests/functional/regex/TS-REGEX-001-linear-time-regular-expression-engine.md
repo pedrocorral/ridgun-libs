@@ -3,8 +3,8 @@ id: TS-REGEX-001
 title: Verify linear-time Thompson NFA regular expression matching, search, replacement, and splitting
 level: unit
 covers: [FR-REGEX-001, API-REGEX-001]
-status: planned
-automated_in: []
+status: automated
+automated_in: ["src/test/ridgun/test regex.rg"]
 ---
 # TS-REGEX-001 — Verify linear-time Thompson NFA regular expression matching, search, replacement, and splitting
 

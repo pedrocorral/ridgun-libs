@@ -2,7 +2,7 @@
 id: FR-REGEX-001
 title: Provide linear-time Thompson NFA regular expression matching, search, replacement, and splitting
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: REGEX
 depends_on: []
