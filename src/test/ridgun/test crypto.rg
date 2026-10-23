@@ -9,7 +9,6 @@
 import test
 import posix
 import crypto
-import argon2id
 
 fn :: range bytes Int Int => [Int]
       range bytes cur hi  =
