@@ -316,11 +316,11 @@ fn :: ag log step LogState String => LogState String
       ag log step st       cmd    =
         | cmd == "__READ__"  = (st, log_buf st)
         | cmd == "__CLEAR__" =
-          st2 = st with log_buf: ""
+          st2 = st with log_buf = ""
           (st2, "")
         | otherwise =
           nb  = ag log join (log_buf st) (log_sep st) cmd
-          st2 = st with log_buf: nb
+          st2 = st with log_buf = nb
           (st2, nb)
 
 -- @implements FR-AGENT-001

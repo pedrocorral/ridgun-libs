@@ -352,7 +352,7 @@ fn :: a2 compress blk8 Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 *
       a2 compress blk8 x y =
         r_ij = x_ij xor y_ij
         z_ij = r_ij
-        ||map a2 blamka p16 in z_(i,)
+        map a2 blamka p16 in z_(i,)
         z2   = a2 blamka cols loop z 0
         z2_ij xor r_ij
 

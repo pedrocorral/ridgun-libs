@@ -14,8 +14,6 @@
 -- ============================================================
 
 type CT16    = ct0: A, ct1: A, ct2: A, ct3: A, ct4: A, ct5: A, ct6: A, ct7: A, ct8: A, ct9: A, ct10: A, ct11: A, ct12: A, ct13: A, ct14: A, ct15: A
-type CP16    = cp0: Int, cp1: Int, cp2: Int, cp3: Int, cp4: Int, cp5: Int, cp6: Int, cp7: Int, cp8: Int, cp9: Int, cp10: Int, cp11: Int, cp12: Int, cp13: Int, cp14: Int, cp15: Int
-type CP32    = cplo: CP16, cphi: CP16
 type CPbkCtx = cptbl: CT16, cpipad: String, cpopad: String
 type CA2Ctx  = cr_pass: Int, cs_slice: Int, cl_lane: Int, cp_lanes: Int, cq_cols: Int, cseg_len: Int, ct_iters: Int
 
@@ -273,41 +271,69 @@ fn :: be32 bytes Int => String
 
 fn :: c get16 CT16 Int => A
       c get16 row  idx =
-        | idx == 0  = ct0 row
-        | idx == 1  = ct1 row
-        | idx == 2  = ct2 row
-        | idx == 3  = ct3 row
-        | idx == 4  = ct4 row
-        | idx == 5  = ct5 row
-        | idx == 6  = ct6 row
-        | idx == 7  = ct7 row
-        | idx == 8  = ct8 row
-        | idx == 9  = ct9 row
-        | idx == 10 = ct10 row
-        | idx == 11 = ct11 row
-        | idx == 12 = ct12 row
-        | idx == 13 = ct13 row
-        | idx == 14 = ct14 row
-        | otherwise = ct15 row
+        | idx < 8 =
+          | idx < 4 =
+            | idx < 2 =
+              | idx == 0  = ct0 row
+              | otherwise = ct1 row |.
+            | otherwise =
+              | idx == 2  = ct2 row
+              | otherwise = ct3 row |. |.
+          | otherwise =
+            | idx < 6 =
+              | idx == 4  = ct4 row
+              | otherwise = ct5 row |.
+            | otherwise =
+              | idx == 6  = ct6 row
+              | otherwise = ct7 row |. |.
+        | otherwise =
+          | idx < 12 =
+            | idx < 10 =
+              | idx == 8  = ct8 row
+              | otherwise = ct9 row |.
+            | otherwise =
+              | idx == 10 = ct10 row
+              | otherwise = ct11 row |. |.
+          | otherwise =
+            | idx < 14 =
+              | idx == 12 = ct12 row
+              | otherwise = ct13 row |.
+            | otherwise =
+              | idx == 14 = ct14 row
+              | otherwise = ct15 row
 
 fn :: c set16 CT16 Int A   => CT16
       c set16 m    idx val =
-        | idx == 0  = m with ct0 = val
-        | idx == 1  = m with ct1 = val
-        | idx == 2  = m with ct2 = val
-        | idx == 3  = m with ct3 = val
-        | idx == 4  = m with ct4 = val
-        | idx == 5  = m with ct5 = val
-        | idx == 6  = m with ct6 = val
-        | idx == 7  = m with ct7 = val
-        | idx == 8  = m with ct8 = val
-        | idx == 9  = m with ct9 = val
-        | idx == 10 = m with ct10 = val
-        | idx == 11 = m with ct11 = val
-        | idx == 12 = m with ct12 = val
-        | idx == 13 = m with ct13 = val
-        | idx == 14 = m with ct14 = val
-        | otherwise = m with ct15 = val
+        | idx < 8 =
+          | idx < 4 =
+            | idx < 2 =
+              | idx == 0  = m with ct0 = val
+              | otherwise = m with ct1 = val |.
+            | otherwise =
+              | idx == 2  = m with ct2 = val
+              | otherwise = m with ct3 = val |. |.
+          | otherwise =
+            | idx < 6 =
+              | idx == 4  = m with ct4 = val
+              | otherwise = m with ct5 = val |.
+            | otherwise =
+              | idx == 6  = m with ct6 = val
+              | otherwise = m with ct7 = val |. |.
+        | otherwise =
+          | idx < 12 =
+            | idx < 10 =
+              | idx == 8  = m with ct8 = val
+              | otherwise = m with ct9 = val |.
+            | otherwise =
+              | idx == 10 = m with ct10 = val
+              | otherwise = m with ct11 = val |. |.
+          | otherwise =
+            | idx < 14 =
+              | idx == 12 = m with ct12 = val
+              | otherwise = m with ct13 = val |.
+            | otherwise =
+              | idx == 14 = m with ct14 = val
+              | otherwise = m with ct15 = val
 
 fn :: c build b16 Int  => CT16
       c build b16 base =
@@ -323,8 +349,7 @@ fn :: c get b256 CT16 Int Int => String
 
 fn :: c hex nib Int => Int
       c hex nib c   =
-        | c < 58    = c - 48
-        | otherwise = c - 87
+        (c and 15) + ((c shr 6) * 9)
 
 fn :: c hex pair CT16 String Int => String
       c hex pair tbl h off =
@@ -358,107 +383,49 @@ fn :: c hex2raw32 CT16 String => String
         w1 = h2 + h3
         w0 + w1
 
-fn :: c hex sp256 Int => Int
-      c hex sp256 c   =
-        | c <= 48   = 0
-        | c == 49   = 1
-        | c == 50   = 256
-        | c == 51   = 257
-        | c == 52   = 65536
-        | c == 53   = 65537
-        | c == 54   = 65792
-        | c == 55   = 65793
-        | c == 56   = 16777216
-        | c == 57   = 16777217
-        | c == 97   = 16777472
-        | c == 98   = 16777473
-        | c == 99   = 16842752
-        | c == 100  = 16842753
-        | c == 101  = 16843008
-        | otherwise = 16843009
+fn :: c hex8 word String Int => U64
+      c hex8 word h off =
+        n0 = c hex nib (str char at h off)
+        n1 = c hex nib (str char at h (off + 1))
+        n2 = c hex nib (str char at h (off + 2))
+        n3 = c hex nib (str char at h (off + 3))
+        n4 = c hex nib (str char at h (off + 4))
+        n5 = c hex nib (str char at h (off + 5))
+        n6 = c hex nib (str char at h (off + 6))
+        n7 = c hex nib (str char at h (off + 7))
+        (n0 shl 28) or (n1 shl 24) or (n2 shl 20) or (n3 shl 16) or (n4 shl 12) or (n5 shl 8) or (n6 shl 4) or n7
 
-fn :: c hb String Int => Int
-      c hb h      off =
-        ((c hex sp256 (str char at h off)) * 4294967296) + (c hex sp256 (str char at h (off + 1)))
+fn :: c bxor acc8 Tensor[U64 * 8] String => Tensor[U64 * 8]
+      c bxor acc8 acc h =
+        acc_(0) = acc_(0) xor (c hex8 word h 0)
+        acc_(1) = acc_(1) xor (c hex8 word h 8)
+        acc_(2) = acc_(2) xor (c hex8 word h 16)
+        acc_(3) = acc_(3) xor (c hex8 word h 24)
+        acc_(4) = acc_(4) xor (c hex8 word h 32)
+        acc_(5) = acc_(5) xor (c hex8 word h 40)
+        acc_(6) = acc_(6) xor (c hex8 word h 48)
+        acc_(7) = acc_(7) xor (c hex8 word h 56)
+        acc
 
-fn :: c add cp16 CP16 String Int => CP16
-      c add cp16 p h base =
-        CP16 ((cp0 p) + (c hb h base)) ((cp1 p) + (c hb h (base + 2))) ((cp2 p) + (c hb h (base + 4))) ((cp3 p) + (c hb h (base + 6))) ((cp4 p) + (c hb h (base + 8))) ((cp5 p) + (c hb h (base + 10))) ((cp6 p) + (c hb h (base + 12))) ((cp7 p) + (c hb h (base + 14))) ((cp8 p) + (c hb h (base + 16))) ((cp9 p) + (c hb h (base + 18))) ((cp10 p) + (c hb h (base + 20))) ((cp11 p) + (c hb h (base + 22))) ((cp12 p) + (c hb h (base + 24))) ((cp13 p) + (c hb h (base + 26))) ((cp14 p) + (c hb h (base + 28))) ((cp15 p) + (c hb h (base + 30)))
+fn :: c word32 to raw4 CT16 U64 => String
+      c word32 to raw4 tbl w =
+        b0 = c get b256 tbl ((w shr 28) and 15) ((w shr 24) and 15)
+        b1 = c get b256 tbl ((w shr 20) and 15) ((w shr 16) and 15)
+        b2 = c get b256 tbl ((w shr 12) and 15) ((w shr 8) and 15)
+        b3 = c get b256 tbl ((w shr 4) and 15)  (w and 15)
+        (b0 + b1) + (b2 + b3)
 
-fn :: c add cp32 CP32 String => CP32
-      c add cp32 acc  h      =
-        CP32 (c add cp16 (cplo acc) h 0) (c add cp16 (cphi acc) h 32)
-
-fn :: c norm sp256 Int => Int
-      c norm sp256 x   =
-        b0 = x % 2
-        b1 = (x / 256) % 2
-        b2 = (x / 65536) % 2
-        b3 = (x / 16777216) % 2
-        b4 = (x / 4294967296) % 2
-        b5 = (x / 1099511627776) % 2
-        b6 = (x / 281474976710656) % 2
-        b7 = (x / 72057594037927936) % 2
-        b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216) + (b4 * 4294967296) + (b5 * 1099511627776) + (b6 * 281474976710656) + (b7 * 72057594037927936)
-
-fn :: c norm cp16 CP16 => CP16
-      c norm cp16 p    =
-        CP16 (c norm sp256 (cp0 p)) (c norm sp256 (cp1 p)) (c norm sp256 (cp2 p)) (c norm sp256 (cp3 p)) (c norm sp256 (cp4 p)) (c norm sp256 (cp5 p)) (c norm sp256 (cp6 p)) (c norm sp256 (cp7 p)) (c norm sp256 (cp8 p)) (c norm sp256 (cp9 p)) (c norm sp256 (cp10 p)) (c norm sp256 (cp11 p)) (c norm sp256 (cp12 p)) (c norm sp256 (cp13 p)) (c norm sp256 (cp14 p)) (c norm sp256 (cp15 p))
-
-fn :: c norm cp32 CP32 => CP32
-      c norm cp32 acc  =
-        CP32 (c norm cp16 (cplo acc)) (c norm cp16 (cphi acc))
-
-fn :: c step cp32 CP32 String Int => CP32
-      c step cp32 acc h rem =
-        | (rem % 64) == 0 = c norm cp32 (c add cp32 acc h)
-        | otherwise       = c add cp32 acc h
-
-fn :: c sp256 nib Int => Int
-      c sp256 nib w   =
-        (w % 2) + (((w / 256) % 2) * 2) + (((w / 65536) % 2) * 4) + (((w / 16777216) % 2) * 8)
-
-fn :: c sp256 to raw CT16 Int => String
-      c sp256 to raw tbl x =
-        c get b256 tbl (c sp256 nib (x / 4294967296)) (c sp256 nib (x % 4294967296))
-
-fn :: c cp16 to raw CT16 CP16 => String
-      c cp16 to raw tbl p =
-        b0  = c sp256 to raw tbl (cp0 p)
-        b1  = c sp256 to raw tbl (cp1 p)
-        b2  = c sp256 to raw tbl (cp2 p)
-        b3  = c sp256 to raw tbl (cp3 p)
-        b4  = c sp256 to raw tbl (cp4 p)
-        b5  = c sp256 to raw tbl (cp5 p)
-        b6  = c sp256 to raw tbl (cp6 p)
-        b7  = c sp256 to raw tbl (cp7 p)
-        b8  = c sp256 to raw tbl (cp8 p)
-        b9  = c sp256 to raw tbl (cp9 p)
-        b10 = c sp256 to raw tbl (cp10 p)
-        b11 = c sp256 to raw tbl (cp11 p)
-        b12 = c sp256 to raw tbl (cp12 p)
-        b13 = c sp256 to raw tbl (cp13 p)
-        b14 = c sp256 to raw tbl (cp14 p)
-        b15 = c sp256 to raw tbl (cp15 p)
-        s0  = b0 + b1
-        s1  = b2 + b3
-        s2  = b4 + b5
-        s3  = b6 + b7
-        s4  = b8 + b9
-        s5  = b10 + b11
-        s6  = b12 + b13
-        s7  = b14 + b15
-        q0  = s0 + s1
-        q1  = s2 + s3
-        q2  = s4 + s5
-        q3  = s6 + s7
-        h0  = q0 + q1
-        h1  = q2 + q3
-        h0 + h1
-
-fn :: c cp32 to raw CT16 CP32 => String
-      c cp32 to raw tbl acc =
-        (c cp16 to raw tbl (cplo acc)) + (c cp16 to raw tbl (cphi acc))
+fn :: c acc8 to raw CT16 Tensor[U64 * 8] => String
+      c acc8 to raw tbl acc =
+        q0 = c word32 to raw4 tbl acc_(0)
+        q1 = c word32 to raw4 tbl acc_(1)
+        q2 = c word32 to raw4 tbl acc_(2)
+        q3 = c word32 to raw4 tbl acc_(3)
+        q4 = c word32 to raw4 tbl acc_(4)
+        q5 = c word32 to raw4 tbl acc_(5)
+        q6 = c word32 to raw4 tbl acc_(6)
+        q7 = c word32 to raw4 tbl acc_(7)
+        ((q0 + q1) + (q2 + q3)) + ((q4 + q5) + (q6 + q7))
 
 fn :: c list to raw CT16 [Int] => String
       c list to raw _ [] = ""
@@ -466,25 +433,24 @@ fn :: c list to raw CT16 [Int] => String
         ub = norm byte b
         (c get b256 tbl (ub / 16) (ub % 16)) + (c list to raw tbl rest)
 
-fn :: pbkdf2 iter loop CPbkCtx String CP32 Int => CP32
+fn :: pbkdf2 iter loop CPbkCtx String Tensor[U64 * 8] Int => Tensor[U64 * 8]
       pbkdf2 iter loop ctx u_raw acc rem =
-        | rem <= 0  = c norm cp32 acc
+        | rem <= 0  = acc
         | otherwise =
           tbl   = cptbl ctx
           in_h  = sha256 str ((cpipad ctx) + u_raw)
           out_h = sha256 str ((cpopad ctx) + (c hex2raw32 tbl in_h))
-          pbkdf2 iter loop ctx (c hex2raw32 tbl out_h) (c step cp32 acc out_h rem) (rem - 1)
+          pbkdf2 iter loop ctx (c hex2raw32 tbl out_h) (c bxor acc8 acc out_h) (rem - 1)
 
 fn :: pbkdf2 block CPbkCtx String Int Int => String
       pbkdf2 block ctx salt iterations block_idx =
-        tbl   = cptbl ctx
-        in_h  = sha256 str ((cpipad ctx) + salt + (be32 bytes block_idx))
-        u1_h  = sha256 str ((cpopad ctx) + (c hex2raw32 tbl in_h))
-        u1_r  = c hex2raw32 tbl u1_h
-        z16   = CP16 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-        acc0  = c add cp32 (CP32 z16 z16) u1_h
-        accf  = pbkdf2 iter loop ctx u1_r acc0 (iterations - 1)
-        c cp32 to raw tbl accf
+        tbl  = cptbl ctx
+        in_h = sha256 str ((cpipad ctx) + salt + (be32 bytes block_idx))
+        u1_h = sha256 str ((cpopad ctx) + (c hex2raw32 tbl in_h))
+        u1_r = c hex2raw32 tbl u1_h
+        acc0 = c bxor acc8 (Tensor[U64 * 8]) u1_h
+        accf = pbkdf2 iter loop ctx u1_r acc0 (iterations - 1)
+        c acc8 to raw tbl accf
 
 fn :: pbkdf2 blocks loop CPbkCtx String Int Int Int String => String
       pbkdf2 blocks loop ctx salt iterations block_idx dk_len acc =
@@ -571,7 +537,7 @@ fn :: compress block Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 * 8
       compress block x y =
         r_ij = x_ij xor y_ij
         z_ij = r_ij
-        ||map blamka p16 in z_(i,)
+        map blamka p16 in z_(i,)
         z2   = ca2 blamka cols loop z 0
         z2_ij xor r_ij
 
