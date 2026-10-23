@@ -16,6 +16,7 @@
 | API-POSIX-001 | TS-POSIX-001 | src/main/ridgun/lib/posix.rg | src/test/ridgun/test posix.rg | ok |
 | API-SOCK-001 | TS-SOCK-004 | src/main/ridgun/lib/socket.rg | src/test/ridgun/test socket.rg | ok |
 | API-STR-001 | TS-STR-001 | src/main/ridgun/lib/str.rg | src/test/ridgun/test str.rg | ok |
+| API-TENSOR-001 | TS-TENSOR-001 | src/main/ridgun/lib/tensor.rg | src/test/ridgun/test tensor.rg | ok |
 | API-TIME-001 | TS-TIME-001 | src/main/ridgun/lib/time.rg | src/test/ridgun/test time.rg | ok |
 | API-TST-001 | TS-TST-001 | src/main/ridgun/lib/test.rg | src/test/ridgun/test test.rg | ok |
 | API-UUID-001 | TS-UUID-001 | src/main/ridgun/lib/uuid.rg | src/test/ridgun/test uuid.rg | ok |
@@ -41,6 +42,7 @@
 | FR-SOCK-003 | TS-SOCK-003 | src/main/ridgun/lib/socket.rg | src/test/ridgun/test socket.rg | ok |
 | FR-SOCK-004 | TS-SOCK-004 | src/main/ridgun/lib/socket.rg | src/test/ridgun/test socket.rg | ok |
 | FR-STR-001 | TS-STR-001 | src/main/ridgun/lib/str.rg | src/test/ridgun/test str.rg | ok |
+| FR-TENSOR-001 | TS-TENSOR-001 | src/main/ridgun/lib/tensor.rg | src/test/ridgun/test tensor.rg | ok |
 | FR-TIME-001 | TS-TIME-001 | src/main/ridgun/lib/time.rg | src/test/ridgun/test time.rg | ok |
 | FR-TST-001 | TS-TST-001 | src/main/ridgun/lib/test.rg | src/test/ridgun/test test.rg | ok |
 | FR-UUID-001 | TS-UUID-001 | src/main/ridgun/lib/uuid.rg | src/test/ridgun/test uuid.rg | ok |

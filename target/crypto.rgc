@@ -1,6 +1,6 @@
 -- RGLIB1
 -- SELF_HOSTED_COMPILER: ridgunc v0.9.8
--- FUNCTIONS: 183
+-- FUNCTIONS: 179
 -- TYPES: 9
 -- SUMMARY: norm_byte_mod:InlineSequential
 -- SUMMARY: norm_byte:InlineSequential
@@ -11,16 +11,8 @@
 -- SUMMARY: bytes_to_list:LazyStealableTask
 -- SUMMARY: u32_mod:InlineSequential
 -- SUMMARY: u32_val:InlineSequential
--- SUMMARY: pow2_b4:InlineSequential
--- SUMMARY: pow2_b16:InlineSequential
--- SUMMARY: pow2_u32:InlineSequential
--- SUMMARY: c_band4:InlineSequential
 -- SUMMARY: byte_band:InlineSequential
--- SUMMARY: c_bor1:InlineSequential
--- SUMMARY: c_bor4:InlineSequential
 -- SUMMARY: byte_bor:InlineSequential
--- SUMMARY: c_bxor2:InlineSequential
--- SUMMARY: c_bxor4:InlineSequential
 -- SUMMARY: byte_bxor:InlineSequential
 -- SUMMARY: band:InlineSequential
 -- SUMMARY: bor:InlineSequential
@@ -79,6 +71,10 @@
 -- SUMMARY: pbkdf2_block:LazyStealableTask
 -- SUMMARY: pbkdf2_blocks_loop:LazyStealableTask
 -- SUMMARY: pbkdf2_hmac_sha256:LazyStealableTask
+-- SUMMARY: f_blamka:InlineSequential
+-- SUMMARY: blamka_g:InlineSequential
+-- SUMMARY: blamka_p16:InlineSequential
+-- SUMMARY: compress_block:KernelWorkerJob
 -- SUMMARY: ca2_take_ints:LazyStealableTask
 -- SUMMARY: ca2_drop_ints:LazyStealableTask
 -- SUMMARY: ca2_pad_zeroes:LazyStealableTask
@@ -261,131 +257,41 @@ fn :: u32 mod Int => Int
         | otherwise = m
 
 fn :: u32 val Int => Int
-      u32 val x   =  u32 mod (x % 4294967296)
-
-fn :: pow2 b4 Int => Int
-      pow2 b4 n   =
-        | n <= 0    = 1
-        | n == 1    = 2
-        | n == 2    = 4
-        | otherwise = 8
-
-fn :: pow2 b16 Int => Int
-      pow2 b16 n   =
-        | n < 4     = pow2 b4 n
-        | n < 8     = 16 * (pow2 b4 (n - 4))
-        | n < 12    = 256 * (pow2 b4 (n - 8))
-        | otherwise = 4096 * (pow2 b4 (n - 12))
-
-fn :: pow2 u32 Int => Int
-      pow2 u32 n   =
-        | n <= 0    = 1
-        | n >= 32   = 4294967296
-        | n < 16    = pow2 b16 n
-        | otherwise = 65536 * (pow2 b16 (n - 16))
-
-fn :: c band4 Int Int => Int
-      c band4 a   b   =
-        b0 = (a % 2) * (b % 2)
-        a1 = a / 2
-        b1 = b / 2
-        x1 = (a1 % 2) * (b1 % 2)
-        a2 = a1 / 2
-        b2 = b1 / 2
-        x2 = (a2 % 2) * (b2 % 2)
-        a3 = a2 / 2
-        b3 = b2 / 2
-        x3 = (a3 % 2) * (b3 % 2)
-        b0 + (x1 * 2) + (x2 * 4) + (x3 * 8)
+      u32 val x   =  x and 0xFFFFFFFF
 
 fn :: byte band Int Int => Int
       byte band a   b   =
-        ua = norm byte a
-        ub = norm byte b
-        (c band4 (ua % 16) (ub % 16)) + ((c band4 (ua / 16) (ub / 16)) * 16)
-
-fn :: c bor1 Int Int => Int
-      c bor1 x   y   =
-        | x == 1 or y == 1 = 1
-        | otherwise        = 0
-
-fn :: c bor4 Int Int => Int
-      c bor4 a   b   =
-        b0 = c bor1 (a % 2) (b % 2)
-        a1 = a / 2
-        b1 = b / 2
-        x1 = c bor1 (a1 % 2) (b1 % 2)
-        a2 = a1 / 2
-        b2 = b1 / 2
-        x2 = c bor1 (a2 % 2) (b2 % 2)
-        a3 = a2 / 2
-        b3 = b2 / 2
-        x3 = c bor1 (a3 % 2) (b3 % 2)
-        b0 + (x1 * 2) + (x2 * 4) + (x3 * 8)
+        (a and b) and 255
 
 fn :: byte bor Int Int => Int
       byte bor a   b   =
-        ua = norm byte a
-        ub = norm byte b
-        (c bor4 (ua % 16) (ub % 16)) + ((c bor4 (ua / 16) (ub / 16)) * 16)
-
-fn :: c bxor2 Int Int => Int
-      c bxor2 a   b   =
-        | a == b    = 0
-        | a == 0    = b
-        | b == 0    = a
-        | otherwise = 6 - a - b
-
-fn :: c bxor4 Int Int => Int
-      c bxor4 a   b   =
-        | a == b    = 0
-        | a == 0    = b
-        | b == 0    = a
-        | otherwise = (c bxor2 (a % 4) (b % 4)) + ((c bxor2 (a / 4) (b / 4)) * 4)
+        (a or b) and 255
 
 fn :: byte bxor Int Int => Int
       byte bxor a   b   =
-        ua = norm byte a
-        ub = norm byte b
-        (c bxor4 (ua % 16) (ub % 16)) + ((c bxor4 (ua / 16) (ub / 16)) * 16)
+        (a xor b) and 255
 
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
 fn :: band Int Int => Int
       band a   b   =
-        ua = u32 val a
-        ub = u32 val b
-        b0 = byte band (ua % 256) (ub % 256)
-        b1 = byte band ((ua / 256) % 256) ((ub / 256) % 256)
-        b2 = byte band ((ua / 65536) % 256) ((ub / 65536) % 256)
-        b3 = byte band ((ua / 16777216) % 256) ((ub / 16777216) % 256)
-        b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
+        (a and b) and 0xFFFFFFFF
 
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
 fn :: bor Int Int => Int
       bor a   b   =
-        ua = u32 val a
-        ub = u32 val b
-        b0 = byte bor (ua % 256) (ub % 256)
-        b1 = byte bor ((ua / 256) % 256) ((ub / 256) % 256)
-        b2 = byte bor ((ua / 65536) % 256) ((ub / 65536) % 256)
-        b3 = byte bor ((ua / 16777216) % 256) ((ub / 16777216) % 256)
-        b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
+        (a or b) and 0xFFFFFFFF
 
 fn :: c u32 bxor Int Int => Int
       c u32 bxor ua  ub  =
-        | ua == ub  = 0
-        | ua == 0   = ub
-        | ub == 0   = ua
-        | otherwise =
-          (c bxor4 (ua % 16) (ub % 16)) + ((c bxor4 ((ua / 16) % 16) ((ub / 16) % 16)) * 16) + ((c bxor4 ((ua / 256) % 16) ((ub / 256) % 16)) * 256) + ((c bxor4 ((ua / 4096) % 16) ((ub / 4096) % 16)) * 4096) + ((c bxor4 ((ua / 65536) % 16) ((ub / 65536) % 16)) * 65536) + ((c bxor4 ((ua / 1048576) % 16) ((ub / 1048576) % 16)) * 1048576) + ((c bxor4 ((ua / 16777216) % 16) ((ub / 16777216) % 16)) * 16777216) + ((c bxor4 (ua / 268435456) (ub / 268435456)) * 268435456)
+        (ua xor ub) and 0xFFFFFFFF
 
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
 fn :: bxor Int Int => Int
       bxor a   b   =
-        c u32 bxor (u32 val a) (u32 val b)
+        (a xor b) and 0xFFFFFFFF
 
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
@@ -393,7 +299,7 @@ fn :: bxor Int Int => Int
 fn :: shl Int Int => Int
       shl a   n   =
         | n < 0 or n >= 32 = 0
-        | otherwise        = u32 val ((u32 val a) * (pow2 u32 n))
+        | otherwise        = ((a and 0xFFFFFFFF) shl n) and 0xFFFFFFFF
 
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
@@ -401,16 +307,12 @@ fn :: shl Int Int => Int
 fn :: shr Int Int => Int
       shr a   n   =
         | n < 0 or n >= 32 = 0
-        | otherwise        = (u32 val a) / (pow2 u32 n)
+        | otherwise        = (a and 0xFFFFFFFF) shr n
 
 fn :: rotl32 Int Int => Int
       rotl32 x   n   =
-        ux = u32 val x
-        p  = pow2 u32 n
-        q  = pow2 u32 (32 - n)
-        lo = (ux * p) % 4294967296
-        hi = ux / q
-        (lo + hi) % 4294967296
+        ux = x and 0xFFFFFFFF
+        (((ux shl n) or (ux shr (32 - n))) and 0xFFFFFFFF)
 
 -- ── Hex & List Utilities ─────────────────────────────────────
 
@@ -792,6 +694,54 @@ fn :: pbkdf2 hmac sha256 String String Int Int => String
           opad_s  = c list to raw tbl (bitxor key pad k_block 92)
           ctx     = CPbkCtx tbl ipad_s opad_s
           pbkdf2 blocks loop ctx salt iterations 1 dk_len ""
+
+-- ── Ridgun v0.9.15 BlaMka Tensor Block Compression (`f blamka`, `blamka g`, `blamka p16`, `compress block`) ──
+
+-- @implements FR-CRYPTO-004
+-- @implements API-CRYPTO-001
+-- @implements DM-Tensor
+fn :: f blamka U64 U64 => U64
+      f blamka x   y   =  x + y + 2 * ((x and 0xFFFFFFFF) * (y and 0xFFFFFFFF))
+
+-- @implements FR-CRYPTO-004
+-- @implements API-CRYPTO-001
+-- @implements DM-Tensor
+fn :: blamka g U64 U64 U64 U64 => U64 U64 U64 U64
+      blamka g a b c d =
+        mut a = f blamka a b
+        mut d = (d xor a) rotr 32
+        mut c = f blamka c d
+        mut b = (b xor c) rotr 24
+        a = f blamka a b
+        d = (d xor a) rotr 16
+        c = f blamka c d
+        b = (b xor c) rotr 63
+        (a, b, c, d)
+
+-- @implements FR-CRYPTO-004
+-- @implements API-CRYPTO-001
+-- @implements DM-Tensor
+fn :: blamka p16 Tensor[U64 * 16] => ()
+      blamka p16 v                =
+        v_(0), v_(4), v_(8),  v_(12) = blamka g v_(0) v_(4) v_(8)  v_(12)
+        v_(1), v_(5), v_(9),  v_(13) = blamka g v_(1) v_(5) v_(9)  v_(13)
+        v_(2), v_(6), v_(10), v_(14) = blamka g v_(2) v_(6) v_(10) v_(14)
+        v_(3), v_(7), v_(11), v_(15) = blamka g v_(3) v_(7) v_(11) v_(15)
+        v_(0), v_(5), v_(10), v_(15) = blamka g v_(0) v_(5) v_(10) v_(15)
+        v_(1), v_(6), v_(11), v_(12) = blamka g v_(1) v_(6) v_(11) v_(12)
+        v_(2), v_(7), v_(8),  v_(13) = blamka g v_(2) v_(7) v_(8)  v_(13)
+        v_(3), v_(4), v_(9),  v_(14) = blamka g v_(3) v_(4) v_(9)  v_(14)
+
+-- @implements FR-CRYPTO-004
+-- @implements API-CRYPTO-001
+-- @implements DM-Tensor
+fn :: compress block Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 * 8 * 16]
+      compress block x y =
+        r_ij = x_ij xor y_ij
+        z_ij = r_ij
+        ||map blamka p16 in z_(i,)
+        ||map blamka p16 in z_(,j)
+        z_ij xor r_ij
 
 -- ── RGF-015 Pure-Ridgun RFC 9106 Argon2id (`argon2id_hash`, `argon2id_verify`) ──
 

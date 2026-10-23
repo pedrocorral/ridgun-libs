@@ -24,5 +24,6 @@ status: approved
 | UUID, Checksum & Deterministic PRNG Library | Pure-Ridgun RFC 9562 UUIDv4/UUIDv7 generation and validation, FNV-1a / Adler-32 / CRC-32 checksums, and seeded deterministic PRNG (`prng_next`, `prng_range`) | UUID |
 | URI & HTTP/1.1 Protocol Library | Pure-Ridgun RFC 3986 URI parsing (`scheme`, `host`, `port`, `path`, `query`) and RFC 9112 HTTP/1.1 request/response building, parsing, headers, and status reason phrases | HTTP |
 | Agent Concurrency Library | Pure-Ridgun Native Agent Model (`Agent In Out`, `agent`, `send ... to`, `receive from`, `try receive from`, `stop`, `agent alive`) lifecycle, request-reply, timeout-bounded polling, batch dispatch, relay, and stateful Counter, Log, and Key-Value agents | AGENT |
+| Typed Tensor & Linear Algebra Library | Pure-Ridgun first-class typed tensors (`Tensor[Int * r * c]`, `Tensor[U64 * r * c]`, `Tensor[Real * r * c]`, `Tensor[Byte * n]`), dimension-binding patterns, subscript row/column views (`m_(r,)`, `m_(,c)`), in-place `map f in`, bitwise Hadamard operations (`a_ij xor b_ij`), and Einstein matrix contraction (`a_ik @ b_kj`) | TENSOR |
 
 Domain codes are UPPERCASE, ≤ 8 chars, and name folders in `functional/`, `api/`, and `docs/tests/*/`.

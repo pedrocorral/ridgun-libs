@@ -20,3 +20,4 @@ Read this when: implementing or consuming a library's public module interface. S
 | `uuid/` | Public API contract for `uuid.rg` (`API-UUID-001`) | Consuming or editing `uuid` |
 | `http/` | Public API contract for `http.rg` (`API-HTTP-001`) | Consuming or editing `http` |
 | `agent/` | Public API contract for `agent.rg` (`API-AGENT-001`) | Consuming or editing `agent` |
+| `tensor/` | Public API contract for `tensor.rg` (`API-TENSOR-001`) | Consuming or editing `tensor` |

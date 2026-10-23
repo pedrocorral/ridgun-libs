@@ -53,3 +53,7 @@ Conventions: `snake_case`; ids end in `_id`; timestamps end in `_at` (UTC ISO-86
 | max_bytes | Int | Upper bound on bytes read in a single descriptor/socket read operation | IO | `io.rg`, `socket.rg`, `posix.rg` |
 | agent_state | String | Lifecycle or reply state of a Ridgun agent (`running`, `stopped`, `timeout`, `error`) | AGENT | `agent.rg` |
 | item_count | Int | Number of entries or messages held by a stateful agent | AGENT | `agent.rg` |
+| row_count | Int | Number of rows `r` in a 2D typed tensor (`>= 0`) | TENSOR | `tensor.rg`, `crypto.rg` |
+| col_count | Int | Number of columns `c` in a 2D typed tensor (`>= 0`) | TENSOR | `tensor.rg`, `crypto.rg` |
+| row_idx | Int | Zero-based row subscript index (`0..row_count-1`) | TENSOR | `tensor.rg`, `crypto.rg` |
+| col_idx | Int | Zero-based column subscript index (`0..col_count-1`) | TENSOR | `tensor.rg`, `crypto.rg` |

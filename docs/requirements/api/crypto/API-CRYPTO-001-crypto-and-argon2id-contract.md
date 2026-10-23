@@ -28,6 +28,11 @@ auth: none
   - `argon2id derive key String String Argon2Params => Argon2BytesRes`, `argon2id derive key hex String String Argon2Params => Argon2Res`
   - `argon2id hash with context String String [Int] [Int] Argon2Params => Argon2Res`, `argon2id verify with context String [Int] [Int] String => Bool`
   - `argon2 default params () => Argon2Params`, `argon2 interactive params () => Argon2Params`, `argon2 moderate params () => Argon2Params`, `argon2 sensitive params () => Argon2Params`
+- Argon2id & Blake2b `BlaMka` Tensor Block Compression API (`crypto.rg`):
+  - `f blamka U64 U64 => U64`
+  - `blamka g U64 U64 U64 U64 => U64 U64 U64 U64`
+  - `blamka p16 Tensor[U64 * 16] => ()`
+  - `compress block Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 * 8 * 16]`
 - ChaCha20-Poly1305 AEAD API (`RGF-015` in `crypto.rg`):
   - `aead_seal String String String String => String` (`key` 32 B, `nonce` 12 B, `aad`, `plaintext` → `ciphertext || 16-byte tag`)
   - `aead_open String String String String => (Int, String)` (`(0, plaintext)` on valid tag, `(-12, "")` on tag mismatch, `(-7, "")` on invalid key/nonce length)

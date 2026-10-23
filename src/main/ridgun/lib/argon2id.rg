@@ -104,44 +104,19 @@ fn :: bytes to hex [Int]    => String
       bytes to hex []       =  ""
       bytes to hex (b:rest) =  (byte to hex b) + (bytes to hex rest)
 
-fn :: a2 bitxor2 Int Int => Int
-      a2 bitxor2 a   b   =
-        | a == b    = 0
-        | a == 0    = b
-        | b == 0    = a
-        | otherwise = 6 - a - b
-
-fn :: a2 bitxor4 Int Int => Int
-      a2 bitxor4 a   b   =
-        | a == b    = 0
-        | a == 0    = b
-        | b == 0    = a
-        | otherwise = (a2 bitxor2 (a % 4) (b % 4)) + ((a2 bitxor2 (a / 4) (b / 4)) * 4)
-
 fn :: byte bitxor Int Int => Int
       byte bitxor a   b   =
-        ua = ((a % 256) + 256) % 256
-        ub = ((b % 256) + 256) % 256
-        (a2 bitxor4 (ua % 16) (ub % 16)) + ((a2 bitxor4 (ua / 16) (ub / 16)) * 16)
-
-fn :: u32 norm mod Int => Int
-      u32 norm mod m   =
-        | m < 0     = m + 4294967296
-        | otherwise = m
+        (a xor b) and 255
 
 fn :: u32 norm Int => Int
-      u32 norm x   =  u32 norm mod (x % 4294967296)
+      u32 norm x   =  x and 0xFFFFFFFF
 
 fn :: u32 add Int Int => Int
-      u32 add a   b   =  u32 norm (a + b)
+      u32 add a   b   =  (a + b) and 0xFFFFFFFF
 
 fn :: u32 bitxor Int Int => Int
       u32 bitxor a   b   =
-        | a == b    = 0
-        | a == 0    = b
-        | b == 0    = a
-        | otherwise =
-          (a2 bitxor4 (a % 16) (b % 16)) + ((a2 bitxor4 ((a / 16) % 16) ((b / 16) % 16)) * 16) + ((a2 bitxor4 ((a / 256) % 16) ((b / 256) % 16)) * 256) + ((a2 bitxor4 ((a / 4096) % 16) ((b / 4096) % 16)) * 4096) + ((a2 bitxor4 ((a / 65536) % 16) ((b / 65536) % 16)) * 65536) + ((a2 bitxor4 ((a / 1048576) % 16) ((b / 1048576) % 16)) * 1048576) + ((a2 bitxor4 ((a / 16777216) % 16) ((b / 16777216) % 16)) * 16777216) + ((a2 bitxor4 (a / 268435456) (b / 268435456)) * 268435456)
+        (a xor b) and 0xFFFFFFFF
 
 fn :: a2 u64 add A2U64 A2U64 => A2U64
       a2 u64 add a     b     =

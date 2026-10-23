@@ -9,3 +9,4 @@ Read this when: persistence, API schemas, migrations, or core library ADT defini
 | `DM-PosixStatus.md` | `PollStatus`, `ProcStatus`, descriptors, events, and signals model | Working on `posix.rg` |
 | `DM-IoResult.md` | Extensible `IoError` and `IoResult` high-level I/O model | Working on `io.rg` |
 | `DM-Agent.md` | `AgentStatus`, `AgentReply`, `KvCmd`, and stateful actor concurrency model | Working on `agent.rg` |
+| `DM-Tensor.md` | Typed `Tensor[...]` dimension bindings, subscript views, and `BlaMka` block model | Working on `tensor.rg`, `crypto.rg`, `argon2id.rg` |
