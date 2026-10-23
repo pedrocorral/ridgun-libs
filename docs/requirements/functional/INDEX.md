@@ -22,3 +22,13 @@ Read this when: working on a domain. Skip when: the domain is not yours.
 | `agent/` | Native Agent Model lifecycle, timeout-bounded messaging, batch dispatch & stateful actors library (`FR-AGENT-001`) | Working on `agent.rg` |
 | `tensor/` | Typed `Tensor[...]` dimension inspection, subscript row/column views, bitwise Hadamard ops & Einstein contraction library (`FR-TENSOR-001`) | Working on `tensor.rg` |
 | `fmt/` | Configurable 2D Ridgun source code formatter & multi-target syntax highlighting library (`FR-FMT-001`) | Working on `fmt.rg` |
+| `json/` | Recursive RFC 8259 JSON AST parser, serializer, pretty-printer & dot-path query library (`FR-JSON-001`) | Working on `json.rg` |
+| `csv/` | RFC 4180 CSV & TSV parser, serializer & header-mapped lookup library (`FR-CSV-001`) | Working on `csv.rg` |
+| `ini/` | INI sectioned configuration & `.env` interpolation library (`FR-INI-001`) | Working on `ini.rg` |
+| `regex/` | Linear-time Thompson NFA regular expression engine (`FR-REGEX-001`) | Working on `regex.rg` |
+| `btree/` | $O(\log N)$ balanced binary search tree (`BTreeMap`, `BTreeSet`) & `MinHeap` library (`FR-BTREE-001`) | Working on `btree.rg` |
+| `jwt/` | RFC 7519 `HS256` JWT & ChaCha20-Poly1305 AEAD token library (`FR-JWT-001`) | Working on `jwt.rg` |
+| `ws/` | RFC 6455 WebSocket handshake, framing & XOR masking library (`FR-WS-001`) | Working on `ws.rg` |
+| `linalg/` | Typed `Tensor[Real]` linear algebra, norms, Gaussian solver & neural activations library (`FR-LINALG-001`) | Working on `linalg.rg` |
+| `diff/` | Longest Common Subsequence line diff, Unified Diff & patch library (`FR-DIFF-001`) | Working on `diff.rg` |
+| `tmpl/` | Mustache-style text template engine with HTML/LaTeX auto-escaping (`FR-TMPL-001`) | Working on `template.rg` |

@@ -63,3 +63,25 @@ Conventions: `snake_case`; ids end in `_id`; timestamps end in `_at` (UTC ISO-86
 | is_aligned | Bool | Whether 2D tabular signature, clause, and `where` alignment is enabled | FMT | `fmt.rg` |
 | target_format | String | Output format identifier (`plain`, `tty`, `truecolor`, `html_inline`, `html_css`, `markdown`, `pango`, `latex`, `rtf`) | FMT | `fmt.rg` |
 | color_theme | String | Syntax highlighting theme identifier (`none`, `dark`, `light`) | FMT | `fmt.rg` |
+| json_kind | String | Discriminator of a parsed `JsonVal` node (`null`, `bool`, `int`, `str`, `arr`, `obj`) | JSON | `json.rg` |
+| dot_path | String | Dot-separated object/array query path (`a.b.0`) | JSON | `json.rg` |
+| delimiter_char | String | Single-character field delimiter for tabular parsing (`,` for CSV, `\t` for TSV) | CSV | `csv.rg` |
+| has_headers | Bool | Whether the first row of a CSV/TSV document defines column header names | CSV | `csv.rg` |
+| section_name | String | Section header name `[section]` in an INI configuration document | INI | `ini.rg` |
+| pattern_str | String | Regular expression pattern string compiled into a Thompson NFA | REGEX | `regex.rg` |
+| match_start | Int | Zero-based inclusive start byte offset of a regex match (`>= 0`) | REGEX | `regex.rg` |
+| match_end | Int | Zero-based exclusive end byte offset of a regex match (`>= match_start`) | REGEX | `regex.rg` |
+| tree_height | Int | Height of a balanced binary search tree node (`>= 0`) | BTREE | `btree.rg` |
+| priority_score | Int | Numeric priority key in a `MinHeap` priority queue | BTREE | `btree.rg` |
+| issuer | String | JWT `iss` (issuer) claim string | JWT | `jwt.rg` |
+| subject | String | JWT `sub` (subject) claim string | JWT | `jwt.rg` |
+| expires_at | Int | JWT `exp` expiration timestamp in UTC epoch seconds | JWT | `jwt.rg` |
+| not_before_at | Int | JWT `nbf` not-before timestamp in UTC epoch seconds | JWT | `jwt.rg` |
+| ws_opcode | Int | RFC 6455 WebSocket frame opcode (`1` text, `2` binary, `8` close, `9` ping, `10` pong) | WS | `ws.rg` |
+| is_fin | Bool | RFC 6455 WebSocket `FIN` bit indicating the final fragment of a message | WS | `ws.rg` |
+| is_masked | Bool | RFC 6455 WebSocket `MASK` bit indicating a 4-byte XOR masking key is present | WS | `ws.rg` |
+| norm_value | Real | Computed matrix or vector norm ($L_1$, $L_2$, or $L_\infty$) | LINALG | `linalg.rg` |
+| diff_op | String | Line diff edit operation kind (`equal`, `insert`, `delete`) | DIFF | `diff.rg` |
+| old_line_no | Int | 1-based line number in the original document (`>= 0`) | DIFF | `diff.rg` |
+| new_line_no | Int | 1-based line number in the modified document (`>= 0`) | DIFF | `diff.rg` |
+| escape_mode | String | Template variable auto-escaping mode (`none`, `html`, `latex`) | TMPL | `template.rg` |

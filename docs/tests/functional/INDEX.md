@@ -22,3 +22,13 @@ Read this when: working in a domain.
 | `agent/` | Test specifications for `AGENT` (`FR-AGENT-001`) | Testing `agent.rg` |
 | `tensor/` | Test specifications for `TENSOR` (`FR-TENSOR-001`) | Testing `tensor.rg` |
 | `fmt/` | Test specifications for `FMT` (`FR-FMT-001`) | Testing `fmt.rg` |
+| `json/` | Test specifications for `JSON` (`FR-JSON-001`) | Testing `json.rg` |
+| `csv/` | Test specifications for `CSV` (`FR-CSV-001`) | Testing `csv.rg` |
+| `ini/` | Test specifications for `INI` (`FR-INI-001`) | Testing `ini.rg` |
+| `regex/` | Test specifications for `REGEX` (`FR-REGEX-001`) | Testing `regex.rg` |
+| `btree/` | Test specifications for `BTREE` (`FR-BTREE-001`) | Testing `btree.rg` |
+| `jwt/` | Test specifications for `JWT` (`FR-JWT-001`) | Testing `jwt.rg` |
+| `ws/` | Test specifications for `WS` (`FR-WS-001`) | Testing `ws.rg` |
+| `linalg/` | Test specifications for `LINALG` (`FR-LINALG-001`) | Testing `linalg.rg` |
+| `diff/` | Test specifications for `DIFF` (`FR-DIFF-001`) | Testing `diff.rg` |
+| `tmpl/` | Test specifications for `TMPL` (`FR-TMPL-001`) | Testing `template.rg` |

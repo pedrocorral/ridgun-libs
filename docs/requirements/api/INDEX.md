@@ -22,3 +22,13 @@ Read this when: implementing or consuming a library's public module interface. S
 | `agent/` | Public API contract for `agent.rg` (`API-AGENT-001`) | Consuming or editing `agent` |
 | `tensor/` | Public API contract for `tensor.rg` (`API-TENSOR-001`) | Consuming or editing `tensor` |
 | `fmt/` | Public API contract for `fmt.rg` (`API-FMT-001`) | Consuming or editing `fmt` |
+| `json/` | Public API contract for `json.rg` (`API-JSON-001`) | Consuming or editing `json` |
+| `csv/` | Public API contract for `csv.rg` (`API-CSV-001`) | Consuming or editing `csv` |
+| `ini/` | Public API contract for `ini.rg` (`API-INI-001`) | Consuming or editing `ini` |
+| `regex/` | Public API contract for `regex.rg` (`API-REGEX-001`) | Consuming or editing `regex` |
+| `btree/` | Public API contract for `btree.rg` (`API-BTREE-001`) | Consuming or editing `btree` |
+| `jwt/` | Public API contract for `jwt.rg` (`API-JWT-001`) | Consuming or editing `jwt` |
+| `ws/` | Public API contract for `ws.rg` (`API-WS-001`) | Consuming or editing `ws` |
+| `linalg/` | Public API contract for `linalg.rg` (`API-LINALG-001`) | Consuming or editing `linalg` |
+| `diff/` | Public API contract for `diff.rg` (`API-DIFF-001`) | Consuming or editing `diff` |
+| `tmpl/` | Public API contract for `template.rg` (`API-TMPL-001`) | Consuming or editing `template` |
