@@ -4,7 +4,7 @@ title: Verify raw byte manipulation, 32-bit bitwise operations, SHA-256, HMAC-SH
 level: unit
 covers: [FR-CRYPTO-003, API-CRYPTO-001]
 status: automated
-automated_in: [src/test/ridgun/test_crypto.rg]
+automated_in: [src/test/ridgun/test crypto.rg]
 ---
 # TS-CRYPTO-003 — Verify raw byte manipulation, 32-bit bitwise operations, SHA-256, HMAC-SHA-256, constant-time equality, and PBKDF2-HMAC-SHA-256
 

@@ -42,14 +42,14 @@ fn :: format io result IoResult           => String
       format io result (IoError c)        =  "err:io error {c}"
       format io result (SysErr c op_name) =  "err:syscall error {c} in {op_name}"
       format io result (NotFound path)    =  "err:file not found: {path}"
-      format io result (IoErr err)        =  "err:{format_io_error err}"
+      format io result (IoErr err)        =  "err:" + (format io error err)
       format io result _                  =  "err:unknown io error"
 
 -- ── Timeout-Bounded Descriptor Read & Write (§5.2) ───────────
 
 fn :: map read bytes String => IoResult
       map read bytes data   =
-        | (str_len data) == 0 = Eof
+        | (str len data) == 0 = Eof
         | otherwise           = String data
 
 -- @implements FR-IO-001
@@ -68,7 +68,7 @@ fn :: read fd Int Int       Int        => IoResult
         | fd < 0         = SysErr 9 "read"
         | max_bytes <= 0 = SysErr 22 "read"
         | otherwise      =
-          status = wait fd fd poll_in timeout_ms
+          status = wait fd fd (poll in) timeout_ms
           read fd after poll status fd max_bytes timeout_ms
 
 -- @implements FR-IO-001
@@ -112,7 +112,7 @@ op :: write fd Int data String  timeout Int        => IoResult
 fn :: has null char String Int Int => Bool
       has null char s idx slen =
         | idx >= slen              = False
-        | (str_char_at s idx) == 0 = True
+        | (str char at s idx) == 0 = True
         | otherwise                = has null char s (idx + 1) slen
 
 fn :: pad ms three Int => String
@@ -140,11 +140,11 @@ fn :: map exec rc Int Int        => IoResult
 -- @mitigates VUL-INJ-002
 fn :: io exec timeout String Int        => IoResult
       io exec timeout cmd    timeout_ms =
-        | (str_len cmd) == 0 or (has null char cmd 0 (str_len cmd)) = SysErr 22 "exec"
+        | (str len cmd) == 0 or (has null char cmd 0 (str len cmd)) = SysErr 22 "exec"
         | timeout_ms <= 0                                           = Timeout timeout_ms
         | otherwise                                                 =
           tspec = format timeout sec timeout_ms
-          rc    = shell_exec "timeout -k 0.01s {tspec} sh -c \"{cmd}\" >/dev/null 2>&1"
+          rc    = shell exec "timeout -k 0.01s {tspec} sh -c \"{cmd}\" >/dev/null 2>&1"
           map exec rc rc timeout_ms
 
 -- @implements FR-IO-001
@@ -157,7 +157,7 @@ fn :: exec with timeout String Int        => IoResult
 
 fn :: read existing or empty String => String
       read existing or empty path   =
-        | lstat exists (file_lstat path) = read_file path
+        | lstat exists (file lstat path) = read file path
         | otherwise                      = ""
 
 -- @implements FR-IO-002
@@ -167,7 +167,7 @@ fn :: append file String String => Int
         | not (is safe posix path path) = 0 - 22
         | otherwise                     =
           prev = read existing or empty path
-          _    = write_file path (prev + data)
+          _    = write file path (prev + data)
           0
 
 -- @implements FR-IO-002
@@ -175,7 +175,7 @@ fn :: append file String String => Int
 fn :: file exists String => Bool
       file exists path   =
         | not (is safe posix path path) = False
-        | otherwise                     = lstat exists (file_lstat path)
+        | otherwise                     = lstat exists (file lstat path)
 
 -- @implements FR-IO-002
 -- @implements API-IO-001
@@ -183,7 +183,7 @@ fn :: is file String => Bool
       is file path   =
         | not (is safe posix path path) = False
         | otherwise                     =
-          st = file_lstat path
+          st = file lstat path
           (lstat exists st) and ((lstat kind st) == "file")
 
 -- @implements FR-IO-002
@@ -192,7 +192,7 @@ fn :: is dir String => Bool
       is dir path   =
         | not (is safe posix path path) = False
         | otherwise                     =
-          st = file_lstat path
+          st = file lstat path
           (lstat exists st) and ((lstat kind st) == "dir")
 
 -- @implements FR-IO-002
@@ -201,9 +201,9 @@ fn :: is symlink String => Bool
       is symlink path   =
         | not (is safe posix path path) = False
         | otherwise                     =
-          st   = file_lstat path
+          st   = file lstat path
           kind = lstat kind st
-          tlen = str_len (lstat symlink target st)
+          tlen = str len (lstat symlink target st)
           (lstat exists st) and (kind == "symlink" or kind == "link" or tlen > 0)
 
 fn :: extract size (Bool String Int Int Int String String Int String) => Int
@@ -216,7 +216,7 @@ fn :: extract size (Bool String Int Int Int String String Int String) => Int
 fn :: file size String => Int
       file size path   =
         | not (is safe posix path path) = 0 - 1
-        | otherwise                     = extract size (file_lstat path)
+        | otherwise                     = extract size (file lstat path)
 
 fn :: extract mtime (Bool String Int Int Int String String Int String) => Int
       extract mtime st                                                 =
@@ -228,7 +228,7 @@ fn :: extract mtime (Bool String Int Int Int String String Int String) => Int
 fn :: file mtime String => Int
       file mtime path   =
         | not (is safe posix path path) = 0 - 1
-        | otherwise                     = extract mtime (file_lstat path)
+        | otherwise                     = extract mtime (file lstat path)
 
 fn :: extract mode (Bool String Int Int Int String String Int String) => Int
       extract mode st                                                 =
@@ -240,7 +240,7 @@ fn :: extract mode (Bool String Int Int Int String String Int String) => Int
 fn :: file mode String => Int
       file mode path   =
         | not (is safe posix path path) = 0 - 1
-        | otherwise                     = extract mode (file_lstat path)
+        | otherwise                     = extract mode (file lstat path)
 
 -- ── Safe File Read & Line-Stream Helpers ─────────────────────
 
@@ -250,16 +250,16 @@ fn :: file mode String => Int
 fn :: io read file safe String => IoResult
       io read file safe path   =
         | not (is safe posix path path)        = SysErr 22 "read_file"
-        | not (lstat exists (file_lstat path)) = NotFound path
-        | otherwise                            = String (read_file path)
+        | not (lstat exists (file lstat path)) = NotFound path
+        | otherwise                            = String (read file path)
 
 fn :: split lines loop String Int Int Int => [String]
       split lines loop s idx start slen =
         | idx >= slen =
           | start == slen = []
-          | otherwise     = [str_slice s start slen] |.
-        | (str_char_at s idx) == 10 =
-          line = str_slice s start idx
+          | otherwise     = [str slice s start slen] |.
+        | (str char at s idx) == 10 =
+          line = str slice s start idx
           [line] :: (split lines loop s (idx + 1) (idx + 1) slen)
         | otherwise =
           split lines loop s (idx + 1) start slen
@@ -274,10 +274,10 @@ fn :: split non empty lines String Int => [String]
 fn :: io read lines String => [String]
       io read lines path   =
         | not (is safe posix path path)        = []
-        | not (lstat exists (file_lstat path)) = []
+        | not (lstat exists (file lstat path)) = []
         | otherwise                            =
-          raw = read_file path
-          split non empty lines raw (str_len raw)
+          raw = read file path
+          split non empty lines raw (str len raw)
 
 fn :: str list is empty [String] => Bool
       str list is empty []       =  True
@@ -295,7 +295,7 @@ fn :: io write lines String [String] => Int
       io write lines path   lines    =
         | not (is safe posix path path) = 0 - 22
         | otherwise                     =
-          _ = write_file path (join lines nl lines)
+          _ = write file path (join lines nl lines)
           0
 
 -- ── Ridgun v0.9.5 PAL & Ambient Deadline `io read with timeout` (§3.1) ────

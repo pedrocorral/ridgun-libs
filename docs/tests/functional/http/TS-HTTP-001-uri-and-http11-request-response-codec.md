@@ -4,7 +4,7 @@ title: Verify RFC 3986 URI parsing, HTTP/1.1 request/response building and parsi
 level: unit
 covers: [FR-HTTP-001, API-HTTP-001]
 status: automated
-automated_in: [src/test/ridgun/test_http.rg]
+automated_in: [src/test/ridgun/test http.rg]
 ---
 # TS-HTTP-001 — Verify RFC 3986 URI parsing, HTTP/1.1 request/response building and parsing, case-insensitive headers, and CRLF sanitization
 

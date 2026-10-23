@@ -4,7 +4,7 @@ title: Verify Argon2id salt generation, auto-salted password hashing, PHC parsin
 level: unit
 covers: [FR-CRYPTO-002]
 status: automated
-automated_in: [src/test/ridgun/test_argon2id.rg]
+automated_in: [src/test/ridgun/test argon2id.rg]
 ---
 # TS-CRYPTO-002 — Verify Argon2id salt generation, auto-salted password hashing, PHC parsing, rehash detection, raw key derivation, context pepper/AD, and presets
 

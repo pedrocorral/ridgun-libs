@@ -27,15 +27,15 @@ fn :: is phc parsed ok Argon2PhcRes     => Bool
       is phc parsed ok (Argon2PhcErr _) =  False
 
 -- @tests TS-CRYPTO-001
-fn :: test_argon2id_phc_hashing_and_verification => ()
-      test_argon2id_phc_hashing_and_verification =
+fn :: test argon2id phc hashing and verification => ()
+      test argon2id phc hashing and verification =
         -- LIB-1: OpenSSL 3.5 / libsodium reference vectors
         v1 = unwrap a2 phc (argon2id derive key hex "correct horse" "saltsaltsaltsalt" (argon2 params 8 1 1 32))
         v2 = unwrap a2 phc (argon2id derive key hex "correct horse" "saltsaltsaltsalt" (argon2 params 64 2 1 32))
         v3 = unwrap a2 phc (argon2id derive key hex "correct horse" "saltsaltsaltsalt" (argon2 params 256 2 1 32))
-        _  = assert_str_eq v1 "b7940bccc95f48f2cc7b36f55ff851c356ca4d3a6bc8cd4986a0692f2aac78ec" "LIB-1 vector m=8,t=1,p=1"
-        _  = assert_str_eq v2 "e6374c2335a815bcd23a5ea4df06a2f6e5377fc2c3f879865d0828d6e84740f2" "LIB-1 vector m=64,t=2,p=1"
-        _  = assert_str_eq v3 "8f65ef99a71b1e98450f2c80d78604af3644276f965db52045bbed139b03b5fd" "LIB-1 vector m=256,t=2,p=1"
+        _  = assert str eq v1 "b7940bccc95f48f2cc7b36f55ff851c356ca4d3a6bc8cd4986a0692f2aac78ec" "LIB-1 vector m=8,t=1,p=1"
+        _  = assert str eq v2 "e6374c2335a815bcd23a5ea4df06a2f6e5377fc2c3f879865d0828d6e84740f2" "LIB-1 vector m=64,t=2,p=1"
+        _  = assert str eq v3 "8f65ef99a71b1e98450f2c80d78604af3644276f965db52045bbed139b03b5fd" "LIB-1 vector m=256,t=2,p=1"
 
         -- LIB-1: RFC 9106 §5.3 official test vector (pwd=32*0x01, salt=16*0x02, secret=8*0x03, ad=12*0x04, m=32, t=3, p=4, tag=32)
         pwd32  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
@@ -43,7 +43,7 @@ fn :: test_argon2id_phc_hashing_and_verification => ()
         sec8   = a2 bytes to str [3, 3, 3, 3, 3, 3, 3, 3]
         ad12   = a2 bytes to str [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
         rfc_h  = bytes to hex (derive raw tag ctx pwd32 salt16 sec8 ad12 (argon2 params 32 3 4 32))
-        _      = assert_str_eq rfc_h "0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659" "RFC 9106 §5.3 official vector"
+        _      = assert str eq rfc_h "0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659" "RFC 9106 §5.3 official vector"
 
         params   = argon2 params 32 2 2 16
         res1     = argon2id hash params "correct-horse-battery-staple" "somesalt1234" params
@@ -57,7 +57,7 @@ fn :: test_argon2id_phc_hashing_and_verification => ()
         phc_diff = unwrap a2 phc res_diff
         _        = assert eq phc1 phc2
         _        = assert eq (phc1 == phc_diff) False
-        _        = assert ok (str_starts_with phc1 "$argon2id$v=19$m=32,t=2,p=2$")
+        _        = assert ok (str starts with phc1 "$argon2id$v=19$m=32,t=2,p=2$")
         bad_t    = argon2id hash params "password" "somesalt1234" (argon2 params 32 0 2 16)
         bad_p    = argon2id hash params "password" "somesalt1234" (argon2 params 32 2 0 16)
         bad_m    = argon2id hash params "password" "somesalt1234" (argon2 params 8 2 2 16)
@@ -84,15 +84,15 @@ fn :: test_argon2id_phc_hashing_and_verification => ()
         assert eq (constant time eq "abc123xyz" "abc123xyw") False
 
 -- @tests TS-CRYPTO-002
-fn :: test_argon2id_key_derivation_salting_and_rehash => ()
-      test_argon2id_key_derivation_salting_and_rehash =
+fn :: test argon2id key derivation salting and rehash => ()
+      test argon2id key derivation salting and rehash =
         -- LIB-3: Non-deterministic CSPRNG raw byte salt generation
         salt16    = argon2id generate salt 16
         salt16_b  = argon2id generate salt 16
         salt_min  = argon2id generate salt 2
-        _         = assert eq (str_len salt16) 16
-        _         = assert eq (str_len salt16_b) 16
-        _         = assert eq (str_len salt_min) 16
+        _         = assert eq (str len salt16) 16
+        _         = assert eq (str len salt16_b) 16
+        _         = assert eq (str len salt_min) 16
         _         = assert eq (salt16 == salt16_b) False
 
         -- LIB-4: Presets at or above OWASP (19456 KiB) and RFC 9106 §4 (65536 KiB)
@@ -134,7 +134,7 @@ fn :: test_argon2id_key_derivation_salting_and_rehash => ()
         _         = assert eq (is key ok k_bad) False
         _         = assert eq (is a2 ok kh_bad) False
         _         = assert eq (a2 list len (unwrap key bytes k_res)) 32
-        _         = assert eq (str_len (unwrap a2 phc kh_res)) 64
+        _         = assert eq (str len (unwrap a2 phc kh_res)) 64
         ctx_res   = argon2id hash ctx "user-password" "1234567890abcdef" "app-pepper-key" "tenant:42" p_fast
         ctx_bad   = argon2id hash ctx "user-password" "short" "app-pepper-key" "tenant:42" p_fast
         _         = assert ok (is a2 ok ctx_res)
@@ -150,6 +150,6 @@ fn :: test_argon2id_key_derivation_salting_and_rehash => ()
 
 fn :: main => ()
       main =
-        _ = test_argon2id_phc_hashing_and_verification
-        _ = test_argon2id_key_derivation_salting_and_rehash
+        _ = test argon2id phc hashing and verification
+        _ = test argon2id key derivation salting and rehash
         echo "=== All argon2id tests passed ==="

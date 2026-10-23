@@ -8,7 +8,7 @@ requirements: [FR-CRYPTO-001, FR-CRYPTO-002, FR-CRYPTO-003, FR-CRYPTO-004, FR-PO
 tests: [TS-CRYPTO-001, TS-CRYPTO-002, TS-CRYPTO-003, TS-CRYPTO-004, TS-PERF-001, TS-POSIX-002, TS-CODEC-001, TS-STR-001]
 security: [VUL-AUTHN-001, VUL-INPUT-001]
 context_files: [src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg, src/main/ridgun/lib/posix.rg, src/main/ridgun/lib/codec.rg, src/main/ridgun/lib/str.rg]
-scope: [src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg, src/main/ridgun/lib/posix.rg, src/main/ridgun/lib/codec.rg, src/main/ridgun/lib/str.rg, src/test/ridgun/test_argon2id.rg, src/test/ridgun/test_crypto.rg, src/test/ridgun/test_codec.rg, src/test/ridgun/test_str.rg]
+scope: [src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg, src/main/ridgun/lib/posix.rg, src/main/ridgun/lib/codec.rg, src/main/ridgun/lib/str.rg, src/test/ridgun/test argon2id.rg, src/test/ridgun/test crypto.rg, src/test/ridgun/test codec.rg, src/test/ridgun/test str.rg]
 owner: agent-001
 claimed: 2026-10-22T12:13:23Z
 claimed_by: agent gemini@solarfall
@@ -23,7 +23,7 @@ Resolve all 9 findings (`LIB-1` through `LIB-9`) reported in `/tmp/ridgun-lib/re
 - [x] Fix `LIB-8` in `codec.rg`: make `hex_decode`, `base64_decode`, `base64url_decode`, and `url_decode` binary-safe (`0..255` raw single-byte strings via `cd_raw_byte`).
 - [x] Fix `LIB-9` in `str.rg`: implement `str_repeat` via binary exponentiation (doubling) in $O(\log n)$ steps / linear byte copy.
 - [x] Fix `LIB-1`, `LIB-2`, `LIB-3`, `LIB-4`, `LIB-5`, `LIB-7` in `argon2id.rg` and `crypto.rg`: exact RFC 9106 v0x13 Argon2id (`< 30 ms` for `m=19456, t=2, p=1`), fast PBKDF2 (`< 80 ms` for 600,000 iterations), non-colliding `import crypto` + `import argon2id`, OS CSPRNG raw byte salt in `argon2id_generate_salt`, OWASP (`19456` KiB) and RFC 9106 §4 (`65536` KiB) presets, and fixed `(password, phc)` argument order in `argon2id_verify`.
-- [x] Add regression tests for `LIB-1`..`LIB-9` in `test_argon2id.rg`, `test_crypto.rg`, `test_codec.rg`, and `test_str.rg`.
+- [x] Add regression tests for `LIB-1`..`LIB-9` in `test argon2id.rg`, `test crypto.rg`, `test codec.rg`, and `test str.rg`.
 
 ## Progress log (append-only, newest last)
 - 2026-10-22: Implemented LIB-1..LIB-9 fixes across `posix.rg`, `codec.rg`, `str.rg`, `crypto.rg`, and `argon2id.rg`, and added RFC 9106 §5.3 + OpenSSL 3.5 + Solstice RGF-015 acceptance vectors.
@@ -34,10 +34,10 @@ Resolve all 9 findings (`LIB-1` through `LIB-9`) reported in `/tmp/ridgun-lib/re
 - `src/main/ridgun/lib/posix.rg`
 - `src/main/ridgun/lib/codec.rg`
 - `src/main/ridgun/lib/str.rg`
-- `src/test/ridgun/test_argon2id.rg`
-- `src/test/ridgun/test_crypto.rg`
-- `src/test/ridgun/test_codec.rg`
-- `src/test/ridgun/test_str.rg`
+- `src/test/ridgun/test argon2id.rg`
+- `src/test/ridgun/test crypto.rg`
+- `src/test/ridgun/test codec.rg`
+- `src/test/ridgun/test str.rg`
 
 ## Verification performed (command → result, newest last)
 - `stable format && stable check && stable bundle && stable test` → 17/17 modules checked, 17/17 bundles built, 17/17 test suites green (including Solstice RGF-015 acceptance test, RFC 9106 §5.3 official vector, OpenSSL 3.5 vectors, 600k PBKDF2, CSPRNG salt, binary-safe codec roundtrips, and linear `str_repeat`).

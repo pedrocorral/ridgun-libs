@@ -4,7 +4,7 @@ title: Verify Argon2id OWASP m=19456 latency and poll-based timeout bounds
 level: performance
 covers: [NFR-PERF-001]
 status: automated
-automated_in: [src/test/ridgun/test_crypto.rg, src/test/ridgun/test_io.rg]
+automated_in: [src/test/ridgun/test crypto.rg, src/test/ridgun/test io.rg]
 ---
 # TS-PERF-001 — Verify Argon2id OWASP m=19456 latency and poll-based timeout bounds
 

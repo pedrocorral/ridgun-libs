@@ -4,7 +4,7 @@ title: Verify socket shutdown, local/peer addr, exact I/O, poll, extended option
 level: unit
 covers: [FR-SOCK-003]
 status: automated
-automated_in: [src/test/ridgun/test_socket.rg]
+automated_in: [src/test/ridgun/test socket.rg]
 ---
 # TS-SOCK-003 — Verify socket shutdown, local/peer addr, exact I/O, poll, extended options, DNS hostnames, and CIDR matching
 

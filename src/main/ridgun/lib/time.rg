@@ -124,15 +124,15 @@ fn :: time epoch to utc Int       => Int Int Int Int Int Int
 
 fn :: tm pad2 Int => String
       tm pad2 n   =
-        | n < 10    = "0" + (int_to_str n)
-        | otherwise = int_to_str n
+        | n < 10    = "0" + (int to str n)
+        | otherwise = int to str n
 
 fn :: tm pad4 Int => String
       tm pad4 n   =
-        | n < 10   = "000" + (int_to_str n)
-        | n < 100  = "00" + (int_to_str n)
-        | n < 1000 = "0" + (int_to_str n)
-        | otherwise = int_to_str n
+        | n < 10   = "000" + (int to str n)
+        | n < 100  = "00" + (int to str n)
+        | n < 1000 = "0" + (int to str n)
+        | otherwise = int to str n
 
 fn :: tm fmt utc tuple (Int Int Int Int Int Int) => String
       tm fmt utc tuple (y, m, d, hh, mm, ss)     =
@@ -146,51 +146,51 @@ fn :: time format iso8601 Int       => String
 fn :: tm all digits String Int Int => Bool
       tm all digits s idx end_idx =
         | idx >= end_idx                                       = True
-        | (str_char_at s idx) < 48 or (str_char_at s idx) > 57 = False
+        | (str char at s idx) < 48 or (str char at s idx) > 57 = False
         | otherwise                                            = tm all digits s (idx + 1) end_idx
 
 fn :: tm is sep at String Int Int Int => Bool
       tm is sep at s idx c1 c2 =
-        ch = str_char_at s idx
+        ch = str char at s idx
         (ch == c1) or (ch == c2)
 
 fn :: tm parse iso8601 len String Int => Int
       tm parse iso8601 len s n =
         | n < 19 or n > 20                         = 0 - 1
         | not (tm all digits s 0 4)                = 0 - 1
-        | (str_char_at s 4) != 45                  = 0 - 1
+        | (str char at s 4) != 45                  = 0 - 1
         | not (tm all digits s 5 7)                = 0 - 1
-        | (str_char_at s 7) != 45                  = 0 - 1
+        | (str char at s 7) != 45                  = 0 - 1
         | not (tm all digits s 8 10)               = 0 - 1
         | not (tm is sep at s 10 84 32)            = 0 - 1
         | not (tm all digits s 11 13)              = 0 - 1
-        | (str_char_at s 13) != 58                 = 0 - 1
+        | (str char at s 13) != 58                 = 0 - 1
         | not (tm all digits s 14 16)              = 0 - 1
-        | (str_char_at s 16) != 58                 = 0 - 1
+        | (str char at s 16) != 58                 = 0 - 1
         | not (tm all digits s 17 19)              = 0 - 1
-        | n == 20 and (str_char_at s 19) != 90     = 0 - 1
+        | n == 20 and (str char at s 19) != 90     = 0 - 1
         | otherwise =
-          y  = str_to_int (str_slice s 0 4)
-          m  = str_to_int (str_slice s 5 7)
-          d  = str_to_int (str_slice s 8 10)
-          hh = str_to_int (str_slice s 11 13)
-          mm = str_to_int (str_slice s 14 16)
-          ss = str_to_int (str_slice s 17 19)
+          y  = str to int (str slice s 0 4)
+          m  = str to int (str slice s 5 7)
+          d  = str to int (str slice s 8 10)
+          hh = str to int (str slice s 11 13)
+          mm = str to int (str slice s 14 16)
+          ss = str to int (str slice s 17 19)
           time utc to epoch y m d hh mm ss
 
 -- @implements FR-TIME-001
 -- @implements API-TIME-001
 -- @mitigates VUL-INPUT-001
 fn :: time parse iso8601 String => Int
-      time parse iso8601 s      =  tm parse iso8601 len s (str_len s)
+      time parse iso8601 s      =  tm parse iso8601 len s (str len s)
 
 -- ── Human-Readable Duration & Exponential Backoff ────────────
 
 fn :: tm join part String Int String => String
       tm join part acc val unit =
         | val <= 0           = acc
-        | (str_len acc) == 0 = (int_to_str val) + unit
-        | otherwise          = acc + " " + (int_to_str val) + unit
+        | (str len acc) == 0 = (int to str val) + unit
+        | otherwise          = acc + " " + (int to str val) + unit
 
 -- @implements FR-TIME-001
 -- @implements API-TIME-001

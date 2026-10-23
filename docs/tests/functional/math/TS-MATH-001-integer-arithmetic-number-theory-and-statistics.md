@@ -4,7 +4,7 @@ title: Verify integer arithmetic, rounding division, powers/roots/logarithms, mo
 level: unit
 covers: [FR-MATH-001, API-MATH-001]
 status: automated
-automated_in: [src/test/ridgun/test_math.rg]
+automated_in: [src/test/ridgun/test math.rg]
 ---
 # TS-MATH-001 — Verify integer arithmetic, rounding division, powers/roots/logarithms, modular number theory, combinatorics, and list statistics
 

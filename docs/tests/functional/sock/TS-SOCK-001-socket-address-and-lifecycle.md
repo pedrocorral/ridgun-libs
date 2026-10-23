@@ -4,7 +4,7 @@ title: Verify socket address validation, options, and TCP/UDP/Unix lifecycle
 level: unit
 covers: [FR-SOCK-001]
 status: automated
-automated_in: [src/test/ridgun/test_socket.rg]
+automated_in: [src/test/ridgun/test socket.rg]
 ---
 # TS-SOCK-001 — Verify socket address validation, options, and TCP/UDP/Unix lifecycle
 

@@ -4,7 +4,7 @@ title: Verify string searching, trimming, replacement, splitting, case conversio
 level: unit
 covers: [FR-STR-001, API-STR-001]
 status: automated
-automated_in: [src/test/ridgun/test_str.rg]
+automated_in: [src/test/ridgun/test str.rg]
 ---
 # TS-STR-001 — Verify string searching, trimming, replacement, splitting, case conversion, and padding utilities
 

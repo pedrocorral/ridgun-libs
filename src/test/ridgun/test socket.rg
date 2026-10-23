@@ -69,8 +69,8 @@ fn :: unwrap dgram sender SockRecvFromRes => SockAddr
       unwrap dgram sender (SockFromErr _) =  empty addr
 
 -- @tests TS-SOCK-001
-fn :: test_sock_address_and_lifecycle => ()
-      test_sock_address_and_lifecycle =
+fn :: test sock address and lifecycle => ()
+      test sock address and lifecycle =
         r_v4       = sock parse addr "127.0.0.1:8080"
         r_v6       = sock parse addr "[::1]:9090"
         r_ux       = sock parse addr "/tmp/ridgun_test.sock"
@@ -132,8 +132,8 @@ fn :: test_sock_address_and_lifecycle => ()
         assert eq (is sock ok (sock connect (sock tcp) (unwrap addr r_ux))) False
 
 -- @tests TS-SOCK-002
-fn :: test_sock_data_transfer_and_framing => ()
-      test_sock_data_transfer_and_framing =
+fn :: test sock data transfer and framing => ()
+      test sock data transfer and framing =
         srv_addr = unwrap addr (sock parse addr "127.0.0.1:8081")
         cli_addr = unwrap addr (sock parse addr "127.0.0.1:50001")
         srv      = unwrap sock (sock listen (unwrap sock (sock bind (sock tcp) srv_addr)) 8)
@@ -185,8 +185,8 @@ fn :: test_sock_data_transfer_and_framing => ()
         assert eq (is sock ok (sock send to c0 [1, 2] srv_addr)) False
 
 -- @tests TS-SOCK-003
-fn :: test_sock_advanced_ops_dns_cidr_and_polling => ()
-      test_sock_advanced_ops_dns_cidr_and_polling =
+fn :: test sock advanced ops dns cidr and polling => ()
+      test sock advanced ops dns cidr and polling =
         srv_addr  = unwrap addr (sock resolve host "localhost" 8082)
         cli_addr  = unwrap addr (sock resolve host "api.example.com" 50002)
         bad_host  = sock resolve host "-bad..host" 8082
@@ -264,140 +264,140 @@ fn :: tup3 fd (Int Int String) => Int
 -- @tests TS-SOCK-004
 -- @tests TS-SEC-001
 -- @tests TS-OBS-001
-fn :: test_sock_rgf001_kernel_tcp_and_unix => ()
-      test_sock_rgf001_kernel_tcp_and_unix =
+fn :: test sock rgf001 kernel tcp and unix => ()
+      test sock rgf001 kernel tcp and unix =
         -- 1. Ephemeral TCP listen + sys_local_port + ADDR_IN_USE + invalid/permission checks
-        _      = assert_int_equals (tup2 fst (sys tcp listen "bad_host" 8080 16)) (0 - 7) "invalid host -> -7"
-        _      = assert_int_equals (tup2 fst (sys tcp listen "127.0.0.1" 70000 16)) (0 - 7) "invalid port -> -7"
-        _      = assert_int_equals (tup2 fst (sys tcp listen "127.0.0.1" 8080 0)) (0 - 7) "invalid backlog -> -7"
-        _      = assert_int_equals (tup2 fst (sys tcp listen "127.0.0.1" 80 16)) (0 - 6) "privileged port 80 -> -6"
+        _      = assert int equals (tup2 fst (sys tcp listen "bad_host" 8080 16)) (0 - 7) "invalid host -> -7"
+        _      = assert int equals (tup2 fst (sys tcp listen "127.0.0.1" 70000 16)) (0 - 7) "invalid port -> -7"
+        _      = assert int equals (tup2 fst (sys tcp listen "127.0.0.1" 8080 0)) (0 - 7) "invalid backlog -> -7"
+        _      = assert int equals (tup2 fst (sys tcp listen "127.0.0.1" 80 16)) (0 - 6) "privileged port 80 -> -6"
         l_res  = sys tcp listen "127.0.0.1" 0 16
-        _      = assert_int_equals (tup2 fst l_res) 0 "sys_tcp_listen status"
+        _      = assert int equals (tup2 fst l_res) 0 "sys_tcp_listen status"
         lfd    = tup2 snd l_res
-        _      = assert_true (lfd >= 0) "lfd >= 0"
-        _      = assert_true ((sys_call 72 lfd 1 0 0 0 0) >= 0) "lfd is real kernel fd (fcntl F_GETFD >= 0)"
+        _      = assert true (lfd >= 0) "lfd >= 0"
+        _      = assert true ((sys call 72 lfd 1 0 0 0 0) >= 0) "lfd is real kernel fd (fcntl F_GETFD >= 0)"
         lport  = sys local port lfd
-        _      = assert_true (lport > 0) "ephemeral port > 0"
+        _      = assert true (lport > 0) "ephemeral port > 0"
         dup_l  = sys tcp listen "127.0.0.1" lport 8
-        _      = assert_int_equals (tup2 fst dup_l) (0 - 5) "dup sys_tcp_listen -> -5"
+        _      = assert int equals (tup2 fst dup_l) (0 - 5) "dup sys_tcp_listen -> -5"
 
         -- 1b. Real DNS resolution (/etc/hosts + RFC 1035 wire packet parser + localhost + literal IP + hostname connect)
         r_loc  = sys resolve ipv4 "localhost"
-        _      = assert_int_equals (tup2 rc r_loc) 0 "sys_resolve_ipv4 localhost ok"
-        _      = assert_str_eq (tup2 str r_loc) "127.0.0.1" "sys_resolve_ipv4 localhost -> 127.0.0.1"
+        _      = assert int equals (tup2 rc r_loc) 0 "sys_resolve_ipv4 localhost ok"
+        _      = assert str eq (tup2 str r_loc) "127.0.0.1" "sys_resolve_ipv4 localhost -> 127.0.0.1"
         r_bad  = sys resolve ipv4 "-bad..host"
-        _      = assert_int_equals (tup2 rc r_bad) (0 - 7) "sys_resolve_ipv4 invalid hostname -> -7"
+        _      = assert int equals (tup2 rc r_bad) (0 - 7) "sys_resolve_ipv4 invalid hostname -> -7"
         dns_q  = sk build dns query "example.com"
-        _      = assert_int_equals (str_len dns_q) 29 "RFC 1035 DNS query length for example.com == 29"
+        _      = assert int equals (str len dns_q) 29 "RFC 1035 DNS query length for example.com == 29"
         -- Construct an RFC 1035 DNS response packet with 1 A record (93.184.216.34) using 0xC00C name compression
         dns_hd = (sk raw byte 18) + (sk raw byte 52) + (sk raw byte 129) + (sk raw byte 128) + (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0)
         dns_qn = sk encode qname ["example", "com"]
         dns_qt = (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 1)
         dns_an = (sk raw byte 192) + (sk raw byte 12) + (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 60) + (sk raw byte 0) + (sk raw byte 4) + (sk raw byte 93) + (sk raw byte 184) + (sk raw byte 216) + (sk raw byte 34)
         dns_ip = sk extract dns ipv4 (dns_hd + dns_qn + dns_qt + dns_an)
-        _      = assert_str_eq dns_ip "93.184.216.34" "sk_extract_dns_ipv4 parses RFC 1035 A record (93.184.216.34)"
+        _      = assert str eq dns_ip "93.184.216.34" "sk_extract_dns_ipv4 parses RFC 1035 A record (93.184.216.34)"
         c_host = sys tcp connect "localhost" lport 500
-        _      = assert_int_equals (tup2 fst c_host) 0 "sys_tcp_connect via hostname localhost ok"
+        _      = assert int equals (tup2 fst c_host) 0 "sys_tcp_connect via hostname localhost ok"
         a_host = sys accept lfd 500
-        _      = assert_int_equals (tup3 rc a_host) 0 "sys_accept from hostname connect ok"
-        _      = assert_int_equals (sys_close (tup2 snd c_host)) 0 "close c_host"
-        _      = assert_int_equals (sys_close (tup3 fd a_host)) 0 "close a_host"
+        _      = assert int equals (tup3 rc a_host) 0 "sys_accept from hostname connect ok"
+        _      = assert int equals (sys close (tup2 snd c_host)) 0 "close c_host"
+        _      = assert int equals (sys close (tup3 fd a_host)) 0 "close a_host"
 
         -- 2. Accept timeout (-2) when no client pending + connect refused (-3) on unbound port
         acc_to = sys accept lfd 30
-        _      = assert_int_equals (tup3 rc acc_to) (0 - 2) "sys_accept timeout -> -2"
+        _      = assert int equals (tup3 rc acc_to) (0 - 2) "sys_accept timeout -> -2"
         ref_c  = sys tcp connect "127.0.0.1" 39999 100
-        _      = assert_int_equals (tup2 fst ref_c) (0 - 3) "sys_tcp_connect refused -> -3"
+        _      = assert int equals (tup2 fst ref_c) (0 - 3) "sys_tcp_connect refused -> -3"
 
         -- 3. TCP multi-client queue, bidirectional I/O, chunked recv, recv timeout (-2), shutdown_write, send after shutdown (-4), EOF (-1)
         c_res  = sys tcp connect "127.0.0.1" lport 500
         c_res2 = sys tcp connect "127.0.0.1" lport 500
-        _      = assert_int_equals (tup2 fst c_res) 0 "sys_tcp_connect 1 ok"
-        _      = assert_int_equals (tup2 fst c_res2) 0 "sys_tcp_connect 2 ok"
+        _      = assert int equals (tup2 fst c_res) 0 "sys_tcp_connect 1 ok"
+        _      = assert int equals (tup2 fst c_res2) 0 "sys_tcp_connect 2 ok"
         cfd    = tup2 snd c_res
         cfd2   = tup2 snd c_res2
         a_res  = sys accept lfd 500
         a_res2 = sys accept lfd 500
-        _      = assert_int_equals (tup3 rc a_res) 0 "sys_accept 1 ok"
-        _      = assert_int_equals (tup3 rc a_res2) 0 "sys_accept 2 ok"
+        _      = assert int equals (tup3 rc a_res) 0 "sys_accept 1 ok"
+        _      = assert int equals (tup3 rc a_res2) 0 "sys_accept 2 ok"
         sfd    = tup3 fd a_res
         sfd2   = tup3 fd a_res2
 
         -- Empty recv with timeout=20 returns (-2, "")
         rcv_to = sys recv sfd 16 20
-        _      = assert_int_equals (tup2 rc rcv_to) (0 - 2) "sys_recv timeout on idle stream -> -2"
+        _      = assert int equals (tup2 rc rcv_to) (0 - 2) "sys_recv timeout on idle stream -> -2"
 
         -- Chunked recv: send 10 bytes, read 4 + 4 + 2 bytes, plus reverse direction sfd -> cfd
         snd1   = sys send cfd "0123456789" 500
-        _      = assert_int_equals (tup2 fst snd1) 0 "sys_send status"
-        _      = assert_int_equals (tup2 snd snd1) 10 "sys_send len 10"
+        _      = assert int equals (tup2 fst snd1) 0 "sys_send status"
+        _      = assert int equals (tup2 snd snd1) 10 "sys_send len 10"
         ch1    = sys recv sfd 4 500
         ch2    = sys recv sfd 4 500
         ch3    = sys recv sfd 4 500
-        _      = assert_str_eq (tup2 str ch1) "0123" "chunk 1 (4B)"
-        _      = assert_str_eq (tup2 str ch2) "4567" "chunk 2 (4B)"
-        _      = assert_str_eq (tup2 str ch3) "89" "chunk 3 (2B)"
-        _      = assert_int_equals (tup2 fst (sys send sfd "pong" 500)) 0 "server->client send ok"
-        _      = assert_str_eq (tup2 str (sys recv cfd 16 500)) "pong" "client recv pong"
+        _      = assert str eq (tup2 str ch1) "0123" "chunk 1 (4B)"
+        _      = assert str eq (tup2 str ch2) "4567" "chunk 2 (4B)"
+        _      = assert str eq (tup2 str ch3) "89" "chunk 3 (2B)"
+        _      = assert int equals (tup2 fst (sys send sfd "pong" 500)) 0 "server->client send ok"
+        _      = assert str eq (tup2 str (sys recv cfd 16 500)) "pong" "client recv pong"
 
         -- Raw binary bytes (0, 1, 127, 128, 254, 255) + AEAD ciphertext over TCP sys_send/sys_recv
         raw_bin = bytes from list [0, 1, 127, 128, 254, 255]
-        _       = assert_int_equals (str_len raw_bin) 6 "raw_bin len == 6"
-        _       = assert_int_equals (tup2 fst (sys send cfd2 raw_bin 500)) 0 "sys_send raw binary ok"
+        _       = assert int equals (str len raw_bin) 6 "raw_bin len == 6"
+        _       = assert int equals (tup2 fst (sys send cfd2 raw_bin 500)) 0 "sys_send raw binary ok"
         r_bin   = tup2 str (sys recv sfd2 16 500)
-        _       = assert_int_equals (str_len r_bin) 6 "raw binary recv len == 6"
-        _       = assert_int_equals (str_char_at r_bin 0) 0 "raw binary byte[0] == 0"
-        _       = assert_int_equals (str_char_at r_bin 1) 1 "raw binary byte[1] == 1"
-        _       = assert_int_equals (str_char_at r_bin 3) 128 "raw binary byte[3] == 128"
-        _       = assert_int_equals (str_char_at r_bin 5) 255 "raw binary byte[5] == 255"
+        _       = assert int equals (str len r_bin) 6 "raw binary recv len == 6"
+        _       = assert int equals (str char at r_bin 0) 0 "raw binary byte[0] == 0"
+        _       = assert int equals (str char at r_bin 1) 1 "raw binary byte[1] == 1"
+        _       = assert int equals (str char at r_bin 3) 128 "raw binary byte[3] == 128"
+        _       = assert int equals (str char at r_bin 5) 255 "raw binary byte[5] == 255"
         k32     = sha256 bytes "socket-session-key"
         n12     = "0123456789ab"
         ct_wire = aead seal k32 n12 "tcp-aad" "confidential-payload-over-tcp"
-        _       = assert_int_equals (tup2 fst (sys send cfd2 ct_wire 500)) 0 "sys_send AEAD ciphertext ok"
+        _       = assert int equals (tup2 fst (sys send cfd2 ct_wire 500)) 0 "sys_send AEAD ciphertext ok"
         rx_wire = tup2 str (sys recv sfd2 128 500)
         opened  = aead open k32 n12 "tcp-aad" rx_wire
-        _       = assert_int_equals (tup2 rc opened) 0 "aead_open over TCP socket ok"
-        _       = assert_str_eq (tup2 str opened) "confidential-payload-over-tcp" "decrypted TCP payload matches"
+        _       = assert int equals (tup2 rc opened) 0 "aead_open over TCP socket ok"
+        _       = assert str eq (tup2 str opened) "confidential-payload-over-tcp" "decrypted TCP payload matches"
 
         -- Shutdown write -> subsequent send returns (-4, -1) RESET, peer recv returns (-1, "") EOF
-        _      = assert_int_equals (sys shutdown write cfd) 0 "sys_shutdown_write"
-        _      = assert_int_equals (tup2 fst (sys send cfd "after-shut" 100)) (0 - 4) "send after shutdown_write -> -4"
+        _      = assert int equals (sys shutdown write cfd) 0 "sys_shutdown_write"
+        _      = assert int equals (tup2 fst (sys send cfd "after-shut" 100)) (0 - 4) "send after shutdown_write -> -4"
         rcv_ef = sys recv sfd 64 500
-        _      = assert_int_equals (tup2 rc rcv_ef) (0 - 1) "sys_recv EOF -> -1"
-        _      = assert_int_equals (sys_close cfd) 0 "sys_close cfd"
-        _      = assert_int_equals (sys_close sfd) 0 "sys_close sfd"
-        _      = assert_int_equals (sys_close cfd2) 0 "sys_close cfd2"
-        _      = assert_int_equals (sys_close sfd2) 0 "sys_close sfd2"
-        _      = assert_int_equals (sys_close lfd) 0 "sys_close lfd"
+        _      = assert int equals (tup2 rc rcv_ef) (0 - 1) "sys_recv EOF -> -1"
+        _      = assert int equals (sys close cfd) 0 "sys_close cfd"
+        _      = assert int equals (sys close sfd) 0 "sys_close sfd"
+        _      = assert int equals (sys close cfd2) 0 "sys_close cfd2"
+        _      = assert int equals (sys close sfd2) 0 "sys_close sfd2"
+        _      = assert int equals (sys close lfd) 0 "sys_close lfd"
 
         -- Operations on closed fd return -7 (INVALID)
-        _      = assert_int_equals (sys local port lfd) (0 - 7) "sys_local_port on closed lfd -> -7"
-        _      = assert_int_equals (tup3 rc (sys accept lfd 10)) (0 - 7) "sys_accept on closed lfd -> -7"
-        _      = assert_int_equals (tup2 fst (sys send cfd "x" 10)) (0 - 7) "sys_send on closed cfd -> -7"
-        _      = assert_int_equals (tup2 rc (sys recv sfd 16 10)) (0 - 7) "sys_recv on closed sfd -> -7"
+        _      = assert int equals (sys local port lfd) (0 - 7) "sys_local_port on closed lfd -> -7"
+        _      = assert int equals (tup3 rc (sys accept lfd 10)) (0 - 7) "sys_accept on closed lfd -> -7"
+        _      = assert int equals (tup2 fst (sys send cfd "x" 10)) (0 - 7) "sys_send on closed cfd -> -7"
+        _      = assert int equals (tup2 rc (sys recv sfd 16 10)) (0 - 7) "sys_recv on closed sfd -> -7"
 
         -- 4. AF_UNIX listen + connect + send + recv + path traversal (-7) + missing listener (-3)
         u_bad  = sys unix listen "../traversal.sock" 8
-        _      = assert_int_equals (tup2 fst u_bad) (0 - 7) "sys_unix_listen traversal -> -7"
-        _      = assert_int_equals (tup2 fst (sys unix connect "/tmp/rg_nonexistent_99999.sock" 50)) (0 - 3) "sys_unix_connect missing -> -3"
+        _      = assert int equals (tup2 fst u_bad) (0 - 7) "sys_unix_listen traversal -> -7"
+        _      = assert int equals (tup2 fst (sys unix connect "/tmp/rg_nonexistent_99999.sock" 50)) (0 - 3) "sys_unix_connect missing -> -3"
         upath  = "/tmp/rg_sock_rgf001_{sys_getpid}.sock"
         ul_res = sys unix listen upath 8
-        _      = assert_int_equals (tup2 fst ul_res) 0 "sys_unix_listen ok"
+        _      = assert int equals (tup2 fst ul_res) 0 "sys_unix_listen ok"
         ulfd   = tup2 snd ul_res
         uc_res = sys unix connect upath 500
-        _      = assert_int_equals (tup2 fst uc_res) 0 "sys_unix_connect ok"
+        _      = assert int equals (tup2 fst uc_res) 0 "sys_unix_connect ok"
         ucfd   = tup2 snd uc_res
         ua_res = sys accept ulfd 500
-        _      = assert_int_equals (tup3 rc ua_res) 0 "sys_accept unix ok"
+        _      = assert int equals (tup3 rc ua_res) 0 "sys_accept unix ok"
         usfd   = tup3 fd ua_res
-        _      = assert_int_equals (tup2 fst (sys send ucfd "unix-msg" 500)) 0 "sys_send unix ok"
+        _      = assert int equals (tup2 fst (sys send ucfd "unix-msg" 500)) 0 "sys_send unix ok"
         urcv   = sys recv usfd 64 500
-        _      = assert_int_equals (tup2 rc urcv) 0 "sys_recv unix ok"
-        _      = assert_str_eq (tup2 str urcv) "unix-msg" "AF_UNIX sys_recv"
-        _      = assert_int_equals (sys_close ucfd) 0 "sys_close ucfd"
-        _      = assert_int_equals (sys_close usfd) 0 "sys_close usfd"
-        _      = assert_int_equals (sys_close ulfd) 0 "sys_close ulfd"
-        _      = assert_int_equals (shell_exec "rm -f '{upath}'") 0 "unlink AF_UNIX socket"
+        _      = assert int equals (tup2 rc urcv) 0 "sys_recv unix ok"
+        _      = assert str eq (tup2 str urcv) "unix-msg" "AF_UNIX sys_recv"
+        _      = assert int equals (sys close ucfd) 0 "sys_close ucfd"
+        _      = assert int equals (sys close usfd) 0 "sys_close usfd"
+        _      = assert int equals (sys close ulfd) 0 "sys_close ulfd"
+        _      = assert int equals (shell exec "rm -f '{upath}'") 0 "unlink AF_UNIX socket"
 
         -- 5. RG-049: sys_send honours timeout_ms when peer never reads (8 MiB send with timeout_ms=1000)
         tl_res = sys tcp listen "127.0.0.1" 0 8
@@ -408,33 +408,33 @@ fn :: test_sock_rgf001_kernel_tcp_and_unix => ()
         ta_res = sys accept tlfd 500
         tsfd   = tup3 fd ta_res
         big8m  = str repeat "x" 8000000
-        ts0    = sys_time_ms
+        ts0    = sys time ms
         tsnd   = sys send tsfd big8m 1000
-        ts1    = sys_time_ms
+        ts1    = sys time ms
         dt_ms  = ts1 - ts0
-        _      = assert_int_equals (tup2 fst tsnd) (0 - 2) "RG-049: sys_send 8 MiB to non-reading peer times out -> -2"
-        _      = assert_true ((tup2 snd tsnd) > 0) "RG-049: sys_send returns partial bytes sent > 0 on timeout"
-        _      = assert_true (dt_ms >= 800 and dt_ms <= 2500) "RG-049: sys_send timeout elapsed ~1000 ms"
-        _      = assert_int_equals (sys_close tcfd) 0 "sys_close tcfd"
-        _      = assert_int_equals (sys_close tsfd) 0 "sys_close tsfd"
-        _      = assert_int_equals (sys_close tlfd) 0 "sys_close tlfd"
+        _      = assert int equals (tup2 fst tsnd) (0 - 2) "RG-049: sys_send 8 MiB to non-reading peer times out -> -2"
+        _      = assert true ((tup2 snd tsnd) > 0) "RG-049: sys_send returns partial bytes sent > 0 on timeout"
+        _      = assert true (dt_ms >= 800 and dt_ms <= 2500) "RG-049: sys_send timeout elapsed ~1000 ms"
+        _      = assert int equals (sys close tcfd) 0 "sys_close tcfd"
+        _      = assert int equals (sys close tsfd) 0 "sys_close tsfd"
+        _      = assert int equals (sys close tlfd) 0 "sys_close tlfd"
 
         -- 6. Wish (multi-core): SO_REUSEPORT allows two TCP listeners on the same (ip, port)
         rp1    = sys tcp listen reuseport "127.0.0.1" 0 16
-        _      = assert_int_equals (tup2 fst rp1) 0 "sys_tcp_listen_reuseport 1 ok"
+        _      = assert int equals (tup2 fst rp1) 0 "sys_tcp_listen_reuseport 1 ok"
         rp_fd1 = tup2 snd rp1
         rp_prt = sys local port rp_fd1
         rp2    = sys tcp listen reuseport "127.0.0.1" rp_prt 16
-        _      = assert_int_equals (tup2 fst rp2) 0 "sys_tcp_listen_reuseport 2 on same port ok"
+        _      = assert int equals (tup2 fst rp2) 0 "sys_tcp_listen_reuseport 2 on same port ok"
         rp_fd2 = tup2 snd rp2
-        _      = assert_int_equals (sys_close rp_fd1) 0 "sys_close rp_fd1"
-        _      = assert_int_equals (sys_close rp_fd2) 0 "sys_close rp_fd2"
+        _      = assert int equals (sys close rp_fd1) 0 "sys_close rp_fd1"
+        _      = assert int equals (sys close rp_fd2) 0 "sys_close rp_fd2"
         ()
 
 fn :: main => ()
       main =
-        _ = test_sock_address_and_lifecycle
-        _ = test_sock_data_transfer_and_framing
-        _ = test_sock_advanced_ops_dns_cidr_and_polling
-        _ = test_sock_rgf001_kernel_tcp_and_unix
+        _ = test sock address and lifecycle
+        _ = test sock data transfer and framing
+        _ = test sock advanced ops dns cidr and polling
+        _ = test sock rgf001 kernel tcp and unix
         echo "=== All socket tests passed ==="

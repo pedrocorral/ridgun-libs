@@ -12,10 +12,10 @@ context_files:
   - src/main/ridgun/lib/crypto.rg
   - src/main/ridgun/lib/socket.rg
   - src/main/ridgun/lib/str.rg
-  - src/test/ridgun/test_argon2id.rg
-  - src/test/ridgun/test_crypto.rg
-  - src/test/ridgun/test_socket.rg
-  - src/test/ridgun/test_str.rg
+  - src/test/ridgun/test argon2id.rg
+  - src/test/ridgun/test crypto.rg
+  - src/test/ridgun/test socket.rg
+  - src/test/ridgun/test str.rg
 scope:
   - src/main/ridgun/lib/*.rg
   - src/test/ridgun/test_*.rg
@@ -33,8 +33,8 @@ Resolve all findings in `2026-10-22-open-issues.md` (`RG-043`, `RG-049`, `RG-050
 
 ## Plan
 - [x] Replace all comma-separated tuple and pair-list type signatures (`(A, B)` → `A B`, `[(A, B)]` → `[A B]`) across all 17 library modules and 17 test suites (Ridgun `v0.9.10`).
-- [x] Remove the `1048576` cap in `str_repeat` (`RG-052`) and add an 8 MiB `str_repeat "x" 8000000` test in `test_str.rg`.
-- [x] Implement `POLLOUT` (`4`) polling + non-blocking `MSG_NOSIGNAL | MSG_DONTWAIT` (`16448`) loop in `sys_send` returning `(-2, bytes_sent_so_far)` on timeout (`RG-049`), and add `SO_REUSEPORT` (`sys_tcp_listen_reuseport`, `sys_set_reuseport`) in `socket.rg` + tests in `test_socket.rg`.
+- [x] Remove the `1048576` cap in `str_repeat` (`RG-052`) and add an 8 MiB `str_repeat "x" 8000000` test in `test str.rg`.
+- [x] Implement `POLLOUT` (`4`) polling + non-blocking `MSG_NOSIGNAL | MSG_DONTWAIT` (`16448`) loop in `sys_send` returning `(-2, bytes_sent_so_far)` on timeout (`RG-049`), and add `SO_REUSEPORT` (`sys_tcp_listen_reuseport`, `sys_set_reuseport`) in `socket.rg` + tests in `test socket.rg`.
 - [x] Implement 100% pure-Ridgun in-process RFC 7693 BLAKE2b-512, `blake2b_long` ($H'$), and RFC 9106 v0x13 Argon2id (`RG-043`, `RG-050`) with non-empty PHC tag validation (`RG-051`) in `argon2id.rg` and `crypto.rg` (zero `shell_exec` / `openssl` subprocesses) and fast in-process `pbkdf2_hmac_sha256`.
 - [x] Verify all 17 modules and 17 test suites with `stable format`, `stable check`, `stable bundle`, and `stable test`.
 

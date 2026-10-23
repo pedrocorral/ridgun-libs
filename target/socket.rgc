@@ -1,4 +1,4 @@
--- RGLIB1
+RGC1
 -- SELF_HOSTED_COMPILER: ridgunc v0.9.8
 -- FUNCTIONS: 182
 -- TYPES: 10
@@ -248,32 +248,32 @@ fn :: all valid bytes [Int]    => Bool
 fn :: str to bytes loop String Int Int => [Int]
       str to bytes loop s idx len =
         | idx >= len = []
-        | otherwise  = [(str_char_at s idx)] :: (str to bytes loop s (idx + 1) len)
+        | otherwise  = [(str char at s idx)] :: (str to bytes loop s (idx + 1) len)
 
 fn :: str to byte list String => [Int]
-      str to byte list s      =  str to bytes loop s 0 (str_len s)
+      str to byte list s      =  str to bytes loop s 0 (str len s)
 
 fn :: byte list to str [Int]    => String
       byte list to str []       =  ""
-      byte list to str (b:rest) =  (char_from_code b) + (byte list to str rest)
+      byte list to str (b:rest) =  (char from code b) + (byte list to str rest)
 
 fn :: find sub at String String Int Int Int => Int
       find sub at s sub idx slen nlen =
         | (idx + nlen) > slen                   = -1
-        | (str_slice s idx (idx + nlen)) == sub = idx
+        | (str slice s idx (idx + nlen)) == sub = idx
         | otherwise                             = find sub at s sub (idx + 1) slen nlen
 
 fn :: find str index String String => Int
-      find str index s      sub    =  find sub at s sub 0 (str_len s) (str_len sub)
+      find str index s      sub    =  find sub at s sub 0 (str len s) (str len sub)
 
 fn :: split by char loop String Int Int Int Int => [String]
       split by char loop s ch start idx len =
-        | idx >= len                = [(str_slice s start len)]
-        | (str_char_at s idx) == ch = [(str_slice s start idx)] :: (split by char loop s ch (idx + 1) (idx + 1) len)
+        | idx >= len                = [(str slice s start len)]
+        | (str char at s idx) == ch = [(str slice s start idx)] :: (split by char loop s ch (idx + 1) (idx + 1) len)
         | otherwise                 = split by char loop s ch start (idx + 1) len
 
 fn :: split by char String Int => [String]
-      split by char s      ch  =  split by char loop s ch 0 0 (str_len s)
+      split by char s      ch  =  split by char loop s ch 0 0 (str len s)
 
 -- ============================================================
 -- Endpoint, Hostname & CIDR Validation (FR-SOCK-001, FR-SOCK-003)
@@ -292,13 +292,13 @@ fn :: is ascii digit Int => Bool
 fn :: is digit range String Int Int => Bool
       is digit range s idx len =
         | idx >= len                               = True
-        | not (is ascii digit (str_char_at s idx)) = False
+        | not (is ascii digit (str char at s idx)) = False
         | otherwise                                = is digit range s (idx + 1) len
 
 fn :: is all digits String => Bool
       is all digits s      =
-        | (str_len s) == 0 = False
-        | otherwise        = is digit range s 0 (str_len s)
+        | (str len s) == 0 = False
+        | otherwise        = is digit range s 0 (str len s)
 
 fn :: check octet range Int => Bool
       check octet range v   =  v >= 0 and v <= 255
@@ -306,7 +306,7 @@ fn :: check octet range Int => Bool
 fn :: is valid octet String => Bool
       is valid octet part   =
         | not (is all digits part) = False
-        | otherwise                = check octet range (str_to_int part)
+        | otherwise                = check octet range (str to int part)
 
 fn :: all valid octets [String]    => Bool
       all valid octets []          =  True
@@ -332,14 +332,14 @@ fn :: is hex colon Int => Bool
 fn :: check ipv6 chars String Int Int => Bool
       check ipv6 chars s idx len =
         | idx >= len                             = True
-        | not (is hex colon (str_char_at s idx)) = False
+        | not (is hex colon (str char at s idx)) = False
         | otherwise                              = check ipv6 chars s (idx + 1) len
 
 fn :: is valid ipv6 String => Bool
       is valid ipv6 host   =
-        | (str_len host) < 2          = False
-        | not (str_contains host ":") = False
-        | otherwise                   = check ipv6 chars host 0 (str_len host)
+        | (str len host) < 2          = False
+        | not (str contains host ":") = False
+        | otherwise                   = check ipv6 chars host 0 (str len host)
 
 fn :: is hostname char Int => Bool
       is hostname char c   =
@@ -351,30 +351,30 @@ fn :: is hostname char Int => Bool
 fn :: check hostname chars String Int Int => Bool
       check hostname chars s idx len =
         | idx >= len                                 = True
-        | not (is hostname char (str_char_at s idx)) = False
+        | not (is hostname char (str char at s idx)) = False
         | otherwise                                  = check hostname chars s (idx + 1) len
 
 fn :: is valid hostname String => Bool
       is valid hostname host   =
-        | (str_len host) < 1 or (str_len host) > 253              = False
-        | (str_starts_with host "-") or (str_starts_with host ".") = False
-        | (str_char_at host ((str_len host) - 1)) == 45           = False
-        | (str_char_at host ((str_len host) - 1)) == 46           = False
-        | str_contains host ".."                                  = False
-        | otherwise                                               = check hostname chars host 0 (str_len host)
+        | (str len host) < 1 or (str len host) > 253              = False
+        | (str starts with host "-") or (str starts with host ".") = False
+        | (str char at host ((str len host) - 1)) == 45           = False
+        | (str char at host ((str len host) - 1)) == 46           = False
+        | str contains host ".."                                  = False
+        | otherwise                                               = check hostname chars host 0 (str len host)
 
 fn :: sk lower char String Int Int => String
       sk lower char s idx c =
-        | c >= 65 and c <= 90 = char_from_code (c + 32)
-        | otherwise           = str_slice s idx (idx + 1)
+        | c >= 65 and c <= 90 = char from code (c + 32)
+        | otherwise           = str slice s idx (idx + 1)
 
 fn :: sk to lower loop String Int Int => String
       sk to lower loop s idx len =
         | idx >= len = ""
-        | otherwise  = (sk lower char s idx (str_char_at s idx)) + (sk to lower loop s (idx + 1) len)
+        | otherwise  = (sk lower char s idx (str char at s idx)) + (sk to lower loop s (idx + 1) len)
 
 fn :: sk to lower String => String
-      sk to lower s      =  sk to lower loop s 0 (str_len s)
+      sk to lower s      =  sk to lower loop s 0 (str len s)
 
 fn :: sk is ws Int => Bool
       sk is ws c   =  c == 32 or c == 9 or c == 13
@@ -382,10 +382,10 @@ fn :: sk is ws Int => Bool
 fn :: sk split ws loop String Int Int Int Bool => [String]
       sk split ws loop s start idx len in_tok =
         | idx >= len =
-          | in_tok    = [str_slice s start len]
+          | in_tok    = [str slice s start len]
           | otherwise = [] |.
-        | sk is ws (str_char_at s idx) =
-          | in_tok    = [str_slice s start idx] :: (sk split ws loop s (idx + 1) (idx + 1) len False)
+        | sk is ws (str char at s idx) =
+          | in_tok    = [str slice s start idx] :: (sk split ws loop s (idx + 1) (idx + 1) len False)
           | otherwise = sk split ws loop s (idx + 1) (idx + 1) len False |.
         | otherwise =
           | in_tok    = sk split ws loop s start (idx + 1) len True
@@ -394,7 +394,7 @@ fn :: sk split ws loop String Int Int Int Bool => [String]
 fn :: sk strip comment String Int   => String
       sk strip comment line   h_idx =
         | h_idx < 0 = line
-        | otherwise = str_slice line 0 h_idx
+        | otherwise = str slice line 0 h_idx
 
 fn :: sk list has host [String] String => Bool
       sk list has host [] _ = False
@@ -411,14 +411,14 @@ fn :: sk match hosts tokens [String] String => String
 
 fn :: sk search hosts after found String [String] String => String
       sk search hosts after found found rest target =
-        | (str_len found) > 0 = found
+        | (str len found) > 0 = found
         | otherwise           = sk search hosts lines rest target
 
 fn :: sk search hosts lines [String] String => String
       sk search hosts lines [] _ = ""
       sk search hosts lines (line:rest) target =
         clean = sk strip comment line (find str index line "#")
-        toks  = sk split ws loop clean 0 0 (str_len clean) False
+        toks  = sk split ws loop clean 0 0 (str len clean) False
         sk search hosts after found (sk match hosts tokens toks target) rest target
 
 fn :: sk file exists (Bool String Int Int Int String String Int String) => Bool
@@ -426,9 +426,9 @@ fn :: sk file exists (Bool String Int Int Int String String Int String) => Bool
 
 fn :: sk lookup etc hosts String => String
       sk lookup etc hosts host   =
-        | not (sk file exists (file_lstat "/etc/hosts")) = ""
+        | not (sk file exists (file lstat "/etc/hosts")) = ""
         | otherwise =
-          raw   = read_file "/etc/hosts"
+          raw   = read file "/etc/hosts"
           lines = split by char raw 10
           sk search hosts lines lines (sk to lower host)
 
@@ -445,21 +445,21 @@ fn :: sk match resolv tokens [String] => String
 
 fn :: sk search resolv after found String [String] => String
       sk search resolv after found found rest =
-        | (str_len found) > 0 = found
+        | (str len found) > 0 = found
         | otherwise           = sk search resolv lines rest
 
 fn :: sk search resolv lines [String]    => String
       sk search resolv lines []          =  "8.8.8.8"
       sk search resolv lines (line:rest) =
         clean = sk strip comment line (find str index line "#")
-        toks  = sk split ws loop clean 0 0 (str_len clean) False
+        toks  = sk split ws loop clean 0 0 (str len clean) False
         sk search resolv after found (sk match resolv tokens toks) rest
 
 fn :: sk system nameserver => String
       sk system nameserver =
-        | not (sk file exists (file_lstat "/etc/resolv.conf")) = "8.8.8.8"
+        | not (sk file exists (file lstat "/etc/resolv.conf")) = "8.8.8.8"
         | otherwise =
-          raw   = read_file "/etc/resolv.conf"
+          raw   = read file "/etc/resolv.conf"
           lines = split by char raw 10
           sk search resolv lines lines
 
@@ -470,7 +470,7 @@ fn :: sk encode qname label String Int [String] => String
 
 fn :: sk encode qname [String]   => String
       sk encode qname []         =  sk raw byte 0
-      sk encode qname (lbl:rest) =  sk encode qname label lbl (str_len lbl) rest
+      sk encode qname (lbl:rest) =  sk encode qname label lbl (str len lbl) rest
 
 fn :: sk build dns query String => String
       sk build dns query host   =
@@ -488,13 +488,13 @@ fn :: sk skip dns name step String Int Int Int => Int
 fn :: sk skip dns name String Int Int => Int
       sk skip dns name pkt off plen =
         | off >= plen = plen
-        | otherwise   = sk skip dns name step pkt off plen (str_char_at pkt off)
+        | otherwise   = sk skip dns name step pkt off plen (str char at pkt off)
 
 fn :: sk check dns rdata String Int Int Int Int Int Int => String
       sk check dns rdata pkt rtype rclass rdlen rdata rem plen =
         | (rdata + rdlen) > plen = ""
         | rtype == 1 and rclass == 1 and rdlen == 4 =
-          "{str_char_at pkt rdata}.{str_char_at pkt (rdata + 1)}.{str_char_at pkt (rdata + 2)}.{str_char_at pkt (rdata + 3)}"
+          (int to str (str char at pkt rdata)) + "." + (int to str (str char at pkt (rdata + 1))) + "." + (int to str (str char at pkt (rdata + 2))) + "." + (int to str (str char at pkt (rdata + 3)))
         | otherwise =
           sk parse dns answers pkt (rdata + rdlen) (rem - 1) plen
 
@@ -523,16 +523,16 @@ fn :: sk extract dns after len String Int => String
         | otherwise = sk extract dns after ancount pkt plen (sk decode u16 be pkt 6)
 
 fn :: sk extract dns ipv4 String => String
-      sk extract dns ipv4 pkt    =  sk extract dns after len pkt (str_len pkt)
+      sk extract dns ipv4 pkt    =  sk extract dns after len pkt (str len pkt)
 
 fn :: sk read dns after poll Int Int => String
       sk read dns after poll ufd prc =
         | prc <= 0 =
-          _ = sys_close ufd
+          _ = sys close ufd
           ""
         | otherwise =
-          resp = sys_read_fd ufd 512
-          _    = sys_close ufd
+          resp = sys read fd ufd 512
+          _    = sys close ufd
           sk extract dns ipv4 resp
 
 fn :: sk udp dns query String String Int => String
@@ -541,26 +541,26 @@ fn :: sk udp dns query String String Int => String
         | otherwise =
           ptr  = sk alloc page 4096
           mfd  = sk alloc mfd
-          ufd  = sys_call 41 2 2 0 0 0 0
+          ufd  = sys call 41 2 2 0 0 0 0
           sin  = sk build sockaddr in ns_ip 53 True
           _    = sk poke mfd ptr sin
-          _    = sys_call 42 ufd ptr 16 0 0 0
+          _    = sys call 42 ufd ptr 16 0 0 0
           q    = sk build dns query host
-          qlen = str_len q
+          qlen = str len q
           _    = sk poke mfd ptr q
-          _    = sys_call 44 ufd ptr qlen 16384 0 0
+          _    = sys call 44 ufd ptr qlen 16384 0 0
           _    = sk free page mfd ptr 4096
-          prc  = sys_poll ufd 1 timeout_ms
+          prc  = sys poll ufd 1 timeout_ms
           sk read dns after poll ufd prc
 
 fn :: sk resolve after dns String => Int String
       sk resolve after dns d_ip   =
-        | (str_len d_ip) > 0 = (0, d_ip)
+        | (str len d_ip) > 0 = (0, d_ip)
         | otherwise          = (0 - 3, "")
 
 fn :: sk resolve after hosts String String => Int String
       sk resolve after hosts host h_ip =
-        | (str_len h_ip) > 0 = (0, h_ip)
+        | (str len h_ip) > 0 = (0, h_ip)
         | otherwise          = sk resolve after dns (sk udp dns query (sk system nameserver) host 500)
 
 -- @implements FR-SOCK-003
@@ -593,10 +593,10 @@ fn :: sock resolve host String Int  => SockAddrRes
 fn :: ipv4 to u32 String => Int
       ipv4 to u32 ip     =
         parts = split by char ip 46
-        o0    = str_to_int (nth str parts 0)
-        o1    = str_to_int (nth str parts 1)
-        o2    = str_to_int (nth str parts 2)
-        o3    = str_to_int (nth str parts 3)
+        o0    = str to int (nth str parts 0)
+        o1    = str to int (nth str parts 1)
+        o2    = str to int (nth str parts 2)
+        o3    = str to int (nth str parts 3)
         (o0 * 16777216) + (o1 * 65536) + (o2 * 256) + o3
 
 fn :: pow2 Int => Int
@@ -618,8 +618,8 @@ fn :: ip in cidr at String String Int => Bool
       ip in cidr at ip cidr slash_idx =
         | slash_idx < 7 = False
         | otherwise =
-          net_ip = str_slice cidr 0 slash_idx
-          p_str  = str_slice cidr (slash_idx + 1) (str_len cidr)
+          net_ip = str slice cidr 0 slash_idx
+          p_str  = str slice cidr (slash_idx + 1) (str len cidr)
           match cidr prefix ip net_ip (parse port str p_str)
 
 fn :: ip in cidr String String => Bool
@@ -627,19 +627,19 @@ fn :: ip in cidr String String => Bool
 
 fn :: has unsafe path char String => Bool
       has unsafe path char p      =
-        has_trav = str_contains p ".."
-        has_semi = str_contains p ";"
-        has_pipe = str_contains p "|"
-        has_amp  = str_contains p "&"
-        has_dlr  = str_contains p "$"
-        has_tick = str_contains p "`"
-        has_spc  = str_contains p " "
+        has_trav = str contains p ".."
+        has_semi = str contains p ";"
+        has_pipe = str contains p "|"
+        has_amp  = str contains p "&"
+        has_dlr  = str contains p "$"
+        has_tick = str contains p "`"
+        has_spc  = str contains p " "
         has_trav or has_semi or has_pipe or has_amp or has_dlr or has_tick or has_spc
 
 fn :: is safe unix path String => Bool
       is safe unix path path   =
-        | (str_len path) < 2 or (str_len path) > 108                     = False
-        | not ((str_starts_with path "/") or (str_starts_with path "./")) = False
+        | (str len path) < 2 or (str len path) > 108                     = False
+        | not ((str starts with path "/") or (str starts with path "./")) = False
         | has unsafe path char path                                       = False
         | otherwise                                                       = True
 
@@ -663,14 +663,14 @@ fn :: sock addr unix String => SockAddrRes
 fn :: parse port str String => Int
       parse port str s      =
         | not (is all digits s) = -1
-        | otherwise             = str_to_int s
+        | otherwise             = str to int s
 
 fn :: parse bracketed ipv6 at String Int => SockAddrRes
       parse bracketed ipv6 at spec close_idx =
         | close_idx < 2 = SockAddrErr "invalid bracketed IPv6 endpoint"
         | otherwise =
-          host = str_slice spec 1 close_idx
-          pstr = str_slice spec (close_idx + 2) (str_len spec)
+          host = str slice spec 1 close_idx
+          pstr = str slice spec (close_idx + 2) (str len spec)
           sock addr ipv6 host (parse port str pstr)
 
 fn :: parse bracketed ipv6 String => SockAddrRes
@@ -680,8 +680,8 @@ fn :: parse host port ipv4 at String Int => SockAddrRes
       parse host port ipv4 at spec colon_idx =
         | colon_idx < 1 = SockAddrErr "missing port in IPv4 endpoint"
         | otherwise =
-          host = str_slice spec 0 colon_idx
-          pstr = str_slice spec (colon_idx + 1) (str_len spec)
+          host = str slice spec 0 colon_idx
+          pstr = str slice spec (colon_idx + 1) (str len spec)
           sock addr ipv4 host (parse port str pstr)
 
 fn :: parse host port ipv4 String => SockAddrRes
@@ -689,9 +689,9 @@ fn :: parse host port ipv4 String => SockAddrRes
 
 fn :: sock parse addr String => SockAddrRes
       sock parse addr spec   =
-        | str_starts_with spec "unix:"                              = sock addr unix (str_slice spec 5 (str_len spec))
-        | (str_starts_with spec "/") or (str_starts_with spec "./") = sock addr unix spec
-        | str_starts_with spec "["                                  = parse bracketed ipv6 spec
+        | str starts with spec "unix:"                              = sock addr unix (str slice spec 5 (str len spec))
+        | (str starts with spec "/") or (str starts with spec "./") = sock addr unix spec
+        | str starts with spec "["                                  = parse bracketed ipv6 spec
         | otherwise                                                 = parse host port ipv4 spec
 
 -- ============================================================
@@ -792,7 +792,7 @@ fn :: sock poll Socket => SockPoll
 
 fn :: bind unix marker SockAddr => ()
       bind unix marker addr     =
-        | (family addr) == "unix" = write_file (path addr) ""
+        | (family addr) == "unix" = write file (path addr) ""
         | otherwise               = ()
 
 fn :: sock bind Socket SockAddr => SockRes
@@ -983,12 +983,12 @@ fn :: sock recv line Socket Int       => SockRecvStrRes
 
 fn :: sk raw byte ub Int => String
       sk raw byte ub ub  =
-        | ub >= 1 and ub <= 127 = char_from_code ub
+        | ub >= 1 and ub <= 127 = char from code ub
         | otherwise =
-          efd = sys_call 290 (256 + ub) 526336 0 0 0 0
-          s   = sys_read_fd efd 8
-          _   = sys_close efd
-          str_slice s 0 1
+          efd = sys call 290 (256 + ub) 526336 0 0 0 0
+          s   = sys read fd efd 8
+          _   = sys close efd
+          str slice s 0 1
 
 fn :: sk raw byte Int => String
       sk raw byte b   =  sk raw byte ub (((b % 256) + 256) % 256)
@@ -999,52 +999,52 @@ fn :: sk u64 le Int => String
           b0 = sk raw byte 0
           b0 + b0 + b0 + b0 + b0 + b0 + b0 + b0
         | otherwise =
-          efd = sys_call 290 val 526336 0 0 0 0
-          s   = sys_read_fd efd 8
-          _   = sys_close efd
+          efd = sys call 290 val 526336 0 0 0 0
+          s   = sys read fd efd 8
+          _   = sys close efd
           s
 
 fn :: sk decode u16 le String Int => Int
       sk decode u16 le s off =
-        (str_char_at s off) + ((str_char_at s (off + 1)) * 256)
+        (str char at s off) + ((str char at s (off + 1)) * 256)
 
 fn :: sk decode u16 be String Int => Int
       sk decode u16 be s off =
-        ((str_char_at s off) * 256) + (str_char_at s (off + 1))
+        ((str char at s off) * 256) + (str char at s (off + 1))
 
 fn :: sk decode u32 le String Int => Int
       sk decode u32 le s off =
-        b0 = str_char_at s off
-        b1 = str_char_at s (off + 1)
-        b2 = str_char_at s (off + 2)
-        b3 = str_char_at s (off + 3)
+        b0 = str char at s off
+        b1 = str char at s (off + 1)
+        b2 = str char at s (off + 2)
+        b3 = str char at s (off + 3)
         b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
 
 fn :: sk alloc page Int => Int
       sk alloc page sz  =
         neg1 = 0 - 1
-        sys_call 9 0 sz 3 34 neg1 0
+        sys call 9 0 sz 3 34 neg1 0
 
 fn :: sk free page Int Int Int => Int
       sk free page mfd ptr sz =
-        _ = sys_close mfd
-        sys_call 11 ptr sz 0 0 0 0
+        _ = sys close mfd
+        sys call 11 ptr sz 0 0 0 0
 
 fn :: sk alloc mfd => Int
-      sk alloc mfd =  sys_call 319 4194311 1 0 0 0 0
+      sk alloc mfd =  sys call 319 4194311 1 0 0 0 0
 
 fn :: sk poke Int Int String => Int
       sk poke mfd ptr s      =
-        slen = str_len s
-        _    = sys_call 8 mfd 0 0 0 0 0
-        _    = sys_write_fd mfd s
-        sys_call 17 mfd ptr slen 0 0 0
+        slen = str len s
+        _    = sys call 8 mfd 0 0 0 0 0
+        _    = sys write fd mfd s
+        sys call 17 mfd ptr slen 0 0 0
 
 fn :: sk peek Int Int Int => String
       sk peek mfd ptr len =
-        _ = sys_call 18 mfd ptr len 0 0 0
-        _ = sys_call 8 mfd 0 0 0 0 0
-        sys_read_fd mfd len
+        _ = sys call 18 mfd ptr len 0 0 0
+        _ = sys call 8 mfd 0 0 0 0 0
+        sys read fd mfd len
 
 fn :: is valid listen host String => Bool
       is valid listen host host   =
@@ -1059,10 +1059,10 @@ fn :: sk ipv4 bytes String Bool  => String
           | otherwise = (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0) |.
         | otherwise =
           parts = split by char host 46
-          b0    = sk raw byte (str_to_int (nth str parts 0))
-          b1    = sk raw byte (str_to_int (nth str parts 1))
-          b2    = sk raw byte (str_to_int (nth str parts 2))
-          b3    = sk raw byte (str_to_int (nth str parts 3))
+          b0    = sk raw byte (str to int (nth str parts 0))
+          b1    = sk raw byte (str to int (nth str parts 1))
+          b2    = sk raw byte (str to int (nth str parts 2))
+          b3    = sk raw byte (str to int (nth str parts 3))
           b0 + b1 + b2 + b3
 
 fn :: sk build sockaddr in String Int Bool => String
@@ -1076,13 +1076,13 @@ fn :: sk build sockaddr in String Int Bool => String
 fn :: sk finish tcp listen Int Int Int => Int Int
       sk finish tcp listen lfd rc_b rc_l =
         | rc_b == (0 - 13) =
-          _ = sys_close lfd
+          _ = sys close lfd
           (0 - 6, 0 - 1)
         | rc_b == (0 - 98) =
-          _ = sys_close lfd
+          _ = sys close lfd
           (0 - 5, 0 - 1)
         | rc_b < 0 or rc_l < 0 =
-          _ = sys_close lfd
+          _ = sys close lfd
           (0 - 7, 0 - 1)
         | otherwise = (0, lfd)
 
@@ -1091,20 +1091,20 @@ fn :: sk apply reuseport Int Int Int Bool => Int
         | not reuseport = 0
         | otherwise     =
           _ = sk poke mfd ptr (sk u64 le 1)
-          sys_call 54 lfd 1 15 ptr 4 0
+          sys call 54 lfd 1 15 ptr 4 0
 
 fn :: sk exec tcp listen opt String Int Int Bool => Int Int
       sk exec tcp listen opt host port backlog reuseport =
         ptr  = sk alloc page 4096
         mfd  = sk alloc mfd
-        lfd  = sys_call 41 2 1 0 0 0 0
+        lfd  = sys call 41 2 1 0 0 0 0
         _    = sk poke mfd ptr (sk u64 le 1)
-        _    = sys_call 54 lfd 1 2 ptr 4 0
+        _    = sys call 54 lfd 1 2 ptr 4 0
         _    = sk apply reuseport lfd mfd ptr reuseport
         sin  = sk build sockaddr in host port False
         _    = sk poke mfd ptr sin
-        rc_b = sys_call 49 lfd ptr 16 0 0 0
-        rc_l = sys_call 50 lfd backlog 0 0 0 0
+        rc_b = sys call 49 lfd ptr 16 0 0 0
+        rc_l = sys call 50 lfd backlog 0 0 0 0
         _    = sk free page mfd ptr 4096
         sk finish tcp listen lfd rc_b rc_l
 
@@ -1130,7 +1130,7 @@ fn :: sys set reuseport Int Bool    => Int
             | enabled   = 1
             | otherwise = 0
           _   = sk poke mfd ptr (sk u64 le val)
-          rc  = sys_call 54 fd 1 15 ptr 4 0
+          rc  = sys call 54 fd 1 15 ptr 4 0
           _   = sk free page mfd ptr 4096
           sk map setsockopt rc rc
 
@@ -1160,7 +1160,7 @@ fn :: sys tcp listen String Int Int => Int Int
 fn :: sk finish unix listen Int Int Int => Int Int
       sk finish unix listen lfd rc_b rc_l =
         | rc_b < 0 or rc_l < 0 =
-          _ = sys_close lfd
+          _ = sys close lfd
           (0 - 7, 0 - 1)
         | otherwise = (0, lfd)
 
@@ -1170,13 +1170,13 @@ fn :: sk exec unix listen String Int => Int Int
         mfd  = sk alloc mfd
         b0   = sk raw byte 0
         _    = sk poke mfd ptr (path + b0)
-        _    = sys_call 87 ptr 0 0 0 0 0
-        lfd  = sys_call 41 1 1 0 0 0 0
+        _    = sys call 87 ptr 0 0 0 0 0
+        lfd  = sys call 41 1 1 0 0 0 0
         sun  = (sk raw byte 1) + b0 + path + b0
-        ulen = str_len sun
+        ulen = str len sun
         _    = sk poke mfd ptr sun
-        rc_b = sys_call 49 lfd ptr ulen 0 0 0
-        rc_l = sys_call 50 lfd backlog 0 0 0 0
+        rc_b = sys call 49 lfd ptr ulen 0 0 0
+        rc_l = sys call 50 lfd backlog 0 0 0 0
         _    = sk free page mfd ptr 4096
         sk finish unix listen lfd rc_b rc_l
 
@@ -1206,7 +1206,7 @@ fn :: sys local port Int => Int
           mfd = sk alloc mfd
           p64 = ptr + 64
           _   = sk poke mfd p64 (sk u64 le 112)
-          rc  = sys_call 51 lfd ptr p64 0 0 0
+          rc  = sys call 51 lfd ptr p64 0 0 0
           sa  = sk peek mfd ptr 16
           _   = sk free page mfd ptr 4096
           sk extract local port rc sa
@@ -1215,23 +1215,23 @@ fn :: sk finish connect Int Int => Int Int
       sk finish connect cfd rc  =
         | rc == 0 = (0, cfd)
         | rc == (0 - 110) =
-          _ = sys_close cfd
+          _ = sys close cfd
           (0 - 2, 0 - 1)
         | rc == (0 - 13) =
-          _ = sys_close cfd
+          _ = sys close cfd
           (0 - 6, 0 - 1)
         | otherwise =
-          _ = sys_close cfd
+          _ = sys close cfd
           (0 - 3, 0 - 1)
 
 fn :: sk exec tcp connect ip String Int => Int Int
       sk exec tcp connect ip ip_addr port =
         ptr = sk alloc page 4096
         mfd = sk alloc mfd
-        cfd = sys_call 41 2 1 0 0 0 0
+        cfd = sys call 41 2 1 0 0 0 0
         sin = sk build sockaddr in ip_addr port True
         _   = sk poke mfd ptr sin
-        rc  = sys_call 42 cfd ptr 16 0 0 0
+        rc  = sys call 42 cfd ptr 16 0 0 0
         _   = sk free page mfd ptr 4096
         sk finish connect cfd rc
 
@@ -1261,11 +1261,11 @@ fn :: sys unix connect String Int        => Int Int
           ptr  = sk alloc page 4096
           mfd  = sk alloc mfd
           b0   = sk raw byte 0
-          cfd  = sys_call 41 1 1 0 0 0 0
+          cfd  = sys call 41 1 1 0 0 0 0
           sun  = (sk raw byte 1) + b0 + path + b0
-          ulen = str_len sun
+          ulen = str len sun
           _    = sk poke mfd ptr sun
-          rc   = sys_call 42 cfd ptr ulen 0 0 0
+          rc   = sys call 42 cfd ptr ulen 0 0 0
           _    = sk free page mfd ptr 4096
           sk finish connect cfd rc
 
@@ -1283,7 +1283,7 @@ fn :: sk sock acceptconn Int => Int
           p64 = ptr + 64
           _   = sk poke mfd ptr (sk u64 le 0)
           _   = sk poke mfd p64 (sk u64 le 4)
-          rc  = sys_call 55 fd 1 30 ptr p64 0
+          rc  = sys call 55 fd 1 30 ptr p64 0
           raw = sk peek mfd ptr 4
           _   = sk free page mfd ptr 4096
           sk decode acceptconn rc raw
@@ -1291,7 +1291,7 @@ fn :: sk sock acceptconn Int => Int
 fn :: sk format peer ip String => String
       sk format peer ip sa     =
         | (sk decode u16 le sa 0) == 2 =
-          "{str_char_at sa 4}.{str_char_at sa 5}.{str_char_at sa 6}.{str_char_at sa 7}"
+          (int to str (str char at sa 4)) + "." + (int to str (str char at sa 5)) + "." + (int to str (str char at sa 6)) + "." + (int to str (str char at sa 7))
         | otherwise = "127.0.0.1"
 
 fn :: sk finish accept Int String => Int Int String
@@ -1308,7 +1308,7 @@ fn :: sk accept after poll Int Int => Int Int String
           mfd = sk alloc mfd
           p64 = ptr + 64
           _   = sk poke mfd p64 (sk u64 le 112)
-          sfd = sys_call 43 lfd ptr p64 0 0 0
+          sfd = sys call 43 lfd ptr p64 0 0 0
           sa  = sk peek mfd ptr 16
           _   = sk free page mfd ptr 4096
           sk finish accept sfd sa
@@ -1320,7 +1320,7 @@ fn :: sys accept Int Int        => Int Int String
       sys accept lfd timeout_ms =
         | lfd < 0 or timeout_ms < (0 - 1) = (0 - 7, 0 - 1, "")
         | (sk sock acceptconn lfd) != 1   = (0 - 7, 0 - 1, "")
-        | otherwise                       = sk accept after poll lfd (sys_poll lfd 1 timeout_ms)
+        | otherwise                       = sk accept after poll lfd (sys poll lfd 1 timeout_ms)
 
 fn :: sk clamp nonneg Int => Int
       sk clamp nonneg v   =
@@ -1331,16 +1331,16 @@ fn :: sk send rem ms Int Int => Int
       sk send rem ms timeout_ms deadline =
         | timeout_ms < 0  = 0 - 1
         | timeout_ms == 0 = 0
-        | otherwise       = sk clamp nonneg (deadline - (sys_time_ms))
+        | otherwise       = sk clamp nonneg (deadline - (sys time ms))
 
 fn :: sk send after rc Int Int Int Int Int Int Int => Int Int
       sk send after rc fd ptr dlen sent timeout_ms deadline rc =
         | rc > 0 =
           | (sent + rc) >= dlen = (0, sent + rc)
-          | timeout_ms >= 0 and (sys_time_ms) >= deadline = (0 - 2, sent + rc)
+          | timeout_ms >= 0 and (sys time ms) >= deadline = (0 - 2, sent + rc)
           | otherwise = sk send loop fd ptr dlen (sent + rc) timeout_ms deadline |.
         | rc == (0 - 11) or rc == (0 - 4) =
-          | timeout_ms >= 0 and (sys_time_ms) >= deadline = (0 - 2, sent)
+          | timeout_ms >= 0 and (sys time ms) >= deadline = (0 - 2, sent)
           | otherwise = sk send loop fd ptr dlen sent timeout_ms deadline |.
         | rc == (0 - 32) or rc == (0 - 104) = (0 - 4, 0 - 1)
         | otherwise                         = (0 - 7, 0 - 1)
@@ -1350,7 +1350,7 @@ fn :: sk send after poll Int Int Int Int Int Int Int => Int Int
         | prc == 0  = (0 - 2, sent)
         | prc < 0   = (0 - 7, sent)
         | otherwise =
-          rc = sys_call 44 fd (ptr + sent) (dlen - sent) 16448 0 0
+          rc = sys call 44 fd (ptr + sent) (dlen - sent) 16448 0 0
           sk send after rc fd ptr dlen sent timeout_ms deadline rc
 
 fn :: sk send loop Int Int Int Int Int Int => Int Int
@@ -1358,19 +1358,19 @@ fn :: sk send loop Int Int Int Int Int Int => Int Int
         | sent >= dlen = (0, sent)
         | otherwise    =
           rem = sk send rem ms timeout_ms deadline
-          prc = sys_poll fd 4 rem
+          prc = sys poll fd 4 rem
           sk send after poll fd ptr dlen sent timeout_ms deadline prc
 
 fn :: sk exec send Int String Int => Int Int
       sk exec send fd data timeout_ms =
-        | (str_len data) == 0 = (0, 0)
+        | (str len data) == 0 = (0, 0)
         | otherwise =
-          dlen     = str_len data
+          dlen     = str len data
           psz      = ((dlen / 4096) + 2) * 4096
           ptr      = sk alloc page psz
           mfd      = sk alloc mfd
           _        = sk poke mfd ptr data
-          deadline = (sys_time_ms) + timeout_ms
+          deadline = (sys time ms) + timeout_ms
           res      = sk send loop fd ptr dlen 0 timeout_ms deadline
           _        = sk free page mfd ptr psz
           res
@@ -1390,19 +1390,19 @@ fn :: sys shutdown write Int => Int
       sys shutdown write fd  =
         | fd < 0                          = 0 - 7
         | (sk sock acceptconn fd) != 0    = 0 - 7
-        | (sys_call 48 fd 1 0 0 0 0) == 0 = 0
+        | (sys call 48 fd 1 0 0 0 0) == 0 = 0
         | otherwise                       = 0 - 7
 
 fn :: sk wrap recv chunk String => Int String
       sk wrap recv chunk chunk  =
-        | (str_len chunk) == 0 = (0 - 1, "")
+        | (str len chunk) == 0 = (0 - 1, "")
         | otherwise            = (0, chunk)
 
 fn :: sk recv after poll Int Int Int => Int String
       sk recv after poll fd max_bytes prc =
         | prc == 0  = (0 - 2, "")
         | prc < 0   = (0 - 7, "")
-        | otherwise = sk wrap recv chunk (sys_read_fd fd max_bytes)
+        | otherwise = sk wrap recv chunk (sys read fd fd max_bytes)
 
 -- @implements FR-SOCK-004
 -- @implements API-SOCK-001
@@ -1411,7 +1411,7 @@ fn :: sys recv Int Int       Int        => Int String
       sys recv fd  max_bytes timeout_ms =
         | fd < 0 or max_bytes < 1 or timeout_ms < (0 - 1) = (0 - 7, "")
         | (sk sock acceptconn fd) != 0                    = (0 - 7, "")
-        | otherwise                                       = sk recv after poll fd max_bytes (sys_poll fd 1 timeout_ms)
+        | otherwise                                       = sk recv after poll fd max_bytes (sys poll fd 1 timeout_ms)
 
 -- ── RGF-001 Tuple Accessor Helpers ───────────────────────────
 

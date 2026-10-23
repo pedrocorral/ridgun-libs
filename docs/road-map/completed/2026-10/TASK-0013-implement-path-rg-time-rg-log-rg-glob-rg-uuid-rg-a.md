@@ -18,12 +18,12 @@ context_files:
   - src/main/ridgun/lib/glob.rg
   - src/main/ridgun/lib/uuid.rg
   - src/main/ridgun/lib/http.rg
-  - src/test/ridgun/test_path.rg
-  - src/test/ridgun/test_time.rg
-  - src/test/ridgun/test_log.rg
-  - src/test/ridgun/test_glob.rg
-  - src/test/ridgun/test_uuid.rg
-  - src/test/ridgun/test_http.rg
+  - src/test/ridgun/test path.rg
+  - src/test/ridgun/test time.rg
+  - src/test/ridgun/test log.rg
+  - src/test/ridgun/test glob.rg
+  - src/test/ridgun/test uuid.rg
+  - src/test/ridgun/test http.rg
 scope:
   - build.rg
   - README.md
@@ -35,12 +35,12 @@ scope:
   - src/main/ridgun/lib/glob.rg
   - src/main/ridgun/lib/uuid.rg
   - src/main/ridgun/lib/http.rg
-  - src/test/ridgun/test_path.rg
-  - src/test/ridgun/test_time.rg
-  - src/test/ridgun/test_log.rg
-  - src/test/ridgun/test_glob.rg
-  - src/test/ridgun/test_uuid.rg
-  - src/test/ridgun/test_http.rg
+  - src/test/ridgun/test path.rg
+  - src/test/ridgun/test time.rg
+  - src/test/ridgun/test log.rg
+  - src/test/ridgun/test glob.rg
+  - src/test/ridgun/test uuid.rg
+  - src/test/ridgun/test http.rg
 owner: agent-001
 claimed: 2026-10-22T08:21:39Z
 claimed_by: agent gemini@solarfall
@@ -54,7 +54,7 @@ Expand `ridgun-libs` to 17 foundational pure-Ridgun (`v0.9.5`) libraries by addi
 ## Plan
 - [x] Author AIX specs (`FR-PATH-001`, `API-PATH-001`, `TS-PATH-001`, `FR-TIME-001`, `API-TIME-001`, `TS-TIME-001`, `FR-LOG-001`, `API-LOG-001`, `TS-LOG-001`, `FR-GLOB-001`, `API-GLOB-001`, `TS-GLOB-001`, `FR-UUID-001`, `API-UUID-001`, `TS-UUID-001`, `FR-HTTP-001`, `API-HTTP-001`, `TS-HTTP-001`).
 - [x] Implement `src/main/ridgun/lib/path.rg`, `time.rg`, `log.rg`, `glob.rg`, `uuid.rg`, and `http.rg`.
-- [x] Implement automated test suites `src/test/ridgun/test_path.rg`, `test_time.rg`, `test_log.rg`, `test_glob.rg`, `test_uuid.rg`, and `test_http.rg`.
+- [x] Implement automated test suites `src/test/ridgun/test path.rg`, `test time.rg`, `test log.rg`, `test glob.rg`, `test uuid.rg`, and `test http.rg`.
 - [x] Update `build.rg`, `README.md`, and `docs/requirements/product/vision.md`, and verify `stable check`, `stable bundle`, `stable test`, and `aix docs validate`.
 
 ## Progress log (append-only, newest last)
@@ -74,12 +74,12 @@ Expand `ridgun-libs` to 17 foundational pure-Ridgun (`v0.9.5`) libraries by addi
 - `src/main/ridgun/lib/glob.rg`
 - `src/main/ridgun/lib/uuid.rg`
 - `src/main/ridgun/lib/http.rg`
-- `src/test/ridgun/test_path.rg`
-- `src/test/ridgun/test_time.rg`
-- `src/test/ridgun/test_log.rg`
-- `src/test/ridgun/test_glob.rg`
-- `src/test/ridgun/test_uuid.rg`
-- `src/test/ridgun/test_http.rg`
+- `src/test/ridgun/test path.rg`
+- `src/test/ridgun/test time.rg`
+- `src/test/ridgun/test log.rg`
+- `src/test/ridgun/test glob.rg`
+- `src/test/ridgun/test uuid.rg`
+- `src/test/ridgun/test http.rg`
 
 ## Verification performed (command → result, newest last)
 - `stable check` → `Checked 17 module(s) — 0 errors.`

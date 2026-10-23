@@ -4,7 +4,7 @@ title: Verify RFC 4648 Hex/Base64/Base64url, RFC 3986 URL/query-string encoding,
 level: unit
 covers: [FR-CODEC-001, API-CODEC-001]
 status: automated
-automated_in: [src/test/ridgun/test_codec.rg]
+automated_in: [src/test/ridgun/test codec.rg]
 ---
 # TS-CODEC-001 — Verify RFC 4648 Hex/Base64/Base64url, RFC 3986 URL/query-string encoding, and RFC 8259 JSON formatting and extraction
 

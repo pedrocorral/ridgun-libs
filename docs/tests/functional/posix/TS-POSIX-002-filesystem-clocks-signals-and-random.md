@@ -4,7 +4,7 @@ title: Verify POSIX filesystem operations, monotonic and wall clocks, signal wat
 level: unit
 covers: [FR-POSIX-002]
 status: automated
-automated_in: [src/test/ridgun/test_posix.rg]
+automated_in: [src/test/ridgun/test posix.rg]
 ---
 # TS-POSIX-002 — Verify POSIX filesystem operations, monotonic and wall clocks, signal watching, and CSPRNG random bytes
 

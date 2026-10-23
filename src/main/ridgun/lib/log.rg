@@ -9,16 +9,16 @@
 
 fn :: lg lower char String Int Int => String
       lg lower char s idx c =
-        | c >= 65 and c <= 90 = char_from_code (c + 32)
-        | otherwise           = str_slice s idx (idx + 1)
+        | c >= 65 and c <= 90 = char from code (c + 32)
+        | otherwise           = str slice s idx (idx + 1)
 
 fn :: lg to lower loop String Int Int => String
       lg to lower loop s idx len =
         | idx >= len = ""
-        | otherwise  = (lg lower char s idx (str_char_at s idx)) + (lg to lower loop s (idx + 1) len)
+        | otherwise  = (lg lower char s idx (str char at s idx)) + (lg to lower loop s (idx + 1) len)
 
 fn :: lg to lower String => String
-      lg to lower s      =  lg to lower loop s 0 (str_len s)
+      lg to lower s      =  lg to lower loop s 0 (str len s)
 
 -- ── Severity Levels (`DEBUG`, `INFO`, `WARN`, `ERROR`) ───────
 
@@ -53,12 +53,12 @@ fn :: log should emit String    String    => Bool
 
 fn :: lg check sens lower String => Bool
       lg check sens lower lk     =
-        | str_contains lk "password" or str_contains lk "passwd"       = True
-        | str_contains lk "secret" or str_contains lk "token"          = True
-        | str_contains lk "api_key" or str_contains lk "api-key"       = True
-        | str_contains lk "apikey"                                     = True
-        | str_contains lk "authorization" or str_contains lk "cookie"  = True
-        | str_contains lk "private_key" or str_contains lk "private-key" = True
+        | str contains lk "password" or str contains lk "passwd"       = True
+        | str contains lk "secret" or str contains lk "token"          = True
+        | str contains lk "api_key" or str contains lk "api-key"       = True
+        | str contains lk "apikey"                                     = True
+        | str contains lk "authorization" or str contains lk "cookie"  = True
+        | str contains lk "private_key" or str contains lk "private-key" = True
         | otherwise                                                    = False
 
 -- @implements FR-LOG-001
@@ -94,15 +94,15 @@ fn :: lg esc char String Int Int => String
         | c == 10   = "\\n"
         | c == 13   = "\\r"
         | c == 9    = "\\t"
-        | otherwise = str_slice s idx (idx + 1)
+        | otherwise = str slice s idx (idx + 1)
 
 fn :: lg esc loop String Int Int => String
       lg esc loop s idx len =
         | idx >= len = ""
-        | otherwise  = (lg esc char s idx (str_char_at s idx)) + (lg esc loop s (idx + 1) len)
+        | otherwise  = (lg esc char s idx (str char at s idx)) + (lg esc loop s (idx + 1) len)
 
 fn :: lg esc str String => String
-      lg esc str s      =  lg esc loop s 0 (str_len s)
+      lg esc str s      =  lg esc loop s 0 (str len s)
 
 fn :: lg quote String => String
       lg quote s      =  "\"" + (lg esc str s) + "\""

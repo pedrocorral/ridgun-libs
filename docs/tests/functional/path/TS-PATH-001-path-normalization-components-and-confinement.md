@@ -4,7 +4,7 @@ title: Verify path normalization, joining, component extraction, and safe subpat
 level: unit
 covers: [FR-PATH-001, API-PATH-001]
 status: automated
-automated_in: [src/test/ridgun/test_path.rg]
+automated_in: [src/test/ridgun/test path.rg]
 ---
 # TS-PATH-001 — Verify path normalization, joining, component extraction, and safe subpath confinement
 

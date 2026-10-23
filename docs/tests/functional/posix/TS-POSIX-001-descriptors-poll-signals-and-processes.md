@@ -4,7 +4,7 @@ title: Verify POSIX descriptor wrappers, PollStatus, ProcStatus, open flags, sig
 level: unit
 covers: [FR-POSIX-001, API-POSIX-001]
 status: automated
-automated_in: [src/test/ridgun/test_posix.rg]
+automated_in: [src/test/ridgun/test posix.rg]
 ---
 # TS-POSIX-001 — Verify POSIX descriptor wrappers, PollStatus, ProcStatus, open flags, signals, and wait fd timeout polling
 

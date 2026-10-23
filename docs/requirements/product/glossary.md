@@ -23,5 +23,6 @@ status: approved
 | Glob & Wildcard Pattern Library | Pure-Ridgun shell wildcard (`*`, `?`, `[a-z]`, `[!a-z]`) and multi-extension path matching (`glob_match`, `glob_filter`) | GLOB |
 | UUID, Checksum & Deterministic PRNG Library | Pure-Ridgun RFC 9562 UUIDv4/UUIDv7 generation and validation, FNV-1a / Adler-32 / CRC-32 checksums, and seeded deterministic PRNG (`prng_next`, `prng_range`) | UUID |
 | URI & HTTP/1.1 Protocol Library | Pure-Ridgun RFC 3986 URI parsing (`scheme`, `host`, `port`, `path`, `query`) and RFC 9112 HTTP/1.1 request/response building, parsing, headers, and status reason phrases | HTTP |
+| Agent Concurrency Library | Pure-Ridgun Native Agent Model (`Agent In Out`, `agent`, `send ... to`, `receive from`, `try receive from`, `stop`, `agent alive`) lifecycle, request-reply, timeout-bounded polling, batch dispatch, relay, and stateful Counter, Log, and Key-Value agents | AGENT |
 
 Domain codes are UPPERCASE, ≤ 8 chars, and name folders in `functional/`, `api/`, and `docs/tests/*/`.

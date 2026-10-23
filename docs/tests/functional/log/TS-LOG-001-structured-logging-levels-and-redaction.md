@@ -4,7 +4,7 @@ title: Verify level filtering, sensitive key redaction, and structured text/JSON
 level: unit
 covers: [FR-LOG-001, API-LOG-001]
 status: automated
-automated_in: [src/test/ridgun/test_log.rg]
+automated_in: [src/test/ridgun/test log.rg]
 ---
 # TS-LOG-001 — Verify level filtering, sensitive key redaction, and structured text/JSON log formatting
 

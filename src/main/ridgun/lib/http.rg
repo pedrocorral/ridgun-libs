@@ -13,26 +13,26 @@ import socket
 fn :: ht index of loop String String Int Int Int => Int
       ht index of loop s sub idx slen sublen =
         | (idx + sublen) > slen                   = 0 - 1
-        | (str_slice s idx (idx + sublen)) == sub = idx
+        | (str slice s idx (idx + sublen)) == sub = idx
         | otherwise                               = ht index of loop s sub (idx + 1) slen sublen
 
 fn :: ht index of String String => Int
       ht index of s      sub    =
-        | (str_len sub) == 0 = 0
-        | otherwise          = ht index of loop s sub 0 (str_len s) (str_len sub)
+        | (str len sub) == 0 = 0
+        | otherwise          = ht index of loop s sub 0 (str len s) (str len sub)
 
 fn :: ht lower char String Int Int => String
       ht lower char s idx c =
-        | c >= 65 and c <= 90 = char_from_code (c + 32)
-        | otherwise           = str_slice s idx (idx + 1)
+        | c >= 65 and c <= 90 = char from code (c + 32)
+        | otherwise           = str slice s idx (idx + 1)
 
 fn :: ht to lower loop String Int Int => String
       ht to lower loop s idx len =
         | idx >= len = ""
-        | otherwise  = (ht lower char s idx (str_char_at s idx)) + (ht to lower loop s (idx + 1) len)
+        | otherwise  = (ht lower char s idx (str char at s idx)) + (ht to lower loop s (idx + 1) len)
 
 fn :: ht to lower String => String
-      ht to lower s      =  ht to lower loop s 0 (str_len s)
+      ht to lower s      =  ht to lower loop s 0 (str len s)
 
 fn :: ht is ws Int => Bool
       ht is ws c   =  c == 32 or c == 9 or c == 10 or c == 13
@@ -40,43 +40,43 @@ fn :: ht is ws Int => Bool
 fn :: ht trim left String Int Int => Int
       ht trim left s idx len =
         | idx >= len                   = len
-        | ht is ws (str_char_at s idx) = ht trim left s (idx + 1) len
+        | ht is ws (str char at s idx) = ht trim left s (idx + 1) len
         | otherwise                    = idx
 
 fn :: ht trim right String Int Int => Int
       ht trim right s start end_pos =
         | end_pos <= start                       = start
-        | ht is ws (str_char_at s (end_pos - 1)) = ht trim right s start (end_pos - 1)
+        | ht is ws (str char at s (end_pos - 1)) = ht trim right s start (end_pos - 1)
         | otherwise                              = end_pos
 
 fn :: ht trim String => String
       ht trim s      =
-        st = ht trim left s 0 (str_len s)
-        en = ht trim right s st (str_len s)
-        str_slice s st en
+        st = ht trim left s 0 (str len s)
+        en = ht trim right s st (str len s)
+        str slice s st en
 
 fn :: ht strip crlf loop String Int Int => String
       ht strip crlf loop s idx len =
         | idx >= len = ""
-        | (str_char_at s idx) == 10 or (str_char_at s idx) == 13 =
+        | (str char at s idx) == 10 or (str char at s idx) == 13 =
       ht strip crlf loop s (idx + 1) len
         | otherwise =
-          (str_slice s idx (idx + 1)) + (ht strip crlf loop s (idx + 1) len)
+          (str slice s idx (idx + 1)) + (ht strip crlf loop s (idx + 1) len)
 
 fn :: ht strip crlf String => String
-      ht strip crlf s      =  ht strip crlf loop s 0 (str_len s)
+      ht strip crlf s      =  ht strip crlf loop s 0 (str len s)
 
 fn :: ht is digits loop String Int Int => Bool
       ht is digits loop s idx len =
         | idx >= len                                           = True
-        | (str_char_at s idx) < 48 or (str_char_at s idx) > 57 = False
+        | (str char at s idx) < 48 or (str char at s idx) > 57 = False
         | otherwise                                            = ht is digits loop s (idx + 1) len
 
 fn :: ht parse int or String Int => Int
       ht parse int or s fallback =
-        | (str_len s) == 0                 = fallback
-        | not (ht is digits loop s 0 (str_len s)) = fallback
-        | otherwise                        = str_to_int s
+        | (str len s) == 0                 = fallback
+        | not (ht is digits loop s 0 (str len s)) = fallback
+        | otherwise                        = str to int s
 
 -- ── RFC 3986 URI Parsing ─────────────────────────────────────
 
@@ -90,19 +90,19 @@ fn :: ht split host port String Int Int => String Int
       ht split host port auth colon_idx def_port =
         | colon_idx < 0 = (auth, def_port)
         | otherwise =
-          h = str_slice auth 0 colon_idx
-          p = ht parse int or (str_slice auth (colon_idx + 1) (str_len auth)) def_port
+          h = str slice auth 0 colon_idx
+          p = ht parse int or (str slice auth (colon_idx + 1) (str len auth)) def_port
           (h, p)
 
 fn :: ht split path query String Int => String String
       ht split path query pq q_idx =
         | q_idx < 0 = (pq, "")
-        | otherwise = (str_slice pq 0 q_idx, str_slice pq (q_idx + 1) (str_len pq))
+        | otherwise = (str slice pq 0 q_idx, str slice pq (q_idx + 1) (str len pq))
 
 fn :: ht split auth rest String Int => String String
       ht split auth rest rem slash_idx =
         | slash_idx < 0 = (rem, "/")
-        | otherwise     = (str_slice rem 0 slash_idx, str_slice rem slash_idx (str_len rem))
+        | otherwise     = (str slice rem 0 slash_idx, str slice rem slash_idx (str len rem))
 
 fn :: ht finish uri String (String Int) (String String) => String String Int String String
       ht finish uri scheme (host, port) (path, query) =
@@ -124,8 +124,8 @@ fn :: ht parse uri at String Int => String String Int String String
           pq = ht split path query raw (ht index of raw "?")
           ("", "", 0, ht pair key pq, ht pair val pq)
         | otherwise =
-          scheme = ht to lower (str_slice raw 0 sep_idx)
-          rem    = str_slice raw (sep_idx + 3) (str_len raw)
+          scheme = ht to lower (str slice raw 0 sep_idx)
+          rem    = str slice raw (sep_idx + 3) (str len raw)
           ht parse uri after scheme scheme rem
 
 -- @implements FR-HTTP-001
@@ -217,8 +217,8 @@ fn :: http header get [String String] String => String
 
 fn :: ht extract bearer String => String
       ht extract bearer auth   =
-        | (str_len auth) <= 7                             = ""
-        | (ht to lower (str_slice auth 0 7)) == "bearer " = ht trim (str_slice auth 7 (str_len auth))
+        | (str len auth) <= 7                             = ""
+        | (ht to lower (str slice auth 0 7)) == "bearer " = ht trim (str slice auth 7 (str len auth))
         | otherwise                                       = ""
 
 -- @implements FR-HTTP-001
@@ -237,9 +237,9 @@ fn :: ht fmt headers [String String] => String
 
 fn :: ht auto cl [String String] String => String
       ht auto cl headers         body   =
-        | (str_len body) == 0                                  = ""
-        | (str_len (http header get headers "Content-Length")) > 0 = ""
-        | otherwise                                            = "Content-Length: " + (int_to_str (str_len body)) + "\r\n"
+        | (str len body) == 0                                  = ""
+        | (str len (http header get headers "Content-Length")) > 0 = ""
+        | otherwise                                            = "Content-Length: " + (int to str (str len body)) + "\r\n"
 
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001
@@ -258,45 +258,45 @@ fn :: http build response Int [String String] String => String
       http build response code headers body =
         reason = http status text code
         cl     = ht auto cl headers body
-        "HTTP/1.1 " + (int_to_str code) + " " + reason + "\r\n" + (ht fmt headers headers) + cl + "\r\n" + body
+        "HTTP/1.1 " + (int to str code) + " " + reason + "\r\n" + (ht fmt headers headers) + cl + "\r\n" + body
 
 fn :: ht split lines loop String Int Int Int => [String]
       ht split lines loop s start idx len =
-        | idx >= len                = [(ht strip crlf (str_slice s start len))]
-        | (str_char_at s idx) == 10 = [(ht strip crlf (str_slice s start idx))] :: (ht split lines loop s (idx + 1) (idx + 1) len)
+        | idx >= len                = [(ht strip crlf (str slice s start len))]
+        | (str char at s idx) == 10 = [(ht strip crlf (str slice s start idx))] :: (ht split lines loop s (idx + 1) (idx + 1) len)
         | otherwise                 = ht split lines loop s start (idx + 1) len
 
 fn :: ht parse hdr line String Int => [String String]
       ht parse hdr line line cidx =
         | cidx <= 0 = []
         | otherwise =
-          k = ht trim (str_slice line 0 cidx)
-          v = ht trim (str_slice line (cidx + 1) (str_len line))
+          k = ht trim (str slice line 0 cidx)
+          v = ht trim (str slice line (cidx + 1) (str len line))
           [(k, v)]
 
 fn :: ht parse hdr lines [String] => [String String]
       ht parse hdr lines []       =  []
       ht parse hdr lines (l:rest) =
-        | (str_len l) == 0 = ht parse hdr lines rest
+        | (str len l) == 0 = ht parse hdr lines rest
         | otherwise        = (ht parse hdr line l (ht index of l ":")) :: (ht parse hdr lines rest)
 
 fn :: ht split head body String Int Int => String String
       ht split head body raw crlf_idx lf_idx =
-        | crlf_idx >= 0 = (str_slice raw 0 crlf_idx, str_slice raw (crlf_idx + 4) (str_len raw))
-        | lf_idx >= 0   = (str_slice raw 0 lf_idx, str_slice raw (lf_idx + 2) (str_len raw))
+        | crlf_idx >= 0 = (str slice raw 0 crlf_idx, str slice raw (crlf_idx + 4) (str len raw))
+        | lf_idx >= 0   = (str slice raw 0 lf_idx, str slice raw (lf_idx + 2) (str len raw))
         | otherwise     = (raw, "")
 
 fn :: ht parse req rem String String Int => String String
       ht parse req rem method rem sp2 =
         | sp2 < 0   = (method, rem)
-        | otherwise = (method, str_slice rem 0 sp2)
+        | otherwise = (method, str slice rem 0 sp2)
 
 fn :: ht parse req line String Int => String String
       ht parse req line line sp1 =
         | sp1 <= 0 = ("", "")
         | otherwise =
-          method = str_slice line 0 sp1
-          rem    = str_slice line (sp1 + 1) (str_len line)
+          method = str slice line 0 sp1
+          rem    = str slice line (sp1 + 1) (str len line)
           ht parse req rem method rem (ht index of rem " ")
 
 fn :: ht parse req parts [String] String => String String String
@@ -316,7 +316,7 @@ fn :: http parse headers String => [String String]
       http parse headers raw    =
         hb    = ht split head body raw (ht index of raw "\r\n\r\n") (ht index of raw "\n\n")
         head  = ht pair key hb
-        lines = ht split lines loop head 0 0 (str_len head)
+        lines = ht split lines loop head 0 0 (str len head)
         ht parse hdr parts lines
 
 -- @implements FR-HTTP-001
@@ -327,19 +327,19 @@ fn :: http parse request String => String String String
         hb    = ht split head body raw (ht index of raw "\r\n\r\n") (ht index of raw "\n\n")
         head  = ht pair key hb
         body  = ht pair val hb
-        lines = ht split lines loop head 0 0 (str_len head)
+        lines = ht split lines loop head 0 0 (str len head)
         ht parse req parts lines body
 
 fn :: ht parse status rem String Int => Int String
       ht parse status rem rem sp2 =
         | sp2 < 0   = (ht parse int or rem 0, "")
-        | otherwise = (ht parse int or (str_slice rem 0 sp2) 0, str_slice rem (sp2 + 1) (str_len rem))
+        | otherwise = (ht parse int or (str slice rem 0 sp2) 0, str slice rem (sp2 + 1) (str len rem))
 
 fn :: ht parse status line String Int => Int String
       ht parse status line line sp1 =
         | sp1 <= 0 = (0, "")
         | otherwise =
-          rem = str_slice line (sp1 + 1) (str_len line)
+          rem = str slice line (sp1 + 1) (str len line)
           ht parse status rem rem (ht index of rem " ")
 
 fn :: ht st code (Int String) => Int
@@ -362,14 +362,14 @@ fn :: http parse response String => Int String String
         hb    = ht split head body raw (ht index of raw "\r\n\r\n") (ht index of raw "\n\n")
         head  = ht pair key hb
         body  = ht pair val hb
-        lines = ht split lines loop head 0 0 (str_len head)
+        lines = ht split lines loop head 0 0 (str len head)
         ht parse resp parts lines body
 
 -- ── Live Kernel TCP HTTP/1.1 Client (`http_request_tcp`, `http_get`, `http_post`) ──
 
 fn :: ht ensure hdr [String String] String String => [String String]
       ht ensure hdr headers key val =
-        | (str_len (http header get headers key)) > 0 = headers
+        | (str len (http header get headers key)) > 0 = headers
         | otherwise                                   = headers :: [(key, val)]
 
 fn :: ht read tcp step Int Int String (Int String) => String
@@ -389,7 +389,7 @@ fn :: ht resp body (Int String String) => String
 
 fn :: ht finish tcp resp String => Int Int String
       ht finish tcp resp raw    =
-        | (str_len raw) == 0 = (0 - 1, 0, "")
+        | (str len raw) == 0 = (0 - 1, 0, "")
         | otherwise =
           pr   = http parse response raw
           code = ht resp code pr
@@ -398,11 +398,11 @@ fn :: ht finish tcp resp String => Int Int String
 fn :: ht send read step Int Int (Int Int) => Int Int String
       ht send read step cfd timeout_ms (s_rc, _) =
         | s_rc != 0 =
-          _ = sys_close cfd
+          _ = sys close cfd
           (s_rc, 0, "")
         | otherwise =
           raw = ht read tcp loop cfd timeout_ms ""
-          _   = sys_close cfd
+          _   = sys close cfd
           ht finish tcp resp raw
 
 fn :: ht connect send tcp Int Int String Int => Int Int String
@@ -423,17 +423,17 @@ fn :: http request tcp String Int String String [String String] String Int => In
 
 fn :: ht pick path String => String
       ht pick path p      =
-        | (str_len p) == 0 = "/"
+        | (str len p) == 0 = "/"
         | otherwise        = p
 
 fn :: ht build target path String String => String
       ht build target path p q =
-        | (str_len q) == 0 = ht pick path p
+        | (str len q) == 0 = ht pick path p
         | otherwise        = (ht pick path p) + "?" + q
 
 fn :: ht exec url req (String String Int String String) String [String String] String Int => Int Int String
       ht exec url req (scheme, host, port, p, q) method headers body timeout_ms =
-        | scheme != "http" or (str_len host) == 0 or port <= 0 = (0 - 7, 0, "")
+        | scheme != "http" or (str len host) == 0 or port <= 0 = (0 - 7, 0, "")
         | otherwise                                            = http request tcp host port method (ht build target path p q) headers body timeout_ms
 
 -- @implements FR-HTTP-001

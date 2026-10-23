@@ -8,3 +8,4 @@ Read this when: persistence, API schemas, migrations, or core library ADT defini
 | `DM-Argon2.md` | `Argon2Params`, `Argon2Phc`, and `RGF-015` AEAD key/nonce/tag model | Working on `argon2id.rg`, `crypto.rg` |
 | `DM-PosixStatus.md` | `PollStatus`, `ProcStatus`, descriptors, events, and signals model | Working on `posix.rg` |
 | `DM-IoResult.md` | Extensible `IoError` and `IoResult` high-level I/O model | Working on `io.rg` |
+| `DM-Agent.md` | `AgentStatus`, `AgentReply`, `KvCmd`, and stateful actor concurrency model | Working on `agent.rg` |

@@ -4,7 +4,7 @@ title: Verify Solstice RGF-001 kernel-backed TCP and Unix socket API, status tup
 level: unit
 covers: [FR-SOCK-004, API-SOCK-001]
 status: automated
-automated_in: [src/test/ridgun/test_socket.rg]
+automated_in: [src/test/ridgun/test socket.rg]
 ---
 # TS-SOCK-004 — Verify Solstice RGF-001 kernel-backed TCP and Unix socket API, status tuples, and timeouts
 

@@ -4,7 +4,7 @@ title: Verify list indexing, slicing, range generation, deduplication, mergesort
 level: unit
 covers: [FR-LIST-001, API-LIST-001]
 status: automated
-automated_in: [src/test/ridgun/test_list.rg]
+automated_in: [src/test/ridgun/test list.rg]
 ---
 # TS-LIST-001 — Verify list indexing, slicing, range generation, deduplication, mergesort, and associative key-value map operations
 

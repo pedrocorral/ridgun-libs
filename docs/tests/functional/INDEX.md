@@ -19,3 +19,4 @@ Read this when: working in a domain.
 | `glob/` | Test specifications for `GLOB` (`FR-GLOB-001`) | Testing `glob.rg` |
 | `uuid/` | Test specifications for `UUID` (`FR-UUID-001`) | Testing `uuid.rg` |
 | `http/` | Test specifications for `HTTP` (`FR-HTTP-001`) | Testing `http.rg` |
+| `agent/` | Test specifications for `AGENT` (`FR-AGENT-001`) | Testing `agent.rg` |

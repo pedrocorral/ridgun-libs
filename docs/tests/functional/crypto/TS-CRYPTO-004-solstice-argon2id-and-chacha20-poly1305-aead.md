@@ -4,7 +4,7 @@ title: Verify Solstice RGF-015 RFC 9106 Argon2id 5-arg API and RFC 8439 ChaCha20
 level: unit
 covers: [FR-CRYPTO-004]
 status: automated
-automated_in: [src/test/ridgun/test_crypto.rg]
+automated_in: [src/test/ridgun/test crypto.rg]
 ---
 # TS-CRYPTO-004 — Verify Solstice RGF-015 RFC 9106 Argon2id 5-arg API and RFC 8439 ChaCha20-Poly1305 AEAD
 

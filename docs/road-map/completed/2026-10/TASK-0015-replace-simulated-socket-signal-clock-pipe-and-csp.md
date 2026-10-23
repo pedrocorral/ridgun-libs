@@ -12,13 +12,13 @@ context_files:
   - src/main/ridgun/lib/posix.rg
   - src/main/ridgun/lib/crypto.rg
   - src/main/ridgun/lib/uuid.rg
-  - src/test/ridgun/test_posix.rg
+  - src/test/ridgun/test posix.rg
 scope:
   - src/main/ridgun/lib/socket.rg
   - src/main/ridgun/lib/posix.rg
   - src/main/ridgun/lib/crypto.rg
   - src/main/ridgun/lib/uuid.rg
-  - src/test/ridgun/test_posix.rg
+  - src/test/ridgun/test posix.rg
   - target/
 owner: agent-001
 claimed: 2026-10-22T09:17:56Z
@@ -43,8 +43,8 @@ Replace all `/tmp`-file-backed simulations in `socket.rg`, `posix.rg`, and `cryp
 - `src/main/ridgun/lib/posix.rg`
 - `src/main/ridgun/lib/crypto.rg`
 - `src/main/ridgun/lib/uuid.rg`
-- `src/test/ridgun/test_posix.rg`
-- `src/test/ridgun/test_socket.rg`
+- `src/test/ridgun/test posix.rg`
+- `src/test/ridgun/test socket.rg`
 
 ## Verification performed (command → result, newest last)
 - `stable format && stable check && stable bundle && stable test` → 17/17 modules checked (0 errors), 17/17 test suites passed (0 failures)

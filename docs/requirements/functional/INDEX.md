@@ -19,3 +19,4 @@ Read this when: working on a domain. Skip when: the domain is not yours.
 | `glob/` | Wildcard (`*`, `?`, `[...]`) & path pattern matching library (`FR-GLOB-001`) | Working on `glob.rg` |
 | `uuid/` | RFC 9562 UUIDv4/UUIDv7, CRC32/FNV-1a/Adler32 checksums & seeded PRNG library (`FR-UUID-001`) | Working on `uuid.rg` |
 | `http/` | RFC 3986 URI & RFC 9112 HTTP/1.1 request/response parser and builder library (`FR-HTTP-001`) | Working on `http.rg` |
+| `agent/` | Native Agent Model lifecycle, timeout-bounded messaging, batch dispatch & stateful actors library (`FR-AGENT-001`) | Working on `agent.rg` |

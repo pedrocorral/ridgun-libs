@@ -4,7 +4,7 @@ title: Verify RFC 9562 UUIDv4/UUIDv7, FNV-1a/Adler-32/CRC-32 standard vectors, a
 level: unit
 covers: [FR-UUID-001, API-UUID-001]
 status: automated
-automated_in: [src/test/ridgun/test_uuid.rg]
+automated_in: [src/test/ridgun/test uuid.rg]
 ---
 # TS-UUID-001 — Verify RFC 9562 UUIDv4/UUIDv7, FNV-1a/Adler-32/CRC-32 standard vectors, and seeded PRNG
 

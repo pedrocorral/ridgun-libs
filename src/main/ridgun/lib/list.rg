@@ -294,12 +294,12 @@ fn :: l str le loop String String Int Int Int => Bool
         | idx >= la and idx >= lb                   = True
         | idx >= la                                 = True
         | idx >= lb                                 = False
-        | (str_char_at a idx) < (str_char_at b idx) = True
-        | (str_char_at a idx) > (str_char_at b idx) = False
+        | (str char at a idx) < (str char at b idx) = True
+        | (str char at a idx) > (str char at b idx) = False
         | otherwise                                 = l str le loop a b (idx + 1) la lb
 
 fn :: l str le String String => Bool
-      l str le a      b      =  l str le loop a b 0 (str_len a) (str_len b)
+      l str le a      b      =  l str le loop a b 0 (str len a) (str len b)
 
 fn :: l merge strs [String] [String] => [String]
       l merge strs []       ys       =  ys

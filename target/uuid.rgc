@@ -1,4 +1,4 @@
--- RGLIB1
+RGC1
 -- SELF_HOSTED_COMPILER: ridgunc v0.9.8
 -- FUNCTIONS: 33
 -- TYPES: 0
@@ -67,26 +67,26 @@ fn :: uu fnv loop String Int Int Int => Int
       uu fnv loop s idx len h =
         | idx >= len = h
         | otherwise =
-          x = uu bxor32 h (str_char_at s idx)
+          x = uu bxor32 h (str char at s idx)
           uu fnv loop s (idx + 1) len (uu u32 (x * 16777619))
 
 -- @implements FR-UUID-001
 -- @implements API-UUID-001
 fn :: fnv1a 32 String => Int
-      fnv1a 32 s      =  uu fnv loop s 0 (str_len s) 2166136261
+      fnv1a 32 s      =  uu fnv loop s 0 (str len s) 2166136261
 
 fn :: uu adler loop String Int Int Int Int => Int
       uu adler loop s idx len a b =
         | idx >= len = (b * 65536) + a
         | otherwise =
-          na = (a + (str_char_at s idx)) % 65521
+          na = (a + (str char at s idx)) % 65521
           nb = (b + na) % 65521
           uu adler loop s (idx + 1) len na nb
 
 -- @implements FR-UUID-001
 -- @implements API-UUID-001
 fn :: adler32 String => Int
-      adler32 s      =  uu adler loop s 0 (str_len s) 1 0
+      adler32 s      =  uu adler loop s 0 (str len s) 1 0
 
 fn :: uu crc bit loop Int Int => Int
       uu crc bit loop crc rem =
@@ -98,13 +98,13 @@ fn :: uu crc byte loop String Int Int Int => Int
       uu crc byte loop s idx len crc =
         | idx >= len = uu bxor32 crc 4294967295
         | otherwise =
-          c1 = uu bxor32 crc (str_char_at s idx)
+          c1 = uu bxor32 crc (str char at s idx)
           uu crc byte loop s (idx + 1) len (uu crc bit loop c1 8)
 
 -- @implements FR-UUID-001
 -- @implements API-UUID-001
 fn :: crc32 String => Int
-      crc32 s      =  uu crc byte loop s 0 (str_len s) 4294967295
+      crc32 s      =  uu crc byte loop s 0 (str len s) 4294967295
 
 -- ── Deterministic Seeded 31-Bit PRNG (`prng_next`, `prng_range`) ─
 
@@ -136,28 +136,28 @@ fn :: prng range Int  Int Int => Int Int
 fn :: uu alloc page Int => Int
       uu alloc page sz  =
         neg1 = 0 - 1
-        sys_call 9 0 sz 3 34 neg1 0
+        sys call 9 0 sz 3 34 neg1 0
 
 fn :: uu free page Int Int Int => Int
       uu free page mfd ptr sz =
-        _ = sys_close mfd
-        sys_call 11 ptr sz 0 0 0 0
+        _ = sys close mfd
+        sys call 11 ptr sz 0 0 0 0
 
 fn :: uu alloc mfd => Int
-      uu alloc mfd =  sys_call 319 4194311 1 0 0 0 0
+      uu alloc mfd =  sys call 319 4194311 1 0 0 0 0
 
 fn :: uu peek Int Int Int => String
       uu peek mfd ptr len =
-        _ = sys_call 18 mfd ptr len 0 0 0
-        _ = sys_call 8 mfd 0 0 0 0 0
-        sys_read_fd mfd len
+        _ = sys call 18 mfd ptr len 0 0 0
+        _ = sys call 8 mfd 0 0 0 0 0
+        sys read fd mfd len
 
 fn :: uu decode u32 le String Int => Int
       uu decode u32 le s off =
-        b0 = str_char_at s off
-        b1 = str_char_at s (off + 1)
-        b2 = str_char_at s (off + 2)
-        b3 = str_char_at s (off + 3)
+        b0 = str char at s off
+        b1 = str char at s (off + 1)
+        b2 = str char at s (off + 2)
+        b3 = str char at s (off + 3)
         b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
 
 fn :: uu decode u64 le String Int => Int
@@ -170,7 +170,7 @@ fn :: uu wall time ms => Int
       uu wall time ms =
         ptr  = uu alloc page 4096
         mfd  = uu alloc mfd
-        _    = sys_call 228 0 ptr 0 0 0 0
+        _    = sys call 228 0 ptr 0 0 0 0
         raw  = uu peek mfd ptr 16
         _    = uu free page mfd ptr 4096
         sec  = uu decode u64 le raw 0
@@ -181,17 +181,17 @@ fn :: uu bytes to hex loop String Int Int => String
       uu bytes to hex loop s idx len =
         | idx >= len = ""
         | otherwise =
-          b   = ((str_char_at s idx) % 256 + 256) % 256
+          b   = ((str char at s idx) % 256 + 256) % 256
           hi  = b / 16
           lo  = b % 16
           tbl = uu hex lut 0
-          (str_slice tbl hi (hi + 1)) + (str_slice tbl lo (lo + 1)) + (uu bytes to hex loop s (idx + 1) len)
+          (str slice tbl hi (hi + 1)) + (str slice tbl lo (lo + 1)) + (uu bytes to hex loop s (idx + 1) len)
 
 fn :: uu random hex16 => String
       uu random hex16 =
         ptr = uu alloc page 4096
         mfd = uu alloc mfd
-        _   = sys_call 318 ptr 16 0 0 0 0
+        _   = sys call 318 ptr 16 0 0 0 0
         raw = uu peek mfd ptr 16
         _   = uu free page mfd ptr 4096
         uu bytes to hex loop raw 0 16
@@ -205,21 +205,21 @@ fn :: uu hex val Int => Int
 
 fn :: uu variant char String => String
       uu variant char hex1   =
-        v   = uu hex val (str_char_at hex1 0)
+        v   = uu hex val (str char at hex1 0)
         idx = 8 + (v % 4)
         tbl = uu hex lut 0
-        str_slice tbl idx (idx + 1)
+        str slice tbl idx (idx + 1)
 
 -- @implements FR-UUID-001
 -- @implements API-UUID-001
 fn :: uuid v4 => String
       uuid v4 =
         h  = uu random hex16
-        p1 = str_slice h 0 8
-        p2 = str_slice h 8 12
-        p3 = "4" + (str_slice h 13 16)
-        p4 = (uu variant char (str_slice h 16 17)) + (str_slice h 17 20)
-        p5 = str_slice h 20 32
+        p1 = str slice h 0 8
+        p2 = str slice h 8 12
+        p3 = "4" + (str slice h 13 16)
+        p4 = (uu variant char (str slice h 16 17)) + (str slice h 17 20)
+        p5 = str slice h 20 32
         "{p1}-{p2}-{p3}-{p4}-{p5}"
 
 fn :: uu hex48 loop Int Int => String
@@ -228,7 +228,7 @@ fn :: uu hex48 loop Int Int => String
         | otherwise =
           nib = ((val % 16) + 16) % 16
           tbl = uu hex lut 0
-          (uu hex48 loop (val / 16) (rem - 1)) + (str_slice tbl nib (nib + 1))
+          (uu hex48 loop (val / 16) (rem - 1)) + (str slice tbl nib (nib + 1))
 
 -- @implements FR-UUID-001
 -- @implements API-UUID-001
@@ -237,11 +237,11 @@ fn :: uuid v7 at Int   => String
         eff_ts = uu abs ts_ms
         ts_hex = uu hex48 loop eff_ts 12
         h      = uu random hex16
-        p1     = str_slice ts_hex 0 8
-        p2     = str_slice ts_hex 8 12
-        p3     = "7" + (str_slice h 0 3)
-        p4     = (uu variant char (str_slice h 3 4)) + (str_slice h 4 7)
-        p5     = str_slice h 7 19
+        p1     = str slice ts_hex 0 8
+        p2     = str slice ts_hex 8 12
+        p3     = "7" + (str slice h 0 3)
+        p4     = (uu variant char (str slice h 3 4)) + (str slice h 4 7)
+        p5     = str slice h 7 19
         "{p1}-{p2}-{p3}-{p4}-{p5}"
 
 -- @implements FR-UUID-001
@@ -252,7 +252,7 @@ fn :: uuid v7 => String
 fn :: uu is hex range String Int Int => Bool
       uu is hex range s idx end_idx =
         | idx >= end_idx                       = True
-        | (uu hex val (str_char_at s idx)) < 0 = False
+        | (uu hex val (str char at s idx)) < 0 = False
         | otherwise                            = uu is hex range s (idx + 1) end_idx
 
 -- @implements FR-UUID-001
@@ -260,18 +260,18 @@ fn :: uu is hex range String Int Int => Bool
 -- @mitigates VUL-INPUT-001
 fn :: uuid is valid String => Bool
       uuid is valid u      =
-        | (str_len u) != 36               = False
-        | (str_char_at u 8) != 45         = False
-        | (str_char_at u 13) != 45        = False
-        | (str_char_at u 18) != 45        = False
-        | (str_char_at u 23) != 45        = False
+        | (str len u) != 36               = False
+        | (str char at u 8) != 45         = False
+        | (str char at u 13) != 45        = False
+        | (str char at u 18) != 45        = False
+        | (str char at u 23) != 45        = False
         | not (uu is hex range u 0 8)     = False
         | not (uu is hex range u 9 13)    = False
         | not (uu is hex range u 14 18)   = False
         | not (uu is hex range u 19 23)   = False
         | not (uu is hex range u 24 36)   = False
         | otherwise =
-          var_nib = uu hex val (str_char_at u 19)
+          var_nib = uu hex val (str char at u 19)
           (var_nib >= 8) and (var_nib <= 11)
 
 -- @implements FR-UUID-001
@@ -279,4 +279,4 @@ fn :: uuid is valid String => Bool
 fn :: uuid version String => Int
       uuid version u      =
         | not (uuid is valid u) = 0 - 1
-        | otherwise             = uu hex val (str_char_at u 14)
+        | otherwise             = uu hex val (str char at u 14)

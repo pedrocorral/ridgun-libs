@@ -4,7 +4,7 @@ title: Verify socket byte/string transfer, datagrams, and framed messages
 level: unit
 covers: [FR-SOCK-002]
 status: automated
-automated_in: [src/test/ridgun/test_socket.rg]
+automated_in: [src/test/ridgun/test socket.rg]
 ---
 # TS-SOCK-002 — Verify socket byte/string transfer, datagrams, and framed messages
 

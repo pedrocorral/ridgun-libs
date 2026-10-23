@@ -26,8 +26,8 @@ type ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int
 fn :: poll in => Int
       poll in =  1
 
-fn :: poll out => Int
-      poll out =  4
+fn :: poll_out => Int
+      poll_out =  4
 
 fn :: poll err => Int
       poll err =  8
@@ -114,7 +114,7 @@ fn :: is bad posix code Int => Bool
 fn :: has unsafe posix char String Int Int => Bool
       has unsafe posix char s idx slen =
         | idx >= slen                           = False
-        | is bad posix code (str_char_at s idx) = True
+        | is bad posix code (str char at s idx) = True
         | otherwise                             = has unsafe posix char s (idx + 1) slen
 
 fn :: is safe posix path len String Int => Bool
@@ -124,7 +124,7 @@ fn :: is safe posix path len String Int => Bool
 
 fn :: is safe posix path String => Bool
       is safe posix path path   =
-        is safe posix path len path (str_len path)
+        is safe posix path len path (str len path)
 
 -- ── lstat Tuple Accessors ────────────────────────────────────
 
@@ -150,12 +150,12 @@ fn :: lstat symlink target (Bool String Int Int Int String String Int String) =>
 
 fn :: px raw byte ub Int => String
       px raw byte ub ub  =
-        | ub >= 1 and ub <= 127 = char_from_code ub
+        | ub >= 1 and ub <= 127 = char from code ub
         | otherwise =
-          efd = sys_call 290 (256 + ub) 526336 0 0 0 0
-          s   = sys_read_fd efd 8
-          _   = sys_close efd
-          str_slice s 0 1
+          efd = sys call 290 (256 + ub) 526336 0 0 0 0
+          s   = sys read fd efd 8
+          _   = sys close efd
+          str slice s 0 1
 
 fn :: px raw byte Int => String
       px raw byte b   =  px raw byte ub (((b % 256) + 256) % 256)
@@ -166,17 +166,17 @@ fn :: px u64 le Int => String
           b0 = px raw byte 0
           b0 + b0 + b0 + b0 + b0 + b0 + b0 + b0
         | otherwise =
-          efd = sys_call 290 val 526336 0 0 0 0
-          s   = sys_read_fd efd 8
-          _   = sys_close efd
+          efd = sys call 290 val 526336 0 0 0 0
+          s   = sys read fd efd 8
+          _   = sys close efd
           s
 
 fn :: px decode u32 le String Int => Int
       px decode u32 le s off =
-        b0 = str_char_at s off
-        b1 = str_char_at s (off + 1)
-        b2 = str_char_at s (off + 2)
-        b3 = str_char_at s (off + 3)
+        b0 = str char at s off
+        b1 = str char at s (off + 1)
+        b2 = str char at s (off + 2)
+        b3 = str char at s (off + 3)
         b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
 
 fn :: px decode u64 le String Int => Int
@@ -188,28 +188,28 @@ fn :: px decode u64 le String Int => Int
 fn :: px alloc page Int => Int
       px alloc page sz  =
         neg1 = 0 - 1
-        sys_call 9 0 sz 3 34 neg1 0
+        sys call 9 0 sz 3 34 neg1 0
 
 fn :: px free page Int Int Int => Int
       px free page mfd ptr sz =
-        _ = sys_close mfd
-        sys_call 11 ptr sz 0 0 0 0
+        _ = sys close mfd
+        sys call 11 ptr sz 0 0 0 0
 
 fn :: px alloc mfd => Int
-      px alloc mfd =  sys_call 319 4194311 1 0 0 0 0
+      px alloc mfd =  sys call 319 4194311 1 0 0 0 0
 
 fn :: px poke Int Int String => Int
       px poke mfd ptr s      =
-        slen = str_len s
-        _    = sys_call 8 mfd 0 0 0 0 0
-        _    = sys_write_fd mfd s
-        sys_call 17 mfd ptr slen 0 0 0
+        slen = str len s
+        _    = sys call 8 mfd 0 0 0 0 0
+        _    = sys write fd mfd s
+        sys call 17 mfd ptr slen 0 0 0
 
 fn :: px peek Int Int Int => String
       px peek mfd ptr len =
-        _ = sys_call 18 mfd ptr len 0 0 0
-        _ = sys_call 8 mfd 0 0 0 0 0
-        sys_read_fd mfd len
+        _ = sys call 18 mfd ptr len 0 0 0
+        _ = sys call 8 mfd 0 0 0 0 0
+        sys read fd mfd len
 
 -- ── Monotonic & Wall-Clock Time (RGF-017 / RG-010) ───────────
 
@@ -217,7 +217,7 @@ fn :: px clock gettime Int    => Int Int
       px clock gettime clk_id =
         ptr  = px alloc page 4096
         mfd  = px alloc mfd
-        _    = sys_call 228 clk_id ptr 0 0 0 0
+        _    = sys call 228 clk_id ptr 0 0 0 0
         raw  = px peek mfd ptr 16
         _    = px free page mfd ptr 4096
         sec  = px decode u64 le raw 0
@@ -265,42 +265,42 @@ fn :: wait fd Int Int    Int        => PollStatus
       wait fd fd  events timeout_ms =
         | fd < 0               = PollError 9
         | timeout_ms < (0 - 1) = PollError 22
-        | otherwise            = map poll rc (sys_poll fd events timeout_ms)
+        | otherwise            = map poll rc (sys poll fd events timeout_ms)
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 fn :: posix open String Int   Int  => Int
       posix open path   flags mode =
         | not (is safe posix path path) = 0 - 22
-        | otherwise                     = sys_open path flags mode
+        | otherwise                     = sys open path flags mode
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 fn :: posix close Int => Int
       posix close fd  =
         | fd < 0    = 0 - 9
-        | otherwise = sys_close fd
+        | otherwise = sys close fd
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 fn :: posix read Int Int       => String
       posix read fd  max_bytes =
         | fd < 0 or max_bytes <= 0 = ""
-        | otherwise                = sys_read_fd fd max_bytes
+        | otherwise                = sys read fd fd max_bytes
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 fn :: posix write Int String => Int
       posix write fd  data   =
         | fd < 0    = 0 - 9
-        | otherwise = sys_write_fd fd data
+        | otherwise = sys write fd fd data
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 fn :: posix kill Int Int     => Int
       posix kill pid sig_num =
         | pid <= 0 or sig_num <= 0 or sig_num > 64 = 0 - 22
-        | otherwise                                = sys_kill pid sig_num
+        | otherwise                                = sys kill pid sig_num
 
 -- ── Kernel-Backed Anonymous Pipe via pipe2 (__NR_pipe2 = 293) ─
 
@@ -315,7 +315,7 @@ fn :: posix pipe => Int Int Int
       posix pipe =
         ptr = px alloc page 4096
         mfd = px alloc mfd
-        rc  = sys_call 293 ptr 526336 0 0 0 0
+        rc  = sys call 293 ptr 526336 0 0 0 0
         raw = px peek mfd ptr 8
         _   = px free page mfd ptr 4096
         rfd = px decode u32 le raw 0
@@ -329,17 +329,17 @@ fn :: posix pipe => Int Int Int
 fn :: posix mkdir String => Bool
       posix mkdir path   =
         | not (is safe posix path path) = False
-        | otherwise                     = (sys_mkdir path 493) == 0
+        | otherwise                     = (sys mkdir path 493) == 0
 
 fn :: posix chmod String Int  => Bool
       posix chmod path   mode =
         | not (is safe posix path path) = False
-        | otherwise                     = (sys_chmod path mode) == 0
+        | otherwise                     = (sys chmod path mode) == 0
 
 fn :: posix chdir String => Bool
       posix chdir path   =
         | not (is safe posix path path) = False
-        | otherwise                     = (sys_chdir path) == 0
+        | otherwise                     = (sys chdir path) == 0
 
 fn :: px syscall1 path Int String => Int
       px syscall1 path nr  path   =
@@ -347,7 +347,7 @@ fn :: px syscall1 path Int String => Int
         mfd = px alloc mfd
         b0  = px raw byte 0
         _   = px poke mfd ptr (path + b0)
-        rc  = sys_call nr ptr 0 0 0 0 0
+        rc  = sys call nr ptr 0 0 0 0 0
         _   = px free page mfd ptr 4096
         rc
 
@@ -359,7 +359,7 @@ fn :: px syscall2 path Int String String => Int
         p2048 = ptr + 2048
         _     = px poke mfd ptr (p1 + b0)
         _     = px poke mfd p2048 (p2 + b0)
-        rc    = sys_call nr ptr p2048 0 0 0 0
+        rc    = sys call nr ptr p2048 0 0 0 0
         _     = px free page mfd ptr 4096
         rc
 
@@ -396,7 +396,7 @@ fn :: sys symlink String String    => Bool
 fn :: sys readlink String => String
       sys readlink path   =
         | not (is safe posix path path) = ""
-        | otherwise                     = lstat symlink target (file_lstat path)
+        | otherwise                     = lstat symlink target (file lstat path)
 
 -- ── RGF-018 Signal Watching & Waiting (rt_sigprocmask + signalfd4) ──
 
@@ -437,8 +437,8 @@ fn :: sys signal watch [Int] => Int Int
           mask = px sig mask sigs
           neg1 = 0 - 1
           _    = px poke mfd ptr (px u64 le mask)
-          _    = sys_call 14 0 ptr 0 8 0 0
-          sfd  = sys_call 289 neg1 ptr 8 526336 0 0
+          _    = sys call 14 0 ptr 0 8 0 0
+          sfd  = sys call 289 neg1 ptr 8 526336 0 0
           _    = px free page mfd ptr 4096
           px finish sig watch sfd
 
@@ -454,7 +454,7 @@ fn :: px wait sig after poll Int Int => Int Int
         | otherwise =
           ptr = px alloc page 4096
           mfd = px alloc mfd
-          n   = sys_call 0 handle ptr 128 0 0 0
+          n   = sys call 0 handle ptr 128 0 0 0
           raw = px peek mfd ptr 16
           _   = px free page mfd ptr 4096
           px finish sig read n raw
@@ -464,8 +464,8 @@ fn :: px wait sig after poll Int Int => Int Int
 fn :: sys signal wait Int    Int        => Int Int
       sys signal wait handle timeout_ms =
         | handle < 0 or timeout_ms < (0 - 1)       = (0 - 7, 0)
-        | (sys_call 72 handle 1 0 0 0 0) < 0       = (0 - 7, 0)
-        | otherwise                                = px wait sig after poll handle (sys_poll handle 1 timeout_ms)
+        | (sys call 72 handle 1 0 0 0 0) < 0       = (0 - 7, 0)
+        | otherwise                                = px wait sig after poll handle (sys poll handle 1 timeout_ms)
 
 fn :: posix notify signal Int    Int    => Int
       posix notify signal target sig_no =
@@ -477,7 +477,7 @@ fn :: px bytes to list loop String Int Int => [Int]
       px bytes to list loop s idx slen =
         | idx >= slen = []
         | otherwise   =
-          b = ((str_char_at s idx) % 256 + 256) % 256
+          b = ((str char at s idx) % 256 + 256) % 256
           [b] :: (px bytes to list loop s (idx + 1) slen)
 
 fn :: px getrandom call Int Int Int => Int
@@ -494,11 +494,11 @@ fn :: px getrandom step Int Int Int => Int
 fn :: px getrandom loop Int Int => Int
       px getrandom loop ptr rem =
         | rem <= 0  = 0
-        | otherwise = px getrandom step ptr rem (px getrandom call ptr rem (sys_call 318 ptr rem 0 0 0 0))
+        | otherwise = px getrandom step ptr rem (px getrandom call ptr rem (sys call 318 ptr rem 0 0 0 0))
 
 fn :: px finish getrandom Int String Int => Int String
       px finish getrandom rc raw n =
-        | rc < 0 or (str_len raw) != n = (0 - 99, "")
+        | rc < 0 or (str len raw) != n = (0 - 99, "")
         | otherwise                    = (0, raw)
 
 fn :: px getrandom checked Int => Int String
@@ -524,7 +524,7 @@ fn :: sys random bytes Int => Int String
 fn :: px finish random list (Int String) => Int [Int]
       px finish random list (rc, raw)    =
         | rc != 0   = (rc, [])
-        | otherwise = (0, px bytes to list loop raw 0 (str_len raw))
+        | otherwise = (0, px bytes to list loop raw 0 (str len raw))
 
 fn :: sys random bytes list Int => Int [Int]
       sys random bytes list n   =
@@ -550,11 +550,11 @@ fn :: null device for SysOs   => String
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 fn :: null device => String
-      null device =  null device for sys_os
+      null device =  null device for (sys os)
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 fn :: process exists Int => Bool
       process exists pid =
         | pid <= 0  = False
-        | otherwise = (sys_kill pid 0) == 0
+        | otherwise = (sys kill pid 0) == 0

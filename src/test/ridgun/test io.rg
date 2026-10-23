@@ -32,10 +32,10 @@ fn :: str list len [String] => Int
 -- @tests TS-IO-001
 fn :: test io error formatting => ()
       test io error formatting =
-        _ = assert_str_eq (format io error (Timeout 500)) "timeout after 500 ms" "format Timeout 500"
-        _ = assert_str_eq (format io error Eof) "unexpected end of file" "format Eof"
-        _ = assert_str_eq (format io error (SysErr 9 "poll")) "syscall error 9 in poll" "format SysErr"
-        _ = assert_str_eq (format io error (NotFound "/missing")) "file not found: /missing" "format NotFound"
+        _ = assert str eq (format io error (Timeout 500)) "timeout after 500 ms" "format Timeout 500"
+        _ = assert str eq (format io error Eof) "unexpected end of file" "format Eof"
+        _ = assert str eq (format io error (SysErr 9 "poll")) "syscall error 9 in poll" "format SysErr"
+        _ = assert str eq (format io error (NotFound "/missing")) "file not found: /missing" "format NotFound"
         ()
 
 -- @tests TS-IO-001
@@ -53,37 +53,37 @@ fn :: test io pipe timeout and eof => ()
         r_to   = read fd rfd max 32 timeout 50
         t4     = sys monotonic ms
         dt     = t4 - t3
-        _      = assert_str_eq (format io result r_to) "err:timeout after 50 ms" "empty pipe read Timeout 50"
-        _      = assert_true (dt >= 40 and dt < 300) "dt in [40, 300): {dt}"
+        _      = assert str eq (format io result r_to) "err:timeout after 50 ms" "empty pipe read Timeout 50"
+        _      = assert true (dt >= 40 and dt < 300) "dt in [40, 300): {dt}"
 
         -- 2. Write payload via mixfix `write fd ... data ... timeout ...`
         w_res  = write fd wfd data "stream-ok" timeout 100
-        _      = assert_str_eq (format io result w_res) "ok:int:9" "write fd returns 9 bytes"
+        _      = assert str eq (format io result w_res) "ok:int:9" "write fd returns 9 bytes"
 
         -- 3. Read payload via mixfix `read fd ... max ... timeout ...`
         r_ok   = read fd rfd max 64 timeout 100
-        _      = assert_str_eq (format io result r_ok) "ok:str:stream-ok" "read fd returns stream-ok"
+        _      = assert str eq (format io result r_ok) "ok:str:stream-ok" "read fd returns stream-ok"
 
         -- 4. Close write end and verify subsequent read returns Eof
         _      = posix close wfd
         r_eof  = read fd rfd max 64 timeout 100
-        _      = assert_str_eq (format io result r_eof) "err:unexpected end of file" "closed pipe read returns Eof"
+        _      = assert str eq (format io result r_eof) "err:unexpected end of file" "closed pipe read returns Eof"
         _      = posix close rfd
 
         -- 5. Bad fd / invalid max_bytes
         r_bad  = read fd (0 - 1) max 64 timeout 50
-        _      = assert_str_eq (format io result r_bad) "err:syscall error 9 in read" "negative fd read SysErr 9"
+        _      = assert str eq (format io result r_bad) "err:syscall error 9 in read" "negative fd read SysErr 9"
         r_zero = read fd rfd max 0 timeout 50
-        _      = assert_str_eq (format io result r_zero) "err:syscall error 22 in read" "zero max_bytes read SysErr 22"
+        _      = assert str eq (format io result r_zero) "err:syscall error 22 in read" "zero max_bytes read SysErr 22"
         ()
 
 -- @tests TS-IO-001
 fn :: test io exec timeout => ()
       test io exec timeout =
         ok_res = io exec timeout "true" 500
-        _      = assert_str_eq (format io result ok_res) "ok:int:0" "io exec timeout true succeeds"
+        _      = assert str eq (format io result ok_res) "ok:int:0" "io exec timeout true succeeds"
         to_res = io exec timeout "sleep 2" 40
-        _      = assert_str_eq (format io result to_res) "err:timeout after 40 ms" "io exec timeout sleep 2 times out"
+        _      = assert str eq (format io result to_res) "err:timeout after 40 ms" "io exec timeout sleep 2 times out"
         ()
 
 -- ── TS-IO-002: RG-010 File Operations, Metadata & Line Streams ──
@@ -91,7 +91,7 @@ fn :: test io exec timeout => ()
 -- @tests TS-IO-002
 fn :: test io file and metadata => ()
       test io file and metadata =
-        pid   = sys_getpid
+        pid   = sys getpid
         dpath = "/tmp/rg_io_dir_{pid}"
         fpath = "{dpath}/file.txt"
         spath = "{dpath}/sym.txt"
@@ -100,36 +100,36 @@ fn :: test io file and metadata => ()
 
         _     = sys rmdir dpath
         _     = posix mkdir dpath
-        _     = assert_true (is dir dpath) "is dir dpath"
-        _     = assert_false (is file dpath) "not is file dpath"
+        _     = assert true (is dir dpath) "is dir dpath"
+        _     = assert false (is file dpath) "not is file dpath"
 
         -- 1. write_file + append_file + read_file
-        _     = write_file fpath "hello "
+        _     = write file fpath "hello "
         w2    = append file fpath "world"
         _     = assert eq w2 0
-        _     = assert_str_eq (read_file fpath) "hello world" "write_file + append_file content"
+        _     = assert str eq (read file fpath) "hello world" "write_file + append_file content"
 
         -- 2. write_bytes + read_bytes
-        _     = write_bytes bpath [65, 66, 67, 0, 255]
-        rb    = read_bytes bpath
+        _     = write bytes bpath [65, 66, 67, 0, 255]
+        rb    = read bytes bpath
         _     = assert eq (int list len rb) 5
 
         -- 3. symlink + metadata predicates
-        _     = assert_true (sys symlink fpath spath) "sys symlink fpath spath"
-        _     = assert_true (file exists fpath) "file exists fpath"
-        _     = assert_true (is file fpath) "is file fpath"
-        _     = assert_false (is symlink fpath) "not is symlink fpath"
-        _     = assert_true (is symlink spath) "is symlink spath"
+        _     = assert true (sys symlink fpath spath) "sys symlink fpath spath"
+        _     = assert true (file exists fpath) "file exists fpath"
+        _     = assert true (is file fpath) "is file fpath"
+        _     = assert false (is symlink fpath) "not is symlink fpath"
+        _     = assert true (is symlink spath) "is symlink spath"
         _     = assert eq (file size fpath) 11
-        _     = assert_true ((file mtime fpath) > 1700000000) "file mtime > 1700000000"
-        _     = assert_true ((file mode fpath) > 0) "file mode > 0"
-        _     = assert_false (file exists "/tmp/rg_io_nonexistent_999999.txt") "missing file exists False"
+        _     = assert true ((file mtime fpath) > 1700000000) "file mtime > 1700000000"
+        _     = assert true ((file mode fpath) > 0) "file mode > 0"
+        _     = assert false (file exists "/tmp/rg_io_nonexistent_999999.txt") "missing file exists False"
 
         -- 4. io read file safe + io write lines / io read lines
         miss  = io read file safe "/tmp/rg_io_missing_999.txt"
-        _     = assert_str_eq (format io result miss) "err:file not found: /tmp/rg_io_missing_999.txt" "NotFound missing file"
+        _     = assert str eq (format io result miss) "err:file not found: /tmp/rg_io_missing_999.txt" "NotFound missing file"
         hit   = io read file safe fpath
-        _     = assert_str_eq (format io result hit) "ok:str:hello world" "safe read existing file"
+        _     = assert str eq (format io result hit) "ok:str:hello world" "safe read existing file"
 
         _     = io write lines lpath ["alpha", "beta", "gamma"]
         lines = io read lines lpath
@@ -137,9 +137,9 @@ fn :: test io file and metadata => ()
 
         -- 5. v0.9.5 PAL `io read with timeout` (`with timeout wait_ms do` + `sys open path 2048 0` + `sys poll fd 1 -1`)
         r_amb  = io read with timeout fpath 200_ms
-        _      = assert_str_eq (format io result r_amb) "ok:str:hello world" "io read with timeout 200_ms"
+        _      = assert str eq (format io result r_amb) "ok:str:hello world" "io read with timeout 200_ms"
         r_miss = io read with timeout "/tmp/rg_io_missing_999.txt" 50_ms
-        _      = assert_true (str_starts_with (format io result r_miss) "err:io error -") "io read with timeout missing file -> IoError"
+        _      = assert true (str starts with (format io result r_miss) "err:io error -") "io read with timeout missing file -> IoError"
 
         -- Cleanup
         _     = sys unlink spath

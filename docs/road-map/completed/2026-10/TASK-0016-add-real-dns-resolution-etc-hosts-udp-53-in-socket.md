@@ -10,15 +10,15 @@ security: [VUL-INPUT-001]
 context_files:
   - src/main/ridgun/lib/socket.rg
   - src/main/ridgun/lib/http.rg
-  - src/test/ridgun/test_socket.rg
-  - src/test/ridgun/test_http.rg
-  - src/test/ridgun/test_posix.rg
+  - src/test/ridgun/test socket.rg
+  - src/test/ridgun/test http.rg
+  - src/test/ridgun/test posix.rg
 scope:
   - src/main/ridgun/lib/socket.rg
   - src/main/ridgun/lib/http.rg
-  - src/test/ridgun/test_socket.rg
-  - src/test/ridgun/test_http.rg
-  - src/test/ridgun/test_posix.rg
+  - src/test/ridgun/test socket.rg
+  - src/test/ridgun/test http.rg
+  - src/test/ridgun/test posix.rg
   - docs/requirements/api/sock/API-SOCK-001-socket-module-contract.md
   - docs/requirements/api/http/API-HTTP-001-http-module-contract.md
   - target/
@@ -34,17 +34,17 @@ Implement real `/etc/hosts` + RFC 1035 UDP port 53 DNS resolution (`sys_resolve_
 ## Plan
 - [x] Implement `/etc/hosts` lookup + `/etc/resolv.conf` nameserver discovery + RFC 1035 UDP DNS query (`AF_INET`, `SOCK_DGRAM` syscall 41 type 2) in `socket.rg` (`sys_resolve_ipv4`, `sock_resolve_host`, `sys_tcp_connect`).
 - [x] Implement live TCP HTTP/1.1 client (`http_request_tcp`, `http_get`, `http_post`, and response accessors) in `http.rg`.
-- [x] Add regression tests in `test_posix.rg`, `test_socket.rg`, and `test_http.rg` verifying real kernel fds (`fcntl F_GETFD`), real `sys_kill` `SIGTERM` capture without process death, `sys_wall_time_ms` parity with `sys_call 201`, and live HTTP/1.1 over TCP.
+- [x] Add regression tests in `test posix.rg`, `test socket.rg`, and `test http.rg` verifying real kernel fds (`fcntl F_GETFD`), real `sys_kill` `SIGTERM` capture without process death, `sys_wall_time_ms` parity with `sys_call 201`, and live HTTP/1.1 over TCP.
 
 ## Progress log (append-only, newest last)
-- 2026-10-22: Implemented real DNS resolution in `socket.rg`, TCP HTTP/1.1 client in `http.rg`, and regression tests in `test_posix.rg`, `test_socket.rg`, and `test_http.rg`.
+- 2026-10-22: Implemented real DNS resolution in `socket.rg`, TCP HTTP/1.1 client in `http.rg`, and regression tests in `test posix.rg`, `test socket.rg`, and `test http.rg`.
 
 ## Files changed (keep current)
 - `src/main/ridgun/lib/socket.rg`
 - `src/main/ridgun/lib/http.rg`
-- `src/test/ridgun/test_posix.rg`
-- `src/test/ridgun/test_socket.rg`
-- `src/test/ridgun/test_http.rg`
+- `src/test/ridgun/test posix.rg`
+- `src/test/ridgun/test socket.rg`
+- `src/test/ridgun/test http.rg`
 - `docs/requirements/api/sock/API-SOCK-001-socket-module-contract.md`
 - `docs/requirements/api/http/API-HTTP-001-http-module-contract.md`
 

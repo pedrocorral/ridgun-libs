@@ -12,14 +12,14 @@ context_files:
   - src/main/ridgun/lib/posix.rg
   - src/main/ridgun/lib/crypto.rg
   - src/main/ridgun/lib/uuid.rg
-  - src/test/ridgun/test_posix.rg
+  - src/test/ridgun/test posix.rg
   - README.md
 scope:
   - src/main/ridgun/lib/socket.rg
   - src/main/ridgun/lib/posix.rg
   - src/main/ridgun/lib/crypto.rg
   - src/main/ridgun/lib/uuid.rg
-  - src/test/ridgun/test_posix.rg
+  - src/test/ridgun/test posix.rg
   - README.md
 owner: agent-001
 claimed: 2026-10-22T09:00:18Z
@@ -44,7 +44,7 @@ Eliminate `/tmp` sticky-bit multi-user descriptor file collisions in `socket.rg`
 - `src/main/ridgun/lib/posix.rg`
 - `src/main/ridgun/lib/crypto.rg`
 - `src/main/ridgun/lib/uuid.rg`
-- `src/test/ridgun/test_posix.rg`
+- `src/test/ridgun/test posix.rg`
 - `README.md`
 
 ## Verification performed (command → result, newest last)

@@ -4,7 +4,7 @@ title: Verify UTC civil calendar conversions, ISO-8601 formatting and parsing, h
 level: unit
 covers: [FR-TIME-001, API-TIME-001]
 status: automated
-automated_in: [src/test/ridgun/test_time.rg]
+automated_in: [src/test/ridgun/test time.rg]
 ---
 # TS-TIME-001 — Verify UTC civil calendar conversions, ISO-8601 formatting and parsing, human durations, and exponential backoff
 

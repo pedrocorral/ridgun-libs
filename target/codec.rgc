@@ -1,4 +1,4 @@
--- RGLIB1
+RGC1
 -- SELF_HOSTED_COMPILER: ridgunc v0.9.8
 -- FUNCTIONS: 86
 -- TYPES: 0
@@ -98,12 +98,12 @@
 
 fn :: cd raw byte ub Int => String
       cd raw byte ub ub  =
-        | ub >= 1 and ub <= 127 = char_from_code ub
+        | ub >= 1 and ub <= 127 = char from code ub
         | otherwise =
-          efd = sys_call 290 (256 + ub) 526336 0 0 0 0
-          s   = sys_read_fd efd 8
-          _   = sys_close efd
-          str_slice s 0 1
+          efd = sys call 290 (256 + ub) 526336 0 0 0 0
+          s   = sys read fd efd 8
+          _   = sys close efd
+          str slice s 0 1
 
 fn :: cd raw byte Int => String
       cd raw byte b   =  cd raw byte ub (((b % 256) + 256) % 256)
@@ -123,18 +123,18 @@ fn :: cd b64url lut Int => String
 fn :: cd index of loop String String Int Int Int => Int
       cd index of loop s sub idx slen sublen =
         | (idx + sublen) > slen                        = 0 - 1
-        | (str_slice s idx (idx + sublen)) == sub      = idx
+        | (str slice s idx (idx + sublen)) == sub      = idx
         | otherwise                                    = cd index of loop s sub (idx + 1) slen sublen
 
 fn :: cd index of String String => Int
       cd index of s      sub    =
-        | (str_len sub) == 0 = 0
-        | otherwise          = cd index of loop s sub 0 (str_len s) (str_len sub)
+        | (str len sub) == 0 = 0
+        | otherwise          = cd index of loop s sub 0 (str len s) (str len sub)
 
 fn :: cd split char loop String Int Int Int Int => [String]
       cd split char loop s ch start idx len =
-        | idx >= len                = [(str_slice s start len)]
-        | (str_char_at s idx) == ch = [(str_slice s start idx)] :: (cd split char loop s ch (idx + 1) (idx + 1) len)
+        | idx >= len                = [(str slice s start len)]
+        | (str char at s idx) == ch = [(str slice s start idx)] :: (cd split char loop s ch (idx + 1) (idx + 1) len)
         | otherwise                 = cd split char loop s ch start (idx + 1) len
 
 -- ── RFC 4648 Hexadecimal Encoding & Decoding ─────────────────
@@ -149,7 +149,7 @@ fn :: cd hex val Int => Int
 fn :: cd valid hex loop String Int Int => Bool
       cd valid hex loop s idx len =
         | idx >= len                           = True
-        | (cd hex val (str_char_at s idx)) < 0 = False
+        | (cd hex val (str char at s idx)) < 0 = False
         | otherwise                            = cd valid hex loop s (idx + 1) len
 
 fn :: cd is valid hex len String Int => Bool
@@ -161,7 +161,7 @@ fn :: cd is valid hex len String Int => Bool
 -- @implements API-CODEC-001
 -- @mitigates VUL-INPUT-001
 fn :: is valid hex String => Bool
-      is valid hex s      =  cd is valid hex len s (str_len s)
+      is valid hex s      =  cd is valid hex len s (str len s)
 
 fn :: cd hex enc byte Int => String
       cd hex enc byte b   =
@@ -169,24 +169,24 @@ fn :: cd hex enc byte Int => String
         hi  = ub / 16
         lo  = ub % 16
         tbl = cd hex lut 0
-        (str_slice tbl hi (hi + 1)) + (str_slice tbl lo (lo + 1))
+        (str slice tbl hi (hi + 1)) + (str slice tbl lo (lo + 1))
 
 fn :: cd hex enc loop String Int Int => String
       cd hex enc loop s idx len =
         | idx >= len = ""
-        | otherwise  = (cd hex enc byte (str_char_at s idx)) + (cd hex enc loop s (idx + 1) len)
+        | otherwise  = (cd hex enc byte (str char at s idx)) + (cd hex enc loop s (idx + 1) len)
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
 fn :: hex encode String => String
-      hex encode s      =  cd hex enc loop s 0 (str_len s)
+      hex encode s      =  cd hex enc loop s 0 (str len s)
 
 fn :: cd hex dec loop String Int Int => String
       cd hex dec loop s idx len =
         | idx >= len = ""
         | otherwise =
-          hi = cd hex val (str_char_at s idx)
-          lo = cd hex val (str_char_at s (idx + 1))
+          hi = cd hex val (str char at s idx)
+          lo = cd hex val (str char at s (idx + 1))
           (cd raw byte ((hi * 16) + lo)) + (cd hex dec loop s (idx + 2) len)
 
 -- @implements FR-CODEC-001
@@ -195,14 +195,14 @@ fn :: cd hex dec loop String Int Int => String
 fn :: hex decode String => String
       hex decode s      =
         | not (is valid hex s) = ""
-        | otherwise            = cd hex dec loop s 0 (str_len s)
+        | otherwise            = cd hex dec loop s 0 (str len s)
 
 -- ── RFC 4648 Standard Base64 & URL-Safe Base64url ────────────
 
 fn :: cd b64 char String Int => String
       cd b64 char tbl    idx =
         i = idx % 64
-        str_slice tbl i (i + 1)
+        str slice tbl i (i + 1)
 
 fn :: cd b64 pad suffix String Bool => String
       cd b64 pad suffix suffix True = suffix
@@ -212,25 +212,25 @@ fn :: cd b64 enc step String Int String Bool Int => String
       cd b64 enc step s idx tbl pad rem =
         | rem <= 0 = ""
         | rem == 1 =
-          b0   = str_char_at s idx
+          b0   = str char at s idx
           out2 = (cd b64 char tbl (b0 / 4)) + (cd b64 char tbl ((b0 % 4) * 16))
           out2 + (cd b64 pad suffix "==" pad)
         | rem == 2 =
-          b0   = str_char_at s idx
-          b1   = str_char_at s (idx + 1)
+          b0   = str char at s idx
+          b1   = str char at s (idx + 1)
           n    = (b0 * 256) + b1
           out3 = (cd b64 char tbl (n / 1024)) + (cd b64 char tbl ((n / 16) % 64)) + (cd b64 char tbl ((n % 16) * 4))
           out3 + (cd b64 pad suffix "=" pad)
         | otherwise =
-          b0   = str_char_at s idx
-          b1   = str_char_at s (idx + 1)
-          b2   = str_char_at s (idx + 2)
+          b0   = str char at s idx
+          b1   = str char at s (idx + 1)
+          b2   = str char at s (idx + 2)
           n    = (b0 * 65536) + (b1 * 256) + b2
           out4 = (cd b64 char tbl (n / 262144)) + (cd b64 char tbl ((n / 4096) % 64)) + (cd b64 char tbl ((n / 64) % 64)) + (cd b64 char tbl (n % 64))
           out4 + (cd b64 enc rem s (idx + 3) tbl pad)
 
 fn :: cd b64 enc rem String Int String Bool => String
-      cd b64 enc rem s idx tbl pad = cd b64 enc step s idx tbl pad ((str_len s) - idx)
+      cd b64 enc rem s idx tbl pad = cd b64 enc step s idx tbl pad ((str len s) - idx)
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
@@ -254,13 +254,13 @@ fn :: cd b64 val Int => Int
 fn :: cd strip b64 pad String Int => String
       cd strip b64 pad s n =
         | n <= 0                        = ""
-        | (str_char_at s (n - 1)) == 61 = cd strip b64 pad (str_slice s 0 (n - 1)) (n - 1)
+        | (str char at s (n - 1)) == 61 = cd strip b64 pad (str slice s 0 (n - 1)) (n - 1)
         | otherwise                     = s
 
 fn :: cd valid b64 body String Int Int => Bool
       cd valid b64 body s idx len =
         | idx >= len                           = True
-        | (cd b64 val (str_char_at s idx)) < 0 = False
+        | (cd b64 val (str char at s idx)) < 0 = False
         | otherwise                            = cd valid b64 body s (idx + 1) len
 
 fn :: cd valid b64 raw String Int => Bool
@@ -273,27 +273,27 @@ fn :: cd valid b64 raw String Int => Bool
 -- @mitigates VUL-INPUT-001
 fn :: is valid base64 String => Bool
       is valid base64 s      =
-        raw = cd strip b64 pad s (str_len s)
-        cd valid b64 raw raw (str_len raw)
+        raw = cd strip b64 pad s (str len s)
+        cd valid b64 raw raw (str len raw)
 
 fn :: cd b64 dec step String Int Int Int => String
       cd b64 dec step s idx len rem =
         | rem <= 1 = ""
         | rem == 2 =
-          v0 = cd b64 val (str_char_at s idx)
-          v1 = cd b64 val (str_char_at s (idx + 1))
+          v0 = cd b64 val (str char at s idx)
+          v1 = cd b64 val (str char at s (idx + 1))
           cd raw byte (((v0 * 4) + (v1 / 16)) % 256)
         | rem == 3 =
-          v0 = cd b64 val (str_char_at s idx)
-          v1 = cd b64 val (str_char_at s (idx + 1))
-          v2 = cd b64 val (str_char_at s (idx + 2))
+          v0 = cd b64 val (str char at s idx)
+          v1 = cd b64 val (str char at s (idx + 1))
+          v2 = cd b64 val (str char at s (idx + 2))
           n  = (v0 * 1024) + (v1 * 16) + (v2 / 4)
           (cd raw byte ((n / 256) % 256)) + (cd raw byte (n % 256))
         | otherwise =
-          v0 = cd b64 val (str_char_at s idx)
-          v1 = cd b64 val (str_char_at s (idx + 1))
-          v2 = cd b64 val (str_char_at s (idx + 2))
-          v3 = cd b64 val (str_char_at s (idx + 3))
+          v0 = cd b64 val (str char at s idx)
+          v1 = cd b64 val (str char at s (idx + 1))
+          v2 = cd b64 val (str char at s (idx + 2))
+          v3 = cd b64 val (str char at s (idx + 3))
           n  = (v0 * 262144) + (v1 * 4096) + (v2 * 64) + v3
           b0 = (n / 65536) % 256
           b1 = (n / 256) % 256
@@ -310,8 +310,8 @@ fn :: base64 decode String => String
       base64 decode s      =
         | not (is valid base64 s) = ""
         | otherwise =
-          raw = cd strip b64 pad s (str_len s)
-          cd b64 dec loop raw 0 (str_len raw)
+          raw = cd strip b64 pad s (str len s)
+          cd b64 dec loop raw 0 (str len raw)
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
@@ -335,22 +335,22 @@ fn :: cd pct byte Int => String
         hi  = ub / 16
         lo  = ub % 16
         tbl = cd hex up lut 0
-        "%" + (str_slice tbl hi (hi + 1)) + (str_slice tbl lo (lo + 1))
+        "%" + (str slice tbl hi (hi + 1)) + (str slice tbl lo (lo + 1))
 
 fn :: cd url enc char String Int Int => String
       cd url enc char s idx c =
-        | cd is unreserved c = str_slice s idx (idx + 1)
+        | cd is unreserved c = str slice s idx (idx + 1)
         | otherwise          = cd pct byte c
 
 fn :: cd url enc loop String Int Int => String
       cd url enc loop s idx len =
         | idx >= len = ""
-        | otherwise  = (cd url enc char s idx (str_char_at s idx)) + (cd url enc loop s (idx + 1) len)
+        | otherwise  = (cd url enc char s idx (str char at s idx)) + (cd url enc loop s (idx + 1) len)
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
 fn :: url encode String => String
-      url encode s      =  cd url enc loop s 0 (str_len s)
+      url encode s      =  cd url enc loop s 0 (str len s)
 
 fn :: cd url dec pct String Int Int Int Int => String
       cd url dec pct s idx len hi lo =
@@ -360,18 +360,18 @@ fn :: cd url dec pct String Int Int Int Int => String
 fn :: cd url dec at String Int Int Int => String
       cd url dec at s idx len c =
         | c == 43                     = " " + (cd url dec loop s (idx + 1) len)
-        | c == 37 and (idx + 2) < len = cd url dec pct s idx len (cd hex val (str_char_at s (idx + 1))) (cd hex val (str_char_at s (idx + 2)))
-        | otherwise                   = (str_slice s idx (idx + 1)) + (cd url dec loop s (idx + 1) len)
+        | c == 37 and (idx + 2) < len = cd url dec pct s idx len (cd hex val (str char at s (idx + 1))) (cd hex val (str char at s (idx + 2)))
+        | otherwise                   = (str slice s idx (idx + 1)) + (cd url dec loop s (idx + 1) len)
 
 fn :: cd url dec loop String Int Int => String
       cd url dec loop s idx len =
         | idx >= len = ""
-        | otherwise  = cd url dec at s idx len (str_char_at s idx)
+        | otherwise  = cd url dec at s idx len (str char at s idx)
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
 fn :: url decode String => String
-      url decode s      =  cd url dec loop s 0 (str_len s)
+      url decode s      =  cd url dec loop s 0 (str len s)
 
 fn :: cd pair key (String String) => String
       cd pair key (k, _)          =  k
@@ -390,7 +390,7 @@ fn :: query string encode [String String] => String
 fn :: cd parse kv at String Int => String String
       cd parse kv at item eq_idx =
         | eq_idx < 0 = (url decode item, "")
-        | otherwise  = (url decode (str_slice item 0 eq_idx), url decode (str_slice item (eq_idx + 1) (str_len item)))
+        | otherwise  = (url decode (str slice item 0 eq_idx), url decode (str slice item (eq_idx + 1) (str len item)))
 
 fn :: cd parse kv item String => String String
       cd parse kv item item   =  cd parse kv at item (cd index of item "=")
@@ -398,18 +398,18 @@ fn :: cd parse kv item String => String String
 fn :: cd parse qs list [String] => [String String]
       cd parse qs list []       =  []
       cd parse qs list (x:rest) =
-        | (str_len x) == 0 = cd parse qs list rest
+        | (str len x) == 0 = cd parse qs list rest
         | otherwise        = [(cd parse kv item x)] :: (cd parse qs list rest)
 
 fn :: cd strip leading q String => String
       cd strip leading q qs     =
-        | str_starts_with qs "?" = str_slice qs 1 (str_len qs)
+        | str starts with qs "?" = str slice qs 1 (str len qs)
         | otherwise              = qs
 
 fn :: cd decode clean qs String => [String String]
       cd decode clean qs clean  =
-        | (str_len clean) == 0 = []
-        | otherwise            = cd parse qs list (cd split char loop clean 38 0 0 (str_len clean))
+        | (str len clean) == 0 = []
+        | otherwise            = cd parse qs list (cd split char loop clean 38 0 0 (str len clean))
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
@@ -425,18 +425,18 @@ fn :: cd json esc code String Int Int => String
         | c == 10   = "\\n"
         | c == 13   = "\\r"
         | c == 9    = "\\t"
-        | otherwise = str_slice s idx (idx + 1)
+        | otherwise = str slice s idx (idx + 1)
 
 fn :: cd json esc loop String Int Int => String
       cd json esc loop s idx len =
         | idx >= len = ""
-        | otherwise  = (cd json esc code s idx (str_char_at s idx)) + (cd json esc loop s (idx + 1) len)
+        | otherwise  = (cd json esc code s idx (str char at s idx)) + (cd json esc loop s (idx + 1) len)
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
 -- @mitigates VUL-INPUT-001
 fn :: json escape String => String
-      json escape s      =  cd json esc loop s 0 (str_len s)
+      json escape s      =  cd json esc loop s 0 (str len s)
 
 fn :: cd json unesc next String Int Int Int => String
       cd json unesc next s idx len nc =
@@ -445,18 +445,18 @@ fn :: cd json unesc next String Int Int Int => String
         | nc == 110 = "\n" + (cd json unesc loop s (idx + 2) len)
         | nc == 114 = "\r" + (cd json unesc loop s (idx + 2) len)
         | nc == 116 = "\t" + (cd json unesc loop s (idx + 2) len)
-        | otherwise = (str_slice s (idx + 1) (idx + 2)) + (cd json unesc loop s (idx + 2) len)
+        | otherwise = (str slice s (idx + 1) (idx + 2)) + (cd json unesc loop s (idx + 2) len)
 
 fn :: cd json unesc loop String Int Int => String
       cd json unesc loop s idx len =
         | idx >= len                                    = ""
-        | (str_char_at s idx) == 92 and (idx + 1) < len = cd json unesc next s idx len (str_char_at s (idx + 1))
-        | otherwise                                     = (str_slice s idx (idx + 1)) + (cd json unesc loop s (idx + 1) len)
+        | (str char at s idx) == 92 and (idx + 1) < len = cd json unesc next s idx len (str char at s (idx + 1))
+        | otherwise                                     = (str slice s idx (idx + 1)) + (cd json unesc loop s (idx + 1) len)
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
 fn :: json unescape String => String
-      json unescape s      =  cd json unesc loop s 0 (str_len s)
+      json unescape s      =  cd json unesc loop s 0 (str len s)
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
@@ -466,7 +466,7 @@ fn :: json quote String => String
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
 fn :: json int Int => String
-      json int n   =  int_to_str n
+      json int n   =  int to str n
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
@@ -516,14 +516,14 @@ fn :: cd is json ws Int => Bool
 fn :: cd skip key sep String Int Int => Int
       cd skip key sep s idx len =
         | idx >= len                        = idx
-        | cd is json ws (str_char_at s idx) = cd skip key sep s (idx + 1) len
+        | cd is json ws (str char at s idx) = cd skip key sep s (idx + 1) len
         | otherwise                         = idx
 
 fn :: cd scan json str end String Int Int => Int
       cd scan json str end s idx len =
         | idx >= len                = 0 - 1
-        | (str_char_at s idx) == 92 = cd scan json str end s (idx + 2) len
-        | (str_char_at s idx) == 34 = idx
+        | (str char at s idx) == 92 = cd scan json str end s (idx + 2) len
+        | (str char at s idx) == 34 = idx
         | otherwise                 = cd scan json str end s (idx + 1) len
 
 fn :: cd is tok delim Int => Bool
@@ -532,24 +532,24 @@ fn :: cd is tok delim Int => Bool
 fn :: cd scan json tok end String Int Int => Int
       cd scan json tok end s idx len =
         | idx >= len                           = len
-        | cd is tok delim (str_char_at s idx)  = idx
+        | cd is tok delim (str char at s idx)  = idx
         | otherwise                            = cd scan json tok end s (idx + 1) len
 
 fn :: cd extract json str vend String Int Int => String
       cd extract json str vend doc vstart vend =
         | vend < 0  = ""
-        | otherwise = json unescape (str_slice doc (vstart + 1) vend)
+        | otherwise = json unescape (str slice doc (vstart + 1) vend)
 
 fn :: cd extract json str vstart String Int => String
       cd extract json str vstart doc vstart =
-        | vstart >= (str_len doc)        = ""
-        | (str_char_at doc vstart) != 34 = ""
-        | otherwise                      = cd extract json str vend doc vstart (cd scan json str end doc (vstart + 1) (str_len doc))
+        | vstart >= (str len doc)        = ""
+        | (str char at doc vstart) != 34 = ""
+        | otherwise                      = cd extract json str vend doc vstart (cd scan json str end doc (vstart + 1) (str len doc))
 
 fn :: cd extract json str kpos String String Int => String
       cd extract json str kpos doc pat kpos =
         | kpos < 0  = ""
-        | otherwise = cd extract json str vstart doc (cd skip key sep doc (kpos + (str_len pat)) (str_len doc))
+        | otherwise = cd extract json str vstart doc (cd skip key sep doc (kpos + (str len pat)) (str len doc))
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001
@@ -561,31 +561,31 @@ fn :: json get str String String => String
 fn :: cd is signed int loop String Int Int => Bool
       cd is signed int loop s idx len =
         | idx >= len                                           = True
-        | (str_char_at s idx) < 48 or (str_char_at s idx) > 57 = False
+        | (str char at s idx) < 48 or (str char at s idx) > 57 = False
         | otherwise                                            = cd is signed int loop s (idx + 1) len
 
 fn :: cd is valid int len String Int => Bool
       cd is valid int len s n =
         | n == 0                  = False
-        | (str_char_at s 0) == 45 =
+        | (str char at s 0) == 45 =
           | n <= 1    = False
           | otherwise = cd is signed int loop s 1 n |.
         | otherwise               = cd is signed int loop s 0 n
 
 fn :: cd is valid int str String => Bool
-      cd is valid int str s = cd is valid int len s (str_len s)
+      cd is valid int str s = cd is valid int len s (str len s)
 
 fn :: cd raw tok vstart String Int => String
       cd raw tok vstart doc vstart =
-        | vstart >= (str_len doc) = ""
+        | vstart >= (str len doc) = ""
         | otherwise =
-          vend = cd scan json tok end doc vstart (str_len doc)
-          str_slice doc vstart vend
+          vend = cd scan json tok end doc vstart (str len doc)
+          str slice doc vstart vend
 
 fn :: cd raw tok kpos String String Int => String
       cd raw tok kpos doc pat kpos =
         | kpos < 0  = ""
-        | otherwise = cd raw tok vstart doc (cd skip key sep doc (kpos + (str_len pat)) (str_len doc))
+        | otherwise = cd raw tok vstart doc (cd skip key sep doc (kpos + (str len pat)) (str len doc))
 
 fn :: cd raw json token String String => String
       cd raw json token doc key =
@@ -595,7 +595,7 @@ fn :: cd raw json token String String => String
 fn :: cd parse tok int String Int => Int
       cd parse tok int tok fallback =
         | not (cd is valid int str tok) = fallback
-        | otherwise                     = str_to_int tok
+        | otherwise                     = str to int tok
 
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001

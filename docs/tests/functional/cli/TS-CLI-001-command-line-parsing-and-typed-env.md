@@ -4,7 +4,7 @@ title: Verify CLI flag, option, combined short-flag, positional argument parsing
 level: unit
 covers: [FR-CLI-001, API-CLI-001]
 status: automated
-automated_in: [src/test/ridgun/test_cli.rg]
+automated_in: [src/test/ridgun/test cli.rg]
 ---
 # TS-CLI-001 — Verify CLI flag, option, combined short-flag, positional argument parsing, and typed environment variable readers
 

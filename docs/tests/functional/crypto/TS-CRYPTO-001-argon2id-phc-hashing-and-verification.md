@@ -4,7 +4,7 @@ title: Verify RFC 9106 Argon2id PHC hashing, parameter validation, and constant-
 level: unit
 covers: [FR-CRYPTO-001]
 status: automated
-automated_in: [src/test/ridgun/test_argon2id.rg]
+automated_in: [src/test/ridgun/test argon2id.rg]
 ---
 # TS-CRYPTO-001 — Verify RFC 9106 Argon2id PHC hashing, parameter validation, and constant-time verification
 

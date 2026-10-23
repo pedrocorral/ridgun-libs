@@ -51,3 +51,5 @@ Conventions: `snake_case`; ids end in `_id`; timestamps end in `_at` (UTC ISO-86
 | exit_code | Int | Process exit status code (`0..255`) | POSIX | `posix.rg`, `io.rg` |
 | errno_code | Int | Positive POSIX `errno` value returned by kernel syscall failure | POSIX | `posix.rg`, `io.rg` |
 | max_bytes | Int | Upper bound on bytes read in a single descriptor/socket read operation | IO | `io.rg`, `socket.rg`, `posix.rg` |
+| agent_state | String | Lifecycle or reply state of a Ridgun agent (`running`, `stopped`, `timeout`, `error`) | AGENT | `agent.rg` |
+| item_count | Int | Number of entries or messages held by a stateful agent | AGENT | `agent.rg` |

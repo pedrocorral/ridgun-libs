@@ -4,7 +4,7 @@ title: Verify high-level file I/O helpers, path metadata predicates, and line-st
 level: unit
 covers: [FR-IO-002]
 status: automated
-automated_in: [src/test/ridgun/test_io.rg]
+automated_in: [src/test/ridgun/test io.rg]
 ---
 # TS-IO-002 — Verify high-level file I/O helpers, path metadata predicates, and line-stream utilities
 
