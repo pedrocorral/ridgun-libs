@@ -3,8 +3,8 @@ id: TS-JSON-001
 title: Verify recursive RFC 8259 JSON AST parsing, serialization, pretty-printing, and dot-path queries
 level: unit
 covers: [FR-JSON-001, API-JSON-001]
-status: planned
-automated_in: []
+status: automated
+automated_in: ["src/test/ridgun/test json.rg"]
 ---
 # TS-JSON-001 — Verify recursive RFC 8259 JSON AST parsing, serialization, pretty-printing, and dot-path queries
 

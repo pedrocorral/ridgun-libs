@@ -1,9 +1,9 @@
 ---
 id: TASK-0022
 title: Implement json.rg, csv.rg, and ini.rg structured data and configuration libraries
-status: pending
+status: completed
 priority: must
-owner: unassigned
+owner: agent-001
 implements: [FR-JSON-001, API-JSON-001, DM-Json, FR-CSV-001, API-CSV-001, DM-Csv, FR-INI-001, API-INI-001, DM-Ini]
 tests: [TS-JSON-001, TS-CSV-001, TS-INI-001]
 mitigates: [VUL-INPUT-001]
@@ -20,6 +20,8 @@ context_files:
   - docs/requirements/functional/json/FR-JSON-001-recursive-json-ast-and-path-queries.md
   - docs/requirements/functional/csv/FR-CSV-001-rfc4180-csv-and-tsv-library.md
   - docs/requirements/functional/ini/FR-INI-001-ini-and-dotenv-configuration-library.md
+claimed: 2026-10-23T20:13:10Z
+claimed_by: agent gemini@solarfall
 ---
 # TASK-0022 — Implement `json.rg`, `csv.rg`, and `ini.rg` structured data and configuration libraries
 

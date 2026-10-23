@@ -2,7 +2,7 @@
 id: FR-JSON-001
 title: Provide recursive RFC 8259 JSON AST parsing, serialization, pretty-printing, and dot-path queries
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: JSON
 depends_on: []

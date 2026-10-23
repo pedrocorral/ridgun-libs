@@ -2,7 +2,7 @@
 id: FR-INI-001
 title: Provide INI sectioned configuration and Dotenv parsing, interpolation, and serialization
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: INI
 depends_on: []

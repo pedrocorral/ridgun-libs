@@ -3,8 +3,8 @@ id: TS-CSV-001
 title: Verify RFC 4180 CSV and TSV parsing, serialization, quoted-field escaping, and header-mapped lookup
 level: unit
 covers: [FR-CSV-001, API-CSV-001]
-status: planned
-automated_in: []
+status: automated
+automated_in: ["src/test/ridgun/test csv.rg"]
 ---
 # TS-CSV-001 — Verify RFC 4180 CSV and TSV parsing, serialization, quoted-field escaping, and header-mapped lookup
 

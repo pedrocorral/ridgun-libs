@@ -2,4 +2,4 @@
 
 | File | ID | Title | Level | Status |
 |---|---|---|---|---|
-| `TS-INI-001-ini-and-dotenv-configuration-library.md` | `TS-INI-001` | Verify INI sectioned configuration and Dotenv parsing, interpolation, and serialization | unit | planned |
+| `TS-INI-001-ini-and-dotenv-configuration-library.md` | `TS-INI-001` | Verify INI sectioned configuration and Dotenv parsing, interpolation, and serialization | unit | automated |

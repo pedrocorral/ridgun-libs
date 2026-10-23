@@ -3,8 +3,8 @@ id: TS-INI-001
 title: Verify INI sectioned configuration and Dotenv parsing, interpolation, and serialization
 level: unit
 covers: [FR-INI-001, API-INI-001]
-status: planned
-automated_in: []
+status: automated
+automated_in: ["src/test/ridgun/test ini.rg"]
 ---
 # TS-INI-001 — Verify INI sectioned configuration and Dotenv parsing, interpolation, and serialization
 

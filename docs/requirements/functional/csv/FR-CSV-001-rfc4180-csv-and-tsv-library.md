@@ -2,7 +2,7 @@
 id: FR-CSV-001
 title: Provide RFC 4180 CSV and TSV parsing, serialization, quoted-field escaping, and header-mapped lookup
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: CSV
 depends_on: []
