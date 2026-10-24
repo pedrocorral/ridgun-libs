@@ -3,6 +3,7 @@
 | Folder | What | Read when |
 |---|---|---|
 | `../.aix/meta-docs/` | How to build software with this kit (architecture, persistence, testing, security, stacks, conventions, workflow). Language-agnostic core + `stacks/`. | Any "how should I…" question. Start at `.aix/meta-docs/INDEX.md`. |
+| `book/` | **The `ridgun-libs` Book** (`es/`, `ca/`, `gl/`, `eu/`, `en/`, `pt/`, `sv/`) — 33-chapter practical guide (`00`–`32`, one chapter per lib) and standalone interactive HTML viewer. | Learning, browsing, or teaching how to use any of the 32 libs in `ridgun-libs`. |
 | `requirements/` | **Ground truth** for this application. IDs `FR/NFR/API/DM/ADR`. | Before implementing or testing anything. |
 | `tests/` | Test specifications (`TS-*`) + generated coverage matrix. | Before writing or reviewing tests. |
 | `security/` | Vulnerability register (`VUL-*`) + audit reports. | Before touching auth, input, data, deps, LLM calls; during audits. |
