@@ -23,7 +23,7 @@ Applications and servers require structured text and JSON (`NDJSON`) log formatt
 - AC3: Given a level, message, and field list `[(String, String)]`, when `log format text` and `log format json` are called, then they produce sanitized text (`[LEVEL] msg key=val`) and escaped single-line JSON (`{"level":"...","msg":"...",...}`) with sensitive fields redacted.
 
 ## Actors & permissions
-- Any Ridgun module importing `log`.
+- Any Ridgun program or lib importing `log`.
 
 ## Constraints & edge cases
 - Control characters (`"`, `\`, `\n`, `\r`, `\t`) in log messages and field values are escaped in both text and JSON output to prevent log injection.

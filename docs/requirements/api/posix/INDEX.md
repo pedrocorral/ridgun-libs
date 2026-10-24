@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-POSIX-001-posix-module-contract.md` | `API-POSIX-001` | Public module contract for `posix` (`posix.rglib` / `libposix.so`) | approved |
+| `API-POSIX-001-posix-module-contract.md` | `API-POSIX-001` | Public lib contract for `posix` (`posix.rglib` / `libposix.so`) | approved |

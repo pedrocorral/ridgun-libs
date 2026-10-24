@@ -23,7 +23,7 @@ Ridgun v0.9.12 provides the low-level Native Agent Model primitives (`agent`, `A
 - AC3: Given stateful agents created with `new counter agent`, `new log agent`, and `new kv agent`, when callers perform state transitions (`counter add`, `counter get`, `counter reset`, `log append`, `log read`, `log clear`, `kv put`, `kv get`, `kv delete`, `kv has`, `kv count`, `kv keys`, `kv clear`), then each agent updates its isolated state deterministically and returns the expected updated value.
 
 ## Actors & permissions
-- Any Ridgun module importing `agent`.
+- Any Ridgun program or lib importing `agent`.
 
 ## Constraints & edge cases
 - Polling with `timeout_ms <= 0` performs an immediate non-blocking `try receive from` check and returns `ReplyTimeout 0` if no message is ready.

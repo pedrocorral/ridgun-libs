@@ -23,7 +23,7 @@ HTML views, reports, emails, and documentation generators require safe text temp
 - AC3: Given `tmpl render latex`, when a variable contains `\`, `{`, or `}`, then it is escaped for LaTeX output.
 
 ## Actors & permissions
-- Any Ridgun module importing `template`.
+- Any Ridgun program or lib importing `template`.
 
 ## Constraints & edge cases
 - Missing variables evaluate to `""` without failing.

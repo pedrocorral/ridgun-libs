@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-INI-001-ini-module-contract.md` | `API-INI-001` | Public module contract for `ini` (`ini.rglib` / `libini.so`) | approved |
+| `API-INI-001-ini-module-contract.md` | `API-INI-001` | Public lib contract for `ini` (`ini.rglib` / `libini.so`) | approved |

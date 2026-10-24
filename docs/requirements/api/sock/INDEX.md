@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-SOCK-001-socket-module-contract.md` | `API-SOCK-001` | Public module contract for `socket` (`socket.rglib` / `libsocket.so`) | approved |
+| `API-SOCK-001-socket-module-contract.md` | `API-SOCK-001` | Public lib contract for `socket` (`socket.rglib` / `libsocket.so`) | approved |

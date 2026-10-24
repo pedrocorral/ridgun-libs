@@ -23,7 +23,7 @@ Scientific computing, statistical modeling, and lightweight machine learning inf
 - AC3: Given a 1D `Tensor[Real * n]` vector, when `linalg relu`, `linalg sigmoid`, and `linalg softmax` are called, then `relu` clamps negatives to `0`, `sigmoid` maps into permille `(0, 1000)` with `sigmoid(0) == 500`, and `softmax` shifts by `-max(x)` and produces a valid probability distribution summing to `1000` (`1.000`).
 
 ## Actors & permissions
-- Any Ridgun module importing `linalg`.
+- Any Ridgun program or lib importing `linalg`.
 
 ## Constraints & edge cases
 - `linalg softmax` shifts inputs by `-max(x)` to avoid floating-point overflow.

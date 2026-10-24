@@ -1,11 +1,11 @@
 ---
 id: API-DIFF-001
-title: Public module contract for diff (diff.rglib / libdiff.so)
+title: Public lib contract for diff (diff.rglib / libdiff.so)
 status: implemented
 implements: [FR-DIFF-001]
 auth: none
 ---
-# API-DIFF-001 — Public module contract for `diff` (`diff.rg`)
+# API-DIFF-001 — Public lib contract for `diff` (`diff.rg`)
 
 ## Request
 - Imported via `import diff`.

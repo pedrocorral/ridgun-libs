@@ -23,7 +23,7 @@ Complex configurations, REST/HTTP payloads, and structured messages require nest
 - AC3: Given malformed JSON input, when `json parse` is called, then it returns `JsonErr reason` without crashing.
 
 ## Actors & permissions
-- Any Ridgun module importing `json`.
+- Any Ridgun program or lib importing `json`.
 
 ## Constraints & edge cases
 - Rejects unclosed strings, trailing garbage, and unbalanced brackets/braces.

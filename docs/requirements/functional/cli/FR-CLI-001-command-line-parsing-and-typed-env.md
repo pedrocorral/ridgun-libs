@@ -23,7 +23,7 @@ System utilities (`unix-tools`) and servers (`Solstice`) require ergonomic, dete
 - AC3: Given an argument list `[String]` and environment variable queries, when `cli positionals`, `cli positionals with opts`, `cli subcommand`, `env get or`, `env get int or`, and `env get bool or` are called, then positional arguments (including flags after `--`) are returned in order, and environment readers return parsed values or safe defaults when unset or malformed.
 
 ## Actors & permissions
-- Any Ridgun module importing `cli`.
+- Any Ridgun program or lib importing `cli`.
 
 ## Constraints & edge cases
 - Tokens after `--` are always treated as positional arguments and never matched as flags or options.

@@ -23,7 +23,7 @@ Applications require reliable stream and datagram payload exchange without manua
 - AC3: Given a stream socket, when messages are exchanged using 4-byte big-endian length-prefixed framing (`sock send frame` / `sock recv frame`) or newline framing (`sock send line` / `sock recv line`), then complete messages are reconstructed accurately and frames exceeding the declared maximum size limit return `SockErr`.
 
 ## Actors & permissions
-- Any Ridgun module importing `socket`.
+- Any Ridgun program or lib importing `socket`.
 
 ## Constraints & edge cases
 - Byte values outside `0..255` are masked or rejected cleanly; maximum receive/frame length (`max_bytes`) is enforced to prevent unbounded memory growth.

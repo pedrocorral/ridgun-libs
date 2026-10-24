@@ -23,7 +23,7 @@ Standard networking libraries in production languages provide half-close semanti
 - AC3: Given extended options (`sock set tcp nodelay`, `sock set broadcast`, `sock set buf sizes`), a hostname (`localhost` or RFC 1123 domain), or an IPv4 CIDR block (`192.168.1.0/24`), when validated or evaluated, then invalid buffer sizes (`<= 0`) or malformed hostnames/CIDRs are rejected, `sock resolve host` maps known/valid hostnames to `SockAddr`, and `ip in cidr` accurately matches IPv4 addresses against `/0..32` prefix masks.
 
 ## Actors & permissions
-- Any Ridgun module importing `socket`.
+- Any Ridgun program or lib importing `socket`.
 
 ## Constraints & edge cases
 - `ip in cidr` must reject invalid IPv4 strings or prefix lengths outside `0..32`.

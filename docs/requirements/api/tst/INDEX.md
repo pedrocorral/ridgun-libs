@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-TST-001-test-module-contract.md` | `API-TST-001` | Public module contract for `test` (`test.rglib` / `libtest.so`) | approved |
+| `API-TST-001-test-module-contract.md` | `API-TST-001` | Public lib contract for `test` (`test.rglib` / `libtest.so`) | approved |

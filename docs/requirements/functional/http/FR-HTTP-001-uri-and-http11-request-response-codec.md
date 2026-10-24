@@ -23,7 +23,7 @@ Web servers (`Solstice`), REST clients, and IPC services over `socket.rg` requir
 - AC3: Given HTTP status code, headers, and body, when `http status text`, `http build response`, `http parse response`, `http parse headers`, `http header get`, and `http bearer token` are called, then `http parse response` recovers `(status_code, reason, body)`, `http header get` matches header names case-insensitively, and `http bearer token` extracts the token after `"Bearer "`.
 
 ## Actors & permissions
-- Any Ridgun module importing `http`.
+- Any Ridgun program or lib importing `http`.
 
 ## Constraints & edge cases
 - Header names/values passed to `http build request` or `http build response` have `\r` and `\n` stripped to prevent HTTP header/response splitting (`CRLF` injection).

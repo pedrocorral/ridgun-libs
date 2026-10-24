@@ -23,7 +23,7 @@ Applications need memory-hard password hashing and constant-time password verifi
 - AC3: Given a valid `$argon2id$v=19$...` PHC string and a candidate password, when `argon2id verify` is called, then it returns `True` for the matching password and `False` for any non-matching password or malformed PHC string using constant-time comparison (`constant time eq`).
 
 ## Actors & permissions
-- Any Ridgun module importing `argon2id`.
+- Any Ridgun program or lib importing `argon2id`.
 
 ## Constraints & edge cases
 - PHC Base64 encoding and decoding must use standard RFC 4648 alphabet without `=` padding characters, as required by the PHC string format specification, and must never emit or accept a PHC string with an empty `<tag_b64>` segment (`RG-051`).

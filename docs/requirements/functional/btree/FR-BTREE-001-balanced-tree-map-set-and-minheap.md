@@ -23,7 +23,7 @@ Large collections and scheduling algorithms require guaranteed logarithmic looku
 - AC3: Given items pushed with integer priorities into `MinHeap`, when `heap peek` and `heap pop` are called repeatedly, then items are extracted in non-decreasing order of `priority_score`.
 
 ## Actors & permissions
-- Any Ridgun module importing `btree`.
+- Any Ridgun program or lib importing `btree`.
 
 ## Constraints & edge cases
 - Updating an existing key in `BTreeMap` replaces its value without increasing `btree size`.

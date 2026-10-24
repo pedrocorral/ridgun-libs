@@ -1,5 +1,5 @@
 # api/ — API-<DOMAIN>-NNN contracts (one folder per domain)
-Read this when: implementing or consuming a library's public module interface. Skip when: internal helper work only.
+Read this when: implementing or consuming a lib's public interface. Skip when: internal helper work only.
 
 | Path | What | Read when |
 |---|---|---|

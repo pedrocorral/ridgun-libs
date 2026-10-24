@@ -1,11 +1,11 @@
 ---
 id: API-PATH-001
-title: Public module contract for path (path.rglib / libpath.so)
+title: Public lib contract for path (path.rglib / libpath.so)
 status: approved
 implements: [FR-PATH-001]
 auth: none
 ---
-# API-PATH-001 — Public module contract for `path` (`path.rg`)
+# API-PATH-001 — Public lib contract for `path` (`path.rg`)
 
 ## Request
 - Imported via `import path`.

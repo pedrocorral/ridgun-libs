@@ -1,11 +1,11 @@
 ---
 id: API-TST-001
-title: Public module contract for test (test.rglib / libtest.so)
+title: Public lib contract for test (test.rglib / libtest.so)
 status: approved
 implements: [FR-TST-001]
 auth: none
 ---
-# API-TST-001 — Public module contract for `test` (`test.rg`)
+# API-TST-001 — Public lib contract for `test` (`test.rg`)
 
 ## Request
 - Imported via `import test`.

@@ -23,7 +23,7 @@ Ridgun's compiler built-ins provide core primitives (`str_len`, `str_concat`, `s
 - AC3: Given mixed-case ASCII strings and formatting inputs, when `str_to_upper`, `str_to_lower`, `str join`, `str repeat`, `str pad left`, and `str pad right` are called, then `str_to_upper "Abc!"` returns `"ABC!"`, `str_to_lower "Abc!"` returns `"abc!"`, and `str join` / `str repeat` / `str pad left` / `str pad right` produce exact formatted strings.
 
 ## Actors & permissions
-- Any Ridgun module importing `str`.
+- Any Ridgun program or lib importing `str`.
 
 ## Constraints & edge cases
 - `str_replace s "" new` must not loop infinitely; it returns `s` unchanged.

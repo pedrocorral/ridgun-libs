@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-HTTP-001-http-module-contract.md` | `API-HTTP-001` | Public module contract for `http` (`http.rglib` / `libhttp.so`) | approved |
+| `API-HTTP-001-http-module-contract.md` | `API-HTTP-001` | Public lib contract for `http` (`http.rglib` / `libhttp.so`) | approved |

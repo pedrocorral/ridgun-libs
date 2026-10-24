@@ -1,11 +1,11 @@
 ---
 id: API-CSV-001
-title: Public module contract for csv (csv.rglib / libcsv.so)
+title: Public lib contract for csv (csv.rglib / libcsv.so)
 status: approved
 implements: [FR-CSV-001]
 auth: none
 ---
-# API-CSV-001 — Public module contract for `csv` (`csv.rg`)
+# API-CSV-001 — Public lib contract for `csv` (`csv.rg`)
 
 ## Request
 - Imported via `import csv`.

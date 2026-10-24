@@ -23,7 +23,7 @@ Ridgun's compiler provides `+`, `-`, `*`, `/`, and `%`, while algorithms, crypto
 - AC3: Given integer lists `[Int]`, when `math sum`, `math product`, `math mean`, `math median`, `math min list`, and `math max list` are called, then they return the exact aggregate over non-empty lists and `0` (or `1` for `math product []`) on empty lists.
 
 ## Actors & permissions
-- Any Ridgun module importing `math`.
+- Any Ridgun program or lib importing `math`.
 
 ## Constraints & edge cases
 - Division or modulo by `0` in any `math` function returns `0` (or `-1` for `math mod inv`) and never triggers a CPU divide-by-zero fault.

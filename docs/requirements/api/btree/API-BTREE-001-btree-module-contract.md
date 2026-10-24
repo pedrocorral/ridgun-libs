@@ -1,11 +1,11 @@
 ---
 id: API-BTREE-001
-title: Public module contract for btree (btree.rglib / libbtree.so)
+title: Public lib contract for btree (btree.rglib / libbtree.so)
 status: approved
 implements: [FR-BTREE-001]
 auth: none
 ---
-# API-BTREE-001 — Public module contract for `btree` (`btree.rg`)
+# API-BTREE-001 — Public lib contract for `btree` (`btree.rg`)
 
 ## Request
 - Imported via `import btree`.

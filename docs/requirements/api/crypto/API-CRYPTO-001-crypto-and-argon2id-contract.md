@@ -1,11 +1,11 @@
 ---
 id: API-CRYPTO-001
-title: Public module contract for argon2id and crypto (argon2id.rglib, crypto.rglib)
+title: Public lib contract for argon2id and crypto (argon2id.rglib, crypto.rglib)
 status: approved
 implements: [FR-CRYPTO-001, FR-CRYPTO-002, FR-CRYPTO-003, FR-CRYPTO-004]
 auth: none
 ---
-# API-CRYPTO-001 — Public module contract for `argon2id` & `crypto` (`argon2id.rg`, `crypto.rg`)
+# API-CRYPTO-001 — Public lib contract for `argon2id` & `crypto` (`argon2id.rg`, `crypto.rg`)
 
 ## Request
 - Imported via `import argon2id` and/or `import crypto`.

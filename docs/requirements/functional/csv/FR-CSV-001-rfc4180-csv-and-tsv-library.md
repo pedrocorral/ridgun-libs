@@ -23,7 +23,7 @@ Data import/export, reporting, and tabular benchmarks require RFC 4180 handling 
 - AC3: Given a table with a header row, when `csv get by header` or `csv row to map` is called, then it maps column names to row values accurately.
 
 ## Actors & permissions
-- Any Ridgun module importing `csv`.
+- Any Ridgun program or lib importing `csv`.
 
 ## Constraints & edge cases
 - Handles both `\n` and `\r\n` line endings and ignores trailing newline at EOF.

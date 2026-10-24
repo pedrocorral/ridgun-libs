@@ -23,7 +23,7 @@ Applications need both RFC 9106 Argon2id with the exact 5-argument `(password, s
 - AC3: Given a 32-byte `key`, 12-byte `nonce`, `aad`, and `ciphertext_and_tag`, when `aead_open key nonce aad ciphertext_and_tag` is called, then it verifies the 16-byte Poly1305 tag in constant time and returns `(0, plaintext)` when authentic, `(-12, "")` (`AUTH_FAILED`) if any byte of ciphertext, tag, nonce, key, or `aad` is modified, and `(-7, "")` (`INVALID`) if key (`!= 32`), nonce (`!= 12`), or ciphertext (`< 16`) length is invalid.
 
 ## Actors & permissions
-- Any Ridgun module importing `crypto` or `argon2id`.
+- Any Ridgun program or lib importing `crypto` or `argon2id`.
 
 ## Constraints & edge cases
 - `aead_open` must never return partial or unauthenticated plaintext when the Poly1305 tag check fails (`(-12, "")`).

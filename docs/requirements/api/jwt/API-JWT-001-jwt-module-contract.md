@@ -1,11 +1,11 @@
 ---
 id: API-JWT-001
-title: Public module contract for jwt (jwt.rglib / libjwt.so)
+title: Public lib contract for jwt (jwt.rglib / libjwt.so)
 status: approved
 implements: [FR-JWT-001]
 auth: none
 ---
-# API-JWT-001 — Public module contract for `jwt` (`jwt.rg`)
+# API-JWT-001 — Public lib contract for `jwt` (`jwt.rg`)
 
 ## Request
 - Imported via `import jwt`.

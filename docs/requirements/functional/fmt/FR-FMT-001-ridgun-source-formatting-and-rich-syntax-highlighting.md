@@ -23,7 +23,7 @@ Tools, documentation generators, CLI commands, terminal viewers, web pages, GTK/
 - AC3: Given Ridgun source code and a rich document target (`FmtHtmlInline`, `FmtHtmlCss`, `FmtMarkdown`, `FmtPango`, `FmtLatex`, or `FmtRtf`, or their convenience functions `fmt to html`, `fmt to html css`, `fmt html stylesheet`, `fmt to markdown`, `fmt to pango`, `fmt to latex`, `fmt to rtf`), when formatted, then special target characters (`&`, `<`, `>`, `\`, `{`, `}`) are safely escaped and tokens are wrapped in the target's enriched markup.
 
 ## Actors & permissions
-- Any Ridgun module or CLI tool importing `fmt`.
+- Any Ridgun program, CLI tool, or lib importing `fmt`.
 
 ## Constraints & edge cases
 - 2D column widths MUST be computed before applying syntax highlighting spans so markup or ANSI sequences never shift column offsets.

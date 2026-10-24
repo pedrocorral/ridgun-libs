@@ -23,7 +23,7 @@ Applications need both the exact `RG-010` standard library file functions and hi
 - AC3: Given a existing or missing path, when `io read file safe path` or `io read lines path` / `io write lines path lines` is called, then `io read file safe` returns `NotFound path` when the file does not exist and its `String` content when it does, and `io write lines` / `io read lines` round-trip newline-separated lines cleanly.
 
 ## Actors & permissions
-- Any Ridgun module importing `io`.
+- Any Ridgun program or lib importing `io`.
 
 ## Constraints & edge cases
 - `is_symlink` uses `lstat` semantics so symbolic links are distinguished from their target files.

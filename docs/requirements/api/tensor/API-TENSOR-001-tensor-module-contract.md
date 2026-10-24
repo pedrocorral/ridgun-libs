@@ -1,11 +1,11 @@
 ---
 id: API-TENSOR-001
-title: Public module contract for tensor (tensor.rglib / libtensor.so)
+title: Public lib contract for tensor (tensor.rglib / libtensor.so)
 status: approved
 implements: [FR-TENSOR-001]
 auth: none
 ---
-# API-TENSOR-001 — Public module contract for `tensor` (`tensor.rg`)
+# API-TENSOR-001 — Public lib contract for `tensor` (`tensor.rg`)
 
 ## Request
 - Imported via `import tensor`.

@@ -23,7 +23,7 @@ Test runners, code formatters, and version/configuration inspection tools need s
 - AC3: Given `old_s` and the `[DiffEdit]` list from `diff text old_s new_s`, when `diff apply edits` is called, then it reconstructs `new_s` exactly.
 
 ## Actors & permissions
-- Any Ridgun module importing `diff`.
+- Any Ridgun program or lib importing `diff`.
 
 ## Constraints & edge cases
 - Identical inputs yield zero insertions/deletions (`diff has changes edits == False`).

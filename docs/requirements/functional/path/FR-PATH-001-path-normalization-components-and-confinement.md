@@ -23,7 +23,7 @@ Applications, build tools, and HTTP/file servers require deterministic lexical p
 - AC3: Given a base directory and a candidate child path, when `path is safe subpath base child` is called, then it returns `True` only when the normalized target path stays strictly inside `base` (and rejects `..` escapes, null/shell metacharacters, or absolute overrides).
 
 ## Actors & permissions
-- Any Ridgun module importing `path`.
+- Any Ridgun program or lib importing `path`.
 
 ## Constraints & edge cases
 - Leading dotfiles such as `".gitignore"` have `path stem ".gitignore" == ".gitignore"` and `path ext ".gitignore" == ""`.

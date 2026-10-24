@@ -23,7 +23,7 @@ Downstream server and network applications (such as Solstice) require non-blocki
 - AC3: Given a connected socket pair `(client_fd, conn_fd)`, when `sys_send fd data timeout_ms`, `sys_recv fd max_bytes timeout_ms`, `sys_shutdown_write fd`, and `sys_close fd` are called, then `sys_send` polls for `POLLOUT` (`4`) and writes with non-blocking `MSG_NOSIGNAL | MSG_DONTWAIT` returning `(0, n_written)` on completion or `(-2, bytes_sent_so_far)` when `timeout_ms` expires on a full kernel send buffer (`RG-049`), `sys_recv` reads up to `max_bytes` returning `(0, bytes)` (or `(-2, "")` on timeout, `(-1, "")` on clean EOF after `sys_shutdown_write` or `sys_close`), and `sys_close` releases the descriptor returning `0`.
 
 ## Actors & permissions
-- Any Ridgun module importing `socket`.
+- Any Ridgun program or lib importing `socket`.
 
 ## Constraints & edge cases
 - `timeout_ms`: `-1` waits forever, `0` is non-blocking poll, `> 0` waits at most `timeout_ms` milliseconds via `sys poll` (`ppoll`).

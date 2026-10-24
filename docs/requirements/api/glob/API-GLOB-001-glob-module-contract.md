@@ -1,11 +1,11 @@
 ---
 id: API-GLOB-001
-title: Public module contract for glob (glob.rglib / libglob.so)
+title: Public lib contract for glob (glob.rglib / libglob.so)
 status: approved
 implements: [FR-GLOB-001]
 auth: none
 ---
-# API-GLOB-001 — Public module contract for `glob` (`glob.rg`)
+# API-GLOB-001 — Public lib contract for `glob` (`glob.rg`)
 
 ## Request
 - Imported via `import glob`.

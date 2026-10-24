@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-LIST-001-list-module-contract.md` | `API-LIST-001` | Public module contract for `list` (`list.rglib` / `liblist.so`) | approved |
+| `API-LIST-001-list-module-contract.md` | `API-LIST-001` | Public lib contract for `list` (`list.rglib` / `liblist.so`) | approved |

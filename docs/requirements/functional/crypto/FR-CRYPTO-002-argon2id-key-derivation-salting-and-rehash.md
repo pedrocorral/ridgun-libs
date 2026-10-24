@@ -23,7 +23,7 @@ Standard Argon2id libraries in other languages provide automatic salt generation
 - AC3: Given a password, salt, `Argon2Params` (including OWASP presets `argon2 interactive params`, `argon2 moderate params`, `argon2 sensitive params`), and optional `secret` (pepper) and `ad` (associated data), when `argon2id derive key`, `argon2id derive key hex`, or `argon2id hash with context` / `argon2id verify with context` is called, then raw key derivation returns the exact `tag_len` derived bytes/hex, and context-bound hashes verify only when the matching `secret` and `ad` are supplied.
 
 ## Actors & permissions
-- Any Ridgun module importing `argon2id`.
+- Any Ridgun program or lib importing `argon2id`.
 
 ## Constraints & edge cases
 - `argon2id generate salt` with `< 8` bytes must clamp to at least `16` bytes so generated salts never violate RFC 9106 minimum salt length.

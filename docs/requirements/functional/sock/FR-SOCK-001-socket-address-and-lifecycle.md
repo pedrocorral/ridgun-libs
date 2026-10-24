@@ -23,7 +23,7 @@ Applications using `ridgun-libs` need a safe, unified Ridgun API to open, config
 - AC3: Given a server socket bound and listening on a TCP or Unix stream endpoint (`sock bind`, `sock listen`), when a client socket connects (`sock connect`) and the server accepts (`sock accept`), then both endpoints transition to connected state and `sock close` deterministically releases resources and marks the socket closed.
 
 ## Actors & permissions
-- Any Ridgun module importing `socket`.
+- Any Ridgun program or lib importing `socket`.
 
 ## Constraints & edge cases
 - Operations on an already-closed socket handle must fail deterministically with `SockErr` rather than panicking.

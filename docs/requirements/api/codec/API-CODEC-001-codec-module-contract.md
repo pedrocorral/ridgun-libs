@@ -1,11 +1,11 @@
 ---
 id: API-CODEC-001
-title: Public module contract for codec (codec.rglib / libcodec.so)
+title: Public lib contract for codec (codec.rglib / libcodec.so)
 status: approved
 implements: [FR-CODEC-001]
 auth: none
 ---
-# API-CODEC-001 — Public module contract for `codec` (`codec.rg`)
+# API-CODEC-001 — Public lib contract for `codec` (`codec.rg`)
 
 ## Request
 - Imported via `import codec`.

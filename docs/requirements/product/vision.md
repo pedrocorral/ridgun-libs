@@ -9,7 +9,7 @@ status: approved
 Ridgun (`v0.9.3`) applications, servers, and system tools (`unix-tools`, `Solstice`) need reusable, pure-Ridgun standard and foundational libraries that compile to `.rgc`, `.rglib`, and ELF64 shared objects (`.so`) via `stable` and `ridgunc` without external C/Rust toolchains or `libc`.
 
 ## Solution in one paragraph
-`ridgun-libs` provides a unified, zero-C suite of pure-Ridgun (`v0.9.5`) library modules under a single root `stable` project (`build.rg`, `src/main/ridgun/lib/*.rg`, `src/test/ridgun/test_*.rg`). The suite delivers 17 foundational libraries across 16 domains:
+`ridgun-libs` provides a unified, zero-C suite of pure-Ridgun (`v0.9.16`) libs under a single root `stable` project (`build.rg`, `src/main/ridgun/lib/*.rg`, `src/test/ridgun/test *.rg`). The suite delivers 32 foundational libs across 28 domains:
 1. **`socket` (`SOCK`)**: Socket management library supporting TCP, UDP, and Unix domain sockets (`AF_UNIX`), including endpoint/CIDR/hostname validation, client/server lifecycle (`bind`, `listen`, `accept`, `connect`, `shutdown`, `close`), socket options/timeouts/polling, byte/string/framed I/O, and the Solstice `RGF-001` kernel-backed socket API (`sys_tcp_listen`, `sys_unix_listen`, `sys_local_port`, `sys_accept`, `sys_tcp_connect`, `sys_unix_connect`, `sys_recv`, `sys_send`, `sys_shutdown_write`, `sys_close`) with `(status, ...)` error tuples.
 2. **`argon2id` & `crypto` (`CRYPTO`)**: Pure-Ridgun cryptographic suite providing raw byte/bit manipulation (`RGF-019`: `byte_str`, `bytes_from_list`, `bytes_to_list`, `band`, `bor`, `bxor`, `shl`, `shr`), SHA-256 (`sha256_bytes`, `sha256_hex`), HMAC-SHA-256 (`hmac_sha256`), constant-time equality (`ct_equal`), PBKDF2-HMAC-SHA-256 (`pbkdf2_hmac_sha256`), RFC 7693 Blake2b + RFC 9106 Argon2id password hashing and key derivation (`argon2id_hash`, `argon2id_verify`, OWASP presets, context pepper/AD, rehash detection), and RFC 8439 ChaCha20-Poly1305 AEAD (`aead_seal`, `aead_open`) (`RGF-015`).
 3. **`posix` (`POSIX`)**: Typed POSIX descriptor, `poll`/`ppoll`, signal, clock, random, filesystem, and process library (`PollStatus`, `ProcStatus`, `poll in/out/err`, `sig term/kill/int/hup`, `wait fd`, `sys_time_ms`, `sys_monotonic_ms`, `sys_monotonic_ns`, `sys_sleep_ms`, `sys_signal_watch`, `sys_signal_wait`, `sys_random_bytes`, and `RG-010` `sys_*` wrappers).
@@ -28,10 +28,10 @@ Ridgun (`v0.9.3`) applications, servers, and system tools (`unix-tools`, `Solsti
 16. **`http` (`HTTP`)**: Pure-Ridgun RFC 3986 URI parsing (`uri_parse`, `uri_scheme`, `uri_host`, `uri_port`, `uri_path`, `uri_query`) and RFC 9112 HTTP/1.1 request/response building, parsing, and header lookup (`http_status_text`, `http_build_request`, `http_parse_request`, `http_build_response`, `http_parse_response`, `http_parse_headers`, `http_header_get`, `http_bearer_token`).
 
 ## In scope / out of scope
-- **In scope**: Pure-Ridgun reusable library modules (`src/main/ridgun/lib/*.rg`), `.rgc` / `.rglib` / `.so` artifacts built via `stable` and `ridgunc`, and comprehensive `stable test` suites (`src/test/ridgun/test_*.rg`).
-- **Out of scope**: Standalone user-facing CLI applications (libraries only).
+- **In scope**: Pure-Ridgun reusable libs (`src/main/ridgun/lib/*.rg`), `.rgc` / `.rglib` / `.so` artifacts built via `stable` and `ridgunc`, and comprehensive `stable test` suites (`src/test/ridgun/test *.rg`).
+- **Out of scope**: Standalone user-facing CLI applications (libs only).
 
 ## Success metrics
-- `stable check` passes with 0 typecheck or static analysis errors across all 17 library modules.
-- `stable test` compiles and passes all 17 unit and functional test suites with 0 failures.
+- `stable check` passes with 0 typecheck or static analysis errors across all 32 libs.
+- `stable test` compiles and passes all 30 unit and functional test suites with 0 failures.
 - `aix docs validate` and `aix docs coverage` pass with 0 errors, 0 warnings, and full requirement-to-test-to-code traceability (`@implements`, `@tests`, `@mitigates`).

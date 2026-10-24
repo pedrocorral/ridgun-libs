@@ -23,7 +23,7 @@ Applications and cryptographic/numerical kernels require reusable, type-safe com
 - AC3: Given a 2D tensor `a` of shape `r * k` and a 2D tensor `b` of shape `k * c`, when `tensor matmul a b` is called, then it returns the contracted 2D tensor `a_ik @ b_kj` of shape `r * c`.
 
 ## Actors & permissions
-- Any Ridgun module importing `tensor`.
+- Any Ridgun program or lib importing `tensor`.
 
 ## Constraints & edge cases
 - Subscript indexing uses 0-based indices (`0..row_count-1`, `0..col_count-1`).

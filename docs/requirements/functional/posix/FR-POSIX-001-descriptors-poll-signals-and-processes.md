@@ -23,7 +23,7 @@ As specified in `ridgun_posix_io_library_spec.md` (§4), systems tools and `io.r
 - AC3: Given file paths, pipes, or process IDs, when `posix open`, `posix write`, `posix read`, `posix close`, `posix pipe`, or `posix kill` is called, then descriptors are opened/read/written/closed deterministically, `posix pipe` creates a kernel pipe pair `(status, read_fd, write_fd)` via `pipe2`, and invalid descriptors or negative `max_bytes` return structured error codes without crashing.
 
 ## Actors & permissions
-- Any Ridgun module importing `posix` (including `io`).
+- Any Ridgun program or lib importing `posix` (including `io`).
 
 ## Constraints & edge cases
 - `wait fd` with an invalid descriptor (`fd < 0`) returns `PollError 9` (`EBADF`).

@@ -23,7 +23,7 @@ Applications, logs, HTTP headers, and retry loops require civil UTC calendar ari
 - AC3: Given millisecond durations and retry attempt counts, when `time format duration ms` and `time backoff ms` are called, then `time format duration ms 3661005` returns `"1h 1m 1s 5ms"` and `time backoff ms attempt base_ms max_ms` returns $base \times 2^{attempt}$ clamped to `[base_ms, max_ms]`.
 
 ## Actors & permissions
-- Any Ridgun module importing `time`.
+- Any Ridgun program or lib importing `time`.
 
 ## Constraints & edge cases
 - Invalid calendar months (`< 1` or `> 12`), days (`< 1` or `> days_in_month`), hours (`> 23`), minutes (`> 59`), or seconds (`> 59`) in `time parse iso8601` return `-1`.

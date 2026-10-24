@@ -23,7 +23,7 @@ Applications and servers require portable access to POSIX directory/file manipul
 - AC3: Given `sys_random_bytes n` (`RGF-014`) and `sys_signal_watch sig_list` / `sys_signal_wait handle timeout_ms` (`RGF-018`), when `sys_random_bytes 32` is called twice, then both return `(0, bytes)` of length `32` with distinct unpredictable content (`r1 != r2`, or `(0, "")` for `n == 0`, `(-7, "")` for `n < 0`), and when a watched signal (`SIGTERM = 15`) is sent to `sys_getpid ()` (or queued on the watch handle), `sys_signal_wait` returns `(0, 15)` before timeout and `(-2, 0)` on timeout.
 
 ## Actors & permissions
-- Any Ridgun module importing `posix`.
+- Any Ridgun program or lib importing `posix`.
 
 ## Constraints & edge cases
 - `sys_random_bytes` with `n < 0` returns `(-7, "")` (`INVALID`).

@@ -23,7 +23,7 @@ CLI tools (`unix-tools`), build systems (`stable`), and routing/filtering layers
 - AC3: Given a list of candidate strings `[String]` and one or more patterns, when `glob filter pattern candidates` and `glob any match patterns text` are called, then `glob filter` returns the matching subset in order and `glob any match` returns `True` if any pattern in the list matches `text`.
 
 ## Actors & permissions
-- Any Ridgun module importing `glob`.
+- Any Ridgun program or lib importing `glob`.
 
 ## Constraints & edge cases
 - Consecutive `*` wildcards (`"***"`) are collapsed so matching never suffers exponential backtracking on long strings.

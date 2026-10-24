@@ -23,7 +23,7 @@ Real-time bidirectional services over `socket.rg` and `http.rg` require RFC 6455
 - AC3: Given truncated frame bytes, when `ws decode frame` is called, then it returns `WsErr` without out-of-bounds reads.
 
 ## Actors & permissions
-- Any Ridgun module importing `ws`.
+- Any Ridgun program or lib importing `ws`.
 
 ## Constraints & edge cases
 - Supports payload lengths `< 126` (7-bit) and `126..65535` (16-bit extended length).

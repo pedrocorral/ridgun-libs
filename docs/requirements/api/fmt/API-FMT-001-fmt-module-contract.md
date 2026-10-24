@@ -1,11 +1,11 @@
 ---
 id: API-FMT-001
-title: Public module contract for fmt (fmt.rglib / libfmt.so)
+title: Public lib contract for fmt (fmt.rglib / libfmt.so)
 status: approved
 implements: [FR-FMT-001]
 auth: none
 ---
-# API-FMT-001 — Public module contract for `fmt` (`fmt.rg`)
+# API-FMT-001 — Public lib contract for `fmt` (`fmt.rg`)
 
 ## Request
 - Imported via `import fmt`.

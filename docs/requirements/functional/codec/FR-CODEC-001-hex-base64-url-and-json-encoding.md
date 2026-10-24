@@ -23,7 +23,7 @@ Networking services (`socket.rg`), cryptographic payloads (`crypto.rg`), and con
 - AC3: Given strings, primitives, and `[(String, String)]` fields, when `json escape`, `json unescape`, `json quote`, `json object`, `json array`, `json get str`, `json get int`, and `json get bool` are called, then special characters (`"`, `\`, `\n`, `\r`, `\t`) are properly escaped/unescaped, valid JSON objects/arrays are produced, and top-level string/integer/boolean fields are accurately extracted (returning fallback defaults when a key is absent).
 
 ## Actors & permissions
-- Any Ridgun module importing `codec`.
+- Any Ridgun program or lib importing `codec`.
 
 ## Constraints & edge cases
 - `hex decode` accepts both uppercase (`A-F`) and lowercase (`a-f`) hex digits and rejects odd-length strings or non-hex characters by returning `""`.

@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-STR-001-str-module-contract.md` | `API-STR-001` | Public module contract for `str` (`str.rglib` / `libstr.so`) | approved |
+| `API-STR-001-str-module-contract.md` | `API-STR-001` | Public lib contract for `str` (`str.rglib` / `libstr.so`) | approved |

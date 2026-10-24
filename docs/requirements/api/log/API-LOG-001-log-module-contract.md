@@ -1,11 +1,11 @@
 ---
 id: API-LOG-001
-title: Public module contract for log (log.rglib / liblog.so)
+title: Public lib contract for log (log.rglib / liblog.so)
 status: approved
 implements: [FR-LOG-001]
 auth: none
 ---
-# API-LOG-001 — Public module contract for `log` (`log.rg`)
+# API-LOG-001 — Public lib contract for `log` (`log.rg`)
 
 ## Request
 - Imported via `import log`.

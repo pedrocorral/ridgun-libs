@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-CLI-001-cli-module-contract.md` | `API-CLI-001` | Public module contract for `cli` (`cli.rglib` / `libcli.so`) | approved |
+| `API-CLI-001-cli-module-contract.md` | `API-CLI-001` | Public lib contract for `cli` (`cli.rglib` / `libcli.so`) | approved |

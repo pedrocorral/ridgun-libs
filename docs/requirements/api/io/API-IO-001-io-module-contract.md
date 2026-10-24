@@ -1,11 +1,11 @@
 ---
 id: API-IO-001
-title: Public module contract for io (io.rglib / libio.so)
+title: Public lib contract for io (io.rglib / libio.so)
 status: approved
 implements: [FR-IO-001, FR-IO-002]
 auth: none
 ---
-# API-IO-001 — Public module contract for `io` (`io.rg`)
+# API-IO-001 — Public lib contract for `io` (`io.rg`)
 
 ## Request
 - Imported via `import io` (imports `posix`).

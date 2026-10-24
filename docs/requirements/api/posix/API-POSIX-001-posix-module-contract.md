@@ -1,11 +1,11 @@
 ---
 id: API-POSIX-001
-title: Public module contract for posix (posix.rglib / libposix.so)
+title: Public lib contract for posix (posix.rglib / libposix.so)
 status: approved
 implements: [FR-POSIX-001, FR-POSIX-002]
 auth: none
 ---
-# API-POSIX-001 — Public module contract for `posix` (`posix.rg`)
+# API-POSIX-001 — Public lib contract for `posix` (`posix.rg`)
 
 ## Request
 - Imported via `import posix`.

@@ -23,7 +23,7 @@ Text parsing, validation, and lexing require full regular expressions with guara
 - AC3: Given an input string, pattern, and replacement string, when `regex replace`, `regex replace all`, or `regex split` is called, then it substitutes or splits non-empty matches accurately.
 
 ## Actors & permissions
-- Any Ridgun module importing `regex`.
+- Any Ridgun program or lib importing `regex`.
 
 ## Constraints & edge cases
 - Escaped literals (`\.`, `\*`, `\+`, `\?`, `\\`, `\[`, `\]`) match the literal character.

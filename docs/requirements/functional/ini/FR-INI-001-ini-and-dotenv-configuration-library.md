@@ -23,7 +23,7 @@ Applications and services need lightweight configuration files (`.env` and secti
 - AC3: Given an `IniDoc` modified with `ini set`, when `ini stringify` is called, then it produces valid `.ini` text that round-trips through `ini parse`.
 
 ## Actors & permissions
-- Any Ridgun module importing `ini`.
+- Any Ridgun program or lib importing `ini`.
 
 ## Constraints & edge cases
 - Comments starting with `#`, `;`, or `--` are stripped outside quotes.

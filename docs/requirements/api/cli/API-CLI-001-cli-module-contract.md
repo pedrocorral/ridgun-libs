@@ -1,11 +1,11 @@
 ---
 id: API-CLI-001
-title: Public module contract for cli (cli.rglib / libcli.so)
+title: Public lib contract for cli (cli.rglib / libcli.so)
 status: approved
 implements: [FR-CLI-001]
 auth: none
 ---
-# API-CLI-001 — Public module contract for `cli` (`cli.rg`)
+# API-CLI-001 — Public lib contract for `cli` (`cli.rg`)
 
 ## Request
 - Imported via `import cli`.

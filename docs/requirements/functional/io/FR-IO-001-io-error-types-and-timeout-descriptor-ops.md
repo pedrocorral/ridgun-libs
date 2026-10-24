@@ -23,7 +23,7 @@ As specified in `ridgun_posix_io_library_spec.md` (§5), applications, servers, 
 - AC3: Given a command and a timeout `ms`, when `io exec timeout cmd ms` is invoked, then commands completing within `ms` return their exit status or output, and commands exceeding `ms` are terminated (`sig term` / `sig kill`) and return `Timeout ms` (or `ProcTimedOut ms`).
 
 ## Actors & permissions
-- Any Ridgun module importing `io`.
+- Any Ridgun program or lib importing `io`.
 
 ## Constraints & edge cases
 - `read fd` with `n <= 0` returns `SysErr 22 "read"` (`EINVAL`) without blocking.

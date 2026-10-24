@@ -23,7 +23,7 @@ Distributed services, databases, and network framing require RFC 9562 UUIDv4/UUI
 - AC3: Given an integer seed and bounds `[lo, hi]`, when `prng next` and `prng range` are called, then identical seeds produce identical deterministic sequences and `prng range seed lo hi` returns `(next_seed, val)` with `lo <= val <= hi`.
 
 ## Actors & permissions
-- Any Ridgun module importing `uuid`.
+- Any Ridgun program or lib importing `uuid`.
 
 ## Constraints & edge cases
 - `uuid is valid` rejects strings whose length is not `36`, where hyphens are not at indices `8, 13, 18, 23`, or where any hex digit or RFC 9562 variant nibble is invalid.

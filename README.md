@@ -1,14 +1,14 @@
 # ridgun-libs
 
-Pure-Ridgun (`v0.9.16`) standard and system library suite. Every module compiles to portable Ridgun library bundles (`.rglib` / `.rgc`) and native ELF64 shared objects (`.so`) using `stable` and `ridgunc` with zero C dependencies or `libc`.
+Pure-Ridgun (`v0.9.16`) standard and system library suite. Every lib compiles to portable Ridgun library bundles (`.rglib` / `.rgc`) and native ELF64 shared objects (`.so`) using `stable` and `ridgunc` with zero C dependencies or `libc`.
 
 ---
 
 ## Overview
 
-`ridgun-libs` provides **32 foundational libraries** across **28 domains** for Ridgun applications, CLI utilities (`unix-tools`), and network servers (`Solstice`):
+`ridgun-libs` provides **32 foundational libs** across **28 domains** for Ridgun applications, CLI utilities (`unix-tools`), and network servers (`Solstice`):
 
-| Module | Source | Bundles (`target/bundles/` & `target/`) | Domain | Summary |
+| Lib | Source | Bundles (`target/bundles/` & `target/`) | Domain | Summary |
 |---|---|---|---|---|
 | **`socket`** | `src/main/ridgun/lib/socket.rg` | `socket.rglib`, `socket.rgc`, `libsocket.so` | `SOCK` | High-level `Socket` ADT (`TCP`, `UDP`, `AF_UNIX`, framing, line I/O, CIDR, `/etc/hosts` + RFC 1035 UDP port 53 DNS resolution, polling) and Solstice `RGF-001` descriptor-based kernel socket API (`sys_resolve_ipv4`, `sys_tcp_listen`, `sys_tcp_listen_reuseport`, `sys_unix_listen`, `sys_accept`, `sys_tcp_connect`, `sys_unix_connect`, `sys_send`, `sys_recv`, `sys_shutdown_write`). |
 | **`crypto`** | `src/main/ridgun/lib/crypto.rg` | `crypto.rglib`, `crypto.rgc`, `libcrypto.so` | `CRYPTO` | Raw byte/bitwise primitives (`RGF-019`), FIPS 180-4 SHA-256, RFC 2104 HMAC-SHA-256, constant-time equality (`ct_equal`), 100% in-process RFC 8018 PBKDF2-HMAC-SHA-256, 5-argument RFC 9106 Argon2id (`argon2id_hash`, `argon2id_verify`), and RFC 8439 ChaCha20-Poly1305 AEAD (`aead_seal`, `aead_open`). |
@@ -61,7 +61,7 @@ Run all commands from the repository root:
 # 1. Format all source and test files using canonical Ridgun tabular alignment
 stable format
 
-# 2. Type-check and statically analyze all 32 library modules
+# 2. Type-check and statically analyze all 32 libs
 stable check
 
 # 3. Run all 30 automated test suites in src/test/ridgun/
@@ -72,7 +72,7 @@ stable bundle
 ```
 
 Expected output from `stable check` and `stable test`:
-- `Checked 32 module(s) — 0 errors.`
+- `Checked 32 lib(s) — 0 errors.`
 - `Passed 30/30 test suite(s) — 0 failures.`
 
 ---
@@ -243,12 +243,12 @@ All requirements, API contracts, data models, architectural decisions, security 
 
 | Directory | Contents |
 |---|---|
-| `src/main/ridgun/lib/` | Pure-Ridgun library source modules (`*.rg`) |
+| `src/main/ridgun/lib/` | Pure-Ridgun source libs (`*.rg`) |
 | `src/test/ridgun/` | Automated unit and functional test suites (`test_*.rg`) |
 | `target/bundles/` | Compiled Ridgun library bundles (`*.rglib`) |
 | `target/` | Compiled `.rgc` archives and native ELF64 shared objects (`lib*.so`) |
 | `docs/requirements/functional/` | Functional requirements (`FR-SOCK-*`, `FR-CRYPTO-*`, `FR-POSIX-*`, `FR-IO-*`, `FR-STR-*`, `FR-TST-*`, `FR-MATH-*`, `FR-LIST-*`, `FR-CODEC-*`, `FR-CLI-*`, `FR-PATH-*`, `FR-TIME-*`, `FR-LOG-*`, `FR-GLOB-*`, `FR-UUID-*`, `FR-HTTP-*`) |
-| `docs/requirements/api/` | Public module contracts (`API-*-001`) |
+| `docs/requirements/api/` | Public lib contracts (`API-*-001`) |
 | `docs/requirements/decisions/` | Architecture Decision Records (`ADR-0001`, `ADR-0002`) |
 | `docs/tests/` | Test specifications (`TS-*`) and generated traceability matrix (`coverage-matrix.md`) |
 | `docs/security/` | Vulnerability register (`VULNERABILITY-INDEX.md`) and security audit reports |

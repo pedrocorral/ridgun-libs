@@ -23,7 +23,7 @@ Ridgun's compiler provides `map`, `filter`, `fold`, and list cons/concat (`:`, `
 - AC3: Given associative `[(String, String)]` key-value maps, when `kv put`, `kv get`, `kv get or`, `kv has`, `kv remove`, `kv keys`, `kv values`, and `kv merge` are called, then `kv put` updates existing keys in-place without duplicating keys, `kv remove` removes matching keys, and `kv merge` combines two maps with right-hand precedence.
 
 ## Actors & permissions
-- Any Ridgun module importing `list`.
+- Any Ridgun program or lib importing `list`.
 
 ## Constraints & edge cases
 - `list range step start end 0` returns `[]` rather than looping infinitely.

@@ -23,7 +23,7 @@ Cryptographic protocols, binary wire framing, and password-based key derivation 
 - AC3: Given a password, salt, iteration count (`>= 1`), and derived key length (`dk_len >= 1`), when `pbkdf2_hmac_sha256 password salt iterations dk_len` is called, then it returns a `dk_len`-byte raw key matching RFC 6070 test vectors (e.g., `pbkdf2_hmac_sha256 "password" "salt" 1 32` → `120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b` and `c=4096` → `c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a`).
 
 ## Actors & permissions
-- Any Ridgun module importing `crypto`.
+- Any Ridgun program or lib importing `crypto`.
 
 ## Constraints & edge cases
 - `ct_equal` returns `False` immediately only when lengths differ, and otherwise XOR-accumulates every byte without early exit.

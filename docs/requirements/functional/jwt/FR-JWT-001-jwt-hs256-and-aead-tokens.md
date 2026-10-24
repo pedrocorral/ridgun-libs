@@ -23,7 +23,7 @@ HTTP services and distributed agents require standard stateless authentication t
 - AC3: Given a 32-byte key, 12-byte nonce, and payload, when `jwt seal aead` and `jwt open aead` are called, then the payload is encrypted and authenticated with RFC 8439 ChaCha20-Poly1305 and round-trips losslessly.
 
 ## Actors & permissions
-- Any Ridgun module importing `jwt`.
+- Any Ridgun program or lib importing `jwt`.
 
 ## Constraints & edge cases
 - Rejects any token that does not have exactly 3 `.`-separated non-empty Base64url segments or whose `alg` is not `"HS256"`.

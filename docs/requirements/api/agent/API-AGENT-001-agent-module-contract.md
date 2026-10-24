@@ -1,11 +1,11 @@
 ---
 id: API-AGENT-001
-title: Public module contract for agent (agent.rglib / libagent.so)
+title: Public lib contract for agent (agent.rglib / libagent.so)
 status: approved
 implements: [FR-AGENT-001]
 auth: none
 ---
-# API-AGENT-001 — Public module contract for `agent` (`agent.rg`)
+# API-AGENT-001 — Public lib contract for `agent` (`agent.rg`)
 
 ## Request
 - Imported via `import agent`.

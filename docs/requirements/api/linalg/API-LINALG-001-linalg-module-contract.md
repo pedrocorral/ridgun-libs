@@ -1,11 +1,11 @@
 ---
 id: API-LINALG-001
-title: Public module contract for linalg (linalg.rglib / liblinalg.so)
+title: Public lib contract for linalg (linalg.rglib / liblinalg.so)
 status: approved
 implements: [FR-LINALG-001]
 auth: none
 ---
-# API-LINALG-001 — Public module contract for `linalg` (`linalg.rg`)
+# API-LINALG-001 — Public lib contract for `linalg` (`linalg.rg`)
 
 ## Request
 - Imported via `import linalg`.

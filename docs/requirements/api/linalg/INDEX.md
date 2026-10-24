@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-LINALG-001-linalg-module-contract.md` | `API-LINALG-001` | Public module contract for `linalg` (`linalg.rglib` / `liblinalg.so`) | approved |
+| `API-LINALG-001-linalg-module-contract.md` | `API-LINALG-001` | Public lib contract for `linalg` (`linalg.rglib` / `liblinalg.so`) | approved |
