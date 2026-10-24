@@ -1,11 +1,13 @@
 -- ============================================================
 -- src/test/ridgun/test list.rg
 -- Comprehensive test suite for list.rg inspired by Rust std::slice & Haskell Data.List
+-- Covers RG-066 (importing `list` and `agent` together without name collisions)
 -- @tests TS-LIST-001
 -- ============================================================
 
 import test
 import list
+import agent
 
 -- 1. Indexing, slicing (`take`, `drop`, `slice`), reversal, ranges, search, and deduplication on [Int] & [String]
 -- @tests TS-LIST-001
@@ -86,30 +88,36 @@ fn :: test list mergesort => ()
         _ = assert eq s_strs ["", "al", "alpha", "alpha", "bravo", "charlie", "delta"]
         ()
 
--- 3. Associative key-value map (`kv_*`) CRUD, order preservation, and multi-key merge
+-- 3. Associative key-value map (`list kv *`) CRUD, order preservation, multi-key merge, and RG-066 coexistence with `agent`
 -- @tests TS-LIST-001
 fn :: test kv associative map => ()
       test kv associative map =
-        m0 = kv empty
-        _ = assert int equals (kv len m0) 0 "AC3: kv_empty len 0"
-        m1 = kv put m0 "host" "127.0.0.1"
-        m2 = kv put m1 "port" "8080"
-        m3 = kv put m2 "port" "9090"
-        _ = assert int equals (kv len m3) 2 "AC3: kv_put updates in-place without duplicating key"
-        _ = assert true (kv has m3 "host") "AC3: kv_has host"
-        _ = assert false (kv has m3 "missing") "AC3: kv_has missing"
-        _ = assert str eq (kv get m3 "port") "9090" "AC3: kv_get updated port"
-        _ = assert str eq (kv get m3 "missing") "" "AC3: kv_get missing returns empty"
-        _ = assert str eq (kv get or m3 "mode" "prod") "prod" "AC3: kv_get_or default"
-        _ = assert eq (kv keys m3) ["host", "port"]
-        _ = assert eq (kv values m3) ["127.0.0.1", "9090"]
-        m4 = kv merge m3 [("port", "8443"), ("tls", "true")]
-        _ = assert int equals (kv len m4) 3 "AC3: kv_merge len 3"
-        _ = assert str eq (kv get m4 "port") "8443" "AC3: kv_merge overrides port"
-        _ = assert str eq (kv get m4 "tls") "true" "AC3: kv_merge adds tls"
-        m5 = kv remove m4 "host"
-        _ = assert false (kv has m5 "host") "AC3: kv_remove removes host"
-        _ = assert int equals (kv len m5) 2 "AC3: kv_remove len 2"
+        m0 = list kv empty
+        _ = assert int equals (list kv len m0) 0 "AC3: list_kv_empty len 0"
+        m1 = list kv put m0 "host" "127.0.0.1"
+        m2 = list kv put m1 "port" "8080"
+        m3 = list kv put m2 "port" "9090"
+        _ = assert int equals (list kv len m3) 2 "AC3: list_kv_put updates in-place without duplicating key"
+        _ = assert true (list kv has m3 "host") "AC3: list_kv_has host"
+        _ = assert false (list kv has m3 "missing") "AC3: list_kv_has missing"
+        _ = assert str eq (list kv get m3 "port") "9090" "AC3: list_kv_get updated port"
+        _ = assert str eq (list kv get m3 "missing") "" "AC3: list_kv_get missing returns empty"
+        _ = assert str eq (list kv get or m3 "mode" "prod") "prod" "AC3: list_kv_get_or default"
+        _ = assert eq (list kv keys m3) ["host", "port"]
+        _ = assert eq (list kv values m3) ["127.0.0.1", "9090"]
+        m4 = list kv merge m3 [("port", "8443"), ("tls", "true")]
+        _ = assert int equals (list kv len m4) 3 "AC3: list_kv_merge len 3"
+        _ = assert str eq (list kv get m4 "port") "8443" "AC3: list_kv_merge overrides port"
+        _ = assert str eq (list kv get m4 "tls") "true" "AC3: list_kv_merge adds tls"
+        m5 = list kv remove m4 "host"
+        _ = assert false (list kv has m5 "host") "AC3: list_kv_remove removes host"
+        _ = assert int equals (list kv len m5) 2 "AC3: list_kv_remove len 2"
+
+        -- RG-066: verify `agent kv *` and `list kv *` work side-by-side in the same module
+        ag = new kv agent
+        _  = assert str eq (agent kv put ag "host" (list kv get m4 "port")) "8443" "RG-066: agent kv put + list kv get"
+        _  = assert str eq (agent kv get ag "host") "8443" "RG-066: agent kv get"
+        _  = stop agent ag
         ()
 
 -- @tests TS-LIST-001
@@ -118,4 +126,4 @@ fn :: main => ()
         _ = test list indexing slicing and ranges
         _ = test list mergesort
         _ = test kv associative map
-        echo "[PASS] test list: TS-LIST-001 passed"
+        echo "[PASS] test list: TS-LIST-001 (including RG-066) passed"

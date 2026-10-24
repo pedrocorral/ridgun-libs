@@ -1,20 +1,19 @@
 ---
-updated: 2026-10-24T14:20
+updated: 2026-10-24T16:47
 active_task: none
 agent_runtime: gemini
 ---
 # Session state — read this first when resuming
 
 ## Where we are (3 lines max)
-- Completed `TASK-0031`: removed Chapter `00` across all 7 editions (`es`, `ca`, `gl`, `eu`, `en`, `pt`, `sv`) and expanded all 32 lib chapters (`01`–`32`) into multi-page chapters (233–724 lines per chapter, ~445 lines average, 14,256 lines per language) with 5–8 runnable Ridgun examples per lib exploring every functionality, complete public API signature catalogs, and real under-the-hood implementation walkthroughs.
-- Rebuilt all 8 standalone interactive HTML books (`docs/book/index.html` and `docs/book/{es,ca,gl,eu,en,pt,sv}/index.html`, ~850 KB each, 32 chapters).
+- Completed `TASK-0032` (`docs/road-map/completed/2026-10/TASK-0032-resolve-solstice-2026-10-24-open-issues-rg-043-rg-.md`), resolving all 6 Solstice 2026-10-24 open issues (`RG-043`, `RG-060`, `RG-066`, `RG-076`, `RG-077`, `RG-078`) with TDD regression suites across `crypto`, `argon2id`, `list`, `agent`, and `json`.
 ## Files to load for the active task (nothing else)
-- `docs/road-map/going-on/STATE.md`
+- None (no active task).
 ## Last verified facts (tests green? migrations applied? env?)
-- `aix docs validate`: 0 errors, 0 warnings.
-- `aix docs coverage`: 69 requirements, 40 test specs mapped in `docs/tests/coverage-matrix.md` (0 gaps).
-- `python3 docs/book/build_book.py`: 8 standalone interactive HTML books generated (`32 chapters` each, `01`–`32`).
+- `ridgunc run "src/test/ridgun/test list.rg"`, `test agent.rg`, `test json.rg`, `test argon2id.rg`, and `test crypto.rg`: all green.
+- `stable check`: 32 libs checked, 0 errors; `.rglib`, `.rgc`, and `.so` bundles rebuilt.
+- `aix docs validate` & `aix docs coverage`: 0 errors, 0 warnings (69 requirements, 40 test specs).
 ## Immediate next action
-- Ready for next user instruction or local commit.
+- Pick or create the next road-map task when new work arrives.
 ## Blockers / questions for the user
 - None.

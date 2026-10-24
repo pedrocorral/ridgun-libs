@@ -17,14 +17,15 @@ auth: none
 - Search, Deduplication & Sorting:
   - `list contains [Int] Int => Bool`, `list str contains [String] String => Bool`, `list index of [Int] Int => Int`, `list str index of [String] String => Int`, `list count [Int] Int => Int`, `list str count [String] String => Int`
   - `list dedup [Int] => [Int]`, `list str dedup [String] => [String]`, `list sort [Int] => [Int]`, `list str sort [String] => [String]`, `list is sorted [Int] => Bool`
-- Associative Key-Value Map (`[(String, String)]`):
-  - `kv empty => [(String, String)]`, `kv len [(String, String)] => Int`, `kv has [(String, String)] String => Bool`, `kv get [(String, String)] String => String`, `kv get or [(String, String)] String String => String`, `kv put [(String, String)] String String => [(String, String)]`, `kv remove [(String, String)] String => [(String, String)]`, `kv keys [(String, String)] => [String]`, `kv values [(String, String)] => [String]`, `kv merge [(String, String)] [(String, String)] => [(String, String)]`
+- Associative Key-Value Map (`[String String]`, `RG-066`):
+  - `list kv empty => [String String]`, `list kv len [String String] => Int`, `list kv has [String String] String => Bool`, `list kv get [String String] String => String`, `list kv get or [String String] String String => String`, `list kv put [String String] String String => [String String]`, `list kv remove [String String] String => [String String]`, `list kv keys [String String] => [String]`, `list kv values [String String] => [String]`, `list kv merge [String String] [String String] => [String String]`
 
 ## Responses
 | Code | When | Body |
 |---|---|---|
-| `[Int]` / `[String]` / `[(String, String)]` | Transformation, sort, or map update | New immutable collection |
-| `-1` / `0` / `""` | Element or key not found | `-1` for `index_of`, `0`/`""` (or `default_val`) for `nth`/`kv_get` |
+| `[Int]` / `[String]` / `[String String]` | Transformation, sort, or map update | New immutable collection |
+| `-1` / `0` / `""` | Element or key not found | `-1` for `index_of`, `0`/`""` (or `default_val`) for `nth`/`list_kv_get` |
 
 ## Rules
+- All exported functions start with `list ` (`RG-066`) so `import list` and `import agent` never collide.
 - All operations are pure, non-mutating, and safe on empty lists or out-of-range indices.

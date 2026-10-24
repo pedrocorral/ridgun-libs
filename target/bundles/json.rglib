@@ -1,20 +1,34 @@
 -- RGLIB1
 -- SELF_HOSTED_COMPILER: ridgunc v0.9.8
--- FUNCTIONS: 56
+-- FUNCTIONS: 71
 -- TYPES: 7
 -- SUMMARY: j_is_ws:InlineSequential
 -- SUMMARY: j_is_digit:InlineSequential
 -- SUMMARY: j_skip_ws:LazyStealableTask
 -- SUMMARY: j_spaces:LazyStealableTask
+-- SUMMARY: j_raw_byte_ub:InlineSequential
+-- SUMMARY: j_raw_byte:InlineSequential
+-- SUMMARY: j_hex_digit:InlineSequential
+-- SUMMARY: j_combine_hex4:InlineSequential
+-- SUMMARY: j_parse_hex4:InlineSequential
+-- SUMMARY: j_utf8_from_cp:InlineSequential
 -- SUMMARY: j_escape_loop:LazyStealableTask
 -- SUMMARY: j_escape_str:LazyStealableTask
--- SUMMARY: j_unescape_char:InlineSequential
+-- SUMMARY: j_unescape_simple:InlineSequential
+-- SUMMARY: j_finish_surrogate:LazyStealableTask
+-- SUMMARY: j_parse_u_surrogate:InlineSequential
+-- SUMMARY: j_dispatch_u_escape:LazyStealableTask
+-- SUMMARY: j_parse_u_escape:InlineSequential
+-- SUMMARY: j_finish_simple_escape:LazyStealableTask
+-- SUMMARY: j_parse_escape_char:InlineSequential
+-- SUMMARY: j_parse_escape:InlineSequential
 -- SUMMARY: j_parse_str_loop:LazyStealableTask
 -- SUMMARY: j_parse_string:LazyStealableTask
 -- SUMMARY: j_scan_digits:LazyStealableTask
 -- SUMMARY: j_parse_number:LazyStealableTask
 -- SUMMARY: j_finish_neg_num:InlineSequential
 -- SUMMARY: j_finish_pos_num:InlineSequential
+-- SUMMARY: j_has_field:LazyStealableTask
 -- SUMMARY: j_parse_val:LazyStealableTask
 -- SUMMARY: j_parse_val_at:LazyStealableTask
 -- SUMMARY: j_wrap_str_step:InlineSequential
@@ -34,6 +48,7 @@
 -- SUMMARY: j_parse_obj_delim:LazyStealableTask
 -- SUMMARY: j_check_eof:LazyStealableTask
 -- SUMMARY: j_check_eof_pos:InlineSequential
+-- SUMMARY: json_parse_with_limits:LazyStealableTask
 -- SUMMARY: json_parse:LazyStealableTask
 -- SUMMARY: j_join_arr:LazyStealableTask
 -- SUMMARY: j_join_obj:LazyStealableTask
@@ -81,7 +96,7 @@ type JsonObjStep = JObjOk [JsonField] Int | JObjErr String
 
 type JsonStrStep = JStrOk String Int | JStrErr String
 
--- ── Whitespace & Character Helpers ───────────────────────────
+-- ── Whitespace, Raw Byte & Character Helpers ─────────────────
 
 fn :: j_is_ws Int => Bool
       j_is_ws c   =  c == 32 OR c == 9 OR c == 10 OR c == 13
@@ -100,7 +115,56 @@ fn :: j_spaces Int => String
         | n <= 0 = ""
         | otherwise = " " + (j_spaces (n - 1))
 
--- ── String Escaping & Unescaping (RFC 8259) ──────────────────
+fn :: j_raw_byte_ub Int => String
+      j_raw_byte_ub ub
+        | ub >= 1 AND ub <= 127 = char_from_code ub
+        | otherwise =
+          efd = sys_call 290 (256 + ub) 526336 0 0 0 0
+          s   = sys_read_fd efd 8
+          _   = sys_close efd
+          str_slice s 0 1
+
+fn :: j_raw_byte Int => String
+      j_raw_byte b   =  j_raw_byte_ub (((b % 256) + 256) % 256)
+
+-- ── RFC 8259 §7 Unicode Escape (\uXXXX + UTF-16 Surrogates) & String Escaping ──
+
+fn :: j_hex_digit Int => Int
+      j_hex_digit c
+        | c >= 48 AND c <= 57  = c - 48
+        | c >= 97 AND c <= 102 = (c - 97) + 10
+        | c >= 65 AND c <= 70  = (c - 65) + 10
+        | otherwise            = 0 - 1
+
+fn :: j_combine_hex4 Int Int Int Int => Int
+      j_combine_hex4 d0 d1 d2 d3
+        | d0 < 0 OR d1 < 0 OR d2 < 0 OR d3 < 0 = 0 - 1
+        | otherwise = (((d0 * 16) + d1) * 256) + (d2 * 16) + d3
+
+fn :: j_parse_hex4 String Int Int => Int
+      j_parse_hex4 s      pos len
+        | (pos + 4) > len = 0 - 1
+        | otherwise =
+          j_combine_hex4 (j_hex_digit (str_char_at s pos)) (j_hex_digit (str_char_at s (pos + 1))) (j_hex_digit (str_char_at s (pos + 2))) (j_hex_digit (str_char_at s (pos + 3)))
+
+fn :: j_utf8_from_cp Int => String
+      j_utf8_from_cp cp
+        | cp <= 127 = j_raw_byte cp
+        | cp <= 2047 =
+          b0 = 192 + (cp / 64)
+          b1 = 128 + (cp % 64)
+          (j_raw_byte b0) + (j_raw_byte b1)
+        | cp <= 65535 =
+          b0 = 224 + (cp / 4096)
+          b1 = 128 + ((cp / 64) % 64)
+          b2 = 128 + (cp % 64)
+          (j_raw_byte b0) + (j_raw_byte b1) + (j_raw_byte b2)
+        | otherwise =
+          b0 = 240 + (cp / 262144)
+          b1 = 128 + ((cp / 4096) % 64)
+          b2 = 128 + ((cp / 64) % 64)
+          b3 = 128 + (cp % 64)
+          (j_raw_byte b0) + (j_raw_byte b1) + (j_raw_byte b2) + (j_raw_byte b3)
 
 fn :: j_escape_loop String Int Int String => String
       j_escape_loop s      pos len acc
@@ -117,23 +181,61 @@ fn :: j_escape_loop String Int Int String => String
 fn :: j_escape_str String => String
       j_escape_str s      =  (char_from_code 34) + (j_escape_loop s 0 (str_len s) "") + (char_from_code 34)
 
-fn :: j_unescape_char Int => String
-      j_unescape_char 34  =  char_from_code 34
-      j_unescape_char 92  =  char_from_code 92
-      j_unescape_char 47  =  "/"
-      j_unescape_char 98  =  char_from_code 8
-      j_unescape_char 102 =  char_from_code 12
-      j_unescape_char 110 =  char_from_code 10
-      j_unescape_char 114 =  char_from_code 13
-      j_unescape_char 116 =  char_from_code 9
-      j_unescape_char c   =  char_from_code c
+fn :: j_unescape_simple Int => String
+      j_unescape_simple 34  =  char_from_code 34
+      j_unescape_simple 92  =  char_from_code 92
+      j_unescape_simple 47  =  "/"
+      j_unescape_simple 98  =  char_from_code 8
+      j_unescape_simple 102 =  char_from_code 12
+      j_unescape_simple 110 =  char_from_code 10
+      j_unescape_simple 114 =  char_from_code 13
+      j_unescape_simple 116 =  char_from_code 9
+      j_unescape_simple _   =  ""
+
+fn :: j_finish_surrogate String Int Int String Int Int => JsonStrStep
+      j_finish_surrogate s pos len acc hi_u lo_u
+        | lo_u < 56320 OR lo_u > 57343 = JStrErr "invalid low UTF-16 surrogate in JSON string"
+        | otherwise =
+          cp = 65536 + ((hi_u - 55296) * 1024) + (lo_u - 56320)
+          j_parse_str_loop s (pos + 6) len (acc + (j_utf8_from_cp cp))
+
+fn :: j_parse_u_surrogate String Int Int String Int => JsonStrStep
+      j_parse_u_surrogate s pos len acc hi_u
+        | (pos + 6) > len = JStrErr "unpaired high UTF-16 surrogate in JSON string"
+        | (str_char_at s pos) != 92 OR (str_char_at s (pos + 1)) != 117 = JStrErr "unpaired high UTF-16 surrogate in JSON string"
+        | otherwise = j_finish_surrogate s pos len acc hi_u (j_parse_hex4 s (pos + 2) len)
+
+fn :: j_dispatch_u_escape String Int Int String Int => JsonStrStep
+      j_dispatch_u_escape s pos len acc u
+        | u < 0 = JStrErr "invalid \\uXXXX hex escape in JSON string"
+        | u >= 56320 AND u <= 57343 = JStrErr "unpaired low UTF-16 surrogate in JSON string"
+        | u >= 55296 AND u <= 56319 = j_parse_u_surrogate s (pos + 4) len acc u
+        | otherwise = j_parse_str_loop s (pos + 4) len (acc + (j_utf8_from_cp u))
+
+fn :: j_parse_u_escape String Int Int String => JsonStrStep
+      j_parse_u_escape s pos len acc =
+        j_dispatch_u_escape s pos len acc (j_parse_hex4 s pos len)
+
+fn :: j_finish_simple_escape String Int Int String String => JsonStrStep
+      j_finish_simple_escape s pos len acc rep
+        | rep == "" = JStrErr "invalid escape sequence in JSON string"
+        | otherwise = j_parse_str_loop s (pos + 1) len (acc + rep)
+
+fn :: j_parse_escape_char String Int Int String Int => JsonStrStep
+      j_parse_escape_char s pos len acc esc_c
+        | esc_c == 117 = j_parse_u_escape s (pos + 1) len acc
+        | otherwise = j_finish_simple_escape s pos len acc (j_unescape_simple esc_c)
+
+fn :: j_parse_escape String Int Int String => JsonStrStep
+      j_parse_escape s pos len acc =
+        j_parse_escape_char s pos len acc (str_char_at s pos)
 
 fn :: j_parse_str_loop String Int Int String => JsonStrStep
       j_parse_str_loop s      pos len acc
         | pos >= len = JStrErr "unterminated JSON string"
         | (str_char_at s pos) == 34 = JStrOk acc (pos + 1)
         | (str_char_at s pos) == 92 AND (pos + 1) >= len = JStrErr "unterminated escape in JSON string"
-        | (str_char_at s pos) == 92 = j_parse_str_loop s (pos + 2) len (acc + (j_unescape_char (str_char_at s (pos + 1))))
+        | (str_char_at s pos) == 92 = j_parse_escape s (pos + 1) len acc
         | otherwise = j_parse_str_loop s (pos + 1) len (acc + (str_slice s pos (pos + 1)))
 
 fn :: j_parse_string String Int Int => JsonStrStep
@@ -164,19 +266,29 @@ fn :: j_finish_pos_num String Int Int     => JsonStep
         | end_pos <= pos = JStepErr "expected number"
         | otherwise = JStepOk (JsonInt (str_to_int (str_slice s pos end_pos))) end_pos
 
--- ── Recursive Value, Array & Object Parser ───────────────────
+-- ── Recursive Value, Array & Object Parser (Bounded Depth & Unique Keys) ──
 
-fn :: j_parse_val String Int Int => JsonStep
-      j_parse_val s      pos len =
+fn :: j_has_field [JsonField] String => Bool
+      j_has_field []                  _   =  False
+      j_has_field ((JsonField k _):fs) key
+        | k == key = True
+        | otherwise = j_has_field fs key
+
+fn :: j_parse_val String Int Int Int => JsonStep
+      j_parse_val s      pos len rem_depth =
         p = j_skip_ws s pos len
-        j_parse_val_at s p len
+        j_parse_val_at s p len rem_depth
 
-fn :: j_parse_val_at String Int Int => JsonStep
-      j_parse_val_at s      p   len
+fn :: j_parse_val_at String Int Int Int => JsonStep
+      j_parse_val_at s      p   len rem_depth
         | p >= len = JStepErr "unexpected end of JSON input"
         | (str_char_at s p) == 34 = j_wrap_str_step (j_parse_string s p len)
-        | (str_char_at s p) == 91 = j_parse_arr_open s (p + 1) len
-        | (str_char_at s p) == 123 = j_parse_obj_open s (p + 1) len
+        | (str_char_at s p) == 91 =
+          | rem_depth <= 0 = JStepErr "maximum JSON nesting depth exceeded"
+          | otherwise = j_parse_arr_open s (p + 1) len (rem_depth - 1)
+        | (str_char_at s p) == 123 =
+          | rem_depth <= 0 = JStepErr "maximum JSON nesting depth exceeded"
+          | otherwise = j_parse_obj_open s (p + 1) len (rem_depth - 1)
         | (p + 4) <= len AND (str_slice s p (p + 4)) == "true" = JStepOk (JsonBool True) (p + 4)
         | (p + 5) <= len AND (str_slice s p (p + 5)) == "false" = JStepOk (JsonBool False) (p + 5)
         | (p + 4) <= len AND (str_slice s p (p + 4)) == "null" = JStepOk JsonNull (p + 4)
@@ -187,80 +299,82 @@ fn :: j_wrap_str_step JsonStrStep   => JsonStep
       j_wrap_str_step (JStrOk val next_p) = JStepOk (JsonStr val) next_p
       j_wrap_str_step (JStrErr err) =  JStepErr err
 
-fn :: j_parse_arr_open String Int Int => JsonStep
-      j_parse_arr_open s      pos len =
+fn :: j_parse_arr_open String Int Int Int => JsonStep
+      j_parse_arr_open s      pos len rem_depth =
         p = j_skip_ws s pos len
-        j_parse_arr_first s p len
+        j_parse_arr_first s p len rem_depth
 
-fn :: j_parse_arr_first String Int Int => JsonStep
-      j_parse_arr_first s      p   len
+fn :: j_parse_arr_first String Int Int Int => JsonStep
+      j_parse_arr_first s      p   len rem_depth
         | p >= len = JStepErr "unterminated JSON array"
         | (str_char_at s p) == 93 = JStepOk (JsonArr []) (p + 1)
-        | otherwise = j_finish_arr_step (j_parse_arr_items s p len [])
+        | otherwise = j_finish_arr_step (j_parse_arr_items s p len rem_depth [])
 
 fn :: j_finish_arr_step JsonArrStep   => JsonStep
       j_finish_arr_step (JArrOk items next_p) = JStepOk (JsonArr items) next_p
       j_finish_arr_step (JArrErr err) =  JStepErr err
 
-fn :: j_parse_arr_items String Int Int [JsonVal] => JsonArrStep
-      j_parse_arr_items s      pos len acc       =
-        j_parse_arr_after_item s len acc (j_parse_val s pos len)
+fn :: j_parse_arr_items String Int Int Int [JsonVal] => JsonArrStep
+      j_parse_arr_items s      pos len rem_depth acc =
+        j_parse_arr_after_item s len rem_depth acc (j_parse_val s pos len rem_depth)
 
-fn :: j_parse_arr_after_item String Int [JsonVal] JsonStep => JsonArrStep
-      j_parse_arr_after_item _ _ _ (JStepErr err) = JArrErr err
-      j_parse_arr_after_item s len acc (JStepOk v next_p) =
+fn :: j_parse_arr_after_item String Int Int [JsonVal] JsonStep => JsonArrStep
+      j_parse_arr_after_item _ _ _ _ (JStepErr err) = JArrErr err
+      j_parse_arr_after_item s len rem_depth acc (JStepOk v next_p) =
         p = j_skip_ws s next_p len
-        j_parse_arr_delim s p len (acc :: [v])
+        j_parse_arr_delim s p len rem_depth (acc :: [v])
 
-fn :: j_parse_arr_delim String Int Int [JsonVal] => JsonArrStep
-      j_parse_arr_delim s      p   len acc
+fn :: j_parse_arr_delim String Int Int Int [JsonVal] => JsonArrStep
+      j_parse_arr_delim s      p   len rem_depth acc
         | p >= len = JArrErr "unterminated JSON array"
         | (str_char_at s p) == 93 = JArrOk acc (p + 1)
-        | (str_char_at s p) == 44 = j_parse_arr_items s (p + 1) len acc
+        | (str_char_at s p) == 44 = j_parse_arr_items s (p + 1) len rem_depth acc
         | otherwise = JArrErr "expected ',' or ']' in JSON array"
 
-fn :: j_parse_obj_open String Int Int => JsonStep
-      j_parse_obj_open s      pos len =
+fn :: j_parse_obj_open String Int Int Int => JsonStep
+      j_parse_obj_open s      pos len rem_depth =
         p = j_skip_ws s pos len
-        j_parse_obj_first s p len
+        j_parse_obj_first s p len rem_depth
 
-fn :: j_parse_obj_first String Int Int => JsonStep
-      j_parse_obj_first s      p   len
+fn :: j_parse_obj_first String Int Int Int => JsonStep
+      j_parse_obj_first s      p   len rem_depth
         | p >= len = JStepErr "unterminated JSON object"
         | (str_char_at s p) == 125 = JStepOk (JsonObj []) (p + 1)
-        | otherwise = j_finish_obj_step (j_parse_obj_fields s p len [])
+        | otherwise = j_finish_obj_step (j_parse_obj_fields s p len rem_depth [])
 
 fn :: j_finish_obj_step JsonObjStep   => JsonStep
       j_finish_obj_step (JObjOk fields next_p) = JStepOk (JsonObj fields) next_p
       j_finish_obj_step (JObjErr err) =  JStepErr err
 
-fn :: j_parse_obj_fields String Int Int [JsonField] => JsonObjStep
-      j_parse_obj_fields s      pos len acc         =
+fn :: j_parse_obj_fields String Int Int Int [JsonField] => JsonObjStep
+      j_parse_obj_fields s      pos len rem_depth acc =
         p = j_skip_ws s pos len
-        j_parse_obj_after_key s len acc (j_parse_string s p len)
+        j_parse_obj_after_key s len rem_depth acc (j_parse_string s p len)
 
-fn :: j_parse_obj_after_key String Int [JsonField] JsonStrStep   => JsonObjStep
-      j_parse_obj_after_key _      _   _           (JStrErr err) =  JObjErr err
-      j_parse_obj_after_key s      len acc         (JStrOk key next_p) =
-        p = j_skip_ws s next_p len
-        j_parse_obj_colon s p len key acc
+fn :: j_parse_obj_after_key String Int Int [JsonField] JsonStrStep   => JsonObjStep
+      j_parse_obj_after_key _      _   _         _     (JStrErr err) =  JObjErr err
+      j_parse_obj_after_key s      len rem_depth acc   (JStrOk key next_p)
+        | j_has_field acc key = JObjErr ("duplicate JSON object key: " + key)
+        | otherwise =
+          p = j_skip_ws s next_p len
+          j_parse_obj_colon s p len rem_depth key acc
 
-fn :: j_parse_obj_colon String Int Int String [JsonField] => JsonObjStep
-      j_parse_obj_colon s p len key acc
+fn :: j_parse_obj_colon String Int Int Int String [JsonField] => JsonObjStep
+      j_parse_obj_colon s p len rem_depth key acc
         | p >= len OR (str_char_at s p) != 58 = JObjErr "expected ':' after JSON object key"
-        | otherwise = j_parse_obj_after_val s len key acc (j_parse_val s (p + 1) len)
+        | otherwise = j_parse_obj_after_val s len rem_depth key acc (j_parse_val s (p + 1) len rem_depth)
 
-fn :: j_parse_obj_after_val String Int String [JsonField] JsonStep => JsonObjStep
-      j_parse_obj_after_val _ _ _ _ (JStepErr err) = JObjErr err
-      j_parse_obj_after_val s len key acc (JStepOk v next_p) =
+fn :: j_parse_obj_after_val String Int Int String [JsonField] JsonStep => JsonObjStep
+      j_parse_obj_after_val _ _ _ _ _ (JStepErr err) = JObjErr err
+      j_parse_obj_after_val s len rem_depth key acc (JStepOk v next_p) =
         p = j_skip_ws s next_p len
-        j_parse_obj_delim s p len (acc :: [JsonField key v])
+        j_parse_obj_delim s p len rem_depth (acc :: [JsonField key v])
 
-fn :: j_parse_obj_delim String Int Int [JsonField] => JsonObjStep
-      j_parse_obj_delim s      p   len acc
+fn :: j_parse_obj_delim String Int Int Int [JsonField] => JsonObjStep
+      j_parse_obj_delim s      p   len rem_depth acc
         | p >= len = JObjErr "unterminated JSON object"
         | (str_char_at s p) == 125 = JObjOk acc (p + 1)
-        | (str_char_at s p) == 44 = j_parse_obj_fields s (p + 1) len acc
+        | (str_char_at s p) == 44 = j_parse_obj_fields s (p + 1) len rem_depth acc
         | otherwise = JObjErr "expected ',' or '}' in JSON object"
 
 fn :: j_check_eof String Int JsonStep       => JsonRes
@@ -276,10 +390,19 @@ fn :: j_check_eof_pos Int Int JsonVal => JsonRes
 
 -- @implements FR-JSON-001
 -- @implements API-JSON-001
+-- @mitigates VUL-INPUT-001
+fn :: json parse with limits String Int Int => JsonRes
+      json parse with limits s max_depth max_bytes
+        | max_depth < 1 = JsonErr "invalid JSON max_depth limit"
+        | max_bytes < 1 = JsonErr "invalid JSON max_bytes limit"
+        | (str_len s) > max_bytes = JsonErr "JSON input exceeds maximum allowed byte length"
+        | otherwise = j_check_eof s (str_len s) (j_parse_val s 0 (str_len s) max_depth)
+
+-- @implements FR-JSON-001
+-- @implements API-JSON-001
+-- @mitigates VUL-INPUT-001
 fn :: json parse String => JsonRes
-      json parse s      =
-        len = str_len s
-        j_check_eof s len (j_parse_val s 0 len)
+      json parse s      =  json parse with limits s 64 1048576
 
 -- ── Serialization & Pretty-Printing ──────────────────────────
 

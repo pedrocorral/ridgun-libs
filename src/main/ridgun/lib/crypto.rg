@@ -433,23 +433,68 @@ fn :: c list to raw CT16 [Int] => String
         ub = norm byte b
         (c get b256 tbl (ub / 16) (ub % 16)) + (c list to raw tbl rest)
 
-fn :: pbkdf2 iter loop CPbkCtx String Tensor[U64 * 8] Int => Tensor[U64 * 8]
-      pbkdf2 iter loop ctx u_raw acc rem =
-        | rem <= 0  = acc
+fn :: c pack4 be String Int => Int
+      c pack4 be s off =
+        ((str char at s off) shl 24) or ((str char at s (off + 1)) shl 16) or ((str char at s (off + 2)) shl 8) or (str char at s (off + 3))
+
+fn :: c bxor8 pack4 String String String String String String String String Int => Int
+      c bxor8 pack4 s1 s2 s3 s4 s5 s6 s7 s8 off =
+        b0 = (str char at s1 off) xor (str char at s2 off) xor (str char at s3 off) xor (str char at s4 off) xor (str char at s5 off) xor (str char at s6 off) xor (str char at s7 off) xor (str char at s8 off)
+        b1 = (str char at s1 (off + 1)) xor (str char at s2 (off + 1)) xor (str char at s3 (off + 1)) xor (str char at s4 (off + 1)) xor (str char at s5 (off + 1)) xor (str char at s6 (off + 1)) xor (str char at s7 (off + 1)) xor (str char at s8 (off + 1))
+        b2 = (str char at s1 (off + 2)) xor (str char at s2 (off + 2)) xor (str char at s3 (off + 2)) xor (str char at s4 (off + 2)) xor (str char at s5 (off + 2)) xor (str char at s6 (off + 2)) xor (str char at s7 (off + 2)) xor (str char at s8 (off + 2))
+        b3 = (str char at s1 (off + 3)) xor (str char at s2 (off + 3)) xor (str char at s3 (off + 3)) xor (str char at s4 (off + 3)) xor (str char at s5 (off + 3)) xor (str char at s6 (off + 3)) xor (str char at s7 (off + 3)) xor (str char at s8 (off + 3))
+        (b0 shl 24) or (b1 shl 16) or (b2 shl 8) or b3
+
+fn :: pbkdf2 iter loop Int String String String Int Int Int Int Int Int Int Int => Tensor[U64 * 8]
+      pbkdf2 iter loop rem ipad opad u w0 w1 w2 w3 w4 w5 w6 w7 =
+        | rem <= 0 =
+          acc = Tensor[U64 * 8]
+          acc_(0) = w0
+          acc_(1) = w1
+          acc_(2) = w2
+          acc_(3) = w3
+          acc_(4) = w4
+          acc_(5) = w5
+          acc_(6) = w6
+          acc_(7) = w7
+          acc
+        | rem >= 8 =
+          u1  = sha256 raw (opad + (sha256 raw (ipad + u)))
+          u2  = sha256 raw (opad + (sha256 raw (ipad + u1)))
+          u3  = sha256 raw (opad + (sha256 raw (ipad + u2)))
+          u4  = sha256 raw (opad + (sha256 raw (ipad + u3)))
+          u5  = sha256 raw (opad + (sha256 raw (ipad + u4)))
+          u6  = sha256 raw (opad + (sha256 raw (ipad + u5)))
+          u7  = sha256 raw (opad + (sha256 raw (ipad + u6)))
+          u8  = sha256 raw (opad + (sha256 raw (ipad + u7)))
+          nw0 = w0 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 0)
+          nw1 = w1 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 4)
+          nw2 = w2 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 8)
+          nw3 = w3 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 12)
+          nw4 = w4 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 16)
+          nw5 = w5 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 20)
+          nw6 = w6 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 24)
+          nw7 = w7 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 28)
+          pbkdf2 iter loop (rem - 8) ipad opad u8 nw0 nw1 nw2 nw3 nw4 nw5 nw6 nw7
         | otherwise =
-          tbl   = cptbl ctx
-          in_h  = sha256 str ((cpipad ctx) + u_raw)
-          out_h = sha256 str ((cpopad ctx) + (c hex2raw32 tbl in_h))
-          pbkdf2 iter loop ctx (c hex2raw32 tbl out_h) (c bxor acc8 acc out_h) (rem - 1)
+          u1  = sha256 raw (opad + (sha256 raw (ipad + u)))
+          nw0 = w0 xor (c pack4 be u1 0)
+          nw1 = w1 xor (c pack4 be u1 4)
+          nw2 = w2 xor (c pack4 be u1 8)
+          nw3 = w3 xor (c pack4 be u1 12)
+          nw4 = w4 xor (c pack4 be u1 16)
+          nw5 = w5 xor (c pack4 be u1 20)
+          nw6 = w6 xor (c pack4 be u1 24)
+          nw7 = w7 xor (c pack4 be u1 28)
+          pbkdf2 iter loop (rem - 1) ipad opad u1 nw0 nw1 nw2 nw3 nw4 nw5 nw6 nw7
 
 fn :: pbkdf2 block CPbkCtx String Int Int => String
       pbkdf2 block ctx salt iterations block_idx =
         tbl  = cptbl ctx
-        in_h = sha256 str ((cpipad ctx) + salt + (be32 bytes block_idx))
-        u1_h = sha256 str ((cpopad ctx) + (c hex2raw32 tbl in_h))
-        u1_r = c hex2raw32 tbl u1_h
-        acc0 = c bxor acc8 (Tensor[U64 * 8]) u1_h
-        accf = pbkdf2 iter loop ctx u1_r acc0 (iterations - 1)
+        ipad = cpipad ctx
+        opad = cpopad ctx
+        u1   = sha256 raw (opad + (sha256 raw (ipad + salt + (be32 bytes block_idx))))
+        accf = pbkdf2 iter loop (iterations - 1) ipad opad u1 (c pack4 be u1 0) (c pack4 be u1 4) (c pack4 be u1 8) (c pack4 be u1 12) (c pack4 be u1 16) (c pack4 be u1 20) (c pack4 be u1 24) (c pack4 be u1 28)
         c acc8 to raw tbl accf
 
 fn :: pbkdf2 blocks loop CPbkCtx String Int Int Int String => String
@@ -487,13 +532,13 @@ fn :: f blamka U64 U64 => U64
 -- @implements DM-Tensor
 fn :: blamka g U64 U64 U64 U64 => U64 U64 U64 U64
       blamka g a b c d =
-        mut a = f blamka a b
+        mut a = a + b + 2 * ((a and 0xFFFFFFFF) * (b and 0xFFFFFFFF))
         mut d = (d xor a) rotr 32
-        mut c = f blamka c d
+        mut c = c + d + 2 * ((c and 0xFFFFFFFF) * (d and 0xFFFFFFFF))
         mut b = (b xor c) rotr 24
-        a = f blamka a b
+        a = a + b + 2 * ((a and 0xFFFFFFFF) * (b and 0xFFFFFFFF))
         d = (d xor a) rotr 16
-        c = f blamka c d
+        c = c + d + 2 * ((c and 0xFFFFFFFF) * (d and 0xFFFFFFFF))
         b = (b xor c) rotr 63
         (a, b, c, d)
 
@@ -502,27 +547,27 @@ fn :: blamka g U64 U64 U64 U64 => U64 U64 U64 U64
 -- @implements DM-Tensor
 fn :: blamka p16 Tensor[U64 * 16] => ()
       blamka p16 v                =
-        v_(0), v_(4), v_(8),  v_(12) = blamka g v_(0) v_(4) v_(8)  v_(12)
-        v_(1), v_(5), v_(9),  v_(13) = blamka g v_(1) v_(5) v_(9)  v_(13)
-        v_(2), v_(6), v_(10), v_(14) = blamka g v_(2) v_(6) v_(10) v_(14)
-        v_(3), v_(7), v_(11), v_(15) = blamka g v_(3) v_(7) v_(11) v_(15)
-        v_(0), v_(5), v_(10), v_(15) = blamka g v_(0) v_(5) v_(10) v_(15)
-        v_(1), v_(6), v_(11), v_(12) = blamka g v_(1) v_(6) v_(11) v_(12)
-        v_(2), v_(7), v_(8),  v_(13) = blamka g v_(2) v_(7) v_(8)  v_(13)
-        v_(3), v_(4), v_(9),  v_(14) = blamka g v_(3) v_(4) v_(9)  v_(14)
+        v0, v4, v8,  v12 = blamka g v_(0) v_(4) v_(8)  v_(12)
+        v1, v5, v9,  v13 = blamka g v_(1) v_(5) v_(9)  v_(13)
+        v2, v6, v10, v14 = blamka g v_(2) v_(6) v_(10) v_(14)
+        v3, v7, v11, v15 = blamka g v_(3) v_(7) v_(11) v_(15)
+        v_(0), v_(5), v_(10), v_(15) = blamka g v0 v5 v10 v15
+        v_(1), v_(6), v_(11), v_(12) = blamka g v1 v6 v11 v12
+        v_(2), v_(7), v_(8),  v_(13) = blamka g v2 v7 v8  v13
+        v_(3), v_(4), v_(9),  v_(14) = blamka g v3 v4 v9  v14
 
 fn :: ca2 blamka col pair Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]
       ca2 blamka col pair z j =
         c  = 2 * j
         c1 = c + 1
-        z_(0, c),  z_(2, c),  z_(4, c),  z_(6, c)  = blamka g z_(0, c)  z_(2, c)  z_(4, c)  z_(6, c)
-        z_(0, c1), z_(2, c1), z_(4, c1), z_(6, c1) = blamka g z_(0, c1) z_(2, c1) z_(4, c1) z_(6, c1)
-        z_(1, c),  z_(3, c),  z_(5, c),  z_(7, c)  = blamka g z_(1, c)  z_(3, c)  z_(5, c)  z_(7, c)
-        z_(1, c1), z_(3, c1), z_(5, c1), z_(7, c1) = blamka g z_(1, c1) z_(3, c1) z_(5, c1) z_(7, c1)
-        z_(0, c),  z_(2, c1), z_(5, c),  z_(7, c1) = blamka g z_(0, c)  z_(2, c1) z_(5, c)  z_(7, c1)
-        z_(0, c1), z_(3, c),  z_(5, c1), z_(6, c)  = blamka g z_(0, c1) z_(3, c)  z_(5, c1) z_(6, c)
-        z_(1, c),  z_(3, c1), z_(4, c),  z_(6, c1) = blamka g z_(1, c)  z_(3, c1) z_(4, c)  z_(6, c1)
-        z_(1, c1), z_(2, c),  z_(4, c1), z_(7, c)  = blamka g z_(1, c1) z_(2, c)  z_(4, c1) z_(7, c)
+        z0c,  z2c,  z4c,  z6c  = blamka g z_(0, c)  z_(2, c)  z_(4, c)  z_(6, c)
+        z0c1, z2c1, z4c1, z6c1 = blamka g z_(0, c1) z_(2, c1) z_(4, c1) z_(6, c1)
+        z1c,  z3c,  z5c,  z7c  = blamka g z_(1, c)  z_(3, c)  z_(5, c)  z_(7, c)
+        z1c1, z3c1, z5c1, z7c1 = blamka g z_(1, c1) z_(3, c1) z_(5, c1) z_(7, c1)
+        z_(0, c),  z_(2, c1), z_(5, c),  z_(7, c1) = blamka g z0c  z2c1 z5c  z7c1
+        z_(0, c1), z_(3, c),  z_(5, c1), z_(6, c)  = blamka g z0c1 z3c  z5c1 z6c
+        z_(1, c),  z_(3, c1), z_(4, c),  z_(6, c1) = blamka g z1c  z3c1 z4c  z6c1
+        z_(1, c1), z_(2, c),  z_(4, c1), z_(7, c)  = blamka g z1c1 z2c  z4c1 z7c
         z
 
 fn :: ca2 blamka cols loop Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]
@@ -863,12 +908,10 @@ fn :: ca2 step addr Bool CA2Ctx Int Tensor[U64 * 8 * 16] => Tensor[U64 * 8 * 16]
         | need_adr  = ca2 make addr blk ctx ((idx / 128) + 1)
         | otherwise = addr_blk
 
-fn :: ca2 step jpair Bool Tensor[U64 * 8 * 16] Int CT16 Int => U64
-      ca2 step jpair data_ind addr2 idx mem prev_idx =
+fn :: ca2 step jpair Bool Tensor[U64 * 8 * 16] Int Tensor[U64 * 8 * 16] => U64
+      ca2 step jpair data_ind addr2 idx pblk =
         | data_ind  = ca2 get blk8 addr2 (idx % 128)
-        | otherwise =
-          pblk = ca2 nth blk mem prev_idx
-          pblk_(0, 0)
+        | otherwise = pblk_(0, 0)
 
 fn :: ca2 ref lane Int Int Int Int Int => Int
       ca2 ref lane r s l j2 p =
@@ -900,7 +943,8 @@ fn :: ca2 fill segment CT16 CA2Ctx Int Tensor[U64 * 8 * 16] => CT16
           data_ind = r == 0 and s < 2
           need_adr = data_ind and ((idx % 128) == 0 or (idx == 2 and r == 0 and s == 0))
           addr2    = ca2 step addr need_adr ctx idx addr_blk
-          j_pair   = ca2 step jpair data_ind addr2 idx mem ((l * q) + prev_col)
+          prev_blk = ca2 nth blk mem ((l * q) + prev_col)
+          j_pair   = ca2 step jpair data_ind addr2 idx prev_blk
           j1       = j_pair and 0xFFFFFFFF
           j2       = (j_pair shr 32) and 0xFFFFFFFF
           ref_lane = ca2 ref lane r s l j2 p
@@ -910,7 +954,6 @@ fn :: ca2 fill segment CT16 CA2Ctx Int Tensor[U64 * 8 * 16] => CT16
           zz       = w_size - 1 - y_val
           st_pos   = ca2 st pos r s sl
           ref_col  = (st_pos + zz) % q
-          prev_blk = ca2 nth blk mem ((l * q) + prev_col)
           ref_blk  = ca2 nth blk mem ((ref_lane * q) + ref_col)
           new_blk  = compress block prev_blk ref_blk
           fin_blk  = ca2 fin blk r new_blk mem ((l * q) + curr_col)

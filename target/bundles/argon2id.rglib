@@ -1,3 +1,132 @@
+-- RGLIB1
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.8
+-- FUNCTIONS: 125
+-- TYPES: 10
+-- SUMMARY: a2_list_len:LazyStealableTask
+-- SUMMARY: a2_str_list_len:LazyStealableTask
+-- SUMMARY: a2_nth_int:LazyStealableTask
+-- SUMMARY: a2_nth_str:LazyStealableTask
+-- SUMMARY: a2_take_ints:LazyStealableTask
+-- SUMMARY: a2_drop_ints:LazyStealableTask
+-- SUMMARY: a2_pad_zeroes:LazyStealableTask
+-- SUMMARY: a2_raw_byte_ub:InlineSequential
+-- SUMMARY: a2_raw_byte:InlineSequential
+-- SUMMARY: a2_str_to_bytes_loop:LazyStealableTask
+-- SUMMARY: a2_str_to_bytes:LazyStealableTask
+-- SUMMARY: a2_bytes_to_str:LazyStealableTask
+-- SUMMARY: hex_digits:InlineSequential
+-- SUMMARY: byte_to_hex:InlineSequential
+-- SUMMARY: bytes_to_hex:LazyStealableTask
+-- SUMMARY: byte_bitxor:InlineSequential
+-- SUMMARY: u32_norm:InlineSequential
+-- SUMMARY: u32_add:InlineSequential
+-- SUMMARY: u32_bitxor:InlineSequential
+-- SUMMARY: a2_u64_lh:InlineSequential
+-- SUMMARY: a2_f_blamka:InlineSequential
+-- SUMMARY: a2_u32_to_le4:InlineSequential
+-- SUMMARY: a2_bytes_to_u32_le:LazyStealableTask
+-- SUMMARY: a2_zero_w16:InlineSequential
+-- SUMMARY: a2_zero_blk8:InlineSequential
+-- SUMMARY: a2_b2b_iv_w16:InlineSequential
+-- SUMMARY: a2_b2b_g4:InlineSequential
+-- SUMMARY: a2_b2b_sigma:InlineSequential
+-- SUMMARY: a2_b2b_round:LazyStealableTask
+-- SUMMARY: a2_b2b_rounds:LazyStealableTask
+-- SUMMARY: a2_b2b_compress:LazyStealableTask
+-- SUMMARY: a2_bytes_to_u64:LazyStealableTask
+-- SUMMARY: a2_bytes_to_w16:LazyStealableTask
+-- SUMMARY: a2_u64_to_le8:InlineSequential
+-- SUMMARY: a2_h8_to_bytes:InlineSequential
+-- SUMMARY: a2_b2b_loop:LazyStealableTask
+-- SUMMARY: a2_blake2b:LazyStealableTask
+-- SUMMARY: a2_b2b_long_loop:LazyStealableTask
+-- SUMMARY: a2_blake2b_long:LazyStealableTask
+-- SUMMARY: a2_blamka_g:InlineSequential
+-- SUMMARY: a2_blamka_p16:InlineSequential
+-- SUMMARY: a2_blamka_col_pair:InlineSequential
+-- SUMMARY: a2_blamka_cols_loop:LazyStealableTask
+-- SUMMARY: a2_bitxor_blk8:KernelWorkerJob
+-- SUMMARY: a2_compress_blk8:LazyStealableTask
+-- SUMMARY: a2_get_blk8:InlineSequential
+-- SUMMARY: a2_bytes_to_blk8_row:LazyStealableTask
+-- SUMMARY: a2_bytes_to_blk8_loop:LazyStealableTask
+-- SUMMARY: a2_bytes_to_blk8:LazyStealableTask
+-- SUMMARY: a2_blk8_row_to_bytes:LazyStealableTask
+-- SUMMARY: a2_blk8_to_bytes_loop:LazyStealableTask
+-- SUMMARY: a2_blk8_to_bytes:LazyStealableTask
+-- SUMMARY: a2_zero_mem:InlineSequential
+-- SUMMARY: a2_get_m16:InlineSequential
+-- SUMMARY: a2_get_m256:InlineSequential
+-- SUMMARY: a2_get_m4096:InlineSequential
+-- SUMMARY: a2_get_mem:InlineSequential
+-- SUMMARY: a2_nth_blk:InlineSequential
+-- SUMMARY: a2_set_m16:InlineSequential
+-- SUMMARY: a2_set_m256:InlineSequential
+-- SUMMARY: a2_set_m4096:InlineSequential
+-- SUMMARY: a2_set_mem:InlineSequential
+-- SUMMARY: a2_set_blk:InlineSequential
+-- SUMMARY: a2_init_all_lanes_loop:LazyStealableTask
+-- SUMMARY: a2_init_all_lanes:LazyStealableTask
+-- SUMMARY: a2_make_addr_blk:LazyStealableTask
+-- SUMMARY: a2_calc_w_size:InlineSequential
+-- SUMMARY: a2_fill_segment:LazyStealableTask
+-- SUMMARY: a2_run_lanes:LazyStealableTask
+-- SUMMARY: a2_run_slices:LazyStealableTask
+-- SUMMARY: a2_run_passes:LazyStealableTask
+-- SUMMARY: a2_bitxor_final_lanes:LazyStealableTask
+-- SUMMARY: derive_raw_tag_ctx:LazyStealableTask
+-- SUMMARY: derive_raw_tag:LazyStealableTask
+-- SUMMARY: b64_alphabet:InlineSequential
+-- SUMMARY: b64_char:InlineSequential
+-- SUMMARY: b64_encode_nopad:LazyStealableTask
+-- SUMMARY: b64_char_val:InlineSequential
+-- SUMMARY: valid_b64_chars:LazyStealableTask
+-- SUMMARY: is_valid_b64_nopad:LazyStealableTask
+-- SUMMARY: b64_decode_rem:InlineSequential
+-- SUMMARY: b64_decode_loop:InlineSequential
+-- SUMMARY: b64_decode_nopad:InlineSequential
+-- SUMMARY: default_argon2_params:InlineSequential
+-- SUMMARY: argon2_interactive_params:InlineSequential
+-- SUMMARY: argon2_moderate_params:InlineSequential
+-- SUMMARY: argon2_sensitive_params:InlineSequential
+-- SUMMARY: argon2_params:InlineSequential
+-- SUMMARY: clamp_salt_len:InlineSequential
+-- SUMMARY: a2_getrandom_call:InlineSequential
+-- SUMMARY: a2_getrandom_step:InlineSequential
+-- SUMMARY: a2_getrandom_loop:InlineSequential
+-- SUMMARY: argon2id_generate_salt:InlineSequential
+-- SUMMARY: validate_argon2_params:LazyStealableTask
+-- SUMMARY: finish_derive_key_checked:LazyStealableTask
+-- SUMMARY: finish_derive_key:LazyStealableTask
+-- SUMMARY: argon2id_derive_key:LazyStealableTask
+-- SUMMARY: key_res_to_hex:LazyStealableTask
+-- SUMMARY: argon2id_derive_key_hex:LazyStealableTask
+-- SUMMARY: build_phc_from_tag:LazyStealableTask
+-- SUMMARY: finish_argon2id_hash_ctx:LazyStealableTask
+-- SUMMARY: argon2id_hash_ctx:LazyStealableTask
+-- SUMMARY: argon2id_hash_bytes:LazyStealableTask
+-- SUMMARY: argon2id_hash_params:LazyStealableTask
+-- SUMMARY: argon2id_hash_password:LazyStealableTask
+-- SUMMARY: ct_diff_loop:LazyStealableTask
+-- SUMMARY: constant_time_bytes_eq:LazyStealableTask
+-- SUMMARY: constant_time_eq:LazyStealableTask
+-- SUMMARY: split_str_loop:LazyStealableTask
+-- SUMMARY: a2_is_digits_loop:LazyStealableTask
+-- SUMMARY: parse_kv_int:LazyStealableTask
+-- SUMMARY: build_parsed_phc:InlineSequential
+-- SUMMARY: decode_phc_fields:LazyStealableTask
+-- SUMMARY: parse_phc_mtp:LazyStealableTask
+-- SUMMARY: parse_phc_kvs:LazyStealableTask
+-- SUMMARY: parse_phc_parts:LazyStealableTask
+-- SUMMARY: argon2id_parse_phc:LazyStealableTask
+-- SUMMARY: check_rehash_parsed:InlineSequential
+-- SUMMARY: argon2id_needs_rehash:LazyStealableTask
+-- SUMMARY: verify_parsed_ctx:LazyStealableTask
+-- SUMMARY: argon2id_verify_ctx:LazyStealableTask
+-- SUMMARY: argon2id_verify:LazyStealableTask
+-- SUMMARY: unwrap_phc_res:InlineSequential
+-- SUMMARY: argon2id_hash:LazyStealableTask
+-- SUMMARY: argon2id_hash_phc:LazyStealableTask
 -- src/main/ridgun/lib/argon2id.rg
 -- Pure-Ridgun RFC 9106 Argon2id Password Hashing, Key Derivation & PHC Verification Library
 -- @implements FR-CRYPTO-001
@@ -260,7 +389,7 @@ fn :: a2 u64 to le8 U64 => [Int]
         (a2 u32 to le4 (x and 0xFFFFFFFF)) :: (a2 u32 to le4 ((x shr 32) and 0xFFFFFFFF))
 
 fn :: a2 h8 to bytes Tensor[U64 * 16] => [Int]
-      a2 h8 to bytes h =
+      a2 h8 to bytes h                =
         (a2 u64 to le8 h_(0)) :: (a2 u64 to le8 h_(1)) :: (a2 u64 to le8 h_(2)) :: (a2 u64 to le8 h_(3)) :: (a2 u64 to le8 h_(4)) :: (a2 u64 to le8 h_(5)) :: (a2 u64 to le8 h_(6)) :: (a2 u64 to le8 h_(7))
 
 fn :: a2 b2b loop Tensor[U64 * 16] [Int] Int => Tensor[U64 * 16]
@@ -305,39 +434,39 @@ fn :: a2 blake2b long [Int] Int    => [Int]
 
 fn :: a2 blamka g U64 U64 U64 U64 => U64 U64 U64 U64
       a2 blamka g a b c d =
-        mut a = a2 f blamka a b
+        mut a = a + b + 2 * ((a and 0xFFFFFFFF) * (b and 0xFFFFFFFF))
         mut d = (d xor a) rotr 32
-        mut c = a2 f blamka c d
+        mut c = c + d + 2 * ((c and 0xFFFFFFFF) * (d and 0xFFFFFFFF))
         mut b = (b xor c) rotr 24
-        a = a2 f blamka a b
+        a = a + b + 2 * ((a and 0xFFFFFFFF) * (b and 0xFFFFFFFF))
         d = (d xor a) rotr 16
-        c = a2 f blamka c d
+        c = c + d + 2 * ((c and 0xFFFFFFFF) * (d and 0xFFFFFFFF))
         b = (b xor c) rotr 63
         (a, b, c, d)
 
 fn :: a2 blamka p16 Tensor[U64 * 16] => ()
-      a2 blamka p16 v =
-        v_(0), v_(4), v_(8),  v_(12) = a2 blamka g v_(0) v_(4) v_(8)  v_(12)
-        v_(1), v_(5), v_(9),  v_(13) = a2 blamka g v_(1) v_(5) v_(9)  v_(13)
-        v_(2), v_(6), v_(10), v_(14) = a2 blamka g v_(2) v_(6) v_(10) v_(14)
-        v_(3), v_(7), v_(11), v_(15) = a2 blamka g v_(3) v_(7) v_(11) v_(15)
-        v_(0), v_(5), v_(10), v_(15) = a2 blamka g v_(0) v_(5) v_(10) v_(15)
-        v_(1), v_(6), v_(11), v_(12) = a2 blamka g v_(1) v_(6) v_(11) v_(12)
-        v_(2), v_(7), v_(8),  v_(13) = a2 blamka g v_(2) v_(7) v_(8)  v_(13)
-        v_(3), v_(4), v_(9),  v_(14) = a2 blamka g v_(3) v_(4) v_(9)  v_(14)
+      a2 blamka p16 v                =
+        v0, v4, v8,  v12 = a2 blamka g v_(0) v_(4) v_(8)  v_(12)
+        v1, v5, v9,  v13 = a2 blamka g v_(1) v_(5) v_(9)  v_(13)
+        v2, v6, v10, v14 = a2 blamka g v_(2) v_(6) v_(10) v_(14)
+        v3, v7, v11, v15 = a2 blamka g v_(3) v_(7) v_(11) v_(15)
+        v_(0), v_(5), v_(10), v_(15) = a2 blamka g v0 v5 v10 v15
+        v_(1), v_(6), v_(11), v_(12) = a2 blamka g v1 v6 v11 v12
+        v_(2), v_(7), v_(8),  v_(13) = a2 blamka g v2 v7 v8  v13
+        v_(3), v_(4), v_(9),  v_(14) = a2 blamka g v3 v4 v9  v14
 
 fn :: a2 blamka col pair Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]
       a2 blamka col pair z j =
         c  = 2 * j
         c1 = c + 1
-        z_(0, c),  z_(2, c),  z_(4, c),  z_(6, c)  = a2 blamka g z_(0, c)  z_(2, c)  z_(4, c)  z_(6, c)
-        z_(0, c1), z_(2, c1), z_(4, c1), z_(6, c1) = a2 blamka g z_(0, c1) z_(2, c1) z_(4, c1) z_(6, c1)
-        z_(1, c),  z_(3, c),  z_(5, c),  z_(7, c)  = a2 blamka g z_(1, c)  z_(3, c)  z_(5, c)  z_(7, c)
-        z_(1, c1), z_(3, c1), z_(5, c1), z_(7, c1) = a2 blamka g z_(1, c1) z_(3, c1) z_(5, c1) z_(7, c1)
-        z_(0, c),  z_(2, c1), z_(5, c),  z_(7, c1) = a2 blamka g z_(0, c)  z_(2, c1) z_(5, c)  z_(7, c1)
-        z_(0, c1), z_(3, c),  z_(5, c1), z_(6, c)  = a2 blamka g z_(0, c1) z_(3, c)  z_(5, c1) z_(6, c)
-        z_(1, c),  z_(3, c1), z_(4, c),  z_(6, c1) = a2 blamka g z_(1, c)  z_(3, c1) z_(4, c)  z_(6, c1)
-        z_(1, c1), z_(2, c),  z_(4, c1), z_(7, c)  = a2 blamka g z_(1, c1) z_(2, c)  z_(4, c1) z_(7, c)
+        z0c,  z2c,  z4c,  z6c  = a2 blamka g z_(0, c)  z_(2, c)  z_(4, c)  z_(6, c)
+        z0c1, z2c1, z4c1, z6c1 = a2 blamka g z_(0, c1) z_(2, c1) z_(4, c1) z_(6, c1)
+        z1c,  z3c,  z5c,  z7c  = a2 blamka g z_(1, c)  z_(3, c)  z_(5, c)  z_(7, c)
+        z1c1, z3c1, z5c1, z7c1 = a2 blamka g z_(1, c1) z_(3, c1) z_(5, c1) z_(7, c1)
+        z_(0, c),  z_(2, c1), z_(5, c),  z_(7, c1) = a2 blamka g z0c  z2c1 z5c  z7c1
+        z_(0, c1), z_(3, c),  z_(5, c1), z_(6, c)  = a2 blamka g z0c1 z3c  z5c1 z6c
+        z_(1, c),  z_(3, c1), z_(4, c),  z_(6, c1) = a2 blamka g z1c  z3c1 z4c  z6c1
+        z_(1, c1), z_(2, c),  z_(4, c1), z_(7, c)  = a2 blamka g z1c1 z2c  z4c1 z7c
         z
 
 fn :: a2 blamka cols loop Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]
@@ -346,7 +475,7 @@ fn :: a2 blamka cols loop Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]
         | otherwise = a2 blamka cols loop (a2 blamka col pair z j) (j + 1)
 
 fn :: a2 bitxor blk8 Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 * 8 * 16]
-      a2 bitxor blk8 a b =  a_ij xor b_ij
+      a2 bitxor blk8 a b = a_ij xor b_ij
 
 fn :: a2 compress blk8 Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 * 8 * 16]
       a2 compress blk8 x y =
@@ -357,7 +486,7 @@ fn :: a2 compress blk8 Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 *
         z2_ij xor r_ij
 
 fn :: a2 get blk8 Tensor[U64 * 8 * 16] Int => U64
-      a2 get blk8 blk idx =
+      a2 get blk8 blk                  idx =
         blk_((idx / 16) % 8, idx % 16)
 
 fn :: a2 bytes to blk8 row Tensor[U64 * 8 * 16] Int [Int] Int => Tensor[U64 * 8 * 16]
@@ -391,7 +520,7 @@ fn :: a2 blk8 to bytes loop Tensor[U64 * 8 * 16] Int => [Int]
         | otherwise = (a2 blk8 row to bytes b r 0) :: (a2 blk8 to bytes loop b (r + 1))
 
 fn :: a2 blk8 to bytes Tensor[U64 * 8 * 16] => [Int]
-      a2 blk8 to bytes b =
+      a2 blk8 to bytes b                    =
         a2 blk8 to bytes loop b 0
 
 fn :: a2 zero mem => A2Mem

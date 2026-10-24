@@ -305,39 +305,39 @@ fn :: a2 blake2b long [Int] Int    => [Int]
 
 fn :: a2 blamka g U64 U64 U64 U64 => U64 U64 U64 U64
       a2 blamka g a b c d =
-        mut a = a2 f blamka a b
+        mut a = a + b + 2 * ((a and 0xFFFFFFFF) * (b and 0xFFFFFFFF))
         mut d = (d xor a) rotr 32
-        mut c = a2 f blamka c d
+        mut c = c + d + 2 * ((c and 0xFFFFFFFF) * (d and 0xFFFFFFFF))
         mut b = (b xor c) rotr 24
-        a = a2 f blamka a b
+        a = a + b + 2 * ((a and 0xFFFFFFFF) * (b and 0xFFFFFFFF))
         d = (d xor a) rotr 16
-        c = a2 f blamka c d
+        c = c + d + 2 * ((c and 0xFFFFFFFF) * (d and 0xFFFFFFFF))
         b = (b xor c) rotr 63
         (a, b, c, d)
 
 fn :: a2 blamka p16 Tensor[U64 * 16] => ()
       a2 blamka p16 v                =
-        v_(0), v_(4), v_(8),  v_(12) = a2 blamka g v_(0) v_(4) v_(8)  v_(12)
-        v_(1), v_(5), v_(9),  v_(13) = a2 blamka g v_(1) v_(5) v_(9)  v_(13)
-        v_(2), v_(6), v_(10), v_(14) = a2 blamka g v_(2) v_(6) v_(10) v_(14)
-        v_(3), v_(7), v_(11), v_(15) = a2 blamka g v_(3) v_(7) v_(11) v_(15)
-        v_(0), v_(5), v_(10), v_(15) = a2 blamka g v_(0) v_(5) v_(10) v_(15)
-        v_(1), v_(6), v_(11), v_(12) = a2 blamka g v_(1) v_(6) v_(11) v_(12)
-        v_(2), v_(7), v_(8),  v_(13) = a2 blamka g v_(2) v_(7) v_(8)  v_(13)
-        v_(3), v_(4), v_(9),  v_(14) = a2 blamka g v_(3) v_(4) v_(9)  v_(14)
+        v0, v4, v8,  v12 = a2 blamka g v_(0) v_(4) v_(8)  v_(12)
+        v1, v5, v9,  v13 = a2 blamka g v_(1) v_(5) v_(9)  v_(13)
+        v2, v6, v10, v14 = a2 blamka g v_(2) v_(6) v_(10) v_(14)
+        v3, v7, v11, v15 = a2 blamka g v_(3) v_(7) v_(11) v_(15)
+        v_(0), v_(5), v_(10), v_(15) = a2 blamka g v0 v5 v10 v15
+        v_(1), v_(6), v_(11), v_(12) = a2 blamka g v1 v6 v11 v12
+        v_(2), v_(7), v_(8),  v_(13) = a2 blamka g v2 v7 v8  v13
+        v_(3), v_(4), v_(9),  v_(14) = a2 blamka g v3 v4 v9  v14
 
 fn :: a2 blamka col pair Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]
       a2 blamka col pair z j =
         c  = 2 * j
         c1 = c + 1
-        z_(0, c),  z_(2, c),  z_(4, c),  z_(6, c)  = a2 blamka g z_(0, c)  z_(2, c)  z_(4, c)  z_(6, c)
-        z_(0, c1), z_(2, c1), z_(4, c1), z_(6, c1) = a2 blamka g z_(0, c1) z_(2, c1) z_(4, c1) z_(6, c1)
-        z_(1, c),  z_(3, c),  z_(5, c),  z_(7, c)  = a2 blamka g z_(1, c)  z_(3, c)  z_(5, c)  z_(7, c)
-        z_(1, c1), z_(3, c1), z_(5, c1), z_(7, c1) = a2 blamka g z_(1, c1) z_(3, c1) z_(5, c1) z_(7, c1)
-        z_(0, c),  z_(2, c1), z_(5, c),  z_(7, c1) = a2 blamka g z_(0, c)  z_(2, c1) z_(5, c)  z_(7, c1)
-        z_(0, c1), z_(3, c),  z_(5, c1), z_(6, c)  = a2 blamka g z_(0, c1) z_(3, c)  z_(5, c1) z_(6, c)
-        z_(1, c),  z_(3, c1), z_(4, c),  z_(6, c1) = a2 blamka g z_(1, c)  z_(3, c1) z_(4, c)  z_(6, c1)
-        z_(1, c1), z_(2, c),  z_(4, c1), z_(7, c)  = a2 blamka g z_(1, c1) z_(2, c)  z_(4, c1) z_(7, c)
+        z0c,  z2c,  z4c,  z6c  = a2 blamka g z_(0, c)  z_(2, c)  z_(4, c)  z_(6, c)
+        z0c1, z2c1, z4c1, z6c1 = a2 blamka g z_(0, c1) z_(2, c1) z_(4, c1) z_(6, c1)
+        z1c,  z3c,  z5c,  z7c  = a2 blamka g z_(1, c)  z_(3, c)  z_(5, c)  z_(7, c)
+        z1c1, z3c1, z5c1, z7c1 = a2 blamka g z_(1, c1) z_(3, c1) z_(5, c1) z_(7, c1)
+        z_(0, c),  z_(2, c1), z_(5, c),  z_(7, c1) = a2 blamka g z0c  z2c1 z5c  z7c1
+        z_(0, c1), z_(3, c),  z_(5, c1), z_(6, c)  = a2 blamka g z0c1 z3c  z5c1 z6c
+        z_(1, c),  z_(3, c1), z_(4, c),  z_(6, c1) = a2 blamka g z1c  z3c1 z4c  z6c1
+        z_(1, c1), z_(2, c),  z_(4, c1), z_(7, c)  = a2 blamka g z1c1 z2c  z4c1 z7c
         z
 
 fn :: a2 blamka cols loop Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]

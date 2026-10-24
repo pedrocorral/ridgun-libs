@@ -37,7 +37,7 @@
 | FR-CODEC-001 | TS-CODEC-001 | src/main/ridgun/lib/codec.rg | src/test/ridgun/test codec.rg | ok |
 | FR-CRYPTO-001 | TS-CRYPTO-001 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test argon2id.rg | ok |
 | FR-CRYPTO-002 | TS-CRYPTO-002 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test argon2id.rg | ok |
-| FR-CRYPTO-003 | TS-CRYPTO-003 | src/main/ridgun/lib/crypto.rg | src/test/ridgun/test crypto.rg | ok |
+| FR-CRYPTO-003 | TS-CRYPTO-003, TS-PERF-001 | src/main/ridgun/lib/crypto.rg | src/test/ridgun/test crypto.rg, src/test/ridgun/test io.rg | ok |
 | FR-CRYPTO-004 | TS-CRYPTO-004 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test crypto.rg | ok |
 | FR-CSV-001 | TS-CSV-001 | src/main/ridgun/lib/csv.rg | src/test/ridgun/test csv.rg | ok |
 | FR-DIFF-001 | TS-DIFF-001 | src/main/ridgun/lib/diff.rg | src/test/ridgun/test diff.rg | ok |

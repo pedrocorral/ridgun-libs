@@ -42,26 +42,26 @@ auth: none
   - `reactor sweep [ConnSlot] => [ConnSlot]`
   - `reactor shutdown [ConnSlot] => ()`
 - Lifecycle & Messaging Operations:
-  - `is agent alive Agent a b => Bool`
-  - `agent status Agent a b => AgentStatus`
-  - `stop agent Agent a b => AgentStatus`
-  - `ask int Agent Int Int Int => AgentReply`
-  - `ask str Agent String String String => AgentReply`
-  - `try poll int Agent a Int => AgentReply`
-  - `try poll str Agent a String => AgentReply`
-  - `ask int with timeout Agent Int Int Int Int => AgentReply`
-  - `ask str with timeout Agent String String String Int => AgentReply`
-  - `ask batch int Agent Int Int [Int] => [Int]`
-  - `ask batch str Agent String String [String] => [String]`
-  - `relay int Agent Int Int Agent Int Int Int => AgentReply`
-  - `relay str Agent String String Agent String String String => AgentReply`
+  - `is agent alive (Agent A B) => Bool`
+  - `agent status (Agent A B) => AgentStatus`
+  - `stop agent (Agent A B) => AgentStatus`
+  - `ask int (Agent Int Int) Int => AgentReply`
+  - `ask str (Agent String String) String => AgentReply`
+  - `try poll int (Agent A Int) => AgentReply`
+  - `try poll str (Agent A String) => AgentReply`
+  - `ask int with timeout (Agent Int Int) Int Int => AgentReply`
+  - `ask str with timeout (Agent String String) String Int => AgentReply`
+  - `ask batch int (Agent Int Int) [Int] => [Int]`
+  - `ask batch str (Agent String String) [String] => [String]`
+  - `relay int (Agent Int Int) (Agent Int Int) Int => AgentReply`
+  - `relay str (Agent String String) (Agent String String) String => AgentReply`
 - Reusable Stateful Agents:
   - `new counter agent Int => Agent Int Int`
-  - `counter add Agent Int Int Int => Int`, `counter get Agent Int Int => Int`, `counter reset Agent Int Int => Int`
+  - `counter add (Agent Int Int) Int => Int`, `counter get (Agent Int Int) => Int`, `counter reset (Agent Int Int) => Int`
   - `new log agent String => Agent String String`
-  - `log append Agent String String String => String`, `log read Agent String String => String`, `log clear Agent String String => String`
+  - `log append (Agent String String) String => String`, `log read (Agent String String) => String`, `log clear (Agent String String) => String`
   - `new kv agent => Agent KvCmd String`
-  - `kv put Agent KvCmd String String String => String`, `kv get Agent KvCmd String String => String`, `kv delete Agent KvCmd String String => String`, `kv has Agent KvCmd String String => Bool`, `kv count Agent KvCmd String => Int`, `kv keys Agent KvCmd String => String`, `kv clear Agent KvCmd String => String`
+  - `agent kv put (Agent KvCmd String) String String => String`, `agent kv get (Agent KvCmd String) String => String`, `agent kv delete (Agent KvCmd String) String => String`, `agent kv has (Agent KvCmd String) String => Bool`, `agent kv count (Agent KvCmd String) => Int`, `agent kv keys (Agent KvCmd String) => String`, `agent kv clear (Agent KvCmd String) => String`
 
 ## Responses
 | Code | When | Body |
@@ -73,5 +73,5 @@ auth: none
 | `ReplyError msg` | Agent operation failed | `ReplyError msg` (`"agent error: {msg}"`) |
 
 ## Rules
-- All public functions use natural space-separated Ridgun names (`new counter agent`, `ask int with timeout`, etc.).
+- All public functions use natural space-separated Ridgun names (`new counter agent`, `ask int with timeout`, `agent kv get`, etc.) and avoid colliding with `list.rg` (`RG-066`).
 - Calling `ask *` or `relay *` checks `agent alive` before sending so stopped agents never block the caller.

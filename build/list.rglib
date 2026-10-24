@@ -51,16 +51,16 @@
 -- SUMMARY: list_str_sort:LazyStealableTask
 -- SUMMARY: l_kv_key:InlineSequential
 -- SUMMARY: l_kv_val:InlineSequential
--- SUMMARY: kv_empty:InlineSequential
--- SUMMARY: kv_len:LazyStealableTask
--- SUMMARY: kv_has:LazyStealableTask
--- SUMMARY: kv_get_or:LazyStealableTask
--- SUMMARY: kv_get:LazyStealableTask
--- SUMMARY: kv_put:LazyStealableTask
--- SUMMARY: kv_remove:LazyStealableTask
--- SUMMARY: kv_keys:LazyStealableTask
--- SUMMARY: kv_values:LazyStealableTask
--- SUMMARY: kv_merge:LazyStealableTask
+-- SUMMARY: list_kv_empty:InlineSequential
+-- SUMMARY: list_kv_len:LazyStealableTask
+-- SUMMARY: list_kv_has:LazyStealableTask
+-- SUMMARY: list_kv_get_or:LazyStealableTask
+-- SUMMARY: list_kv_get:LazyStealableTask
+-- SUMMARY: list_kv_put:LazyStealableTask
+-- SUMMARY: list_kv_remove:LazyStealableTask
+-- SUMMARY: list_kv_keys:LazyStealableTask
+-- SUMMARY: list_kv_values:LazyStealableTask
+-- SUMMARY: list_kv_merge:LazyStealableTask
 -- ============================================================
 -- src/main/ridgun/lib/list.rg
 -- Pure-Ridgun List Operations, O(N log N) Mergesort & Key-Value Map Library (LIST)
@@ -385,7 +385,7 @@ fn :: l sort strs len [String] Int => [String]
 fn :: list str sort [String] => [String]
       list str sort xs       =  l sort strs len xs (list str len xs)
 
--- ── Associative Key-Value Map (`[(String, String)]`) ─────────
+-- ── Associative Key-Value Map (`[String String]`, `RG-066`) ─────────
 
 fn :: l kv key (String String) => String
       l kv key (k, _)          =  k
@@ -395,67 +395,67 @@ fn :: l kv val (String String) => String
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv empty => [String String]
-      kv empty =  []
+fn :: list kv empty => [String String]
+      list kv empty =  []
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv len [String String] => Int
-      kv len []              =  0
-      kv len (_:rest)        =  1 + (kv len rest)
+fn :: list kv len [String String] => Int
+      list kv len []              =  0
+      list kv len (_:rest)        =  1 + (list kv len rest)
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv has [String String] String => Bool
-      kv has []              _      =  False
-      kv has (pair:rest)     key    =
+fn :: list kv has [String String] String => Bool
+      list kv has []              _      =  False
+      list kv has (pair:rest)     key    =
         | (l kv key pair) == key = True
-        | otherwise              = kv has rest key
+        | otherwise              = list kv has rest key
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv get or [String String] String String => String
-      kv get or [] _ fallback = fallback
-      kv get or (pair:rest) key fallback =
+fn :: list kv get or [String String] String String => String
+      list kv get or [] _ fallback = fallback
+      list kv get or (pair:rest) key fallback =
         | (l kv key pair) == key = l kv val pair
-        | otherwise              = kv get or rest key fallback
+        | otherwise              = list kv get or rest key fallback
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv get [String String] String => String
-      kv get pairs           key    =  kv get or pairs key ""
+fn :: list kv get [String String] String => String
+      list kv get pairs           key    =  list kv get or pairs key ""
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv put [String String] String String => [String String]
-      kv put []              key    val    =  [(key, val)]
-      kv put (pair:rest)     key    val    =
+fn :: list kv put [String String] String String => [String String]
+      list kv put []              key    val    =  [(key, val)]
+      list kv put (pair:rest)     key    val    =
         | (l kv key pair) == key = [(key, val)] :: rest
-        | otherwise              = [pair] :: (kv put rest key val)
+        | otherwise              = [pair] :: (list kv put rest key val)
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv remove [String String] String => [String String]
-      kv remove []              _      =  []
-      kv remove (pair:rest)     key    =
-        | (l kv key pair) == key = kv remove rest key
-        | otherwise              = [pair] :: (kv remove rest key)
+fn :: list kv remove [String String] String => [String String]
+      list kv remove []              _      =  []
+      list kv remove (pair:rest)     key    =
+        | (l kv key pair) == key = list kv remove rest key
+        | otherwise              = [pair] :: (list kv remove rest key)
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv keys [String String] => [String]
-      kv keys []              =  []
-      kv keys (pair:rest)     =  [(l kv key pair)] :: (kv keys rest)
+fn :: list kv keys [String String] => [String]
+      list kv keys []              =  []
+      list kv keys (pair:rest)     =  [(l kv key pair)] :: (list kv keys rest)
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv values [String String] => [String]
-      kv values []              =  []
-      kv values (pair:rest)     =  [(l kv val pair)] :: (kv values rest)
+fn :: list kv values [String String] => [String]
+      list kv values []              =  []
+      list kv values (pair:rest)     =  [(l kv val pair)] :: (list kv values rest)
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
-fn :: kv merge [String String] [String String] => [String String]
-      kv merge base            []              =  base
-      kv merge base            (pair:rest)     =
-        kv merge (kv put base (l kv key pair) (l kv val pair)) rest
+fn :: list kv merge [String String] [String String] => [String String]
+      list kv merge base            []              =  base
+      list kv merge base            (pair:rest)     =
+        list kv merge (list kv put base (l kv key pair) (l kv val pair)) rest

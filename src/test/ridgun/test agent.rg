@@ -1,11 +1,13 @@
 -- ============================================================
 -- src/test/ridgun/test agent.rg
 -- Automated unit tests for the Native Agent Concurrency Library (AGENT)
+-- Covers RG-066 (importing `agent` and `list` together without name collisions)
 -- @tests TS-AGENT-001
 -- ============================================================
 
 import test
 import agent
+import list
 import pool
 import net_agent
 
@@ -147,30 +149,35 @@ fn :: test log and kv agents => ()
 
         kv  = new kv agent
         _   = assert ok (is agent alive kv)
-        _   = assert int equals (kv count kv) 0 "kv count 0"
-        _   = assert false (kv has kv "host") "kv has host false"
-        _   = assert str eq (kv put kv "host" "127.0.0.1") "127.0.0.1" "kv put host"
-        _   = assert str eq (kv put kv "port" "8080") "8080" "kv put port"
-        _   = assert int equals (kv count kv) 2 "kv count 2"
-        _   = assert ok (kv has kv "host")
-        _   = assert ok (kv has kv "port")
-        _   = assert str eq (kv get kv "host") "127.0.0.1" "kv get host"
-        _   = assert str eq (kv get kv "port") "8080" "kv get port"
-        _   = assert str eq (kv keys kv) "host,port" "kv keys"
-        _   = assert str eq (kv put kv "port" "9090") "9090" "kv overwrite port"
-        _   = assert str eq (kv get kv "port") "9090" "kv get updated port"
-        _   = assert int equals (kv count kv) 2 "kv count after overwrite"
-        _   = assert str eq (kv delete kv "host") "127.0.0.1" "kv delete host"
-        _   = assert false (kv has kv "host") "kv has host after delete"
-        _   = assert int equals (kv count kv) 1 "kv count 1"
-        _   = assert str eq (kv clear kv) "" "kv clear"
-        _   = assert int equals (kv count kv) 0 "kv count after clear"
+        _   = assert int equals (agent kv count kv) 0 "agent kv count 0"
+        _   = assert false (agent kv has kv "host") "agent kv has host false"
+        _   = assert str eq (agent kv put kv "host" "127.0.0.1") "127.0.0.1" "agent kv put host"
+        _   = assert str eq (agent kv put kv "port" "8080") "8080" "agent kv put port"
+        _   = assert int equals (agent kv count kv) 2 "agent kv count 2"
+        _   = assert ok (agent kv has kv "host")
+        _   = assert ok (agent kv has kv "port")
+        _   = assert str eq (agent kv get kv "host") "127.0.0.1" "agent kv get host"
+        _   = assert str eq (agent kv get kv "port") "8080" "agent kv get port"
+        _   = assert str eq (agent kv keys kv) "host,port" "agent kv keys"
+        _   = assert str eq (agent kv put kv "port" "9090") "9090" "agent kv overwrite port"
+        _   = assert str eq (agent kv get kv "port") "9090" "agent kv get updated port"
+        _   = assert int equals (agent kv count kv) 2 "agent kv count after overwrite"
+        _   = assert str eq (agent kv delete kv "host") "127.0.0.1" "agent kv delete host"
+        _   = assert false (agent kv has kv "host") "agent kv has host after delete"
+        _   = assert int equals (agent kv count kv) 1 "agent kv count 1"
+        _   = assert str eq (agent kv clear kv) "" "agent kv clear"
+        _   = assert int equals (agent kv count kv) 0 "agent kv count after clear"
         _   = stop agent kv
-        assert false (is agent alive kv) "kv stopped"
+        _   = assert false (is agent alive kv) "kv stopped"
+
+        -- RG-066: verify `list kv *` works in the same file that imports `agent`
+        lm  = list kv put (list kv empty) "k" "v"
+        _   = assert str eq (list kv get lm "k") "v" "RG-066: list kv get in test agent.rg"
+        ()
 
 fn :: main => ()
       main =
         _ = test spec combinators pool and net agent
         _ = test agent lifecycle and counter
         _ = test log and kv agents
-        echo "=== All agent tests passed ==="
+        echo "=== All agent tests (including RG-066) passed ==="

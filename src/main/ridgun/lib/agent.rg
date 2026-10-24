@@ -347,7 +347,7 @@ fn :: log read (Agent String String) => String
 fn :: log clear (Agent String String) => String
       log clear ag                    =  log append ag "__CLEAR__"
 
--- ── Stateful In-Memory Key-Value Agent (`new kv agent`, `kv put`, `kv get`, `kv delete`, `kv has`, `kv count`, `kv keys`, `kv clear`) ──
+-- ── Stateful In-Memory Key-Value Agent (`new kv agent`, `agent kv put`, `agent kv get`, `agent kv delete`, `agent kv has`, `agent kv count`, `agent kv keys`, `agent kv clear`) ──
 
 fn :: ag kv lookup [KvEntry] String => String
       ag kv lookup []        _      =  ""
@@ -432,23 +432,23 @@ fn :: ag kv call (Agent KvCmd String) KvCmd => String
 
 -- @implements FR-AGENT-001
 -- @implements API-AGENT-001
-fn :: kv put (Agent KvCmd String) String String => String
-      kv put ag                   key    val    =  ag kv call ag (KvPut key val)
+fn :: agent kv put (Agent KvCmd String) String String => String
+      agent kv put ag                   key    val    =  ag kv call ag (KvPut key val)
 
 -- @implements FR-AGENT-001
 -- @implements API-AGENT-001
-fn :: kv get (Agent KvCmd String) String => String
-      kv get ag                   key    =  ag kv call ag (KvGet key)
+fn :: agent kv get (Agent KvCmd String) String => String
+      agent kv get ag                   key    =  ag kv call ag (KvGet key)
 
 -- @implements FR-AGENT-001
 -- @implements API-AGENT-001
-fn :: kv delete (Agent KvCmd String) String => String
-      kv delete ag                   key    =  ag kv call ag (KvDel key)
+fn :: agent kv delete (Agent KvCmd String) String => String
+      agent kv delete ag                   key    =  ag kv call ag (KvDel key)
 
 -- @implements FR-AGENT-001
 -- @implements API-AGENT-001
-fn :: kv has (Agent KvCmd String) String => Bool
-      kv has ag                   key    =  (ag kv call ag (KvHas key)) == "1"
+fn :: agent kv has (Agent KvCmd String) String => Bool
+      agent kv has ag                   key    =  (ag kv call ag (KvHas key)) == "1"
 
 fn :: ag parse int String => Int
       ag parse int s      =
@@ -457,15 +457,15 @@ fn :: ag parse int String => Int
 
 -- @implements FR-AGENT-001
 -- @implements API-AGENT-001
-fn :: kv count (Agent KvCmd String) => Int
-      kv count ag                   =  ag parse int (ag kv call ag KvCount)
+fn :: agent kv count (Agent KvCmd String) => Int
+      agent kv count ag                   =  ag parse int (ag kv call ag KvCount)
 
 -- @implements FR-AGENT-001
 -- @implements API-AGENT-001
-fn :: kv keys (Agent KvCmd String) => String
-      kv keys ag                   =  ag kv call ag KvKeys
+fn :: agent kv keys (Agent KvCmd String) => String
+      agent kv keys ag                   =  ag kv call ag KvKeys
 
 -- @implements FR-AGENT-001
 -- @implements API-AGENT-001
-fn :: kv clear (Agent KvCmd String) => String
-      kv clear ag                   =  ag kv call ag KvClear
+fn :: agent kv clear (Agent KvCmd String) => String
+      agent kv clear ag                   =  ag kv call ag KvClear

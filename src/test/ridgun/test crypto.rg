@@ -142,6 +142,22 @@ fn :: test argon2id five arg and perf => ()
         _           = assert true phc_ok "Solstice RGF-015 phc prefix"
         _           = assert true argon_exact "Solstice RGF-015 exact OpenSSL 3.5 / libsodium PHC"
         _           = assert str eq pb4k "b87f4b27148d3b05ad7985e3df997f0d9afa6e768e6384555bab71ba10f0c1a5" "Solstice RGF-015 PBKDF2 4096"
+
+        -- RG-043: PBKDF2-HMAC-SHA256 600,000 iterations must match Python hashlib and run in < 3500 ms on one core (down from 32,600 ms)
+        t_pbk0      = sys monotonic ms
+        pb600k      = bytes to hex str (pbkdf2 hmac sha256 "correct horse battery staple" "0123456789abcdef" 600000 32)
+        dt_pbk      = (sys monotonic ms) - t_pbk0
+        _           = echo ("  [BENCH] PBKDF2 600,000 iterations: " + (int to str dt_pbk) + " ms")
+        _           = assert str eq pb600k "6c4a646aad10d067add5fb79d9078a16da83d50f81670a8e7593b249e6d94936" "RG-043: PBKDF2 600,000 iterations matches Python hashlib"
+        _           = assert true (dt_pbk < 3500) ("RG-043: PBKDF2 600,000 iterations must complete in < 3500 ms (took " + (int to str dt_pbk) + " ms)")
+
+        -- RG-060: Argon2id OWASP m=19456 KiB, t=2, p=1 must match OpenSSL 3.5.7 and run in < 14500 ms on one core
+        t_a20       = sys monotonic ms
+        phc_19m     = argon2id hash "correct horse battery staple" "0123456789abcdef" 19456 2 1
+        dt_a2       = (sys monotonic ms) - t_a20
+        _           = echo ("  [BENCH] Argon2id m=19456, t=2, p=1: " + (int to str dt_a2) + " ms")
+        _           = assert str eq phc_19m "$argon2id$v=19$m=19456,t=2,p=1$MDEyMzQ1Njc4OWFiY2RlZg$gy5SuVm5Z7Vw7keB9se9p87QGcomaseB/S2U1OhTsM0" "RG-060: Argon2id m=19456,t=2,p=1 matches OpenSSL 3.5.7"
+        _           = assert true (dt_a2 < 14500) ("RG-060: Argon2id m=19456, t=2, p=1 must complete in < 14500 ms (took " + (int to str dt_a2) + " ms)")
         ()
 
 -- @tests TS-CRYPTO-004

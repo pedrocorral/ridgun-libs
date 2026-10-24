@@ -5,3 +5,4 @@ Accepted ADRs are settled: do not re-open a decision ("should we switch to Mongo
 |---|---|---|
 | `ADR-0001-adopt-aix-and-choose-stack.md` | Adopt AIX; choose pure-Ridgun `stable` single-root library stack | accepted |
 | `ADR-0002-adopt-solstice-and-posix-io-specs.md` | Adopt Solstice runtime requirements and POSIX/IO library specifications across `ridgun-libs` | accepted |
+| `ADR-0003-solstice-2026-10-24-kdf-speed-kv-names-and-json-hardening.md` | Adopt Solstice 2026-10-24 KDF speed bounds, library-prefixed KV names, and RFC 8259 JSON hardening | accepted |
