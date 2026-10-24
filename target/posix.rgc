@@ -122,8 +122,8 @@ type ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int
 fn :: poll in => Int
       poll in =  1
 
-fn :: poll_out => Int
-      poll_out =  4
+fn :: poll out => Int
+      poll out =  4
 
 fn :: poll err => Int
       poll err =  8
