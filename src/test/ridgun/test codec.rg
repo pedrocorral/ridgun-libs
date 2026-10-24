@@ -11,10 +11,20 @@ import codec
 fn :: rnd snd (Int String) => String
       rnd snd (_, s)       =  s
 
+fn :: check all bytes Int => ()
+      check all bytes b =
+        | b >= 256  = ()
+        | otherwise =
+          s = cd raw byte ub b
+          _ = assert int equals (str len s) 1 ("len for byte " + (int to str b))
+          _ = assert int equals (str char at s 0) b ("val for byte " + (int to str b))
+          check all bytes (b + 1)
+
 fn :: check binary roundtrip loop Int => ()
       check binary roundtrip loop rem =
         | rem <= 0  = ()
         | otherwise =
+          _ = check all bytes 0
           b = rnd snd (sys random bytes 32)
           _ = assert int equals (str len b) 32 "random 32 byte length"
           _ = assert str eq (base64 decode (base64 encode b)) b "base64 binary roundtrip"
@@ -88,17 +98,17 @@ fn :: test rfc8259 lightweight json => ()
         _   = assert str eq (json unescape esc) "line1\n\"quoted\"\\tab\t" "json_unescape"
         doc = json object [("service", json quote "solstice"), ("port", json int 8443), ("tls", json bool True), ("extra", json null)]
         _   = assert str eq doc "{\"service\":\"solstice\",\"port\":8443,\"tls\":true,\"extra\":null}" "json_object"
-        _   = assert str eq (json get str doc "service") "solstice" "json_get_str"
-        _   = assert str eq (json get str doc "missing") "" "json_get_str missing"
-        _   = assert int equals (json get int doc "port" 80) 8443 "json_get_int"
-        _   = assert int equals (json get int doc "missing" 80) 80 "json_get_int fallback"
-        _   = assert int equals (json get int doc "service" 80) 80 "json_get_int non-int fallback"
-        _   = assert true (json get bool doc "tls" False) "json_get_bool"
-        _   = assert false (json get bool doc "missing" False) "json_get_bool fallback"
+        _   = assert str eq (codec json get str doc "service") "solstice" "codec_json_get_str"
+        _   = assert str eq (codec json get str doc "missing") "" "codec_json_get_str missing"
+        _   = assert int equals (codec json get int doc "port" 80) 8443 "codec_json_get_int"
+        _   = assert int equals (codec json get int doc "missing" 80) 80 "codec_json_get_int fallback"
+        _   = assert int equals (codec json get int doc "service" 80) 80 "codec_json_get_int non-int fallback"
+        _   = assert true (codec json get bool doc "tls" False) "codec_json_get_bool"
+        _   = assert false (codec json get bool doc "missing" False) "codec_json_get_bool fallback"
         arr = json array [json int 1, json int 2, json quote "three"]
         _   = assert str eq arr "[1,2,\"three\"]" "json_array"
         s_o = json str object [("k1", "v1"), ("k2", "v\"2")]
-        _   = assert str eq (json get str s_o "k2") "v\"2" "json_str_object escaped roundtrip"
+        _   = assert str eq (codec json get str s_o "k2") "v\"2" "json_str_object escaped roundtrip"
         ()
 
 fn :: main => ()

@@ -16,10 +16,12 @@ auth: none
   - `poll in => Int` (`1`), `poll out => Int` (`4`), `poll err => Int` (`8`)
   - `sig hup => Int` (`1`), `sig int => Int` (`2`), `sig kill => Int` (`9`), `sig usr1 => Int` (`10`), `sig usr2 => Int` (`12`), `sig pipe => Int` (`13`), `sig term => Int` (`15`), `sig chld => Int` (`17`)
   - `o rdonly => Int` (`0`), `o wronly => Int` (`1`), `o rdwr => Int` (`2`), `o creat => Int` (`64`), `o trunc => Int` (`512`), `o append => Int` (`1024`), `o nonblock => Int` (`2048`), `o cloexec => Int` (`524288`)
-- Descriptor, Poll, Pipe & Signal Functions:
+- Descriptor, Poll, Pipe, Process & Signal Functions:
   - `wait fd Int Int Int => PollStatus` (`wait fd fd events timeout_ms`)
   - `posix open String Int Int => Int`, `posix close Int => Int`, `posix read Int Int => String`, `posix write Int String => Int`
-  - `posix pipe () => (Int, Int, Int)` (`(status, read_fd, write_fd)`)
+  - `posix pipe => Int Int Int` (`(status, read_fd, write_fd)`), `posix pipe cloexec => Int Int Int`, `posix pipe flags Int => Int Int Int`
+  - `posix dup2 Int Int => Int` (`sys call 33`)
+  - `posix fork => Int` (`sys call 57`), `posix execve String [String] [String] => Int` (`sys call 59`), `posix waitpid Int Int => Int Int` (`sys call 61`), `waitpid decode status Int => ProcStatus`, `posix exit Int => Int` (`sys call 60`), `wnohang => Int` (`1`), `wuntraced => Int` (`2`)
   - `posix kill Int Int => Int`
 - Filesystem, Process, Clock, Signal Watch & CSPRNG Functions (`RG-010`, `RGF-014`, `RGF-017`, `RGF-018`):
   - `sys_mkdir String => Int`, `sys_rmdir String => Int`, `sys_rename String String => Int`, `sys_symlink String String => Int`, `sys_readlink String => String`, `sys_unlink String => Int`, `sys_chmod String Int => Int`, `sys_chdir String => Int`, `sys_getcwd () => String`, `sys_getenv String => String`, `sys_getpid () => Int`

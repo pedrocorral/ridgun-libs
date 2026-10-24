@@ -1,99 +1,3 @@
--- RGLIB1
--- SELF_HOSTED_COMPILER: ridgunc v0.9.8
--- FUNCTIONS: 92
--- TYPES: 2
--- SUMMARY: poll_in:InlineSequential
--- SUMMARY: poll_out:InlineSequential
--- SUMMARY: poll_err:InlineSequential
--- SUMMARY: poll_hup:InlineSequential
--- SUMMARY: poll_nval:InlineSequential
--- SUMMARY: sig_hup:InlineSequential
--- SUMMARY: sig_int:InlineSequential
--- SUMMARY: sig_quit:InlineSequential
--- SUMMARY: sig_kill:InlineSequential
--- SUMMARY: sig_usr1:InlineSequential
--- SUMMARY: sig_usr2:InlineSequential
--- SUMMARY: sig_pipe:InlineSequential
--- SUMMARY: sig_alrm:InlineSequential
--- SUMMARY: sig_term:InlineSequential
--- SUMMARY: sig_chld:InlineSequential
--- SUMMARY: o_rdonly:InlineSequential
--- SUMMARY: o_wronly:InlineSequential
--- SUMMARY: o_rdwr:InlineSequential
--- SUMMARY: o_creat:InlineSequential
--- SUMMARY: o_excl:InlineSequential
--- SUMMARY: o_trunc:InlineSequential
--- SUMMARY: o_append:InlineSequential
--- SUMMARY: o_nonblock:InlineSequential
--- SUMMARY: o_cloexec:InlineSequential
--- SUMMARY: is_bad_posix_code:InlineSequential
--- SUMMARY: has_unsafe_posix_char:LazyStealableTask
--- SUMMARY: is_safe_posix_path_len:LazyStealableTask
--- SUMMARY: is_safe_posix_path:LazyStealableTask
--- SUMMARY: lstat_exists:InlineSequential
--- SUMMARY: lstat_kind:InlineSequential
--- SUMMARY: lstat_mode:InlineSequential
--- SUMMARY: lstat_size:InlineSequential
--- SUMMARY: lstat_mtime_sec:InlineSequential
--- SUMMARY: lstat_symlink_target:InlineSequential
--- SUMMARY: px_raw_byte_ub:InlineSequential
--- SUMMARY: px_raw_byte:InlineSequential
--- SUMMARY: px_u64_le:InlineSequential
--- SUMMARY: px_decode_u32_le:InlineSequential
--- SUMMARY: px_decode_u64_le:InlineSequential
--- SUMMARY: px_alloc_page:InlineSequential
--- SUMMARY: px_free_page:InlineSequential
--- SUMMARY: px_alloc_mfd:InlineSequential
--- SUMMARY: px_poke:InlineSequential
--- SUMMARY: px_peek:InlineSequential
--- SUMMARY: px_clock_gettime:InlineSequential
--- SUMMARY: px_pair_fst:InlineSequential
--- SUMMARY: px_pair_snd:InlineSequential
--- SUMMARY: sys_monotonic_ms:InlineSequential
--- SUMMARY: sys_monotonic_ns:InlineSequential
--- SUMMARY: sys_wall_time_ms:InlineSequential
--- SUMMARY: map_poll_rc:InlineSequential
--- SUMMARY: wait_fd:InlineSequential
--- SUMMARY: posix_open:LazyStealableTask
--- SUMMARY: posix_close:InlineSequential
--- SUMMARY: posix_read:InlineSequential
--- SUMMARY: posix_write:InlineSequential
--- SUMMARY: posix_kill:InlineSequential
--- SUMMARY: pack_pipe_fds:InlineSequential
--- SUMMARY: posix_pipe:InlineSequential
--- SUMMARY: posix_mkdir:LazyStealableTask
--- SUMMARY: posix_chmod:LazyStealableTask
--- SUMMARY: posix_chdir:LazyStealableTask
--- SUMMARY: px_syscall1_path:InlineSequential
--- SUMMARY: px_syscall2_path:InlineSequential
--- SUMMARY: sys_rmdir:LazyStealableTask
--- SUMMARY: sys_unlink:LazyStealableTask
--- SUMMARY: sys_rename:LazyStealableTask
--- SUMMARY: sys_symlink:LazyStealableTask
--- SUMMARY: sys_readlink:LazyStealableTask
--- SUMMARY: valid_signal_list:LazyStealableTask
--- SUMMARY: valid_signal_rest:LazyStealableTask
--- SUMMARY: px_bit_shift:LazyStealableTask
--- SUMMARY: px_sig_mask:LazyStealableTask
--- SUMMARY: px_finish_sig_watch:InlineSequential
--- SUMMARY: sys_signal_watch:LazyStealableTask
--- SUMMARY: px_finish_sig_read:InlineSequential
--- SUMMARY: px_wait_sig_after_poll:InlineSequential
--- SUMMARY: sys_signal_wait:InlineSequential
--- SUMMARY: posix_notify_signal:InlineSequential
--- SUMMARY: px_bytes_to_list_loop:LazyStealableTask
--- SUMMARY: px_getrandom_call:InlineSequential
--- SUMMARY: px_getrandom_step:InlineSequential
--- SUMMARY: px_getrandom_loop:InlineSequential
--- SUMMARY: px_finish_getrandom:InlineSequential
--- SUMMARY: px_getrandom_checked:InlineSequential
--- SUMMARY: sys_random_bytes:InlineSequential
--- SUMMARY: px_finish_random_list:LazyStealableTask
--- SUMMARY: sys_random_bytes_list:LazyStealableTask
--- SUMMARY: path_separator:InlineSequential
--- SUMMARY: null_device_for:InlineSequential
--- SUMMARY: null_device:InlineSequential
--- SUMMARY: process_exists:InlineSequential
 -- ============================================================
 -- src/main/ridgun/lib/posix.rg
 -- Pure-Ridgun POSIX Descriptors, Poll, Signals, Clocks & Random Library (POSIX)
@@ -247,25 +151,26 @@ fn :: lstat symlink target (Bool String Int Int Int String String Int String) =>
 fn :: px raw byte ub Int => String
       px raw byte ub ub  =
         | ub >= 1 and ub <= 127 = char from code ub
+        | ub == 0 = str slice (sha256 raw "00679") 0 1
         | otherwise =
-          efd = sys call 290 (256 + ub) 526336 0 0 0 0
-          s   = sys read fd efd 8
-          _   = sys close efd
-          str slice s 0 1
+          idx = (ub - 128) * 5
+          lut = "0056400101002080010000179000010024100109003430040100361007870009100353001870030400471000870020200071002360012501171004140236900275001810016001398004440080400017005250027000314001400024700004006350015700183005940027600207007720028400601003400038000839006850084900617003060113500277000320006900483000580019200151008700008500193000100057000070002880002600326006460038800018009190028900103006000043900073011700038900628007210077300074004740006000041001410019900066003680001900383001730005700558000670024500065002030031900000008250001100128001360034900030003750039600228002380008400618005900031800062001770087900076002570009600034002200001600161"
+          str slice (sha256 raw (str slice lut idx (idx + 5))) 0 1
 
 fn :: px raw byte Int => String
       px raw byte b   =  px raw byte ub (((b % 256) + 256) % 256)
 
 fn :: px u64 le Int => String
       px u64 le val =
-        | val <= 0 =
-          b0 = px raw byte 0
-          b0 + b0 + b0 + b0 + b0 + b0 + b0 + b0
-        | otherwise =
-          efd = sys call 290 val 526336 0 0 0 0
-          s   = sys read fd efd 8
-          _   = sys close efd
-          s
+        b0 = px raw byte (val and 255)
+        b1 = px raw byte ((val shr 8) and 255)
+        b2 = px raw byte ((val shr 16) and 255)
+        b3 = px raw byte ((val shr 24) and 255)
+        b4 = px raw byte ((val shr 32) and 255)
+        b5 = px raw byte ((val shr 40) and 255)
+        b6 = px raw byte ((val shr 48) and 255)
+        b7 = px raw byte ((val shr 56) and 255)
+        ((b0 + b1) + (b2 + b3)) + ((b4 + b5) + (b6 + b7))
 
 fn :: px decode u32 le String Int => Int
       px decode u32 le s off =
@@ -398,7 +303,18 @@ fn :: posix kill Int Int     => Int
         | pid <= 0 or sig_num <= 0 or sig_num > 64 = 0 - 22
         | otherwise                                = sys kill pid sig_num
 
--- ── Kernel-Backed Anonymous Pipe via pipe2 (__NR_pipe2 = 293) ─
+-- ── Kernel-Backed Anonymous Pipe, Descriptor Duplication & Process Control ─
+-- (`posix pipe`, `posix dup2`, `posix fork`, `posix execve`, `posix waitpid`)
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: wnohang => Int
+      wnohang =  1
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: wuntraced => Int
+      wuntraced =  2
 
 fn :: pack pipe fds Int Int Int => Int Int Int
       pack pipe fds rc rfd wfd =
@@ -407,16 +323,121 @@ fn :: pack pipe fds Int Int Int => Int Int Int
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
-fn :: posix pipe => Int Int Int
-      posix pipe =
+fn :: posix pipe flags Int => Int Int Int
+      posix pipe flags flags =
         ptr = px alloc page 4096
         mfd = px alloc mfd
-        rc  = sys call 293 ptr 526336 0 0 0 0
+        rc  = sys call 293 ptr flags 0 0 0 0
         raw = px peek mfd ptr 8
         _   = px free page mfd ptr 4096
         rfd = px decode u32 le raw 0
         wfd = px decode u32 le raw 4
         pack pipe fds rc rfd wfd
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: posix pipe => Int Int Int
+      posix pipe =
+        posix pipe flags 0
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: posix pipe cloexec => Int Int Int
+      posix pipe cloexec =
+        posix pipe flags 526336
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: posix dup2 Int Int => Int
+      posix dup2 oldfd newfd =
+        | oldfd < 0 or newfd < 0 = 0 - 9
+        | otherwise              = sys call 33 oldfd newfd 0 0 0 0
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: posix fork => Int
+      posix fork =
+        sys call 57 0 0 0 0 0 0
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: posix exit Int => Int
+      posix exit code =
+        sys call 60 (code and 255) 0 0 0 0 0
+
+fn :: px pack cstrs loop [String] Int String String => Int String String
+      px pack cstrs loop []       cur_addr ptr_bytes str_bytes =
+        (cur_addr, ptr_bytes + (px u64 le 0), str_bytes)
+      px pack cstrs loop (s:rest) cur_addr ptr_bytes str_bytes =
+        cstr = s + (px raw byte 0)
+        next_addr = cur_addr + (str len cstr)
+        px pack cstrs loop rest next_addr (ptr_bytes + (px u64 le cur_addr)) (str_bytes + cstr)
+
+fn :: px str list len [String] => Int
+      px str list len []       =  0
+      px str list len (_:rest) =  1 + (px str list len rest)
+
+fn :: px str list bytes [String] => Int
+      px str list bytes []       =  0
+      px str list bytes (s:rest) =  (str len s) + 1 + (px str list bytes rest)
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+-- @mitigates VUL-INJ-002
+-- @mitigates VUL-INPUT-001
+fn :: posix execve String [String] [String] => Int
+      posix execve path argv envp =
+        | (str len path) == 0 or (str len path) > 4096 = 0 - 22
+        | otherwise =
+          argc       = px str list len argv
+          envc       = px str list len envp
+          ptrs_bytes = ((argc + 1) + (envc + 1)) * 8
+          strs_bytes = (str len path) + 1 + (px str list bytes argv) + (px str list bytes envp)
+          total_sz   = ptrs_bytes + strs_bytes + 64
+          page_sz    = ((total_sz / 4096) + 2) * 4096
+          base_ptr   = px alloc page page_sz
+          mfd        = px alloc mfd
+          argv_ptrs  = base_ptr
+          envp_ptrs  = base_ptr + ((argc + 1) * 8)
+          path_addr  = envp_ptrs + ((envc + 1) * 8)
+          path_cstr  = path + (px raw byte 0)
+          argv_str0  = path_addr + (str len path_cstr)
+          env_str0, argv_p_blob, argv_s_blob = px pack cstrs loop argv argv_str0 "" ""
+          _,        envp_p_blob, envp_s_blob = px pack cstrs loop envp env_str0 "" ""
+          full_blob  = argv_p_blob + envp_p_blob + path_cstr + argv_s_blob + envp_s_blob
+          _          = px poke mfd base_ptr full_blob
+          rc         = sys call 59 path_addr argv_ptrs envp_ptrs 0 0 0
+          _          = px free page mfd base_ptr page_sz
+          rc
+
+fn :: px finish waitpid Int String => Int Int
+      px finish waitpid rc raw =
+        | rc <= 0   = (rc, 0)
+        | otherwise = (rc, px decode u32 le raw 0)
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+fn :: posix waitpid Int Int => Int Int
+      posix waitpid pid options =
+        ptr = px alloc page 4096
+        mfd = px alloc mfd
+        _   = px poke mfd ptr (px u64 le 0)
+        rc  = sys call 61 pid ptr options 0 0 0
+        raw = px peek mfd ptr 8
+        _   = px free page mfd ptr 4096
+        px finish waitpid rc raw
+
+fn :: waitpid decode sig Int Int => ProcStatus
+      waitpid decode sig wstatus sig =
+        | sig == 0  = ProcExited ((wstatus shr 8) and 255)
+        | otherwise = ProcSignal sig
+
+-- @implements FR-POSIX-001
+-- @implements API-POSIX-001
+-- @implements DM-PosixStatus
+fn :: waitpid decode status Int => ProcStatus
+      waitpid decode status wstatus =
+        waitpid decode sig wstatus (wstatus and 127)
 
 -- ── RG-010 Filesystem & Process Operations ───────────────────
 

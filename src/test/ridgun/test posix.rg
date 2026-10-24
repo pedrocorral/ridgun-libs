@@ -140,8 +140,47 @@ fn :: test posix filesystem clocks signals and random => ()
         _       = assert false (process exists 99999999) "process exists non-existent pid"
         assert false ((pair snd r1) == (pair snd r2)) "two 32-byte random draws differ"
 
+fn :: is proc exited ProcStatus       Int => Bool
+      is proc exited (ProcExited code) exp =  code == exp
+      is proc exited _                 _   =  False
+
+fn :: run child echo Int Int => Int
+      run child echo rfd wfd =
+        _ = posix close rfd
+        _ = posix dup2 wfd 1
+        _ = posix close wfd
+        _ = posix execve "/bin/echo" ["/bin/echo", "-n", "hello; $WORLD `safe`"] ["WORLD=injected"]
+        posix exit 127
+
+fn :: handle fork branch Int Int Int => ()
+      handle fork branch pid rfd wfd =
+        | pid == 0 =
+          _ = run child echo rfd wfd
+          ()
+        | otherwise =
+          _     = assert true (pid > 0) "posix fork returns child pid > 0"
+          _     = posix close wfd
+          w_res = posix waitpid pid 0
+          _     = assert equals (pair fst w_res) pid "posix waitpid returns child pid"
+          st    = waitpid decode status (pair snd w_res)
+          _     = assert true (is proc exited st 0) "waitpid decode status -> ProcExited 0"
+          out   = posix read rfd 128
+          _     = posix close rfd
+          assert equals out "hello; $WORLD `safe`" "posix execve passes literal argv without shell interpretation"
+
+fn :: test posix fork pipe dup2 execve waitpid => ()
+      test posix fork pipe dup2 execve waitpid =
+        _       = assert equals wnohang 1 "WNOHANG == 1"
+        _       = assert equals wuntraced 2 "WUNTRACED == 2"
+        p_res   = posix pipe
+        _       = assert equals (tuple3 status p_res) 0 "posix pipe status == 0"
+        rfd     = tuple3 rfd p_res
+        wfd     = tuple3 wfd p_res
+        handle fork branch (posix fork) rfd wfd
+
 fn :: main => ()
       main =
         _ = test posix constants descriptors and poll
         _ = test posix filesystem clocks signals and random
+        _ = test posix fork pipe dup2 execve waitpid
         echo "[PASS] test_posix: TS-POSIX-001 and TS-POSIX-002 passed"

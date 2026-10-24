@@ -65,26 +65,48 @@ fn :: a2 pad zeroes Int => [Int]
 fn :: a2 raw byte ub Int => String
       a2 raw byte ub ub  =
         | ub >= 1 and ub <= 127 = char from code ub
-        | otherwise             =
-          efd = sys call 290 (256 + ub) 526336 0 0 0 0
-          s   = sys read fd efd 8
-          _   = sys close efd
-          str slice s 0 1
+        | ub == 0 = str slice (sha256 raw "00679") 0 1
+        | otherwise =
+          idx = (ub - 128) * 5
+          lut = "0056400101002080010000179000010024100109003430040100361007870009100353001870030400471000870020200071002360012501171004140236900275001810016001398004440080400017005250027000314001400024700004006350015700183005940027600207007720028400601003400038000839006850084900617003060113500277000320006900483000580019200151008700008500193000100057000070002880002600326006460038800018009190028900103006000043900073011700038900628007210077300074004740006000041001410019900066003680001900383001730005700558000670024500065002030031900000008250001100128001360034900030003750039600228002380008400618005900031800062001770087900076002570009600034002200001600161"
+          str slice (sha256 raw (str slice lut idx (idx + 5))) 0 1
 
 fn :: a2 raw byte Int => String
       a2 raw byte b   =  a2 raw byte ub (((b % 256) + 256) % 256)
 
-fn :: a2 str to bytes loop String Int Int => [Int]
-      a2 str to bytes loop s idx len =
-        | idx >= len = []
-        | otherwise  = [(((str char at s idx) % 256) + 256) % 256] :: (a2 str to bytes loop s (idx + 1) len)
+fn :: a2 lb append2 [Int] [Int] Int => [Int] [Int] [Int] Int
+      a2 lb append2 n1 l2 cnt =
+        | (cnt % 1024) == 0 = ([], [], l2 :: n1, cnt)
+        | otherwise         = ([], n1, l2, cnt)
+
+fn :: a2 lb append1 [Int] [Int] [Int] Int => [Int] [Int] [Int] Int
+      a2 lb append1 n0 l1 l2 cnt =
+        | (cnt % 32) == 0 = a2 lb append2 (l1 :: n0) l2 cnt
+        | otherwise       = (n0, l1, l2, cnt)
+
+fn :: a2 lb append Int [Int] [Int] [Int] Int => [Int] [Int] [Int] Int
+      a2 lb append item l0 l1 l2 cnt =
+        a2 lb append1 (l0 :: [item]) l1 l2 (cnt + 1)
+
+fn :: a2 lb finish [Int] [Int] [Int] => [Int]
+      a2 lb finish l0 l1 l2 =  l2 :: (l1 :: l0)
+
+fn :: a2 str to bytes loop String Int Int [Int] [Int] [Int] Int => [Int]
+      a2 str to bytes loop s idx len l0 l1 l2 cnt =
+        | idx >= len = a2 lb finish l0 l1 l2
+        | otherwise  =
+          n0, n1, n2, ncnt = a2 lb append ((((str char at s idx) % 256) + 256) % 256) l0 l1 l2 cnt
+          a2 str to bytes loop s (idx + 1) len n0 n1 n2 ncnt
 
 fn :: a2 str to bytes String => [Int]
-      a2 str to bytes s      =  a2 str to bytes loop s 0 (str len s)
+      a2 str to bytes s      =  a2 str to bytes loop s 0 (str len s) [] [] [] 0
 
-fn :: a2 bytes to str [Int]    => String
-      a2 bytes to str []       =  ""
-      a2 bytes to str (b:rest) =  (a2 raw byte b) + (a2 bytes to str rest)
+fn :: a2 bytes to str loop [Int] String => String
+      a2 bytes to str loop []       acc = acc
+      a2 bytes to str loop (b:rest) acc = a2 bytes to str loop rest (acc + (a2 raw byte b))
+
+fn :: a2 bytes to str [Int] => String
+      a2 bytes to str bs    =  a2 bytes to str loop bs ""
 
 fn :: hex digits => String
       hex digits =  "0123456789abcdef"
@@ -326,24 +348,21 @@ fn :: a2 blamka p16 Tensor[U64 * 16] => ()
         v_(2), v_(7), v_(8),  v_(13) = a2 blamka g v2 v7 v8  v13
         v_(3), v_(4), v_(9),  v_(14) = a2 blamka g v3 v4 v9  v14
 
-fn :: a2 blamka col pair Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]
-      a2 blamka col pair z j =
-        c  = 2 * j
-        c1 = c + 1
-        z0c,  z2c,  z4c,  z6c  = a2 blamka g z_(0, c)  z_(2, c)  z_(4, c)  z_(6, c)
-        z0c1, z2c1, z4c1, z6c1 = a2 blamka g z_(0, c1) z_(2, c1) z_(4, c1) z_(6, c1)
-        z1c,  z3c,  z5c,  z7c  = a2 blamka g z_(1, c)  z_(3, c)  z_(5, c)  z_(7, c)
-        z1c1, z3c1, z5c1, z7c1 = a2 blamka g z_(1, c1) z_(3, c1) z_(5, c1) z_(7, c1)
-        z_(0, c),  z_(2, c1), z_(5, c),  z_(7, c1) = a2 blamka g z0c  z2c1 z5c  z7c1
-        z_(0, c1), z_(3, c),  z_(5, c1), z_(6, c)  = a2 blamka g z0c1 z3c  z5c1 z6c
-        z_(1, c),  z_(3, c1), z_(4, c),  z_(6, c1) = a2 blamka g z1c  z3c1 z4c  z6c1
-        z_(1, c1), z_(2, c),  z_(4, c1), z_(7, c)  = a2 blamka g z1c1 z2c  z4c1 z7c
-        z
-
 fn :: a2 blamka cols loop Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]
       a2 blamka cols loop z j =
         | j >= 8    = z
-        | otherwise = a2 blamka cols loop (a2 blamka col pair z j) (j + 1)
+        | otherwise =
+          c  = 2 * j
+          c1 = c + 1
+          z0c,  z2c,  z4c,  z6c  = a2 blamka g z_(0, c)  z_(2, c)  z_(4, c)  z_(6, c)
+          z0c1, z2c1, z4c1, z6c1 = a2 blamka g z_(0, c1) z_(2, c1) z_(4, c1) z_(6, c1)
+          z1c,  z3c,  z5c,  z7c  = a2 blamka g z_(1, c)  z_(3, c)  z_(5, c)  z_(7, c)
+          z1c1, z3c1, z5c1, z7c1 = a2 blamka g z_(1, c1) z_(3, c1) z_(5, c1) z_(7, c1)
+          z_(0, c),  z_(2, c1), z_(5, c),  z_(7, c1) = a2 blamka g z0c  z2c1 z5c  z7c1
+          z_(0, c1), z_(3, c),  z_(5, c1), z_(6, c)  = a2 blamka g z0c1 z3c  z5c1 z6c
+          z_(1, c),  z_(3, c1), z_(4, c),  z_(6, c1) = a2 blamka g z1c  z3c1 z4c  z6c1
+          z_(1, c1), z_(2, c),  z_(4, c1), z_(7, c)  = a2 blamka g z1c1 z2c  z4c1 z7c
+          a2 blamka cols loop z (j + 1)
 
 fn :: a2 bitxor blk8 Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 * 8 * 16]
       a2 bitxor blk8 a b = a_ij xor b_ij
