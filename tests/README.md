@@ -14,6 +14,8 @@ python3 tests/run.py                 # import check + every tests/test_*.rg
 python3 tests/run.py test_codec      # one file (the import check is skipped)
 python3 tests/run.py --no-imports    # every file, no import check
 ```
+Every build uses `ridgunc build --strict`, the canonical style the libraries' own builds enforce. A library that isn't strict-clean fails the import check, and every test that imports it doesn't build.
+
 `run.py` works in `~/.cache/ridgun-lib-tests/work`. It copies there only `target/bundles/*.rglib` and `tests/lt.rg`, never the repository. It caps every build and run at 4 GB of address space and a time limit. It ends with a table and exits with 1 if anything failed.
 
 Build the bundles first. The tests see exactly what `target/bundles/` holds.
@@ -63,3 +65,5 @@ Build the bundles first. The tests see exactly what `target/bundles/` holds.
 2. Give each expected value a source: the RFC or FIPS section, the requirement id, or an independent implementation. Never use the library under test.
 3. Say in the label which one it is.
 4. Re-run the generator and check that the file builds: `python3 tests/run.py test_<lib>`.
+   - The generators pass their output through `gen/rg_strict.py`, so declarations use spaces (`fn :: crypto t range …`), as `--strict` requires.
+   - Calls may keep `_`.

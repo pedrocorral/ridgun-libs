@@ -4,6 +4,9 @@ API-STR-001): byte indexes, -1 when not found, 0 for an empty needle, trim strip
 left to right without overlaps and leaves s unchanged for an empty `old`, split keeps empty segments and gives [""]
 for "", case changes touch ASCII letters only. Python applies those rules to the same bytes to give each value."""
 import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from rg_strict import strict
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "test_str.rg")
 
@@ -148,5 +151,5 @@ fn :: main => ()
 {chr(10).join(timing)}
         lt_done "str" [{names}]
 '''
-open(OUT, "w").write(src)
+open(OUT, "w").write(strict(src))
 print(f"wrote {OUT}: {len(checks) + len(TIMED)} checks")

@@ -8,31 +8,31 @@ import posix
 import crypto
 import lt
 
-fn :: str_t_range Int Int [Int] => [Int]
-      str_t_range i n acc =
+fn :: str t range Int Int [Int] => [Int]
+      str t range i n acc =
         | i >= n    = acc
         | otherwise = str_t_range (i + 1) n (acc :: [i])
 
-fn :: str_t_list [String] => String
-      str_t_list []     =  ""
-      str_t_list (x:xs) =  "[" + x + "]" + (str_t_list xs)
+fn :: str t list [String] => String
+      str t list []     =  ""
+      str t list (x:xs) =  "[" + x + "]" + (str_t_list xs)
 
-fn :: str_t_count [String] => String
-      str_t_count xs =  int_to_str (str_t_len xs 0)
+fn :: str t count [String] => String
+      str t count xs =  int_to_str (str_t_len xs 0)
 
-fn :: str_t_len [String] Int => Int
-      str_t_len []     n =  n
-      str_t_len (_:xs) n =  str_t_len xs (n + 1)
+fn :: str t len [String] Int => Int
+      str t len []     n =  n
+      str t len (_:xs) n =  str_t_len xs (n + 1)
 
 -- Built from lines, without str_repeat or str_join, so the setup doesn't depend on what is measured.
-fn :: str_t_lines Int [String] => [String]
-      str_t_lines n acc =
+fn :: str t lines Int [String] => [String]
+      str t lines n acc =
         | n <= 0    = acc
         | otherwise = str_t_lines (n - 1) (acc :: ["Some TEXT with Code, café & a [Link](https://example.org)."])
 
-fn :: str_t_glue [String] String => String
-      str_t_glue []     acc =  acc
-      str_t_glue (x:xs) acc =  str_t_glue xs (acc + x + "\n")
+fn :: str t glue [String] String => String
+      str t glue []     acc =  acc
+      str t glue (x:xs) acc =  str_t_glue xs (acc + x + "\n")
 
 fn :: main => ()
       main =

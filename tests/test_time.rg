@@ -7,18 +7,18 @@ import str
 import time
 import lt
 
-fn :: time_t_fields (Int Int Int Int Int Int) => String
-      time_t_fields (y, mo, d, h, mi, s) =  (int_to_str y) + " " + (int_to_str mo) + " " + (int_to_str d) + " " + (int_to_str h) + " " + (int_to_str mi) + " " + (int_to_str s)
+fn :: time t fields (Int Int Int Int Int Int) => String
+      time t fields (y, mo, d, h, mi, s) =  (int_to_str y) + " " + (int_to_str mo) + " " + (int_to_str d) + " " + (int_to_str h) + " " + (int_to_str mi) + " " + (int_to_str s)
 
 -- 10 000 epochs from `start`, `span` / 10 000 apart, plus an odd number of seconds so times of day vary.
-fn :: time_t_round_trips Int Int Int => Bool
-      time_t_round_trips start span i =
+fn :: time t round trips Int Int Int => Bool
+      time t round trips start span i =
         | i >= 10000 = True
         | not (time_t_one (start + (i * (span / 10000)) + (i * 7919) % 86400)) = False
         | otherwise  = time_t_round_trips start span (i + 1)
 
-fn :: time_t_one Int => Bool
-      time_t_one e =  e == (0 - 1) or ((time_parse_iso8601 (time_format_iso8601 e)) == e)
+fn :: time t one Int => Bool
+      time t one e =  e == (0 - 1) or ((time_parse_iso8601 (time_format_iso8601 e)) == e)
 
 fn :: main => ()
       main =

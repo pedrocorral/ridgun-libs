@@ -3,6 +3,9 @@
 FR-CODEC-001, API-CODEC-001) and from independent references: RFC 4648 §10 vectors, Python's base64/binascii, and
 RFC 3986 §2.3 (unreserved = A-Z a-z 0-9 - . _ ~) applied by Python. Re-run it to re-derive them."""
 import base64, os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from rg_strict import strict
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "test_codec.rg")
 UNRESERVED = set(b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
@@ -146,5 +149,5 @@ fn :: main => ()
 {chr(10).join(timing)}
         lt_done "codec" [{names}, {tnames}]
 '''
-open(OUT, "w").write(src)
+open(OUT, "w").write(strict(src))
 print(f"wrote {OUT}: {len(checks) + len(TIMED)} checks")

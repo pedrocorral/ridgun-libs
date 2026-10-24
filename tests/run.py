@@ -6,7 +6,8 @@ Usage: python3 tests/run.py [test_name ...]      (default: the import check and 
 
 Builds against the published bundles (target/bundles/*.rglib), the way a project that depends on ridgun-libs sees
 them. The work folder is ~/.cache/ridgun-lib-tests/work: only the bundles are copied, never the repository.
-Every build and run is capped at 4 GB of address space and a time limit.
+Every build uses `ridgunc build --strict` (the canonical style the libraries' own builds enforce) and every
+build and run is capped at 4 GB of address space and a time limit.
 """
 import os, re, resource, shutil, subprocess, sys, time
 
@@ -34,13 +35,13 @@ def build(src, name):
     out = os.path.join(WORK, "target", name)
     if os.path.exists(out):
         os.remove(out)
-    code, text = sh([RIDGUNC, "build", src, "-o", out], BUILD_SECONDS)
+    code, text = sh([RIDGUNC, "build", "--strict", src, "-o", out], BUILD_SECONDS)
     # ridgunc can report success without writing the file (Solstice register RG-081): check the file.
     return (code == 0 and os.path.exists(out)), text
 
 
 def first_errors(text, n=6):
-    errs = re.findall(r"type error in function '[^']*': [^,\]]*", text) or [l for l in text.splitlines() if l.strip()][-3:]
+    errs = re.findall(r"type error in function '[^']*': [^,\]]*", text) + re.findall(r"\[ridgunc --strict\][^\n]*", text) or [l for l in text.splitlines() if l.strip()][-3:]
     return "\n       ".join(errs[:n]) + (f"\n       … {len(errs) - n} more" if len(errs) > n else "")
 
 

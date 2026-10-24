@@ -10,51 +10,51 @@ import str
 import crypto
 import lt
 
-fn :: crypto_t_range Int Int [Int] => [Int]
-      crypto_t_range i n acc =
+fn :: crypto t range Int Int [Int] => [Int]
+      crypto t range i n acc =
         | i >= n    = acc
         | otherwise = crypto_t_range (i + 1) n (acc :: [i])
 
 -- (i * 7 + 3) mod 256, the plaintext pattern make_crypto.py uses.
-fn :: crypto_t_pattern Int Int [Int] => [Int]
-      crypto_t_pattern i n acc =
+fn :: crypto t pattern Int Int [Int] => [Int]
+      crypto t pattern i n acc =
         | i >= n    = acc
         | otherwise = crypto_t_pattern (i + 1) n (acc :: [(i * 7 + 3) % 256])
 
-fn :: crypto_t_all_one_byte Int => Bool
-      crypto_t_all_one_byte n =
+fn :: crypto t all one byte Int => Bool
+      crypto t all one byte n =
         | n > 255                       = True
         | (str_len (byte_str n)) != 1   = False
         | otherwise                     = crypto_t_all_one_byte (n + 1)
 
-fn :: crypto_t_same_ints [Int] [Int] => Bool
-      crypto_t_same_ints []     []     =  True
-      crypto_t_same_ints (a:as) (b:bs) =  a == b and (crypto_t_same_ints as bs)
-      crypto_t_same_ints _      _      =  False
+fn :: crypto t same ints [Int] [Int] => Bool
+      crypto t same ints []     []     =  True
+      crypto t same ints (a:as) (b:bs) =  a == b and (crypto_t_same_ints as bs)
+      crypto t same ints _      _      =  False
 
-fn :: crypto_t_take String Int => String
-      crypto_t_take s n =  bytes_from_list (crypto_t_first (bytes_to_list s) n [])
+fn :: crypto t take String Int => String
+      crypto t take s n =  bytes_from_list (crypto_t_first (bytes_to_list s) n [])
 
-fn :: crypto_t_first [Int] Int [Int] => [Int]
-      crypto_t_first []     _ acc =  acc
-      crypto_t_first (b:bs) n acc =
+fn :: crypto t first [Int] Int [Int] => [Int]
+      crypto t first []     _ acc =  acc
+      crypto t first (b:bs) n acc =
         | n <= 0    = acc
         | otherwise = crypto_t_first bs (n - 1) (acc :: [b])
 
-fn :: crypto_t_key => String
-      crypto_t_key =  bytes_from_list (crypto_t_range 128 160 [])
+fn :: crypto t key => String
+      crypto t key =  bytes_from_list (crypto_t_range 128 160 [])
 
-fn :: crypto_t_nonce => String
-      crypto_t_nonce =  bytes_from_list [7, 0, 0, 0, 64, 65, 66, 67, 68, 69, 70, 71]
+fn :: crypto t nonce => String
+      crypto t nonce =  bytes_from_list [7, 0, 0, 0, 64, 65, 66, 67, 68, 69, 70, 71]
 
-fn :: crypto_t_aad => String
-      crypto_t_aad =  bytes_from_list [80, 81, 82, 83, 192, 193, 194, 195, 196, 197, 198, 199]
+fn :: crypto t aad => String
+      crypto t aad =  bytes_from_list [80, 81, 82, 83, 192, 193, 194, 195, 196, 197, 198, 199]
 
-fn :: crypto_t_code (Int, String) => Int
-      crypto_t_code (c, _) =  c
+fn :: crypto t code (Int String) => Int
+      crypto t code (c, _) =  c
 
-fn :: crypto_t_opened (Int, String) => String
-      crypto_t_opened (c, p) =  (int_to_str c) + " " + p
+fn :: crypto t opened (Int String) => String
+      crypto t opened (c, p) =  (int_to_str c) + " " + p
 
 fn :: main => ()
       main =

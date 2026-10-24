@@ -4,6 +4,9 @@
   [RFC 8259] what RFC 8259 requires of any JSON parser or generator; Python's json module (strict) is the reference
              for which texts are valid. Where the contract departs from the RFC (numbers are Int only), the label says so."""
 import json, os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from rg_strict import strict
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "test_json.rg")
 
@@ -176,5 +179,5 @@ fn :: main => ()
         t1 = lt_linear "json_stringify: 20 KB then 200 KB in linear time, 200 KB under 2 s" (m1 - s1) (e1 - m1) 10 2000
         lt_done "json" [{names}]
 '''
-open(OUT, "w").write(src)
+open(OUT, "w").write(strict(src))
 print(f"wrote {OUT}: {len(checks) + 2} checks")

@@ -3,6 +3,9 @@
 FIPS 180-4 / RFC 4231 / RFC 7914 / RFC 8439 published vectors, Python's hashlib/hmac, the `cryptography`
 package (ChaCha20-Poly1305) and OpenSSL 3.5's Argon2id (`openssl kdf ... ARGON2ID`). Re-run it to re-derive them."""
 import base64, hashlib, hmac, os, subprocess
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from rg_strict import strict
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "test_crypto.rg")
@@ -186,5 +189,5 @@ fn :: main => ()
 {body}
         lt_done "crypto" [{names}]
 '''
-open(OUT, "w").write(src)
+open(OUT, "w").write(strict(src))
 print(f"wrote {OUT}: {len(checks)} checks")

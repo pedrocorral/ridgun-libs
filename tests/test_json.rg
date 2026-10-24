@@ -9,59 +9,59 @@ import crypto
 import json
 import lt
 
-fn :: json_t_ok JsonRes => Bool
-      json_t_ok (JsonOk _)  =  True
-      json_t_ok (JsonErr _) =  False
+fn :: json t ok JsonRes => Bool
+      json t ok (JsonOk _)  =  True
+      json t ok (JsonErr _) =  False
 
 -- The value as compact JSON, or "ERR: …" when parsing failed.
-fn :: json_t_compact JsonRes => String
-      json_t_compact (JsonOk v)  =  json_stringify v
-      json_t_compact (JsonErr e) =  "ERR: " + e
+fn :: json t compact JsonRes => String
+      json t compact (JsonOk v)  =  json_stringify v
+      json t compact (JsonErr e) =  "ERR: " + e
 
-fn :: json_t_val String => JsonVal
-      json_t_val s =  json_t_val_of (json_parse s)
+fn :: json t val String => JsonVal
+      json t val s =  json_t_val_of (json_parse s)
 
-fn :: json_t_val_of JsonRes => JsonVal
-      json_t_val_of (JsonOk v)  =  v
-      json_t_val_of (JsonErr _) =  JsonNull
+fn :: json t val of JsonRes => JsonVal
+      json t val of (JsonOk v)  =  v
+      json t val of (JsonErr _) =  JsonNull
 
 -- The string inside a parsed top-level string, or "ERR" (shown as hex 455252).
-fn :: json_t_strval JsonRes => String
-      json_t_strval (JsonOk (JsonStr s)) =  s
-      json_t_strval _                    =  "ERR"
+fn :: json t strval JsonRes => String
+      json t strval (JsonOk (JsonStr s)) =  s
+      json t strval _                    =  "ERR"
 
-fn :: json_t_exact_or_refused String => Bool
-      json_t_exact_or_refused text =  json_t_exact_of text (json_parse text)
+fn :: json t exact or refused String => Bool
+      json t exact or refused text =  json_t_exact_of text (json_parse text)
 
-fn :: json_t_exact_of String JsonRes => Bool
-      json_t_exact_of text (JsonOk v)  =  (json_stringify v) == text
-      json_t_exact_of _    (JsonErr _) =  True
+fn :: json t exact of String JsonRes => Bool
+      json t exact of text (JsonOk v)  =  (json_stringify v) == text
+      json t exact of _    (JsonErr _) =  True
 
-fn :: json_t_no_controls String => Bool
-      json_t_no_controls s =  json_t_no_controls_from s 0
+fn :: json t no controls String => Bool
+      json t no controls s =  json_t_no_controls_from s 0
 
-fn :: json_t_no_controls_from String Int => Bool
-      json_t_no_controls_from s i =
+fn :: json t no controls from String Int => Bool
+      json t no controls from s i =
         | i >= (str_len s)                                = True
         | (((str_char_at s i) % 256 + 256) % 256) < 32    = False
         | otherwise                                       = json_t_no_controls_from s (i + 1)
 
-fn :: json_t_brackets Int String String => String
-      json_t_brackets n acc ch =
+fn :: json t brackets Int String String => String
+      json t brackets n acc ch =
         | n <= 0    = acc
         | otherwise = json_t_brackets (n - 1) (acc + ch) ch
 
-fn :: json_t_nest Int => String
-      json_t_nest n =  (json_t_brackets n "" "[") + (json_t_brackets n "" "]")
+fn :: json t nest Int => String
+      json t nest n =  (json_t_brackets n "" "[") + (json_t_brackets n "" "]")
 
 -- An array of n strings, for timing: ["item 0 é","item 1 é",…]
-fn :: json_t_items Int Int [String] => [String]
-      json_t_items i n acc =
+fn :: json t items Int Int [String] => [String]
+      json t items i n acc =
         | i >= n    = acc
         | otherwise = json_t_items (i + 1) n (acc :: ["\"item " + (int_to_str i) + " \\\" é\""])
 
-fn :: json_t_array Int => String
-      json_t_array n =  "[" + (str_join (json_t_items 0 n []) ",") + "]"
+fn :: json t array Int => String
+      json t array n =  "[" + (str_join (json_t_items 0 n []) ",") + "]"
 
 fn :: main => ()
       main =

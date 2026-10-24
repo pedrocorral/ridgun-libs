@@ -3,6 +3,9 @@
 time's contract names (docs/requirements/functional/time/FR-TIME-001, API-TIME-001: epochs in seconds, day of week
 0 = Sunday, parse gives -1 for malformed or out-of-range input, durations and backoff in milliseconds)."""
 import calendar, datetime as dt, os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from rg_strict import strict
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "test_time.rg")
 EPOCH = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
@@ -88,5 +91,5 @@ fn :: main => ()
 {body}
         lt_done "time" [{names}]
 '''
-open(OUT, "w").write(src)
+open(OUT, "w").write(strict(src))
 print(f"wrote {OUT}: {len(checks)} checks")

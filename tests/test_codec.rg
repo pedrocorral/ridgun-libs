@@ -9,38 +9,38 @@ import crypto
 import codec
 import lt
 
-fn :: codec_t_range Int Int [Int] => [Int]
-      codec_t_range i n acc =
+fn :: codec t range Int Int [Int] => [Int]
+      codec t range i n acc =
         | i >= n    = acc
         | otherwise = codec_t_range (i + 1) n (acc :: [i])
 
 -- Pairs as "[k][v]…", so a wrong split, a lost pair or a wrong order all show.
-fn :: codec_t_pairs [String String] => String
-      codec_t_pairs []          =  ""
-      codec_t_pairs ((k, v):ps) =  "[" + k + "][" + v + "]" + (codec_t_pairs ps)
+fn :: codec t pairs [String String] => String
+      codec t pairs []          =  ""
+      codec t pairs ((k, v):ps) =  "[" + k + "][" + v + "]" + (codec_t_pairs ps)
 
-fn :: codec_t_tricky_pairs => [String String]
-      codec_t_tricky_pairs =  [("a=b", "x&y"), ("1+1", "50% é"), ("", "empty key"), ("e", "")]
+fn :: codec t tricky pairs => [String String]
+      codec t tricky pairs =  [("a=b", "x&y"), ("1+1", "50% é"), ("", "empty key"), ("e", "")]
 
-fn :: codec_t_no_controls String => Bool
-      codec_t_no_controls s =  codec_t_no_controls_from s 0
+fn :: codec t no controls String => Bool
+      codec t no controls s =  codec_t_no_controls_from s 0
 
-fn :: codec_t_no_controls_from String Int => Bool
-      codec_t_no_controls_from s i =
+fn :: codec t no controls from String Int => Bool
+      codec t no controls from s i =
         | i >= (str_len s)                                    = True
         | (((str_char_at s i) % 256 + 256) % 256) < 32        = False
         | otherwise                                           = codec_t_no_controls_from s (i + 1)
 
-fn :: codec_t_qs_len String => String
-      codec_t_qs_len qs =  int_to_str (codec_t_count (query_string_decode qs) 0)
+fn :: codec t qs len String => String
+      codec t qs len qs =  int_to_str (codec_t_count (query_string_decode qs) 0)
 
-fn :: codec_t_count [String String] Int => Int
-      codec_t_count []     n =  n
-      codec_t_count (_:ps) n =  codec_t_count ps (n + 1)
+fn :: codec t count [String String] Int => Int
+      codec t count []     n =  n
+      codec t count (_:ps) n =  codec_t_count ps (n + 1)
 
 -- Uses a result so the work can't be skipped.
-fn :: codec_t_touch String => Int
-      codec_t_touch s =  str_len s
+fn :: codec t touch String => Int
+      codec t touch s =  str_len s
 
 fn :: main => ()
       main =
