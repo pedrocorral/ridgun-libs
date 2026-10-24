@@ -3,7 +3,6 @@
 | Path | What | Read when |
 |---|---|---|
 | `index.html` | Online liburu interaktiboa HTML/CSS/JS formatuan (Euskara) | Nabigatzailean ireki 32 lib-en liburu osoa irakurtzeko |
-| `00-zergatik-behar-dut-ridgun-libs.md` | 00. kapitulua: Zergatik behar dut `ridgun-libs`? 32 lib C lerro bakar bat gabe? Kontaidazu gehiago! | Motibazioa, ekosistema klasikoaren 4 minak eta 32 lib-en mapa |
 | `01-lib-str-testu-manipulazioa.md` | 01. kapitulua: `str` lib-a — Testu-manipulazioa, Bilaketa eta Formatu Taularatua | `str` (`STR`) lib-a ikasi eta Ridgun proiektuetan erabiltzea |
 | `02-lib-math-aritmetika-eta-zenbaki-teoria.md` | 02. kapitulua: `math` lib-a — Aritmetika Segurua, Zenbaki-teoria eta Estatistika | `math` (`MATH`) lib-a ikasi eta Ridgun proiektuetan erabiltzea |
 | `03-lib-list-zerrendak-mergesort-eta-kv-mapak.md` | 03. kapitulua: `list` lib-a — Zerrendak, $O(N \log N)$ Mergesort eta Gako-Balio Mapak | `list` (`LIST`) lib-a ikasi eta Ridgun proiektuetan erabiltzea |

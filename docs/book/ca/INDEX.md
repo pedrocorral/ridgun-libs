@@ -3,7 +3,6 @@
 | Path | What | Read when |
 |---|---|---|
 | `index.html` | Llibre online interactiu en HTML/CSS/JS (Català) | Obrir al navegador per llegir el llibre complet de les 32 libs |
-| `00-per-que-necessito-ridgun-libs.md` | Capítol 00: Per què necessito `ridgun-libs`? 32 libs sense ni una línia de C? Explica-m'ho! | Motivació, els 4 mals de cap de l'ecosistema clàssic i mapa de les 32 libs |
 | `01-lib-str-manipulacio-de-text.md` | Capítol 01: La lib `str` — Manipulació de Text, Cerca i Format Tabular | Aprendre i fer servir la lib `str` (`STR`) en projectes Ridgun |
 | `02-lib-math-aritmetica-i-teoria-de-nombres.md` | Capítol 02: La lib `math` — Aritmètica Segura, Teoria de Nombres i Estadística | Aprendre i fer servir la lib `math` (`MATH`) en projectes Ridgun |
 | `03-lib-list-llistes-mergesort-i-mapes-kv.md` | Capítol 03: La lib `list` — Llistes, Mergesort $O(N \log N)$ i Mapes Clau-Valor | Aprendre i fer servir la lib `list` (`LIST`) en projectes Ridgun |

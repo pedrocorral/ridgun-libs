@@ -247,7 +247,7 @@ All requirements, API contracts, data models, architectural decisions, security 
 | `src/test/ridgun/` | Automated unit and functional test suites (`test_*.rg`) |
 | `target/bundles/` | Compiled Ridgun library bundles (`*.rglib`) |
 | `target/` | Compiled `.rgc` archives and native ELF64 shared objects (`lib*.so`) |
-| `docs/book/` | Multi-language `ridgun-libs` book (`es`, `ca`, `gl`, `eu`, `en`, `pt`, `sv` — 33 chapters, one per lib, plus interactive `index.html`) |
+| `docs/book/` | Multi-language `ridgun-libs` book (`es`, `ca`, `gl`, `eu`, `en`, `pt`, `sv` — 32 chapters, `01`–`32`, one per lib, plus interactive `index.html`) |
 | `docs/requirements/functional/` | Functional requirements (`FR-SOCK-*`, `FR-CRYPTO-*`, `FR-POSIX-*`, `FR-IO-*`, `FR-STR-*`, `FR-TST-*`, `FR-MATH-*`, `FR-LIST-*`, `FR-CODEC-*`, `FR-CLI-*`, `FR-PATH-*`, `FR-TIME-*`, `FR-LOG-*`, `FR-GLOB-*`, `FR-UUID-*`, `FR-HTTP-*`) |
 | `docs/requirements/api/` | Public lib contracts (`API-*-001`) |
 | `docs/requirements/decisions/` | Architecture Decision Records (`ADR-0001`, `ADR-0002`) |

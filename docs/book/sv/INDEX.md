@@ -3,7 +3,6 @@
 | Path | What | Read when |
 |---|---|---|
 | `index.html` | Självständig interaktiv HTML-bok (Svenska) | Öppna i webbläsaren för att läsa hela guiden till alla 32 libs |
-| `00-varfor-behover-jag-ridgun-libs.md` | Kapitel 00: Varför behöver jag `ridgun-libs`? 32 libs utan en enda rad C? Berätta mer! | Motivation, de 4 vardagsplågorna i klassiska ekosystem och kartan över alla 32 libs |
 | `01-lib-str-textmanipulering.md` | Kapitel 01: Lib:en `str` — Textmanipulering, Sökning och Tabelljustering | Lära dig och använda lib:en `str` (`STR`) i Ridgun-projekt |
 | `02-lib-math-saker-aritmetik-och-talteori.md` | Kapitel 02: Lib:en `math` — Säker Aritmetik, Talteori och Statistik | Lära dig och använda lib:en `math` (`MATH`) i Ridgun-projekt |
 | `03-lib-list-listor-mergesort-och-kv-mappar.md` | Kapitel 03: Lib:en `list` — Listor, $O(N \log N)$ Mergesort och Nyckel-Värde-Mappar | Lära dig och använda lib:en `list` (`LIST`) i Ridgun-projekt |

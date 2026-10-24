@@ -1,3 +1,168 @@
+-- RGLIB1
+-- SELF_HOSTED_COMPILER: ridgunc v0.9.8
+-- FUNCTIONS: 161
+-- TYPES: 3
+-- SUMMARY: norm_byte_mod:InlineSequential
+-- SUMMARY: norm_byte:InlineSequential
+-- SUMMARY: byte_str_norm:InlineSequential
+-- SUMMARY: byte_str:InlineSequential
+-- SUMMARY: bytes_from_list:LazyStealableTask
+-- SUMMARY: bytes_to_list_loop:LazyStealableTask
+-- SUMMARY: bytes_to_list:LazyStealableTask
+-- SUMMARY: u32_mod:InlineSequential
+-- SUMMARY: u32_val:InlineSequential
+-- SUMMARY: byte_band:InlineSequential
+-- SUMMARY: byte_bor:InlineSequential
+-- SUMMARY: byte_bxor:InlineSequential
+-- SUMMARY: band:InlineSequential
+-- SUMMARY: bor:InlineSequential
+-- SUMMARY: c_u32_bxor:InlineSequential
+-- SUMMARY: bxor:InlineSequential
+-- SUMMARY: shl:InlineSequential
+-- SUMMARY: shr:InlineSequential
+-- SUMMARY: rotl32:InlineSequential
+-- SUMMARY: hextable:InlineSequential
+-- SUMMARY: crypto_byte_to_hex:InlineSequential
+-- SUMMARY: bytes_to_hex_str:LazyStealableTask
+-- SUMMARY: bytes_list_to_hex:LazyStealableTask
+-- SUMMARY: crypto_hex_val:InlineSequential
+-- SUMMARY: hex_str_to_bytes_loop:LazyStealableTask
+-- SUMMARY: hex_to_byte_str:LazyStealableTask
+-- SUMMARY: c_list_len:LazyStealableTask
+-- SUMMARY: c_nth_int:LazyStealableTask
+-- SUMMARY: c_take_ints:LazyStealableTask
+-- SUMMARY: c_drop_ints:LazyStealableTask
+-- SUMMARY: byte_slice:LazyStealableTask
+-- SUMMARY: sha256_hex:InlineSequential
+-- SUMMARY: sha256_bytes:LazyStealableTask
+-- SUMMARY: pad_zeroes:LazyStealableTask
+-- SUMMARY: bitxor_key_pad:LazyStealableTask
+-- SUMMARY: raw_hmac_key_bytes:LazyStealableTask
+-- SUMMARY: normalize_hmac_key:LazyStealableTask
+-- SUMMARY: hmac_sha256:LazyStealableTask
+-- SUMMARY: ct_diff_str:LazyStealableTask
+-- SUMMARY: ct_equal:LazyStealableTask
+-- SUMMARY: bitxor_byte_lists:LazyStealableTask
+-- SUMMARY: bitxor_byte_strings:LazyStealableTask
+-- SUMMARY: be32_bytes:LazyStealableTask
+-- SUMMARY: c_get16:InlineSequential
+-- SUMMARY: c_set16:InlineSequential
+-- SUMMARY: c_build_b16:InlineSequential
+-- SUMMARY: c_build_b256:InlineSequential
+-- SUMMARY: c_get_b256:InlineSequential
+-- SUMMARY: c_hex_nib:InlineSequential
+-- SUMMARY: c_hex_pair:InlineSequential
+-- SUMMARY: c_hex2raw4:InlineSequential
+-- SUMMARY: c_hex2raw32:InlineSequential
+-- SUMMARY: c_hex8_word:InlineSequential
+-- SUMMARY: c_bxor_acc8:InlineSequential
+-- SUMMARY: c_word32_to_raw4:InlineSequential
+-- SUMMARY: c_acc8_to_raw:InlineSequential
+-- SUMMARY: c_list_to_raw:LazyStealableTask
+-- SUMMARY: pbkdf2_iter_loop:LazyStealableTask
+-- SUMMARY: pbkdf2_block:LazyStealableTask
+-- SUMMARY: pbkdf2_blocks_loop:LazyStealableTask
+-- SUMMARY: pbkdf2_hmac_sha256:LazyStealableTask
+-- SUMMARY: f_blamka:InlineSequential
+-- SUMMARY: blamka_g:InlineSequential
+-- SUMMARY: blamka_p16:InlineSequential
+-- SUMMARY: ca2_blamka_col_pair:InlineSequential
+-- SUMMARY: ca2_blamka_cols_loop:LazyStealableTask
+-- SUMMARY: compress_block:LazyStealableTask
+-- SUMMARY: ca2_take_ints:LazyStealableTask
+-- SUMMARY: ca2_drop_ints:LazyStealableTask
+-- SUMMARY: ca2_pad_zeroes:LazyStealableTask
+-- SUMMARY: ca2_u64_lh:InlineSequential
+-- SUMMARY: ca2_u32_to_le4:InlineSequential
+-- SUMMARY: ca2_bytes_to_u32_le:LazyStealableTask
+-- SUMMARY: ca2_zero_w16:InlineSequential
+-- SUMMARY: ca2_zero_blk8:InlineSequential
+-- SUMMARY: ca2_b2b_iv_w16:InlineSequential
+-- SUMMARY: ca2_b2b_g4:InlineSequential
+-- SUMMARY: ca2_b2b_sigma:InlineSequential
+-- SUMMARY: ca2_b2b_round:LazyStealableTask
+-- SUMMARY: ca2_b2b_rounds:LazyStealableTask
+-- SUMMARY: ca2_b2b_compress:LazyStealableTask
+-- SUMMARY: ca2_bytes_to_u64:LazyStealableTask
+-- SUMMARY: ca2_bytes_to_w16:LazyStealableTask
+-- SUMMARY: ca2_u64_to_le8:InlineSequential
+-- SUMMARY: ca2_h8_to_bytes:InlineSequential
+-- SUMMARY: ca2_b2b_loop:LazyStealableTask
+-- SUMMARY: ca2_blake2b:LazyStealableTask
+-- SUMMARY: ca2_b2b_long_loop:LazyStealableTask
+-- SUMMARY: ca2_blake2b_long:LazyStealableTask
+-- SUMMARY: ca2_bitxor_blk8:KernelWorkerJob
+-- SUMMARY: ca2_get_blk8:InlineSequential
+-- SUMMARY: ca2_bytes_to_blk8_row:LazyStealableTask
+-- SUMMARY: ca2_bytes_to_blk8_loop:LazyStealableTask
+-- SUMMARY: ca2_bytes_to_blk8:LazyStealableTask
+-- SUMMARY: ca2_blk8_row_to_bytes:LazyStealableTask
+-- SUMMARY: ca2_blk8_to_bytes_loop:LazyStealableTask
+-- SUMMARY: ca2_blk8_to_bytes:LazyStealableTask
+-- SUMMARY: ca2_zero_mem:InlineSequential
+-- SUMMARY: ca2_nth_blk:InlineSequential
+-- SUMMARY: ca2_set_blk:InlineSequential
+-- SUMMARY: ca2_init_all_lanes_loop:LazyStealableTask
+-- SUMMARY: ca2_init_all_lanes:LazyStealableTask
+-- SUMMARY: ca2_make_addr_blk:LazyStealableTask
+-- SUMMARY: ca2_calc_w_size_p0:InlineSequential
+-- SUMMARY: ca2_calc_w_size_pn:InlineSequential
+-- SUMMARY: ca2_calc_w_size:InlineSequential
+-- SUMMARY: ca2_step_addr:LazyStealableTask
+-- SUMMARY: ca2_step_jpair:InlineSequential
+-- SUMMARY: ca2_ref_lane:InlineSequential
+-- SUMMARY: ca2_st_pos:InlineSequential
+-- SUMMARY: ca2_fin_blk:KernelWorkerJob
+-- SUMMARY: ca2_fill_segment:LazyStealableTask
+-- SUMMARY: ca2_start_j:InlineSequential
+-- SUMMARY: ca2_run_lanes:LazyStealableTask
+-- SUMMARY: ca2_run_slices:LazyStealableTask
+-- SUMMARY: ca2_run_passes:LazyStealableTask
+-- SUMMARY: ca2_bitxor_final_lanes:LazyStealableTask
+-- SUMMARY: ca2_derive_raw_tag:LazyStealableTask
+-- SUMMARY: ca2_b64_alphabet:InlineSequential
+-- SUMMARY: ca2_b64_char:InlineSequential
+-- SUMMARY: ca2_b64_encode:LazyStealableTask
+-- SUMMARY: ca2_b64_char_val:InlineSequential
+-- SUMMARY: ca2_valid_b64_chars:LazyStealableTask
+-- SUMMARY: ca2_is_valid_b64:LazyStealableTask
+-- SUMMARY: ca2_b64_decode_rem:InlineSequential
+-- SUMMARY: ca2_b64_decode_loop:InlineSequential
+-- SUMMARY: ca2_b64_decode:InlineSequential
+-- SUMMARY: ca2_split_str:LazyStealableTask
+-- SUMMARY: ca2_nth_str:LazyStealableTask
+-- SUMMARY: ca2_str_list_len:LazyStealableTask
+-- SUMMARY: ca2_is_digits:LazyStealableTask
+-- SUMMARY: ca2_parse_kv:LazyStealableTask
+-- SUMMARY: ca2_verify_decoded:LazyStealableTask
+-- SUMMARY: ca2_verify_kvs:LazyStealableTask
+-- SUMMARY: ca2_verify_parts:LazyStealableTask
+-- SUMMARY: ca2_hash_checked:LazyStealableTask
+-- SUMMARY: argon2id_hash:LazyStealableTask
+-- SUMMARY: argon2id_hash_phc:LazyStealableTask
+-- SUMMARY: argon2id_verify:LazyStealableTask
+-- SUMMARY: le32_at:LazyStealableTask
+-- SUMMARY: u32_to_le4:InlineSequential
+-- SUMMARY: chacha_qr:InlineSequential
+-- SUMMARY: chacha_double_round:InlineSequential
+-- SUMMARY: chacha_rounds_loop:LazyStealableTask
+-- SUMMARY: words16_tensor_to_bytes:LazyStealableTask
+-- SUMMARY: chacha20_init_st:LazyStealableTask
+-- SUMMARY: chacha20_block:LazyStealableTask
+-- SUMMARY: chacha20_bitxor_loop:LazyStealableTask
+-- SUMMARY: poly1305_clamp_r:LazyStealableTask
+-- SUMMARY: poly1305_r_limbs:LazyStealableTask
+-- SUMMARY: poly1305_block_limbs:LazyStealableTask
+-- SUMMARY: poly1305_step:LazyStealableTask
+-- SUMMARY: poly1305_blocks_loop:LazyStealableTask
+-- SUMMARY: select_reduced_limbs:InlineSequential
+-- SUMMARY: poly1305_finalize:LazyStealableTask
+-- SUMMARY: pad16_zeroes:LazyStealableTask
+-- SUMMARY: u64_le8:InlineSequential
+-- SUMMARY: poly1305_aead_mac:LazyStealableTask
+-- SUMMARY: aead_seal:LazyStealableTask
+-- SUMMARY: decrypt_verified_aead:LazyStealableTask
+-- SUMMARY: aead_open:LazyStealableTask
 -- ============================================================
 -- src/main/ridgun/lib/crypto.rg
 -- Pure-Ridgun Cryptographic Primitives, Bitops, SHA-256, HMAC, PBKDF2,
@@ -384,7 +549,7 @@ fn :: c hex2raw32 CT16 String => String
         w0 + w1
 
 fn :: c hex8 word String Int => U64
-      c hex8 word h off =
+      c hex8 word h      off =
         n0 = c hex nib (str char at h off)
         n1 = c hex nib (str char at h (off + 1))
         n2 = c hex nib (str char at h (off + 2))
@@ -396,7 +561,7 @@ fn :: c hex8 word String Int => U64
         (n0 shl 28) or (n1 shl 24) or (n2 shl 20) or (n3 shl 16) or (n4 shl 12) or (n5 shl 8) or (n6 shl 4) or n7
 
 fn :: c bxor acc8 Tensor[U64 * 8] String => Tensor[U64 * 8]
-      c bxor acc8 acc h =
+      c bxor acc8 acc             h      =
         acc_(0) = acc_(0) xor (c hex8 word h 0)
         acc_(1) = acc_(1) xor (c hex8 word h 8)
         acc_(2) = acc_(2) xor (c hex8 word h 16)
@@ -703,7 +868,7 @@ fn :: ca2 u64 to le8 U64 => [Int]
         (ca2 u32 to le4 (x and 0xFFFFFFFF)) :: (ca2 u32 to le4 ((x shr 32) and 0xFFFFFFFF))
 
 fn :: ca2 h8 to bytes Tensor[U64 * 16] => [Int]
-      ca2 h8 to bytes h =
+      ca2 h8 to bytes h                =
         (ca2 u64 to le8 h_(0)) :: (ca2 u64 to le8 h_(1)) :: (ca2 u64 to le8 h_(2)) :: (ca2 u64 to le8 h_(3)) :: (ca2 u64 to le8 h_(4)) :: (ca2 u64 to le8 h_(5)) :: (ca2 u64 to le8 h_(6)) :: (ca2 u64 to le8 h_(7))
 
 fn :: ca2 b2b loop Tensor[U64 * 16] [Int] Int => Tensor[U64 * 16]
@@ -747,7 +912,7 @@ fn :: ca2 bitxor blk8 Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 * 
         a_ij xor b_ij
 
 fn :: ca2 get blk8 Tensor[U64 * 8 * 16] Int => U64
-      ca2 get blk8 blk idx =
+      ca2 get blk8 blk                  idx =
         blk_((idx / 16) % 8, idx % 16)
 
 fn :: ca2 bytes to blk8 row Tensor[U64 * 8 * 16] [Int] Int Int => Tensor[U64 * 8 * 16]
@@ -780,7 +945,7 @@ fn :: ca2 blk8 to bytes loop Tensor[U64 * 8 * 16] Int => [Int]
         | otherwise = (ca2 blk8 row to bytes b r 0) :: (ca2 blk8 to bytes loop b (r + 1))
 
 fn :: ca2 blk8 to bytes Tensor[U64 * 8 * 16] => [Int]
-      ca2 blk8 to bytes b =
+      ca2 blk8 to bytes b                    =
         ca2 blk8 to bytes loop b 0
 
 fn :: ca2 zero mem => CT16
@@ -1169,7 +1334,7 @@ fn :: chacha qr Int Int Int Int => Int Int Int Int
         (a2, b2, c2, d2)
 
 fn :: chacha double round Tensor[Int * 16] => Tensor[Int * 16]
-      chacha double round st =
+      chacha double round st               =
         st_(0), st_(4), st_(8),  st_(12) = chacha qr st_(0) st_(4) st_(8)  st_(12)
         st_(1), st_(5), st_(9),  st_(13) = chacha qr st_(1) st_(5) st_(9)  st_(13)
         st_(2), st_(6), st_(10), st_(14) = chacha qr st_(2) st_(6) st_(10) st_(14)
@@ -1181,7 +1346,7 @@ fn :: chacha double round Tensor[Int * 16] => Tensor[Int * 16]
         st
 
 fn :: chacha rounds loop Tensor[Int * 16] Int => Tensor[Int * 16]
-      chacha rounds loop st idx =
+      chacha rounds loop st               idx =
         | idx >= 10 = st
         | otherwise = chacha rounds loop (chacha double round st) (idx + 1)
 
