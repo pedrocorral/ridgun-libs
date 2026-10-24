@@ -86,7 +86,8 @@ eq("str_pad_left to width 3 with 0", '(str_pad_left "7" 3 "0")', "007")
 eq("str_pad_right to width 4 with .", '(str_pad_right "ab" 4 ".")', "ab..")
 eq("str_pad_left: width not above the length leaves it", '(str_pad_left "abcd" 2 "0")', "abcd")
 
-# time: linear in the input (str_replace and str_to_lower took 7.9 s for 200 KB, Solstice register RG-082)
+# time: linear in the input, and under 0.5 s for 200 KB (str_replace and str_to_lower took 7.9 s, RG-082; after c65ce80
+# they take 0-60 ms, but str_split regressed to 1.5 s in the bundle of 22:59, RG-091, which a 2 s limit let through)
 TIMED = [("str_replace (nothing to replace)", 'str_replace small "\\r\\n" "\\n"', 'str_replace big "\\r\\n" "\\n"'),
          ("str_to_lower", "str_to_lower small", "str_to_lower big"),
          ("str_to_upper", "str_to_upper small", "str_to_upper big"),
@@ -101,7 +102,7 @@ for i, (label, a, b) in enumerate(TIMED):
         m{i} = sys_monotonic_ms
         _ = str_len ({b})
         e{i} = sys_monotonic_ms
-        t{i} = lt_linear "{label}: 20 KB then 200 KB in linear time, 200 KB under 2 s" (m{i} - s{i}) (e{i} - m{i}) 10 2000''')
+        t{i} = lt_linear "{label}: 20 KB then 200 KB in linear time, 200 KB under 0.5 s" (m{i} - s{i}) (e{i} - m{i}) 10 500''')
 
 body = "\n".join(f"        c{i} = {c}" for i, c in enumerate(checks))
 names = ", ".join([f"c{i}" for i in range(len(checks))] + [f"t{i}" for i in range(len(TIMED))])
