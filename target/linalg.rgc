@@ -1,83 +1,3 @@
--- RGLIB1
--- SELF_HOSTED_COMPILER: ridgunc v0.9.8
--- FUNCTIONS: 76
--- TYPES: 0
--- SUMMARY: la_abs:InlineSequential
--- SUMMARY: la_max:InlineSequential
--- SUMMARY: la_isqrt_step:InlineSequential
--- SUMMARY: la_isqrt_loop:InlineSequential
--- SUMMARY: la_isqrt:InlineSequential
--- SUMMARY: la_exp_neg_scaled:InlineSequential
--- SUMMARY: linalg_vec_len:InlineSequential
--- SUMMARY: linalg_mat_rows:InlineSequential
--- SUMMARY: linalg_mat_cols:InlineSequential
--- SUMMARY: la_transpose_col_loop:LazyStealableTask
--- SUMMARY: la_transpose_row_loop:LazyStealableTask
--- SUMMARY: linalg_transpose:LazyStealableTask
--- SUMMARY: la_trace_loop:LazyStealableTask
--- SUMMARY: linalg_trace:LazyStealableTask
--- SUMMARY: la_diag_loop:LazyStealableTask
--- SUMMARY: linalg_diag:LazyStealableTask
--- SUMMARY: la_identity_loop:LazyStealableTask
--- SUMMARY: linalg_identity:LazyStealableTask
--- SUMMARY: la_dot_loop:LazyStealableTask
--- SUMMARY: linalg_dot:LazyStealableTask
--- SUMMARY: la_outer_col_loop:LazyStealableTask
--- SUMMARY: la_outer_row_loop:LazyStealableTask
--- SUMMARY: linalg_outer:LazyStealableTask
--- SUMMARY: la_matvec_row_dot:LazyStealableTask
--- SUMMARY: la_matvec_loop:LazyStealableTask
--- SUMMARY: linalg_matvec:LazyStealableTask
--- SUMMARY: linalg_matmul:KernelWorkerJob
--- SUMMARY: la_norm_l1_loop:LazyStealableTask
--- SUMMARY: linalg_norm_l1:LazyStealableTask
--- SUMMARY: linalg_norm_l2_sq:LazyStealableTask
--- SUMMARY: linalg_norm_l2:LazyStealableTask
--- SUMMARY: la_norm_linf_loop:LazyStealableTask
--- SUMMARY: linalg_norm_linf:LazyStealableTask
--- SUMMARY: la_frob_col_loop:LazyStealableTask
--- SUMMARY: la_frob_row_loop:LazyStealableTask
--- SUMMARY: linalg_frobenius_norm:LazyStealableTask
--- SUMMARY: la_norm_vec_loop:LazyStealableTask
--- SUMMARY: la_normalize_vec_step:LazyStealableTask
--- SUMMARY: linalg_normalize_vec:LazyStealableTask
--- SUMMARY: la_cosine_step:LazyStealableTask
--- SUMMARY: linalg_cosine_similarity:LazyStealableTask
--- SUMMARY: la_clone_mat_col:LazyStealableTask
--- SUMMARY: la_clone_mat_row:LazyStealableTask
--- SUMMARY: la_clone_vec_loop:LazyStealableTask
--- SUMMARY: la_find_pivot_step:InlineSequential
--- SUMMARY: la_find_pivot_row:InlineSequential
--- SUMMARY: la_swap_mat_rows_loop:LazyStealableTask
--- SUMMARY: la_swap_vec_elems:InlineSequential
--- SUMMARY: la_ff_elim_b_loop:LazyStealableTask
--- SUMMARY: la_ff_elim_col_loop:LazyStealableTask
--- SUMMARY: la_ff_elim_a_loop:LazyStealableTask
--- SUMMARY: la_next_piv:InlineSequential
--- SUMMARY: la_solve_loop:LazyStealableTask
--- SUMMARY: la_backsub_sum:LazyStealableTask
--- SUMMARY: la_backsub_div:InlineSequential
--- SUMMARY: la_backsub_loop:LazyStealableTask
--- SUMMARY: linalg_solve:LazyStealableTask
--- SUMMARY: la_bareiss_step_loop:LazyStealableTask
--- SUMMARY: la_bareiss_row_loop:LazyStealableTask
--- SUMMARY: la_pivot_sign:InlineSequential
--- SUMMARY: la_bareiss_piv_step:LazyStealableTask
--- SUMMARY: la_bareiss_loop:LazyStealableTask
--- SUMMARY: linalg_det:LazyStealableTask
--- SUMMARY: la_relu_scalar:InlineSequential
--- SUMMARY: la_relu_loop:LazyStealableTask
--- SUMMARY: linalg_relu:LazyStealableTask
--- SUMMARY: la_sigmoid_scalar:LazyStealableTask
--- SUMMARY: la_sigmoid_loop:LazyStealableTask
--- SUMMARY: linalg_sigmoid:LazyStealableTask
--- SUMMARY: la_max_vec_loop:LazyStealableTask
--- SUMMARY: la_sum_vec_loop:LazyStealableTask
--- SUMMARY: la_exp_shifted_loop:LazyStealableTask
--- SUMMARY: la_softmax_scale_loop:LazyStealableTask
--- SUMMARY: la_argmax_vec_loop:LazyStealableTask
--- SUMMARY: la_softmax_finish:LazyStealableTask
--- SUMMARY: linalg_softmax:LazyStealableTask
 -- ============================================================
 -- src/main/ridgun/lib/linalg.rg
 -- Pure-Ridgun Typed Tensor Linear Algebra, Norms, Linear Solver & Neural Activations Library (LINALG)
@@ -106,7 +26,7 @@ fn :: la isqrt step Int Int Int => Int
         | otherwise = la isqrt loop n nx
 
 fn :: la isqrt loop Int Int => Int
-      la isqrt loop n x =
+      la isqrt loop n   x   =
         la isqrt step n x ((x + (n / x)) / 2)
 
 fn :: la isqrt Int => Int
@@ -453,7 +373,7 @@ fn :: la ff elim a loop Tensor[Real * n * n] Int Int Int Int Int => Tensor[Real 
           a2         = la ff elim col loop a k row piv aik prev_piv (k + 1) n
           la ff elim a loop a2 k (row + 1) prev_piv n piv
 
-fn :: la next piv Int Int => Int
+fn :: la next piv Int Int      => Int
       la next piv piv prev_piv =
         | piv == 0  = prev_piv
         | otherwise = piv

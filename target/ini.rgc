@@ -1,51 +1,3 @@
--- RGLIB1
--- SELF_HOSTED_COMPILER: ridgunc v0.9.8
--- FUNCTIONS: 44
--- TYPES: 3
--- SUMMARY: ini_is_hspace:InlineSequential
--- SUMMARY: ini_trim_left_loop:LazyStealableTask
--- SUMMARY: ini_trim_right_loop:LazyStealableTask
--- SUMMARY: ini_trim:LazyStealableTask
--- SUMMARY: ini_split_lines_loop:LazyStealableTask
--- SUMMARY: ini_skip_quoted:LazyStealableTask
--- SUMMARY: ini_strip_comment_loop:LazyStealableTask
--- SUMMARY: ini_unquote_unescape_loop:LazyStealableTask
--- SUMMARY: ini_clean_val:LazyStealableTask
--- SUMMARY: ini_clean_val_len:LazyStealableTask
--- SUMMARY: ini_p_key:InlineSequential
--- SUMMARY: ini_p_val:InlineSequential
--- SUMMARY: ini_kv_get:LazyStealableTask
--- SUMMARY: ini_kv_put:LazyStealableTask
--- SUMMARY: ini_find_rbrace:LazyStealableTask
--- SUMMARY: ini_expand_brace:LazyStealableTask
--- SUMMARY: ini_interpolate_loop:LazyStealableTask
--- SUMMARY: ini_interpolate:LazyStealableTask
--- SUMMARY: ini_sec_put:LazyStealableTask
--- SUMMARY: ini_sec_ensure:LazyStealableTask
--- SUMMARY: ini_sec_get:LazyStealableTask
--- SUMMARY: ini_find_eq:LazyStealableTask
--- SUMMARY: ini_strip_export:LazyStealableTask
--- SUMMARY: ini_parse_kv_at:LazyStealableTask
--- SUMMARY: ini_sec_entries:LazyStealableTask
--- SUMMARY: ini_parse_lines:LazyStealableTask
--- SUMMARY: ini_parse_sec_hdr:LazyStealableTask
--- SUMMARY: ini_parse_kv_line:LazyStealableTask
--- SUMMARY: ini_parse_clean_line:LazyStealableTask
--- SUMMARY: ini_parse:LazyStealableTask
--- SUMMARY: dotenv_parse:LazyStealableTask
--- SUMMARY: ini_get:LazyStealableTask
--- SUMMARY: ini_get_int:LazyStealableTask
--- SUMMARY: ini_parse_int_or:InlineSequential
--- SUMMARY: ini_get_bool:LazyStealableTask
--- SUMMARY: ini_parse_bool_or:InlineSequential
--- SUMMARY: ini_set:LazyStealableTask
--- SUMMARY: ini_collect_sec_names:LazyStealableTask
--- SUMMARY: ini_sections:LazyStealableTask
--- SUMMARY: dotenv_get:LazyStealableTask
--- SUMMARY: ini_format_entries:LazyStealableTask
--- SUMMARY: ini_format_section:LazyStealableTask
--- SUMMARY: ini_format_sections:LazyStealableTask
--- SUMMARY: ini_stringify:LazyStealableTask
 -- ============================================================
 -- src/main/ridgun/lib/ini.rg
 -- Pure-Ridgun INI Sectioned Configuration & Dotenv Parser, Interpolator & Serializer Library (INI)
@@ -63,265 +15,259 @@ type IniDoc = sections: [IniSection]
 
 -- ── Whitespace, Comment & Line Helpers ───────────────────────
 
-fn :: ini_is_hspace Int => Bool
-      ini_is_hspace c   =  c == 32 OR c == 9 OR c == 13
+fn :: ini is hspace Int => Bool
+      ini is hspace c = c == 32 or c == 9 or c == 13
 
-fn :: ini_trim_left_loop String Int Int => String
-      ini_trim_left_loop s      pos len
+fn :: ini trim left loop String Int Int => String
+      ini trim left loop s pos len =
         | pos >= len = ""
-        | ini_is_hspace (str_char_at s pos) = ini_trim_left_loop s (pos + 1) len
+        | ini is hspace (str_char_at s pos) = ini trim left loop s (pos + 1) len
         | otherwise = str_slice s pos len
 
-fn :: ini_trim_right_loop String Int     => String
-      ini_trim_right_loop s      end_pos
+fn :: ini trim right loop String Int => String
+      ini trim right loop s end_pos =
         | end_pos <= 0 = ""
-        | ini_is_hspace (str_char_at s (end_pos - 1)) = ini_trim_right_loop s (end_pos - 1)
+        | ini is hspace (str_char_at s (end_pos - 1)) = ini trim right loop s (end_pos - 1)
         | otherwise = str_slice s 0 end_pos
 
-fn :: ini_trim String => String
-      ini_trim s      =  ini_trim_left_loop (ini_trim_right_loop s (str_len s)) 0 (str_len (ini_trim_right_loop s (str_len s)))
+fn :: ini trim String => String
+      ini trim s = ini trim left loop (ini trim right loop s (str_len s)) 0 (str_len (ini trim right loop s (str_len s)))
 
-fn :: ini_split_lines_loop String Int Int Int [String] => [String]
-      ini_split_lines_loop s pos len start acc
-        | pos >= len AND start == len = acc
+fn :: ini split lines loop String Int Int Int [String] => [String]
+      ini split lines loop s pos len start acc =
+        | pos >= len and start == len = acc
         | pos >= len = acc :: [str_slice s start len]
-        | (str_char_at s pos) == 10 = ini_split_lines_loop s (pos + 1) len (pos + 1) (acc :: [str_slice s start pos])
-        | otherwise = ini_split_lines_loop s (pos + 1) len start acc
+        | (str_char_at s pos) == 10 = ini split lines loop s (pos + 1) len (pos + 1) (acc :: [str_slice s start pos])
+        | otherwise = ini split lines loop s (pos + 1) len start acc
 
-fn :: ini_skip_quoted String Int Int Int => Int
-      ini_skip_quoted s      pos len q
+fn :: ini skip quoted String Int Int Int => Int
+      ini skip quoted s pos len q =
         | pos >= len = len
-        | (str_char_at s pos) == 92 = ini_skip_quoted s (pos + 2) len q
+        | (str_char_at s pos) == 92 = ini skip quoted s (pos + 2) len q
         | (str_char_at s pos) == q = pos + 1
-        | otherwise = ini_skip_quoted s (pos + 1) len q
+        | otherwise = ini skip quoted s (pos + 1) len q
 
-fn :: ini_strip_comment_loop String Int Int => String
-      ini_strip_comment_loop s      pos len
+fn :: ini strip comment loop String Int Int => String
+      ini strip comment loop s pos len =
         | pos >= len = s
-        | (str_char_at s pos) == 34 = ini_strip_comment_loop s (ini_skip_quoted s (pos + 1) len 34) len
-        | (str_char_at s pos) == 39 = ini_strip_comment_loop s (ini_skip_quoted s (pos + 1) len 39) len
-        | (str_char_at s pos) == 35 OR (str_char_at s pos) == 59 = str_slice s 0 pos
-        | (pos + 1) < len AND (str_char_at s pos) == 45 AND (str_char_at s (pos + 1)) == 45 = str_slice s 0 pos
-        | otherwise = ini_strip_comment_loop s (pos + 1) len
+        | (str_char_at s pos) == 34 = ini strip comment loop s (ini skip quoted s (pos + 1) len 34) len
+        | (str_char_at s pos) == 39 = ini strip comment loop s (ini skip quoted s (pos + 1) len 39) len
+        | (str_char_at s pos) == 35 or (str_char_at s pos) == 59 = str_slice s 0 pos
+        | (pos + 1) < len and (str_char_at s pos) == 45 and (str_char_at s (pos + 1)) == 45 = str_slice s 0 pos
+        | otherwise = ini strip comment loop s (pos + 1) len
 
-fn :: ini_unquote_unescape_loop String Int Int String => String
-      ini_unquote_unescape_loop s      pos len acc
+fn :: ini unquote unescape loop String Int Int String => String
+      ini unquote unescape loop s pos len acc =
         | pos >= len = acc
-        | (str_char_at s pos) == 92 AND (pos + 1) < len AND (str_char_at s (pos + 1)) == 110 = ini_unquote_unescape_loop s (pos + 2) len (acc + (char_from_code 10))
-        | (str_char_at s pos) == 92 AND (pos + 1) < len AND (str_char_at s (pos + 1)) == 116 = ini_unquote_unescape_loop s (pos + 2) len (acc + (char_from_code 9))
-        | (str_char_at s pos) == 92 AND (pos + 1) < len = ini_unquote_unescape_loop s (pos + 2) len (acc + (str_slice s (pos + 1) (pos + 2)))
-        | otherwise = ini_unquote_unescape_loop s (pos + 1) len (acc + (str_slice s pos (pos + 1)))
+        | (str_char_at s pos) == 92 and (pos + 1) < len and (str_char_at s (pos + 1)) == 110 = ini unquote unescape loop s (pos + 2) len (acc + (char_from_code 10))
+        | (str_char_at s pos) == 92 and (pos + 1) < len and (str_char_at s (pos + 1)) == 116 = ini unquote unescape loop s (pos + 2) len (acc + (char_from_code 9))
+        | (str_char_at s pos) == 92 and (pos + 1) < len = ini unquote unescape loop s (pos + 1 + 1) len (acc + (str_slice s (pos + 1) (pos + 2)))
+        | otherwise = ini unquote unescape loop s (pos + 1) len (acc + (str_slice s pos (pos + 1)))
 
-fn :: ini_clean_val String => String
-      ini_clean_val raw    =
-        tr = ini_trim raw
+fn :: ini clean val String => String
+      ini clean val raw =
+        tr = ini trim raw
         len = str_len tr
-        ini_clean_val_len tr len
+        ini clean val len tr len
 
-fn :: ini_clean_val_len String Int => String
-      ini_clean_val_len tr     len
-        | len >= 2 AND (str_char_at tr 0) == 34 AND (str_char_at tr (len - 1)) == 34 = ini_unquote_unescape_loop (str_slice tr 1 (len - 1)) 0 (len - 2) ""
-        | len >= 2 AND (str_char_at tr 0) == 39 AND (str_char_at tr (len - 1)) == 39 = str_slice tr 1 (len - 1)
+fn :: ini clean val len String Int => String
+      ini clean val len tr len =
+        | len >= 2 and (str_char_at tr 0) == 34 and (str_char_at tr (len - 1)) == 34 = ini unquote unescape loop (str_slice tr 1 (len - 1)) 0 (len - 2) ""
+        | len >= 2 and (str_char_at tr 0) == 39 and (str_char_at tr (len - 1)) == 39 = str_slice tr 1 (len - 1)
         | otherwise = tr
 
 -- ── Key-Value Pair Helpers (`[IniEntry]`) ────────────────────
 
-fn :: ini_p_key IniEntry       => String
-      ini_p_key (IniEntry k _) =  k
+fn :: ini p key IniEntry => String
+      ini p key (IniEntry k _) = k
 
-fn :: ini_p_val IniEntry       => String
-      ini_p_val (IniEntry _ v) =  v
+fn :: ini p val IniEntry => String
+      ini p val (IniEntry _ v) = v
 
-fn :: ini_kv_get [IniEntry]  String String   => String
-      ini_kv_get []          _      fallback =  fallback
-      ini_kv_get (pair:rest) key    fallback
-        | (ini_p_key pair) == key = ini_p_val pair
-        | otherwise = ini_kv_get rest key fallback
+fn :: ini kv get [IniEntry] String String => String
+      ini kv get [] _ fallback = fallback
+      ini kv get (pair:rest) key fallback =
+        | (ini p key pair) == key = ini p val pair
+        | otherwise = ini kv get rest key fallback
 
-fn :: ini_kv_put [IniEntry]  String String => [IniEntry]
-      ini_kv_put []          key    val    =  [IniEntry key val]
-      ini_kv_put (pair:rest) key    val
-        | (ini_p_key pair) == key = [IniEntry key val] :: rest
-        | otherwise = [pair] :: (ini_kv_put rest key val)
+fn :: ini kv put [IniEntry] String String => [IniEntry]
+      ini kv put [] key val = [IniEntry key val]
+      ini kv put (pair:rest) key val =
+        | (ini p key pair) == key = [IniEntry key val] :: rest
+        | otherwise = [pair] :: (ini kv put rest key val)
 
 -- ── `${VAR}` Variable Interpolation ──────────────────────────
 
-fn :: ini_find_rbrace String Int Int => Int
-      ini_find_rbrace s      pos len
-        | pos >= len = -1
+fn :: ini find rbrace String Int Int => Int
+      ini find rbrace s pos len =
+        | pos >= len = (0 - 1)
         | (str_char_at s pos) == 125 = pos
-        | otherwise = ini_find_rbrace s (pos + 1) len
+        | otherwise = ini find rbrace s (pos + 1) len
 
-fn :: ini_expand_brace String Int Int [IniEntry] String Int => String
-      ini_expand_brace s pos len env acc -1 = ini_interpolate_loop s (pos + 1) len env (acc + "$")
-      ini_expand_brace s pos len env acc close_p =
-        vname = str_slice s (pos + 2) close_p
-        vval = ini_kv_get env vname ""
-        ini_interpolate_loop s (close_p + 1) len env (acc + vval)
+fn :: ini expand brace String Int Int [IniEntry] String Int => String
+      ini expand brace s pos len env acc close_p =
+        | close_p == (0 - 1) = ini interpolate loop s (pos + 1) len env (acc + "$")
+        | otherwise = ini interpolate loop s (close_p + 1) len env (acc + (ini kv get env (str_slice s (pos + 2) close_p) ""))
 
-fn :: ini_interpolate_loop String Int Int [IniEntry] String => String
-      ini_interpolate_loop s pos len env acc
+fn :: ini interpolate loop String Int Int [IniEntry] String => String
+      ini interpolate loop s pos len env acc =
         | pos >= len = acc
-        | (pos + 1) < len AND (str_char_at s pos) == 36 AND (str_char_at s (pos + 1)) == 123 = ini_expand_brace s pos len env acc (ini_find_rbrace s (pos + 2) len)
-        | otherwise = ini_interpolate_loop s (pos + 1) len env (acc + (str_slice s pos (pos + 1)))
+        | (pos + 1) < len and (str_char_at s pos) == 36 and (str_char_at s (pos + 1)) == 123 = ini expand brace s pos len env acc (ini find rbrace s (pos + 2) len)
+        | otherwise = ini interpolate loop s (pos + 1) len env (acc + (str_slice s pos (pos + 1)))
 
-fn :: ini_interpolate String [IniEntry] => String
-      ini_interpolate s      env        =  ini_interpolate_loop s 0 (str_len s) env ""
+fn :: ini interpolate String [IniEntry] => String
+      ini interpolate s env = ini interpolate loop s 0 (str_len s) env ""
 
 -- ── Sectioned INI Document Helpers ───────────────────────────
 
-fn :: ini_sec_put [IniSection] String String String => [IniSection]
-      ini_sec_put []           sec    key    val    =  [IniSection sec [IniEntry key val]]
-      ini_sec_put (s:rest)     sec    key    val
-        | (section_name s) == sec = [IniSection sec (ini_kv_put (entries s) key val)] :: rest
-        | otherwise = [s] :: (ini_sec_put rest sec key val)
+fn :: ini sec put [IniSection] String String String => [IniSection]
+      ini sec put [] sec key val = [IniSection sec [IniEntry key val]]
+      ini sec put (s:rest) sec key val =
+        | (section_name s) == sec = [IniSection sec (ini kv put (entries s) key val)] :: rest
+        | otherwise = [s] :: (ini sec put rest sec key val)
 
-fn :: ini_sec_ensure [IniSection] String => [IniSection]
-      ini_sec_ensure []           sec    =  [IniSection sec []]
-      ini_sec_ensure (s:rest)     sec
+fn :: ini sec ensure [IniSection] String => [IniSection]
+      ini sec ensure [] sec = [IniSection sec []]
+      ini sec ensure (s:rest) sec =
         | (section_name s) == sec = [s] :: rest
-        | otherwise = [s] :: (ini_sec_ensure rest sec)
+        | otherwise = [s] :: (ini sec ensure rest sec)
 
-fn :: ini_sec_get [IniSection] String String String   => String
-      ini_sec_get []           _      _      fallback =  fallback
-      ini_sec_get (s:rest)     sec    key    fallback
-        | (section_name s) == sec = ini_kv_get (entries s) key fallback
-        | otherwise = ini_sec_get rest sec key fallback
+fn :: ini sec get [IniSection] String String String => String
+      ini sec get [] _ _ fallback = fallback
+      ini sec get (s:rest) sec key fallback =
+        | (section_name s) == sec = ini kv get (entries s) key fallback
+        | otherwise = ini sec get rest sec key fallback
 
-fn :: ini_find_eq String Int Int => Int
-      ini_find_eq s      pos len
-        | pos >= len = -1
+fn :: ini find eq String Int Int => Int
+      ini find eq s pos len =
+        | pos >= len = (0 - 1)
         | (str_char_at s pos) == 61 = pos
-        | otherwise = ini_find_eq s (pos + 1) len
+        | otherwise = ini find eq s (pos + 1) len
 
-fn :: ini_strip_export String => String
-      ini_strip_export tr
-        | str_starts_with tr "export " = ini_trim (str_slice tr 7 (str_len tr))
+fn :: ini strip export String => String
+      ini strip export tr =
+        | str_starts_with tr "export " = ini trim (str_slice tr 7 (str_len tr))
         | otherwise = tr
 
-fn :: ini_parse_kv_at String [IniSection] String Int    => [IniSection]
-      ini_parse_kv_at _      secs         _      -1     =  secs
-      ini_parse_kv_at line   secs         cur_s  eq_pos =
-        key = ini_trim (str_slice line 0 eq_pos)
-        raw_v = ini_clean_val (str_slice line (eq_pos + 1) (str_len line))
-        cur_entries = ini_sec_entries secs cur_s
-        val = ini_interpolate raw_v cur_entries
-        ini_sec_put secs cur_s key val
+fn :: ini parse kv at String [IniSection] String Int => [IniSection]
+      ini parse kv at line secs cur_s eq_pos =
+        | eq_pos == (0 - 1) = secs
+        | otherwise = ini sec put secs cur_s (ini trim (str_slice line 0 eq_pos)) (ini interpolate (ini clean val (str_slice line (eq_pos + 1) (str_len line))) (ini sec entries secs cur_s))
 
-fn :: ini_sec_entries [IniSection] String => [IniEntry]
-      ini_sec_entries []           _      =  []
-      ini_sec_entries (s:rest)     sec
+fn :: ini sec entries [IniSection] String => [IniEntry]
+      ini sec entries [] _ = []
+      ini sec entries (s:rest) sec =
         | (section_name s) == sec = entries s
-        | otherwise = ini_sec_entries rest sec
+        | otherwise = ini sec entries rest sec
 
-fn :: ini_parse_lines [String] [IniSection] String => [IniSection]
-      ini_parse_lines []       secs         _      =  secs
-      ini_parse_lines (l:ls)   secs         cur_s  =
-        clean = ini_trim (ini_strip_comment_loop l 0 (str_len l))
-        ini_parse_clean_line clean ls secs cur_s
+fn :: ini parse lines [String] [IniSection] String => [IniSection]
+      ini parse lines [] secs _ = secs
+      ini parse lines (l:ls) secs cur_s =
+        clean = ini trim (ini strip comment loop l 0 (str_len l))
+        ini parse clean line clean ls secs cur_s
 
-fn :: ini_parse_sec_hdr String [String] [IniSection] => [IniSection]
-      ini_parse_sec_hdr clean  ls       secs         =
-        new_sec = ini_trim (str_slice clean 1 ((str_len clean) - 1))
-        ini_parse_lines ls (ini_sec_ensure secs new_sec) new_sec
+fn :: ini parse sec hdr String [String] [IniSection] => [IniSection]
+      ini parse sec hdr clean ls secs =
+        new_sec = ini trim (str_slice clean 1 ((str_len clean) - 1))
+        ini parse lines ls (ini sec ensure secs new_sec) new_sec
 
-fn :: ini_parse_kv_line String [String] [IniSection] String => [IniSection]
-      ini_parse_kv_line clean  ls       secs         cur_s  =
-        stripped = ini_strip_export clean
-        next_secs = ini_parse_kv_at stripped secs cur_s (ini_find_eq stripped 0 (str_len stripped))
-        ini_parse_lines ls next_secs cur_s
+fn :: ini parse kv line String [String] [IniSection] String => [IniSection]
+      ini parse kv line clean ls secs cur_s =
+        stripped = ini strip export clean
+        next_secs = ini parse kv at stripped secs cur_s (ini find eq stripped 0 (str_len stripped))
+        ini parse lines ls next_secs cur_s
 
-fn :: ini_parse_clean_line String [String] [IniSection] String => [IniSection]
-      ini_parse_clean_line ""     ls       secs         cur_s  =  ini_parse_lines ls secs cur_s
-      ini_parse_clean_line clean  ls       secs         cur_s
-        | (str_char_at clean 0) == 91 AND (str_char_at clean ((str_len clean) - 1)) == 93 = ini_parse_sec_hdr clean ls secs
-        | otherwise = ini_parse_kv_line clean ls secs cur_s
+fn :: ini parse clean line String [String] [IniSection] String => [IniSection]
+      ini parse clean line "" ls secs cur_s = ini parse lines ls secs cur_s
+      ini parse clean line clean ls secs cur_s =
+        | (str_char_at clean 0) == 91 and (str_char_at clean ((str_len clean) - 1)) == 93 = ini parse sec hdr clean ls secs
+        | otherwise = ini parse kv line clean ls secs cur_s
 
 -- @implements FR-INI-001
 -- @implements API-INI-001
 fn :: ini parse String => IniDoc
-      ini parse src    =
-        lines = ini_split_lines_loop src 0 (str_len src) 0 []
-        IniDoc (ini_parse_lines lines [] "")
+      ini parse src =
+        lines = ini split lines loop src 0 (str_len src) 0 []
+        IniDoc (ini parse lines lines [] "")
 
 -- @implements FR-INI-001
 -- @implements API-INI-001
 fn :: dotenv parse String => [IniEntry]
-      dotenv parse src    =
+      dotenv parse src =
         doc = ini parse src
-        ini_sec_entries (sections doc) ""
+        ini sec entries (sections doc) ""
 
 -- ── Queries, Updates & Serialization ─────────────────────────
 
 -- @implements FR-INI-001
 -- @implements API-INI-001
 fn :: ini get IniDoc String String String => String
-      ini get doc sec key fallback = ini_sec_get (sections doc) sec key fallback
+      ini get doc sec key fallback = ini sec get (sections doc) sec key fallback
 
 -- @implements FR-INI-001
 -- @implements API-INI-001
 fn :: ini get int IniDoc String String Int => Int
       ini get int doc sec key fallback =
         v = ini get doc sec key ""
-        ini_parse_int_or v fallback
+        ini parse int or v fallback
 
-fn :: ini_parse_int_or String Int      => Int
-      ini_parse_int_or ""     fallback =  fallback
-      ini_parse_int_or v      _        =  str_to_int v
+fn :: ini parse int or String Int => Int
+      ini parse int or "" fallback = fallback
+      ini parse int or v _ = str_to_int v
 
 -- @implements FR-INI-001
 -- @implements API-INI-001
 fn :: ini get bool IniDoc String String Bool => Bool
       ini get bool doc sec key fallback =
         v = ini get doc sec key ""
-        ini_parse_bool_or v fallback
+        ini parse bool or v fallback
 
-fn :: ini_parse_bool_or String  Bool     => Bool
-      ini_parse_bool_or ""      fallback =  fallback
-      ini_parse_bool_or "true"  _        =  True
-      ini_parse_bool_or "True"  _        =  True
-      ini_parse_bool_or "1"     _        =  True
-      ini_parse_bool_or "yes"   _        =  True
-      ini_parse_bool_or "false" _        =  False
-      ini_parse_bool_or "False" _        =  False
-      ini_parse_bool_or "0"     _        =  False
-      ini_parse_bool_or "no"    _        =  False
-      ini_parse_bool_or _       fallback =  fallback
+fn :: ini parse bool or String Bool => Bool
+      ini parse bool or "" fallback = fallback
+      ini parse bool or "true" _ = True
+      ini parse bool or "True" _ = True
+      ini parse bool or "1" _ = True
+      ini parse bool or "yes" _ = True
+      ini parse bool or "false" _ = False
+      ini parse bool or "False" _ = False
+      ini parse bool or "0" _ = False
+      ini parse bool or "no" _ = False
+      ini parse bool or _ fallback = fallback
 
 -- @implements FR-INI-001
 -- @implements API-INI-001
 fn :: ini set IniDoc String String String => IniDoc
-      ini set doc sec key val = IniDoc (ini_sec_put (sections doc) sec key val)
+      ini set doc sec key val = IniDoc (ini sec put (sections doc) sec key val)
 
-fn :: ini_collect_sec_names [IniSection] => [String]
-      ini_collect_sec_names []           =  []
-      ini_collect_sec_names (s:rest)     =  [section_name s] :: (ini_collect_sec_names rest)
+fn :: ini collect sec names [IniSection] => [String]
+      ini collect sec names [] = []
+      ini collect sec names (s:rest) = [section_name s] :: (ini collect sec names rest)
 
 -- @implements FR-INI-001
 -- @implements API-INI-001
 fn :: ini sections IniDoc => [String]
-      ini sections doc    =  ini_collect_sec_names (sections doc)
+      ini sections doc = ini collect sec names (sections doc)
 
 -- @implements FR-INI-001
 -- @implements API-INI-001
-fn :: dotenv get [IniEntry] String String   => String
-      dotenv get env        key    fallback =  ini_kv_get env key fallback
+fn :: dotenv get [IniEntry] String String => String
+      dotenv get env key fallback = ini kv get env key fallback
 
-fn :: ini_format_entries [IniEntry] => String
-      ini_format_entries []         =  ""
-      ini_format_entries ((IniEntry k v):rs) = k + " = " + v + (char_from_code 10) + (ini_format_entries rs)
+fn :: ini format entries [IniEntry] => String
+      ini format entries [] = ""
+      ini format entries ((IniEntry k v):rs) = k + " = " + v + (char_from_code 10) + (ini format entries rs)
 
-fn :: ini_format_section IniSection => String
-      ini_format_section sec
-        | (section_name sec) == "" = ini_format_entries (entries sec)
-        | otherwise = "[" + (section_name sec) + "]" + (char_from_code 10) + (ini_format_entries (entries sec))
+fn :: ini format section IniSection => String
+      ini format section sec =
+        | (section_name sec) == "" = ini format entries (entries sec)
+        | otherwise = "[" + (section_name sec) + "]" + (char_from_code 10) + (ini format entries (entries sec))
 
-fn :: ini_format_sections [IniSection] => String
-      ini_format_sections []           =  ""
-      ini_format_sections (s:[])       =  ini_format_section s
-      ini_format_sections (s:rest)     =  (ini_format_section s) + (char_from_code 10) + (ini_format_sections rest)
+fn :: ini format sections [IniSection] => String
+      ini format sections [] = ""
+      ini format sections (s:[]) = ini format section s
+      ini format sections (s:rest) = (ini format section s) + (char_from_code 10) + (ini format sections rest)
 
 -- @implements FR-INI-001
 -- @implements API-INI-001
 fn :: ini stringify IniDoc => String
-      ini stringify doc    =  ini_format_sections (sections doc)
+      ini stringify doc = ini format sections (sections doc)

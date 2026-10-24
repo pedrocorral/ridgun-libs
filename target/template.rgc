@@ -1,42 +1,3 @@
--- RGLIB1
--- SELF_HOSTED_COMPILER: ridgunc v0.9.8
--- FUNCTIONS: 35
--- TYPES: 1
--- SUMMARY: tm_lbrace:InlineSequential
--- SUMMARY: tm_rbrace:InlineSequential
--- SUMMARY: tm_braces:InlineSequential
--- SUMMARY: tm_is_space:InlineSequential
--- SUMMARY: tm_trim_start:LazyStealableTask
--- SUMMARY: tm_trim_end:LazyStealableTask
--- SUMMARY: tm_trim:LazyStealableTask
--- SUMMARY: tm_lookup:LazyStealableTask
--- SUMMARY: tm_val_truthy:InlineSequential
--- SUMMARY: tm_is_truthy:LazyStealableTask
--- SUMMARY: tm_escape_html_char:InlineSequential
--- SUMMARY: tm_escape_html_loop:LazyStealableTask
--- SUMMARY: tm_escape_latex_char:InlineSequential
--- SUMMARY: tm_escape_latex_loop:LazyStealableTask
--- SUMMARY: tm_escape:LazyStealableTask
--- SUMMARY: tm_find_close2:LazyStealableTask
--- SUMMARY: tm_find_close3:LazyStealableTask
--- SUMMARY: tm_find_section_close:LazyStealableTask
--- SUMMARY: tm_check_section_tag:LazyStealableTask
--- SUMMARY: tm_check_close_tag:LazyStealableTask
--- SUMMARY: tm_close_tag_match:LazyStealableTask
--- SUMMARY: tm_check_open_tag:LazyStealableTask
--- SUMMARY: tm_scan:LazyStealableTask
--- SUMMARY: tm_dispatch_tag:LazyStealableTask
--- SUMMARY: tm_tag_raw3:LazyStealableTask
--- SUMMARY: tm_tag_raw_amp:LazyStealableTask
--- SUMMARY: tm_tag_comment:LazyStealableTask
--- SUMMARY: tm_section_active:InlineSequential
--- SUMMARY: tm_render_section_body:LazyStealableTask
--- SUMMARY: tm_tag_section:LazyStealableTask
--- SUMMARY: tm_tag_var:LazyStealableTask
--- SUMMARY: tmpl_render_with_escape:LazyStealableTask
--- SUMMARY: tmpl_render:LazyStealableTask
--- SUMMARY: tmpl_render_html:LazyStealableTask
--- SUMMARY: tmpl_render_latex:LazyStealableTask
 -- ============================================================
 -- src/main/ridgun/lib/template.rg
 -- Pure-Ridgun Safe Mustache-Style Text Template Engine Library (TMPL)
@@ -50,61 +11,61 @@ type TmplEscape = TmplEscapeNone | TmplEscapeHtml | TmplEscapeLatex
 
 -- ── Internal Helpers ─────────────────────────────────────────
 
-fn :: tm_lbrace => String
-      tm_lbrace =  char_from_code 123
+fn :: tm lbrace => String
+      tm lbrace = char_from_code 123
 
-fn :: tm_rbrace => String
-      tm_rbrace =  char_from_code 125
+fn :: tm rbrace => String
+      tm rbrace = char_from_code 125
 
-fn :: tm_braces => String
-      tm_braces =  (char_from_code 123) + (char_from_code 125)
+fn :: tm braces => String
+      tm braces = (char_from_code 123) + (char_from_code 125)
 
-fn :: tm_is_space Int => Bool
-      tm_is_space c
+fn :: tm is space Int => Bool
+      tm is space c =
         | c == 32 = True
         | c == 9 = True
         | c == 10 = True
         | c == 13 = True
         | otherwise = False
 
-fn :: tm_trim_start String Int Int => Int
-      tm_trim_start s      idx n
+fn :: tm trim start String Int Int => Int
+      tm trim start s idx n =
         | idx >= n = n
-        | tm_is_space (str_char_at s idx) = tm_trim_start s (idx + 1) n
+        | tm is space (str_char_at s idx) = tm trim start s (idx + 1) n
         | otherwise = idx
 
-fn :: tm_trim_end String Int   Int => Int
-      tm_trim_end s      start idx
+fn :: tm trim end String Int Int => Int
+      tm trim end s start idx =
         | idx <= start = start
-        | tm_is_space (str_char_at s (idx - 1)) = tm_trim_end s start (idx - 1)
+        | tm is space (str_char_at s (idx - 1)) = tm trim end s start (idx - 1)
         | otherwise = idx
 
-fn :: tm_trim String => String
-      tm_trim s      =
+fn :: tm trim String => String
+      tm trim s =
         n = str_len s
-        st = tm_trim_start s 0 n
-        en = tm_trim_end s st n
+        st = tm trim start s 0 n
+        en = tm trim end s st n
         str_slice s st en
 
-fn :: tm_lookup [(String, String)] String => String
-      tm_lookup []                 _      =  ""
-      tm_lookup ((k, v):rest)      key
+fn :: tm lookup [String String] String => String
+      tm lookup [] _ = ""
+      tm lookup ((k, v):rest) key =
         | k == key = v
-        | otherwise = tm_lookup rest key
+        | otherwise = tm lookup rest key
 
-fn :: tm_val_truthy String => Bool
-      tm_val_truthy val
+fn :: tm val truthy String => Bool
+      tm val truthy val =
         | val == "" = False
         | val == "false" = False
         | val == "False" = False
         | val == "0" = False
         | otherwise = True
 
-fn :: tm_is_truthy [(String, String)] String => Bool
-      tm_is_truthy ctx                key    =  tm_val_truthy (tm_lookup ctx key)
+fn :: tm is truthy [String String] String => Bool
+      tm is truthy ctx key = tm val truthy (tm lookup ctx key)
 
-fn :: tm_escape_html_char Int => String
-      tm_escape_html_char c
+fn :: tm escape html char Int => String
+      tm escape html char c =
         | c == 38 = "&amp;"
         | c == 60 = "&lt;"
         | c == 62 = "&gt;"
@@ -112,136 +73,136 @@ fn :: tm_escape_html_char Int => String
         | c == 39 = "&#39;"
         | otherwise = char_from_code c
 
-fn :: tm_escape_html_loop String Int Int String => String
-      tm_escape_html_loop s      idx n   acc
+fn :: tm escape html loop String Int Int String => String
+      tm escape html loop s idx n acc =
         | idx >= n = acc
-        | otherwise = tm_escape_html_loop s (idx + 1) n (acc + (tm_escape_html_char (str_char_at s idx)))
+        | otherwise = tm escape html loop s (idx + 1) n (acc + (tm escape html char (str_char_at s idx)))
 
-fn :: tm_escape_latex_char Int => String
-      tm_escape_latex_char c
-        | c == 92 = (char_from_code 92) + "textbackslash" + tm_braces
-        | c == 123 = (char_from_code 92) + tm_lbrace
-        | c == 125 = (char_from_code 92) + tm_rbrace
+fn :: tm escape latex char Int => String
+      tm escape latex char c =
+        | c == 92 = (char_from_code 92) + "textbackslash" + (tm braces)
+        | c == 123 = (char_from_code 92) + (tm lbrace)
+        | c == 125 = (char_from_code 92) + (tm rbrace)
         | c == 38 = (char_from_code 92) + "&"
         | c == 37 = (char_from_code 92) + "%"
         | c == 36 = (char_from_code 92) + "$"
         | c == 35 = (char_from_code 92) + "#"
         | c == 95 = (char_from_code 92) + "_"
-        | c == 126 = (char_from_code 92) + "textasciitilde" + tm_braces
-        | c == 94 = (char_from_code 92) + "textasciicircum" + tm_braces
+        | c == 126 = (char_from_code 92) + "textasciitilde" + (tm braces)
+        | c == 94 = (char_from_code 92) + "textasciicircum" + (tm braces)
         | otherwise = char_from_code c
 
-fn :: tm_escape_latex_loop String Int Int String => String
-      tm_escape_latex_loop s      idx n   acc
+fn :: tm escape latex loop String Int Int String => String
+      tm escape latex loop s idx n acc =
         | idx >= n = acc
-        | otherwise = tm_escape_latex_loop s (idx + 1) n (acc + (tm_escape_latex_char (str_char_at s idx)))
+        | otherwise = tm escape latex loop s (idx + 1) n (acc + (tm escape latex char (str_char_at s idx)))
 
-fn :: tm_escape String TmplEscape      => String
-      tm_escape s      TmplEscapeNone  =  s
-      tm_escape s      TmplEscapeHtml  =  tm_escape_html_loop s 0 (str_len s) ""
-      tm_escape s      TmplEscapeLatex =  tm_escape_latex_loop s 0 (str_len s) ""
+fn :: tm escape String TmplEscape => String
+      tm escape s TmplEscapeNone = s
+      tm escape s TmplEscapeHtml = tm escape html loop s 0 (str_len s) ""
+      tm escape s TmplEscapeLatex = tm escape latex loop s 0 (str_len s) ""
 
-fn :: tm_find_close2 String Int Int => Int
-      tm_find_close2 s      idx n
-        | (idx + 1) >= n = 0 - 1
-        | (str_char_at s idx) == 125 AND (str_char_at s (idx + 1)) == 125 = idx
-        | otherwise = tm_find_close2 s (idx + 1) n
+fn :: tm find close2 String Int Int => Int
+      tm find close2 s idx n =
+        | (idx + 1) >= n = (0 - 1)
+        | (str_char_at s idx) == 125 and (str_char_at s (idx + 1)) == 125 = idx
+        | otherwise = tm find close2 s (idx + 1) n
 
-fn :: tm_find_close3 String Int Int => Int
-      tm_find_close3 s      idx n
-        | (idx + 2) >= n = 0 - 1
-        | (str_char_at s idx) == 125 AND (str_char_at s (idx + 1)) == 125 AND (str_char_at s (idx + 2)) == 125 = idx
-        | otherwise = tm_find_close3 s (idx + 1) n
+fn :: tm find close3 String Int Int => Int
+      tm find close3 s idx n =
+        | (idx + 2) >= n = (0 - 1)
+        | (str_char_at s idx) == 125 and (str_char_at s (idx + 1)) == 125 and (str_char_at s (idx + 2)) == 125 = idx
+        | otherwise = tm find close3 s (idx + 1) n
 
-fn :: tm_find_section_close String Int Int String Int => (Int, Int)
-      tm_find_section_close s idx n sec_key depth
+fn :: tm find section close String Int Int String Int => Int Int
+      tm find section close s idx n sec_key depth =
         | (idx + 3) >= n = (n, n)
-        | (str_char_at s idx) == 123 AND (str_char_at s (idx + 1)) == 123 =
-          tm_check_section_tag s idx n sec_key depth (str_char_at s (idx + 2))
-        | otherwise = tm_find_section_close s (idx + 1) n sec_key depth
+        | (str_char_at s idx) == 123 and (str_char_at s (idx + 1)) == 123 =
+          tm check section tag s idx n sec_key depth (str_char_at s (idx + 2))
+        | otherwise = tm find section close s (idx + 1) n sec_key depth
 
-fn :: tm_check_section_tag String Int Int String Int Int => (Int, Int)
-      tm_check_section_tag s idx n sec_key depth sig
-        | sig == 47 = tm_check_close_tag s idx n sec_key depth (tm_find_close2 s (idx + 3) n)
-        | sig == 35 OR sig == 94 = tm_check_open_tag s idx n sec_key depth (tm_find_close2 s (idx + 3) n)
-        | otherwise = tm_find_section_close s (idx + 2) n sec_key depth
+fn :: tm check section tag String Int Int String Int Int => Int Int
+      tm check section tag s idx n sec_key depth sig =
+        | sig == 47 = tm check close tag s idx n sec_key depth (tm find close2 s (idx + 3) n)
+        | sig == 35 or sig == 94 = tm check open tag s idx n sec_key depth (tm find close2 s (idx + 3) n)
+        | otherwise = tm find section close s (idx + 2) n sec_key depth
 
-fn :: tm_check_close_tag String Int Int String Int Int => (Int, Int)
-      tm_check_close_tag s idx n sec_key depth close_pos
+fn :: tm check close tag String Int Int String Int Int => Int Int
+      tm check close tag s idx n sec_key depth close_pos =
         | close_pos < 0 = (n, n)
-        | (tm_trim (str_slice s (idx + 3) close_pos)) == sec_key =
-          tm_close_tag_match s idx n sec_key depth close_pos
-        | otherwise = tm_find_section_close s (close_pos + 2) n sec_key depth
+        | (tm trim (str_slice s (idx + 3) close_pos)) == sec_key =
+          tm close tag match s idx n sec_key depth close_pos
+        | otherwise = tm find section close s (close_pos + 2) n sec_key depth
 
-fn :: tm_close_tag_match String Int Int String Int Int => (Int, Int)
-      tm_close_tag_match s idx n sec_key depth close_pos
+fn :: tm close tag match String Int Int String Int Int => Int Int
+      tm close tag match s idx n sec_key depth close_pos =
         | depth <= 1 = (idx, close_pos + 2)
-        | otherwise = tm_find_section_close s (close_pos + 2) n sec_key (depth - 1)
+        | otherwise = tm find section close s (close_pos + 2) n sec_key (depth - 1)
 
-fn :: tm_check_open_tag String Int Int String Int Int => (Int, Int)
-      tm_check_open_tag s idx n sec_key depth close_pos
+fn :: tm check open tag String Int Int String Int Int => Int Int
+      tm check open tag s idx n sec_key depth close_pos =
         | close_pos < 0 = (n, n)
-        | (tm_trim (str_slice s (idx + 3) close_pos)) == sec_key =
-          tm_find_section_close s (close_pos + 2) n sec_key (depth + 1)
-        | otherwise = tm_find_section_close s (close_pos + 2) n sec_key depth
+        | (tm trim (str_slice s (idx + 3) close_pos)) == sec_key =
+          tm find section close s (close_pos + 2) n sec_key (depth + 1)
+        | otherwise = tm find section close s (close_pos + 2) n sec_key depth
 
-fn :: tm_scan String Int Int [(String, String)] TmplEscape String => String
-      tm_scan s idx n ctx mode acc
+fn :: tm scan String Int Int [String String] TmplEscape String => String
+      tm scan s idx n ctx mode acc =
         | idx >= n = acc
-        | (idx + 1) < n AND (str_char_at s idx) == 123 AND (str_char_at s (idx + 1)) == 123 =
-          tm_dispatch_tag s idx n ctx mode acc
-        | otherwise = tm_scan s (idx + 1) n ctx mode (acc + (char_from_code (str_char_at s idx)))
+        | (idx + 1) < n and (str_char_at s idx) == 123 and (str_char_at s (idx + 1)) == 123 =
+          tm dispatch tag s idx n ctx mode acc
+        | otherwise = tm scan s (idx + 1) n ctx mode (acc + (char_from_code (str_char_at s idx)))
 
-fn :: tm_dispatch_tag String Int Int [(String, String)] TmplEscape String => String
-      tm_dispatch_tag s idx n ctx mode acc
-        | (idx + 2) >= n = acc + tm_lbrace + tm_lbrace
-        | (str_char_at s (idx + 2)) == 123 = tm_tag_raw3 s idx n ctx mode acc (tm_find_close3 s (idx + 3) n)
-        | (str_char_at s (idx + 2)) == 38 = tm_tag_raw_amp s idx n ctx mode acc (tm_find_close2 s (idx + 3) n)
-        | (str_char_at s (idx + 2)) == 33 = tm_tag_comment s idx n ctx mode acc (tm_find_close2 s (idx + 3) n)
-        | (str_char_at s (idx + 2)) == 35 = tm_tag_section s idx n ctx mode acc (tm_find_close2 s (idx + 3) n) False
-        | (str_char_at s (idx + 2)) == 94 = tm_tag_section s idx n ctx mode acc (tm_find_close2 s (idx + 3) n) True
-        | otherwise = tm_tag_var s idx n ctx mode acc (tm_find_close2 s (idx + 2) n)
+fn :: tm dispatch tag String Int Int [String String] TmplEscape String => String
+      tm dispatch tag s idx n ctx mode acc =
+        | (idx + 2) >= n = acc + (tm lbrace) + (tm lbrace)
+        | (str_char_at s (idx + 2)) == 123 = tm tag raw3 s idx n ctx mode acc (tm find close3 s (idx + 3) n)
+        | (str_char_at s (idx + 2)) == 38 = tm tag raw amp s idx n ctx mode acc (tm find close2 s (idx + 3) n)
+        | (str_char_at s (idx + 2)) == 33 = tm tag comment s idx n ctx mode acc (tm find close2 s (idx + 3) n)
+        | (str_char_at s (idx + 2)) == 35 = tm tag section s idx n ctx mode acc (tm find close2 s (idx + 3) n) False
+        | (str_char_at s (idx + 2)) == 94 = tm tag section s idx n ctx mode acc (tm find close2 s (idx + 3) n) True
+        | otherwise = tm tag var s idx n ctx mode acc (tm find close2 s (idx + 2) n)
 
-fn :: tm_tag_raw3 String Int Int [(String, String)] TmplEscape String Int => String
-      tm_tag_raw3 s idx n ctx mode acc close_pos
-        | close_pos < 0 = tm_scan s (idx + 3) n ctx mode (acc + tm_lbrace + tm_lbrace + tm_lbrace)
+fn :: tm tag raw3 String Int Int [String String] TmplEscape String Int => String
+      tm tag raw3 s idx n ctx mode acc close_pos =
+        | close_pos < 0 = tm scan s (idx + 3) n ctx mode (acc + (tm lbrace) + (tm lbrace) + (tm lbrace))
         | otherwise =
-          tm_scan s (close_pos + 3) n ctx mode (acc + (tm_lookup ctx (tm_trim (str_slice s (idx + 3) close_pos))))
+          tm scan s (close_pos + 3) n ctx mode (acc + (tm lookup ctx (tm trim (str_slice s (idx + 3) close_pos))))
 
-fn :: tm_tag_raw_amp String Int Int [(String, String)] TmplEscape String Int => String
-      tm_tag_raw_amp s idx n ctx mode acc close_pos
-        | close_pos < 0 = tm_scan s (idx + 3) n ctx mode (acc + tm_lbrace + tm_lbrace + "&")
+fn :: tm tag raw amp String Int Int [String String] TmplEscape String Int => String
+      tm tag raw amp s idx n ctx mode acc close_pos =
+        | close_pos < 0 = tm scan s (idx + 3) n ctx mode (acc + (tm lbrace) + (tm lbrace) + "&")
         | otherwise =
-          tm_scan s (close_pos + 2) n ctx mode (acc + (tm_lookup ctx (tm_trim (str_slice s (idx + 3) close_pos))))
+          tm scan s (close_pos + 2) n ctx mode (acc + (tm lookup ctx (tm trim (str_slice s (idx + 3) close_pos))))
 
-fn :: tm_tag_comment String Int Int [(String, String)] TmplEscape String Int => String
-      tm_tag_comment s _ n ctx mode acc close_pos
+fn :: tm tag comment String Int Int [String String] TmplEscape String Int => String
+      tm tag comment s _ n ctx mode acc close_pos =
         | close_pos < 0 = acc
-        | otherwise = tm_scan s (close_pos + 2) n ctx mode acc
+        | otherwise = tm scan s (close_pos + 2) n ctx mode acc
 
-fn :: tm_section_active Bool  Bool  => Bool
-      tm_section_active True  False =  True
-      tm_section_active False True  =  True
-      tm_section_active _     _     =  False
+fn :: tm section active Bool Bool => Bool
+      tm section active True False = True
+      tm section active False True = True
+      tm section active _ _ = False
 
-fn :: tm_render_section_body String Int (Int, Int) Int [(String, String)] TmplEscape String Bool => String
-      tm_render_section_body s _ (_, after_close) n ctx mode acc False =
-        tm_scan s after_close n ctx mode acc
-      tm_render_section_body s body_start (body_end, after_close) n ctx mode acc True =
-        rendered_body = tm_scan s body_start body_end ctx mode ""
-        tm_scan s after_close n ctx mode (acc + rendered_body)
+fn :: tm render section body String Int (Int Int) Int [String String] TmplEscape String Bool => String
+      tm render section body s _ (_, after_close) n ctx mode acc False =
+        tm scan s after_close n ctx mode acc
+      tm render section body s body_start (body_end, after_close) n ctx mode acc True =
+        rendered_body = tm scan s body_start body_end ctx mode ""
+        tm scan s after_close n ctx mode (acc + rendered_body)
 
-fn :: tm_tag_section String Int Int [(String, String)] TmplEscape String Int Bool => String
-      tm_tag_section s idx n ctx mode acc open_close inverted
-        | open_close < 0 = tm_scan s (idx + 3) n ctx mode acc
+fn :: tm tag section String Int Int [String String] TmplEscape String Int Bool => String
+      tm tag section s idx n ctx mode acc open_close inverted =
+        | open_close < 0 = tm scan s (idx + 3) n ctx mode acc
         | otherwise =
-          tm_render_section_body s (open_close + 2) (tm_find_section_close s (open_close + 2) n (tm_trim (str_slice s (idx + 3) open_close)) 1) n ctx mode acc (tm_section_active (tm_is_truthy ctx (tm_trim (str_slice s (idx + 3) open_close))) inverted)
+          tm render section body s (open_close + 2) (tm find section close s (open_close + 2) n (tm trim (str_slice s (idx + 3) open_close)) 1) n ctx mode acc (tm section active (tm is truthy ctx (tm trim (str_slice s (idx + 3) open_close))) inverted)
 
-fn :: tm_tag_var String Int Int [(String, String)] TmplEscape String Int => String
-      tm_tag_var s idx n ctx mode acc close_pos
-        | close_pos < 0 = tm_scan s (idx + 2) n ctx mode (acc + tm_lbrace + tm_lbrace)
+fn :: tm tag var String Int Int [String String] TmplEscape String Int => String
+      tm tag var s idx n ctx mode acc close_pos =
+        | close_pos < 0 = tm scan s (idx + 2) n ctx mode (acc + (tm lbrace) + (tm lbrace))
         | otherwise =
-          tm_scan s (close_pos + 2) n ctx mode (acc + (tm_escape (tm_lookup ctx (tm_trim (str_slice s (idx + 2) close_pos))) mode))
+          tm scan s (close_pos + 2) n ctx mode (acc + (tm escape (tm lookup ctx (tm trim (str_slice s (idx + 2) close_pos))) mode))
 
 -- ── Public API ───────────────────────────────────────────────
 
@@ -249,20 +210,20 @@ fn :: tm_tag_var String Int Int [(String, String)] TmplEscape String Int => Stri
 -- @implements API-TMPL-001
 -- @implements DM-Template
 -- @mitigates VUL-INPUT-001
-fn :: tmpl render with escape String [(String, String)] TmplEscape => String
-      tmpl render with escape tmpl ctx mode = tm_scan tmpl 0 (str_len tmpl) ctx mode ""
+fn :: tmpl render with escape String [String String] TmplEscape => String
+      tmpl render with escape tmpl ctx mode = tm scan tmpl 0 (str_len tmpl) ctx mode ""
 
 -- @implements FR-TMPL-001
 -- @implements API-TMPL-001
-fn :: tmpl render String [(String, String)] => String
-      tmpl render tmpl   ctx                =  tmpl render with escape tmpl ctx TmplEscapeNone
+fn :: tmpl render String [String String] => String
+      tmpl render tmpl ctx = tmpl render with escape tmpl ctx TmplEscapeNone
 
 -- @implements FR-TMPL-001
 -- @implements API-TMPL-001
-fn :: tmpl render html String [(String, String)] => String
-      tmpl render html tmpl   ctx                =  tmpl render with escape tmpl ctx TmplEscapeHtml
+fn :: tmpl render html String [String String] => String
+      tmpl render html tmpl ctx = tmpl render with escape tmpl ctx TmplEscapeHtml
 
 -- @implements FR-TMPL-001
 -- @implements API-TMPL-001
-fn :: tmpl render latex String [(String, String)] => String
-      tmpl render latex tmpl   ctx                =  tmpl render with escape tmpl ctx TmplEscapeLatex
+fn :: tmpl render latex String [String String] => String
+      tmpl render latex tmpl ctx = tmpl render with escape tmpl ctx TmplEscapeLatex
