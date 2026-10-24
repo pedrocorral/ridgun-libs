@@ -338,7 +338,8 @@ fn :: posix pipe flags Int => Int Int Int
 -- @implements API-POSIX-001
 fn :: posix pipe => Int Int Int
       posix pipe =
-        posix pipe flags 0
+        rfd, wfd = sys pipe
+        pack pipe fds 0 rfd wfd
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
@@ -365,22 +366,6 @@ fn :: posix exit Int => Int
       posix exit code =
         sys call 60 (code and 255) 0 0 0 0 0
 
-fn :: px pack cstrs loop [String] Int String String => Int String String
-      px pack cstrs loop []       cur_addr ptr_bytes str_bytes =
-        (cur_addr, ptr_bytes + (px u64 le 0), str_bytes)
-      px pack cstrs loop (s:rest) cur_addr ptr_bytes str_bytes =
-        cstr = s + (px raw byte 0)
-        next_addr = cur_addr + (str len cstr)
-        px pack cstrs loop rest next_addr (ptr_bytes + (px u64 le cur_addr)) (str_bytes + cstr)
-
-fn :: px str list len [String] => Int
-      px str list len []       =  0
-      px str list len (_:rest) =  1 + (px str list len rest)
-
-fn :: px str list bytes [String] => Int
-      px str list bytes []       =  0
-      px str list bytes (s:rest) =  (str len s) + 1 + (px str list bytes rest)
-
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 -- @mitigates VUL-INJ-002
@@ -388,44 +373,13 @@ fn :: px str list bytes [String] => Int
 fn :: posix execve String [String] [String] => Int
       posix execve path argv envp =
         | (str len path) == 0 or (str len path) > 4096 = 0 - 22
-        | otherwise =
-          argc       = px str list len argv
-          envc       = px str list len envp
-          ptrs_bytes = ((argc + 1) + (envc + 1)) * 8
-          strs_bytes = (str len path) + 1 + (px str list bytes argv) + (px str list bytes envp)
-          total_sz   = ptrs_bytes + strs_bytes + 64
-          page_sz    = ((total_sz / 4096) + 2) * 4096
-          base_ptr   = px alloc page page_sz
-          mfd        = px alloc mfd
-          argv_ptrs  = base_ptr
-          envp_ptrs  = base_ptr + ((argc + 1) * 8)
-          path_addr  = envp_ptrs + ((envc + 1) * 8)
-          path_cstr  = path + (px raw byte 0)
-          argv_str0  = path_addr + (str len path_cstr)
-          env_str0, argv_p_blob, argv_s_blob = px pack cstrs loop argv argv_str0 "" ""
-          _,        envp_p_blob, envp_s_blob = px pack cstrs loop envp env_str0 "" ""
-          full_blob  = argv_p_blob + envp_p_blob + path_cstr + argv_s_blob + envp_s_blob
-          _          = px poke mfd base_ptr full_blob
-          rc         = sys call 59 path_addr argv_ptrs envp_ptrs 0 0 0
-          _          = px free page mfd base_ptr page_sz
-          rc
-
-fn :: px finish waitpid Int String => Int Int
-      px finish waitpid rc raw =
-        | rc <= 0   = (rc, 0)
-        | otherwise = (rc, px decode u32 le raw 0)
+        | otherwise                                    = sys execve path argv envp
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 fn :: posix waitpid Int Int => Int Int
       posix waitpid pid options =
-        ptr = px alloc page 4096
-        mfd = px alloc mfd
-        _   = px poke mfd ptr (px u64 le 0)
-        rc  = sys call 61 pid ptr options 0 0 0
-        raw = px peek mfd ptr 8
-        _   = px free page mfd ptr 4096
-        px finish waitpid rc raw
+        sys waitpid pid options
 
 fn :: waitpid decode sig Int Int => ProcStatus
       waitpid decode sig wstatus sig =
