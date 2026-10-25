@@ -310,8 +310,8 @@ fn :: hmac sha256 String String => String
         k_block = normalize hmac key key
         ipad_s  = bytes from list (bitxor key pad k_block 54)
         opad_s  = bytes from list (bitxor key pad k_block 92)
-        inner   = sha256 bytes (ipad_s + msg)
-        sha256 bytes (opad_s + inner)
+        inner   = sha256 raw (ipad_s + msg)
+        sha256 raw (opad_s + inner)
 
 fn :: ct diff str String String Int Int Int => Int
       ct diff str a b idx slen acc =
@@ -512,60 +512,162 @@ fn :: c list to raw CT16 [Int] => String
         ub = norm byte b
         (c get b256 tbl (ub / 16) (ub % 16)) + (c list to raw tbl rest)
 
-fn :: c pack4 be String Int => Int
-      c pack4 be s off =
-        ((str char at s off) shl 24) or ((str char at s (off + 1)) shl 16) or ((str char at s (off + 2)) shl 8) or (str char at s (off + 3))
+fn :: c init acc32 String => Tensor[U64 * 32]
+      c init acc32 s =
+        acc = Tensor[U64 * 32]
+        acc_(0)  = str char at s 0
+        acc_(1)  = str char at s 1
+        acc_(2)  = str char at s 2
+        acc_(3)  = str char at s 3
+        acc_(4)  = str char at s 4
+        acc_(5)  = str char at s 5
+        acc_(6)  = str char at s 6
+        acc_(7)  = str char at s 7
+        acc_(8)  = str char at s 8
+        acc_(9)  = str char at s 9
+        acc_(10) = str char at s 10
+        acc_(11) = str char at s 11
+        acc_(12) = str char at s 12
+        acc_(13) = str char at s 13
+        acc_(14) = str char at s 14
+        acc_(15) = str char at s 15
+        acc_(16) = str char at s 16
+        acc_(17) = str char at s 17
+        acc_(18) = str char at s 18
+        acc_(19) = str char at s 19
+        acc_(20) = str char at s 20
+        acc_(21) = str char at s 21
+        acc_(22) = str char at s 22
+        acc_(23) = str char at s 23
+        acc_(24) = str char at s 24
+        acc_(25) = str char at s 25
+        acc_(26) = str char at s 26
+        acc_(27) = str char at s 27
+        acc_(28) = str char at s 28
+        acc_(29) = str char at s 29
+        acc_(30) = str char at s 30
+        acc_(31) = str char at s 31
+        acc
 
-fn :: c bxor8 pack4 String String String String String String String String Int => Int
-      c bxor8 pack4 s1 s2 s3 s4 s5 s6 s7 s8 off =
-        b0 = (str char at s1 off) xor (str char at s2 off) xor (str char at s3 off) xor (str char at s4 off) xor (str char at s5 off) xor (str char at s6 off) xor (str char at s7 off) xor (str char at s8 off)
-        b1 = (str char at s1 (off + 1)) xor (str char at s2 (off + 1)) xor (str char at s3 (off + 1)) xor (str char at s4 (off + 1)) xor (str char at s5 (off + 1)) xor (str char at s6 (off + 1)) xor (str char at s7 (off + 1)) xor (str char at s8 (off + 1))
-        b2 = (str char at s1 (off + 2)) xor (str char at s2 (off + 2)) xor (str char at s3 (off + 2)) xor (str char at s4 (off + 2)) xor (str char at s5 (off + 2)) xor (str char at s6 (off + 2)) xor (str char at s7 (off + 2)) xor (str char at s8 (off + 2))
-        b3 = (str char at s1 (off + 3)) xor (str char at s2 (off + 3)) xor (str char at s3 (off + 3)) xor (str char at s4 (off + 3)) xor (str char at s5 (off + 3)) xor (str char at s6 (off + 3)) xor (str char at s7 (off + 3)) xor (str char at s8 (off + 3))
-        (b0 shl 24) or (b1 shl 16) or (b2 shl 8) or b3
+fn :: c bxor1 acc32 Tensor[U64 * 32] String => Tensor[U64 * 32]
+      c bxor1 acc32 acc s =
+        acc_(0)  = acc_(0) xor (str char at s 0)
+        acc_(1)  = acc_(1) xor (str char at s 1)
+        acc_(2)  = acc_(2) xor (str char at s 2)
+        acc_(3)  = acc_(3) xor (str char at s 3)
+        acc_(4)  = acc_(4) xor (str char at s 4)
+        acc_(5)  = acc_(5) xor (str char at s 5)
+        acc_(6)  = acc_(6) xor (str char at s 6)
+        acc_(7)  = acc_(7) xor (str char at s 7)
+        acc_(8)  = acc_(8) xor (str char at s 8)
+        acc_(9)  = acc_(9) xor (str char at s 9)
+        acc_(10) = acc_(10) xor (str char at s 10)
+        acc_(11) = acc_(11) xor (str char at s 11)
+        acc_(12) = acc_(12) xor (str char at s 12)
+        acc_(13) = acc_(13) xor (str char at s 13)
+        acc_(14) = acc_(14) xor (str char at s 14)
+        acc_(15) = acc_(15) xor (str char at s 15)
+        acc_(16) = acc_(16) xor (str char at s 16)
+        acc_(17) = acc_(17) xor (str char at s 17)
+        acc_(18) = acc_(18) xor (str char at s 18)
+        acc_(19) = acc_(19) xor (str char at s 19)
+        acc_(20) = acc_(20) xor (str char at s 20)
+        acc_(21) = acc_(21) xor (str char at s 21)
+        acc_(22) = acc_(22) xor (str char at s 22)
+        acc_(23) = acc_(23) xor (str char at s 23)
+        acc_(24) = acc_(24) xor (str char at s 24)
+        acc_(25) = acc_(25) xor (str char at s 25)
+        acc_(26) = acc_(26) xor (str char at s 26)
+        acc_(27) = acc_(27) xor (str char at s 27)
+        acc_(28) = acc_(28) xor (str char at s 28)
+        acc_(29) = acc_(29) xor (str char at s 29)
+        acc_(30) = acc_(30) xor (str char at s 30)
+        acc_(31) = acc_(31) xor (str char at s 31)
+        acc
 
-fn :: pbkdf2 iter loop Int String String String Int Int Int Int Int Int Int Int => Tensor[U64 * 8]
-      pbkdf2 iter loop rem ipad opad u w0 w1 w2 w3 w4 w5 w6 w7 =
-        | rem <= 0 =
-          acc = Tensor[U64 * 8]
-          acc_(0) = w0
-          acc_(1) = w1
-          acc_(2) = w2
-          acc_(3) = w3
-          acc_(4) = w4
-          acc_(5) = w5
-          acc_(6) = w6
-          acc_(7) = w7
-          acc
+fn :: c bxor8 lo Tensor[U64 * 32] String String String String String String String String => Tensor[U64 * 32]
+      c bxor8 lo acc s1 s2 s3 s4 s5 s6 s7 s8 =
+        acc_(0)  = acc_(0) xor (str char at s1 0) xor (str char at s2 0) xor (str char at s3 0) xor (str char at s4 0) xor (str char at s5 0) xor (str char at s6 0) xor (str char at s7 0) xor (str char at s8 0)
+        acc_(1)  = acc_(1) xor (str char at s1 1) xor (str char at s2 1) xor (str char at s3 1) xor (str char at s4 1) xor (str char at s5 1) xor (str char at s6 1) xor (str char at s7 1) xor (str char at s8 1)
+        acc_(2)  = acc_(2) xor (str char at s1 2) xor (str char at s2 2) xor (str char at s3 2) xor (str char at s4 2) xor (str char at s5 2) xor (str char at s6 2) xor (str char at s7 2) xor (str char at s8 2)
+        acc_(3)  = acc_(3) xor (str char at s1 3) xor (str char at s2 3) xor (str char at s3 3) xor (str char at s4 3) xor (str char at s5 3) xor (str char at s6 3) xor (str char at s7 3) xor (str char at s8 3)
+        acc_(4)  = acc_(4) xor (str char at s1 4) xor (str char at s2 4) xor (str char at s3 4) xor (str char at s4 4) xor (str char at s5 4) xor (str char at s6 4) xor (str char at s7 4) xor (str char at s8 4)
+        acc_(5)  = acc_(5) xor (str char at s1 5) xor (str char at s2 5) xor (str char at s3 5) xor (str char at s4 5) xor (str char at s5 5) xor (str char at s6 5) xor (str char at s7 5) xor (str char at s8 5)
+        acc_(6)  = acc_(6) xor (str char at s1 6) xor (str char at s2 6) xor (str char at s3 6) xor (str char at s4 6) xor (str char at s5 6) xor (str char at s6 6) xor (str char at s7 6) xor (str char at s8 6)
+        acc_(7)  = acc_(7) xor (str char at s1 7) xor (str char at s2 7) xor (str char at s3 7) xor (str char at s4 7) xor (str char at s5 7) xor (str char at s6 7) xor (str char at s7 7) xor (str char at s8 7)
+        acc_(8)  = acc_(8) xor (str char at s1 8) xor (str char at s2 8) xor (str char at s3 8) xor (str char at s4 8) xor (str char at s5 8) xor (str char at s6 8) xor (str char at s7 8) xor (str char at s8 8)
+        acc_(9)  = acc_(9) xor (str char at s1 9) xor (str char at s2 9) xor (str char at s3 9) xor (str char at s4 9) xor (str char at s5 9) xor (str char at s6 9) xor (str char at s7 9) xor (str char at s8 9)
+        acc_(10) = acc_(10) xor (str char at s1 10) xor (str char at s2 10) xor (str char at s3 10) xor (str char at s4 10) xor (str char at s5 10) xor (str char at s6 10) xor (str char at s7 10) xor (str char at s8 10)
+        acc_(11) = acc_(11) xor (str char at s1 11) xor (str char at s2 11) xor (str char at s3 11) xor (str char at s4 11) xor (str char at s5 11) xor (str char at s6 11) xor (str char at s7 11) xor (str char at s8 11)
+        acc_(12) = acc_(12) xor (str char at s1 12) xor (str char at s2 12) xor (str char at s3 12) xor (str char at s4 12) xor (str char at s5 12) xor (str char at s6 12) xor (str char at s7 12) xor (str char at s8 12)
+        acc_(13) = acc_(13) xor (str char at s1 13) xor (str char at s2 13) xor (str char at s3 13) xor (str char at s4 13) xor (str char at s5 13) xor (str char at s6 13) xor (str char at s7 13) xor (str char at s8 13)
+        acc_(14) = acc_(14) xor (str char at s1 14) xor (str char at s2 14) xor (str char at s3 14) xor (str char at s4 14) xor (str char at s5 14) xor (str char at s6 14) xor (str char at s7 14) xor (str char at s8 14)
+        acc_(15) = acc_(15) xor (str char at s1 15) xor (str char at s2 15) xor (str char at s3 15) xor (str char at s4 15) xor (str char at s5 15) xor (str char at s6 15) xor (str char at s7 15) xor (str char at s8 15)
+        acc
+
+fn :: c bxor8 hi Tensor[U64 * 32] String String String String String String String String => Tensor[U64 * 32]
+      c bxor8 hi acc s1 s2 s3 s4 s5 s6 s7 s8 =
+        acc_(16) = acc_(16) xor (str char at s1 16) xor (str char at s2 16) xor (str char at s3 16) xor (str char at s4 16) xor (str char at s5 16) xor (str char at s6 16) xor (str char at s7 16) xor (str char at s8 16)
+        acc_(17) = acc_(17) xor (str char at s1 17) xor (str char at s2 17) xor (str char at s3 17) xor (str char at s4 17) xor (str char at s5 17) xor (str char at s6 17) xor (str char at s7 17) xor (str char at s8 17)
+        acc_(18) = acc_(18) xor (str char at s1 18) xor (str char at s2 18) xor (str char at s3 18) xor (str char at s4 18) xor (str char at s5 18) xor (str char at s6 18) xor (str char at s7 18) xor (str char at s8 18)
+        acc_(19) = acc_(19) xor (str char at s1 19) xor (str char at s2 19) xor (str char at s3 19) xor (str char at s4 19) xor (str char at s5 19) xor (str char at s6 19) xor (str char at s7 19) xor (str char at s8 19)
+        acc_(20) = acc_(20) xor (str char at s1 20) xor (str char at s2 20) xor (str char at s3 20) xor (str char at s4 20) xor (str char at s5 20) xor (str char at s6 20) xor (str char at s7 20) xor (str char at s8 20)
+        acc_(21) = acc_(21) xor (str char at s1 21) xor (str char at s2 21) xor (str char at s3 21) xor (str char at s4 21) xor (str char at s5 21) xor (str char at s6 21) xor (str char at s7 21) xor (str char at s8 21)
+        acc_(22) = acc_(22) xor (str char at s1 22) xor (str char at s2 22) xor (str char at s3 22) xor (str char at s4 22) xor (str char at s5 22) xor (str char at s6 22) xor (str char at s7 22) xor (str char at s8 22)
+        acc_(23) = acc_(23) xor (str char at s1 23) xor (str char at s2 23) xor (str char at s3 23) xor (str char at s4 23) xor (str char at s5 23) xor (str char at s6 23) xor (str char at s7 23) xor (str char at s8 23)
+        acc_(24) = acc_(24) xor (str char at s1 24) xor (str char at s2 24) xor (str char at s3 24) xor (str char at s4 24) xor (str char at s5 24) xor (str char at s6 24) xor (str char at s7 24) xor (str char at s8 24)
+        acc_(25) = acc_(25) xor (str char at s1 25) xor (str char at s2 25) xor (str char at s3 25) xor (str char at s4 25) xor (str char at s5 25) xor (str char at s6 25) xor (str char at s7 25) xor (str char at s8 25)
+        acc_(26) = acc_(26) xor (str char at s1 26) xor (str char at s2 26) xor (str char at s3 26) xor (str char at s4 26) xor (str char at s5 26) xor (str char at s6 26) xor (str char at s7 26) xor (str char at s8 26)
+        acc_(27) = acc_(27) xor (str char at s1 27) xor (str char at s2 27) xor (str char at s3 27) xor (str char at s4 27) xor (str char at s5 27) xor (str char at s6 27) xor (str char at s7 27) xor (str char at s8 27)
+        acc_(28) = acc_(28) xor (str char at s1 28) xor (str char at s2 28) xor (str char at s3 28) xor (str char at s4 28) xor (str char at s5 28) xor (str char at s6 28) xor (str char at s7 28) xor (str char at s8 28)
+        acc_(29) = acc_(29) xor (str char at s1 29) xor (str char at s2 29) xor (str char at s3 29) xor (str char at s4 29) xor (str char at s5 29) xor (str char at s6 29) xor (str char at s7 29) xor (str char at s8 29)
+        acc_(30) = acc_(30) xor (str char at s1 30) xor (str char at s2 30) xor (str char at s3 30) xor (str char at s4 30) xor (str char at s5 30) xor (str char at s6 30) xor (str char at s7 30) xor (str char at s8 30)
+        acc_(31) = acc_(31) xor (str char at s1 31) xor (str char at s2 31) xor (str char at s3 31) xor (str char at s4 31) xor (str char at s5 31) xor (str char at s6 31) xor (str char at s7 31) xor (str char at s8 31)
+        acc
+
+fn :: c acc32 quad CT16 Tensor[U64 * 32] Int => String
+      c acc32 quad tbl acc off =
+        v0 = acc_(off)
+        v1 = acc_(off + 1)
+        v2 = acc_(off + 2)
+        v3 = acc_(off + 3)
+        b0 = c get b256 tbl ((v0 shr 4) and 15) (v0 and 15)
+        b1 = c get b256 tbl ((v1 shr 4) and 15) (v1 and 15)
+        b2 = c get b256 tbl ((v2 shr 4) and 15) (v2 and 15)
+        b3 = c get b256 tbl ((v3 shr 4) and 15) (v3 and 15)
+        (b0 + b1) + (b2 + b3)
+
+fn :: c acc32 to raw CT16 Tensor[U64 * 32] => String
+      c acc32 to raw tbl acc =
+        q0 = c acc32 quad tbl acc 0
+        q1 = c acc32 quad tbl acc 4
+        q2 = c acc32 quad tbl acc 8
+        q3 = c acc32 quad tbl acc 12
+        q4 = c acc32 quad tbl acc 16
+        q5 = c acc32 quad tbl acc 20
+        q6 = c acc32 quad tbl acc 24
+        q7 = c acc32 quad tbl acc 28
+        ((q0 + q1) + (q2 + q3)) + ((q4 + q5) + (q6 + q7))
+
+fn :: pbkdf2 iter loop Int String String String Tensor[U64 * 32] => Tensor[U64 * 32]
+      pbkdf2 iter loop rem ipad opad u acc =
+        | rem <= 0 = acc
         | rem >= 8 =
-          u1  = sha256 raw (opad + (sha256 raw (ipad + u)))
-          u2  = sha256 raw (opad + (sha256 raw (ipad + u1)))
-          u3  = sha256 raw (opad + (sha256 raw (ipad + u2)))
-          u4  = sha256 raw (opad + (sha256 raw (ipad + u3)))
-          u5  = sha256 raw (opad + (sha256 raw (ipad + u4)))
-          u6  = sha256 raw (opad + (sha256 raw (ipad + u5)))
-          u7  = sha256 raw (opad + (sha256 raw (ipad + u6)))
-          u8  = sha256 raw (opad + (sha256 raw (ipad + u7)))
-          nw0 = w0 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 0)
-          nw1 = w1 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 4)
-          nw2 = w2 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 8)
-          nw3 = w3 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 12)
-          nw4 = w4 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 16)
-          nw5 = w5 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 20)
-          nw6 = w6 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 24)
-          nw7 = w7 xor (c bxor8 pack4 u1 u2 u3 u4 u5 u6 u7 u8 28)
-          pbkdf2 iter loop (rem - 8) ipad opad u8 nw0 nw1 nw2 nw3 nw4 nw5 nw6 nw7
+          u1   = sha256 raw (opad + (sha256 raw (ipad + u)))
+          u2   = sha256 raw (opad + (sha256 raw (ipad + u1)))
+          u3   = sha256 raw (opad + (sha256 raw (ipad + u2)))
+          u4   = sha256 raw (opad + (sha256 raw (ipad + u3)))
+          u5   = sha256 raw (opad + (sha256 raw (ipad + u4)))
+          u6   = sha256 raw (opad + (sha256 raw (ipad + u5)))
+          u7   = sha256 raw (opad + (sha256 raw (ipad + u6)))
+          u8   = sha256 raw (opad + (sha256 raw (ipad + u7)))
+          acc1 = c bxor8 lo acc u1 u2 u3 u4 u5 u6 u7 u8
+          acc2 = c bxor8 hi acc1 u1 u2 u3 u4 u5 u6 u7 u8
+          pbkdf2 iter loop (rem - 8) ipad opad u8 acc2
         | otherwise =
-          u1  = sha256 raw (opad + (sha256 raw (ipad + u)))
-          nw0 = w0 xor (c pack4 be u1 0)
-          nw1 = w1 xor (c pack4 be u1 4)
-          nw2 = w2 xor (c pack4 be u1 8)
-          nw3 = w3 xor (c pack4 be u1 12)
-          nw4 = w4 xor (c pack4 be u1 16)
-          nw5 = w5 xor (c pack4 be u1 20)
-          nw6 = w6 xor (c pack4 be u1 24)
-          nw7 = w7 xor (c pack4 be u1 28)
-          pbkdf2 iter loop (rem - 1) ipad opad u1 nw0 nw1 nw2 nw3 nw4 nw5 nw6 nw7
+          u1   = sha256 raw (opad + (sha256 raw (ipad + u)))
+          acc1 = c bxor1 acc32 acc u1
+          pbkdf2 iter loop (rem - 1) ipad opad u1 acc1
 
 fn :: pbkdf2 block CPbkCtx String Int Int => String
       pbkdf2 block ctx salt iterations block_idx =
@@ -573,8 +675,9 @@ fn :: pbkdf2 block CPbkCtx String Int Int => String
         ipad = cpipad ctx
         opad = cpopad ctx
         u1   = sha256 raw (opad + (sha256 raw (ipad + salt + (be32 bytes block_idx))))
-        accf = pbkdf2 iter loop (iterations - 1) ipad opad u1 (c pack4 be u1 0) (c pack4 be u1 4) (c pack4 be u1 8) (c pack4 be u1 12) (c pack4 be u1 16) (c pack4 be u1 20) (c pack4 be u1 24) (c pack4 be u1 28)
-        c acc8 to raw tbl accf
+        acc0 = c init acc32 u1
+        accf = pbkdf2 iter loop (iterations - 1) ipad opad u1 acc0
+        c acc32 to raw tbl accf
 
 fn :: pbkdf2 blocks loop CPbkCtx String Int Int Int String => String
       pbkdf2 blocks loop ctx salt iterations block_idx dk_len acc =

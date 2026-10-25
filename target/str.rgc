@@ -129,13 +129,32 @@ fn :: s match needle at String String Int Int Int => Bool
           s match needle at haystack needle pos (k + 1) nlen
         | otherwise = False
 
+fn :: s scan to byte String Int Int Int => Int
+      s scan to byte s pos limit b0 =
+        | (pos + 8) <= limit =
+          | (str char at s pos) == b0       = pos
+          | (str char at s (pos + 1)) == b0 = pos + 1
+          | (str char at s (pos + 2)) == b0 = pos + 2
+          | (str char at s (pos + 3)) == b0 = pos + 3
+          | (str char at s (pos + 4)) == b0 = pos + 4
+          | (str char at s (pos + 5)) == b0 = pos + 5
+          | (str char at s (pos + 6)) == b0 = pos + 6
+          | (str char at s (pos + 7)) == b0 = pos + 7
+          | otherwise                       = s scan to byte s (pos + 8) limit b0
+        | pos >= limit              = limit
+        | (str char at s pos) == b0 = pos
+        | otherwise                 = s scan to byte s (pos + 1) limit b0
+
+fn :: str index of hit String String Int Int Int Int Int => Int
+      str index of hit haystack needle hit limit hlen nlen n0 =
+        | hit >= limit = 0 - 1
+        | s match needle at haystack needle hit 1 nlen = hit
+        | otherwise = str index of from haystack needle (hit + 1) hlen nlen n0
+
 fn :: str index of from String String Int Int Int Int => Int
       str index of from haystack needle pos hlen nlen n0 =
-        | pos + nlen > hlen = 0 - 1
-        | (pos + 4096 + nlen) <= hlen and (not (str contains (str slice haystack pos (pos + 4096 + nlen - 1)) needle)) =
-          str index of from haystack needle (pos + 4096) hlen nlen n0
-        | (str char at haystack pos) == n0 and (s match needle at haystack needle pos 1 nlen) = pos
-        | otherwise = str index of from haystack needle (pos + 1) hlen nlen n0
+        limit = (hlen - nlen) + 1
+        str index of hit haystack needle (s scan to byte haystack pos limit n0) limit hlen nlen n0
 
 fn :: str index of step String String Int Int => Int
       str index of step haystack needle hlen nlen =
@@ -208,19 +227,23 @@ fn :: str is blank String => Bool
 
 -- ── Substring Replacement ────────────────────────────────────
 
-fn :: str replace loop String String String Int Int Int Int Int String String String String => String
-      str replace loop s old new_s pos seg_start slen olen o0 c0 c1 c2 c3 =
-        | pos + olen > slen =
+fn :: str replace hit String String String Int Int Int Int Int Int String String String String => String
+      str replace hit s old new_s hit limit seg_start slen olen o0 c0 c1 c2 c3 =
+        | hit >= limit =
           s sb finish (c0 + (s byte slice s seg_start slen)) c1 c2 c3
-        | (pos + 4096 + olen) <= slen and (not (str contains (str slice s pos (pos + 4096 + olen - 1)) old)) =
-          str replace loop s old new_s (pos + 4096) seg_start slen olen o0 c0 c1 c2 c3
-        | (str char at s pos) == o0 and (s match needle at s old pos 1 olen) =
-          piece = (s byte slice s seg_start pos) + new_s
+        | s match needle at s old hit 1 olen =
+          piece = (s byte slice s seg_start hit) + new_s
           n0, n1, n2, n3 = s sb append piece c0 c1 c2 c3
-          next_p = pos + olen
+          next_p = hit + olen
           str replace loop s old new_s next_p next_p slen olen o0 n0 n1 n2 n3
         | otherwise =
-          str replace loop s old new_s (pos + 1) seg_start slen olen o0 c0 c1 c2 c3
+          str replace loop s old new_s (hit + 1) seg_start slen olen o0 c0 c1 c2 c3
+
+fn :: str replace loop String String String Int Int Int Int Int String String String String => String
+      str replace loop s old new_s pos seg_start slen olen o0 c0 c1 c2 c3 =
+        limit = (slen - olen) + 1
+        hit   = s scan to byte s pos limit o0
+        str replace hit s old new_s hit limit seg_start slen olen o0 c0 c1 c2 c3
 
 fn :: str replace step String String String Int => String
       str replace step s old new_s olen =
@@ -243,20 +266,24 @@ fn :: str split chars String Int Int [String] [String] [String] Int => [String]
           n0, n1, n2, ncnt = s lb append (s byte slice s idx (idx + 1)) l0 l1 l2 cnt
           str split chars s (idx + 1) slen n0 n1 n2 ncnt
 
-fn :: str split loop String String Int Int Int Int Int [String] [String] [String] Int => [String]
-      str split loop s delim pos slen dlen d0 seg_start l0 l1 l2 cnt =
-        | pos + dlen > slen =
+fn :: str split hit String String Int Int Int Int Int Int [String] [String] [String] Int => [String]
+      str split hit s delim hit limit slen dlen d0 seg_start l0 l1 l2 cnt =
+        | hit >= limit =
           n0, n1, n2, _ = s lb append (s byte slice s seg_start slen) l0 l1 l2 cnt
           s lb finish n0 n1 n2
-        | (pos + 4096 + dlen) <= slen and (not (str contains (str slice s pos (pos + 4096 + dlen - 1)) delim)) =
-          str split loop s delim (pos + 4096) slen dlen d0 seg_start l0 l1 l2 cnt
-        | (str char at s pos) == d0 and (s match needle at s delim pos 1 dlen) =
-          seg = s byte slice s seg_start pos
+        | s match needle at s delim hit 1 dlen =
+          seg = s byte slice s seg_start hit
           n0, n1, n2, ncnt = s lb append seg l0 l1 l2 cnt
-          next_p = pos + dlen
+          next_p = hit + dlen
           str split loop s delim next_p slen dlen d0 next_p n0 n1 n2 ncnt
         | otherwise =
-          str split loop s delim (pos + 1) slen dlen d0 seg_start l0 l1 l2 cnt
+          str split loop s delim (hit + 1) slen dlen d0 seg_start l0 l1 l2 cnt
+
+fn :: str split loop String String Int Int Int Int Int [String] [String] [String] Int => [String]
+      str split loop s delim pos slen dlen d0 seg_start l0 l1 l2 cnt =
+        limit = (slen - dlen) + 1
+        hit   = s scan to byte s pos limit d0
+        str split hit s delim hit limit slen dlen d0 seg_start l0 l1 l2 cnt
 
 fn :: str split step String String Int Int => [String]
       str split step s delim slen dlen =
