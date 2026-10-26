@@ -15,7 +15,7 @@ type Argon2Res    = Argon2Ok String | Argon2Err String
 type Argon2KeyRes = Argon2KeyOk [Int] | Argon2KeyErr String
 type Argon2PhcRes = Argon2PhcOk Argon2Phc | Argon2PhcErr String
 
-type A2M16   = mb0: Tensor[U64 * 8 * 32], mb1: Tensor[U64 * 8 * 32], mb2: Tensor[U64 * 8 * 32], mb3: Tensor[U64 * 8 * 32], mb4: Tensor[U64 * 8 * 32], mb5: Tensor[U64 * 8 * 32], mb6: Tensor[U64 * 8 * 32], mb7: Tensor[U64 * 8 * 32], mb8: Tensor[U64 * 8 * 32], mb9: Tensor[U64 * 8 * 32], mb10: Tensor[U64 * 8 * 32], mb11: Tensor[U64 * 8 * 32], mb12: Tensor[U64 * 8 * 32], mb13: Tensor[U64 * 8 * 32], mb14: Tensor[U64 * 8 * 32], mb15: Tensor[U64 * 8 * 32]
+type A2M16   = mb0: Tensor[U64 * 256], mb1: Tensor[U64 * 256], mb2: Tensor[U64 * 256], mb3: Tensor[U64 * 256], mb4: Tensor[U64 * 256], mb5: Tensor[U64 * 256], mb6: Tensor[U64 * 256], mb7: Tensor[U64 * 256], mb8: Tensor[U64 * 256], mb9: Tensor[U64 * 256], mb10: Tensor[U64 * 256], mb11: Tensor[U64 * 256], mb12: Tensor[U64 * 256], mb13: Tensor[U64 * 256], mb14: Tensor[U64 * 256], mb15: Tensor[U64 * 256]
 type A2M256  = mr0: A2M16, mr1: A2M16, mr2: A2M16, mr3: A2M16, mr4: A2M16, mr5: A2M16, mr6: A2M16, mr7: A2M16, mr8: A2M16, mr9: A2M16, mr10: A2M16, mr11: A2M16, mr12: A2M16, mr13: A2M16, mr14: A2M16, mr15: A2M16
 type A2M4096 = mp0: A2M256, mp1: A2M256, mp2: A2M256, mp3: A2M256, mp4: A2M256, mp5: A2M256, mp6: A2M256, mp7: A2M256, mp8: A2M256, mp9: A2M256, mp10: A2M256, mp11: A2M256, mp12: A2M256, mp13: A2M256, mp14: A2M256, mp15: A2M256
 type A2Mem   = mt0: A2M4096, mt1: A2M4096, mt2: A2M4096, mt3: A2M4096, mt4: A2M4096, mt5: A2M4096, mt6: A2M4096, mt7: A2M4096, mt8: A2M4096, mt9: A2M4096, mt10: A2M4096, mt11: A2M4096, mt12: A2M4096, mt13: A2M4096, mt14: A2M4096, mt15: A2M4096
@@ -158,8 +158,8 @@ fn :: a2 bytes to u32 le [Int] Int => Int
 fn :: a2 zero w16 => Tensor[U64 * 32]
       a2 zero w16 =  Tensor[U64 * 32]
 
-fn :: a2 zero blk8 => Tensor[U64 * 8 * 32]
-      a2 zero blk8 =  Tensor[U64 * 8 * 32]
+fn :: a2 zero blk8 => Tensor[U64 * 256]
+      a2 zero blk8 =  Tensor[U64 * 256]
 
 fn :: a2 w16 get Tensor[U64 * 32] Int => U64
       a2 w16 get w                idx =  w_(2 * idx) or (w_((2 * idx) + 1) shl 32)
@@ -363,82 +363,93 @@ fn :: a2 blake2b long [Int] Int    => [Int]
 -- Pure-Ridgun RFC 9106 v0x13 Argon2id Block Compression & Memory Engine
 -- ============================================================
 
-fn :: a2 blamka g U64 U64 U64 U64 U64 U64 U64 U64 => U64 U64 U64 U64 U64 U64 U64 U64
-      a2 blamka g al ah bl bh cl ch dl dh =
-        p0      = (al and 0x3FFFFFFF) * bl
-        p1      = (al shr 30) * bl
-        sl      = al + bl + ((p0 and 0x7FFFFFFF) shl 1) + ((p1 and 1) shl 31)
-        mut al  = sl and 0xFFFFFFFF
-        mut ah  = (ah + bh + (p0 shr 31) + (p1 shr 1) + (sl shr 32)) and 0xFFFFFFFF
-        xl      = dl xor al
-        xh      = dh xor ah
-        mut dl  = xh
-        mut dh  = xl
-        q0      = (cl and 0x3FFFFFFF) * dl
-        q1      = (cl shr 30) * dl
-        tl      = cl + dl + ((q0 and 0x7FFFFFFF) shl 1) + ((q1 and 1) shl 31)
-        mut cl  = tl and 0xFFFFFFFF
-        mut ch  = (ch + dh + (q0 shr 31) + (q1 shr 1) + (tl shr 32)) and 0xFFFFFFFF
-        yl      = bl xor cl
-        yh      = bh xor ch
-        mut bl  = ((yl shr 24) or (yh shl 8)) and 0xFFFFFFFF
-        mut bh  = ((yh shr 24) or (yl shl 8)) and 0xFFFFFFFF
-        r0      = (al and 0x3FFFFFFF) * bl
-        r1      = (al shr 30) * bl
-        ul      = al + bl + ((r0 and 0x7FFFFFFF) shl 1) + ((r1 and 1) shl 31)
-        al      = ul and 0xFFFFFFFF
-        ah      = (ah + bh + (r0 shr 31) + (r1 shr 1) + (ul shr 32)) and 0xFFFFFFFF
-        zl      = dl xor al
-        zh      = dh xor ah
-        dl      = ((zl shr 16) or (zh shl 16)) and 0xFFFFFFFF
-        dh      = ((zh shr 16) or (zl shl 16)) and 0xFFFFFFFF
-        s0      = (cl and 0x3FFFFFFF) * dl
-        s1      = (cl shr 30) * dl
-        vl      = cl + dl + ((s0 and 0x7FFFFFFF) shl 1) + ((s1 and 1) shl 31)
-        cl      = vl and 0xFFFFFFFF
-        ch      = (ch + dh + (s0 shr 31) + (s1 shr 1) + (vl shr 32)) and 0xFFFFFFFF
-        wl      = bl xor cl
-        wh      = bh xor ch
-        bl      = ((wl shl 1) or (wh shr 31)) and 0xFFFFFFFF
-        bh      = ((wh shl 1) or (wl shr 31)) and 0xFFFFFFFF
-        (al, ah, bl, bh, cl, ch, dl, dh)
+fn :: a2 blamka g idx Tensor[U64 * 256] Int Int Int Int => Int
+      a2 blamka g idx z ia ib ic id =
+        mut al = z_(ia)
+        mut ah = z_(ia + 1)
+        mut bl = z_(ib)
+        mut bh = z_(ib + 1)
+        mut cl = z_(ic)
+        mut ch = z_(ic + 1)
+        mut dl = z_(id)
+        mut dh = z_(id + 1)
+        mut t  = (al and 0x3FFFFFFF) * bl
+        mut u  = ((al shr 30) * bl) + (t shr 30)
+        t      = al + bl + ((t and 0x3FFFFFFF) shl 1) + ((u and 1) shl 31)
+        al     = t and 0xFFFFFFFF
+        ah     = (ah + bh + (u shr 1) + (t shr 32)) and 0xFFFFFFFF
+        t      = dl xor al
+        dl     = dh xor ah
+        dh     = t
+        t      = (cl and 0x3FFFFFFF) * dl
+        u      = ((cl shr 30) * dl) + (t shr 30)
+        t      = cl + dl + ((t and 0x3FFFFFFF) shl 1) + ((u and 1) shl 31)
+        cl     = t and 0xFFFFFFFF
+        ch     = (ch + dh + (u shr 1) + (t shr 32)) and 0xFFFFFFFF
+        t      = bl xor cl
+        u      = bh xor ch
+        bl     = ((t shr 24) or (u shl 8)) and 0xFFFFFFFF
+        bh     = ((u shr 24) or (t shl 8)) and 0xFFFFFFFF
+        t      = (al and 0x3FFFFFFF) * bl
+        u      = ((al shr 30) * bl) + (t shr 30)
+        t      = al + bl + ((t and 0x3FFFFFFF) shl 1) + ((u and 1) shl 31)
+        al     = t and 0xFFFFFFFF
+        ah     = (ah + bh + (u shr 1) + (t shr 32)) and 0xFFFFFFFF
+        t      = dl xor al
+        u      = dh xor ah
+        dl     = ((t shr 16) or (u shl 16)) and 0xFFFFFFFF
+        dh     = ((u shr 16) or (t shl 16)) and 0xFFFFFFFF
+        t      = (cl and 0x3FFFFFFF) * dl
+        u      = ((cl shr 30) * dl) + (t shr 30)
+        t      = cl + dl + ((t and 0x3FFFFFFF) shl 1) + ((u and 1) shl 31)
+        cl     = t and 0xFFFFFFFF
+        ch     = (ch + dh + (u shr 1) + (t shr 32)) and 0xFFFFFFFF
+        t      = bl xor cl
+        u      = bh xor ch
+        bl     = ((t shl 1) or (u shr 31)) and 0xFFFFFFFF
+        bh     = ((u shl 1) or (t shr 31)) and 0xFFFFFFFF
+        z_(ia)     = al
+        z_(ia + 1) = ah
+        z_(ib)     = bl
+        z_(ib + 1) = bh
+        z_(ic)     = cl
+        z_(ic + 1) = ch
+        z_(id)     = dl
+        z_(id + 1) = dh
+        0
 
-fn :: a2 blamka rows loop Tensor[U64 * 8 * 32] Int => Tensor[U64 * 8 * 32]
-      a2 blamka rows loop z i =
-        | i >= 8    = z
+fn :: a2 blamka rows loop Tensor[U64 * 256] Int => Tensor[U64 * 256]
+      a2 blamka rows loop z b =
+        | b >= 256  = z
         | otherwise =
-          w0l, w0h, w4l, w4h, w8l,  w8h,  w12l, w12h = a2 blamka g z_(i, 0) z_(i, 1) z_(i, 8)  z_(i, 9)  z_(i, 16) z_(i, 17) z_(i, 24) z_(i, 25)
-          w1l, w1h, w5l, w5h, w9l,  w9h,  w13l, w13h = a2 blamka g z_(i, 2) z_(i, 3) z_(i, 10) z_(i, 11) z_(i, 18) z_(i, 19) z_(i, 26) z_(i, 27)
-          w2l, w2h, w6l, w6h, w10l, w10h, w14l, w14h = a2 blamka g z_(i, 4) z_(i, 5) z_(i, 12) z_(i, 13) z_(i, 20) z_(i, 21) z_(i, 28) z_(i, 29)
-          w3l, w3h, w7l, w7h, w11l, w11h, w15l, w15h = a2 blamka g z_(i, 6) z_(i, 7) z_(i, 14) z_(i, 15) z_(i, 22) z_(i, 23) z_(i, 30) z_(i, 31)
-          z_(i, 0), z_(i, 1), z_(i, 10), z_(i, 11), z_(i, 20), z_(i, 21), z_(i, 30), z_(i, 31) = a2 blamka g w0l w0h w5l w5h w10l w10h w15l w15h
-          z_(i, 2), z_(i, 3), z_(i, 12), z_(i, 13), z_(i, 22), z_(i, 23), z_(i, 24), z_(i, 25) = a2 blamka g w1l w1h w6l w6h w11l w11h w12l w12h
-          z_(i, 4), z_(i, 5), z_(i, 14), z_(i, 15), z_(i, 16), z_(i, 17), z_(i, 26), z_(i, 27) = a2 blamka g w2l w2h w7l w7h w8l  w8h  w13l w13h
-          z_(i, 6), z_(i, 7), z_(i, 8),  z_(i, 9),  z_(i, 18), z_(i, 19), z_(i, 28), z_(i, 29) = a2 blamka g w3l w3h w4l w4h w9l  w9h  w14l w14h
-          a2 blamka rows loop z (i + 1)
+          mut k = a2 blamka g idx z b       (b + 8)  (b + 16) (b + 24)
+          k     = a2 blamka g idx z (b + 2) (b + 10) (b + 18) (b + 26)
+          k     = a2 blamka g idx z (b + 4) (b + 12) (b + 20) (b + 28)
+          k     = a2 blamka g idx z (b + 6) (b + 14) (b + 22) (b + 30)
+          k     = a2 blamka g idx z b       (b + 10) (b + 20) (b + 30)
+          k     = a2 blamka g idx z (b + 2) (b + 12) (b + 22) (b + 24)
+          k     = a2 blamka g idx z (b + 4) (b + 14) (b + 16) (b + 26)
+          k     = a2 blamka g idx z (b + 6) (b + 8)  (b + 18) (b + 28)
+          a2 blamka rows loop z (b + 32 + k)
 
-fn :: a2 blamka cols loop Tensor[U64 * 8 * 32] Int => Tensor[U64 * 8 * 32]
-      a2 blamka cols loop z j =
-        | j >= 8    = z
+fn :: a2 blamka cols loop Tensor[U64 * 256] Int => Tensor[U64 * 256]
+      a2 blamka cols loop z c =
+        | c >= 32   = z
         | otherwise =
-          c0 = 4 * j
-          c1 = c0 + 1
-          c2 = c0 + 2
-          c3 = c0 + 3
-          w0l, w0h, w2l,  w2h,  w4l,  w4h,  w6l,  w6h  = a2 blamka g z_(0, c0) z_(0, c1) z_(2, c0) z_(2, c1) z_(4, c0) z_(4, c1) z_(6, c0) z_(6, c1)
-          w1l, w1h, w3l,  w3h,  w5l,  w5h,  w7l,  w7h  = a2 blamka g z_(0, c2) z_(0, c3) z_(2, c2) z_(2, c3) z_(4, c2) z_(4, c3) z_(6, c2) z_(6, c3)
-          w8l, w8h, w10l, w10h, w12l, w12h, w14l, w14h = a2 blamka g z_(1, c0) z_(1, c1) z_(3, c0) z_(3, c1) z_(5, c0) z_(5, c1) z_(7, c0) z_(7, c1)
-          w9l, w9h, w11l, w11h, w13l, w13h, w15l, w15h = a2 blamka g z_(1, c2) z_(1, c3) z_(3, c2) z_(3, c3) z_(5, c2) z_(5, c3) z_(7, c2) z_(7, c3)
-          z_(0, c0), z_(0, c1), z_(2, c2), z_(2, c3), z_(5, c0), z_(5, c1), z_(7, c2), z_(7, c3) = a2 blamka g w0l w0h w3l  w3h  w12l w12h w15l w15h
-          z_(0, c2), z_(0, c3), z_(3, c0), z_(3, c1), z_(5, c2), z_(5, c3), z_(6, c0), z_(6, c1) = a2 blamka g w1l w1h w10l w10h w13l w13h w6l  w6h
-          z_(1, c0), z_(1, c1), z_(3, c2), z_(3, c3), z_(4, c0), z_(4, c1), z_(6, c2), z_(6, c3) = a2 blamka g w8l w8h w11l w11h w4l  w4h  w7l  w7h
-          z_(1, c2), z_(1, c3), z_(2, c0), z_(2, c1), z_(4, c2), z_(4, c3), z_(7, c0), z_(7, c1) = a2 blamka g w9l w9h w2l  w2h  w5l  w5h  w14l w14h
-          a2 blamka cols loop z (j + 1)
+          mut k = a2 blamka g idx z c        (c + 64) (c + 128) (c + 192)
+          k     = a2 blamka g idx z (c + 2)  (c + 66) (c + 130) (c + 194)
+          k     = a2 blamka g idx z (c + 32) (c + 96) (c + 160) (c + 224)
+          k     = a2 blamka g idx z (c + 34) (c + 98) (c + 162) (c + 226)
+          k     = a2 blamka g idx z c        (c + 66) (c + 160) (c + 226)
+          k     = a2 blamka g idx z (c + 2)  (c + 96) (c + 162) (c + 192)
+          k     = a2 blamka g idx z (c + 32) (c + 98) (c + 128) (c + 194)
+          k     = a2 blamka g idx z (c + 34) (c + 64) (c + 130) (c + 224)
+          a2 blamka cols loop z (c + 4 + k)
 
-fn :: a2 bitxor blk8 Tensor[U64 * 8 * 32] Tensor[U64 * 8 * 32] => Tensor[U64 * 8 * 32]
+fn :: a2 bitxor blk8 Tensor[U64 * 256] Tensor[U64 * 256] => Tensor[U64 * 256]
       a2 bitxor blk8 a b = a_ij xor b_ij
 
-fn :: a2 compress blk8 Tensor[U64 * 8 * 32] Tensor[U64 * 8 * 32] => Tensor[U64 * 8 * 32]
+fn :: a2 compress blk8 Tensor[U64 * 256] Tensor[U64 * 256] => Tensor[U64 * 256]
       a2 compress blk8 x y =
         r_ij = x_ij xor y_ij
         z_ij = r_ij
@@ -446,55 +457,33 @@ fn :: a2 compress blk8 Tensor[U64 * 8 * 32] Tensor[U64 * 8 * 32] => Tensor[U64 *
         z2   = a2 blamka cols loop z1 0
         z2_ij xor r_ij
 
-fn :: a2 compress blk8 bxor Tensor[U64 * 8 * 32] Tensor[U64 * 8 * 32] Tensor[U64 * 8 * 32] => Tensor[U64 * 8 * 32]
+fn :: a2 compress blk8 bxor Tensor[U64 * 256] Tensor[U64 * 256] Tensor[U64 * 256] => Tensor[U64 * 256]
       a2 compress blk8 bxor x y old =
-        r_ij = x_ij xor y_ij
-        z_ij = r_ij
-        z1   = a2 blamka rows loop z 0
-        z2   = a2 blamka cols loop z1 0
-        (z2_ij xor r_ij) xor old_ij
+        r_ij  = x_ij xor y_ij
+        ro_ij = r_ij xor old_ij
+        z1    = a2 blamka rows loop r 0
+        z2    = a2 blamka cols loop z1 0
+        z2_ij xor ro_ij
 
-fn :: a2 get blk8 rc Tensor[U64 * 8 * 32] Int Int => U64
-      a2 get blk8 rc blk                  r   c   =
-        blk_(r, 2 * c) or (blk_(r, (2 * c) + 1) shl 32)
-
-fn :: a2 get blk8 Tensor[U64 * 8 * 32] Int => U64
-      a2 get blk8 blk                  idx =
-        a2 get blk8 rc blk ((idx / 16) % 8) (idx % 16)
-
-fn :: a2 bytes to blk8 row Tensor[U64 * 8 * 32] Int [Int] Int => Tensor[U64 * 8 * 32]
-      a2 bytes to blk8 row blk r bs c =
-        | c >= 16   = blk
+fn :: a2 bytes to blk8 loop Tensor[U64 * 256] [Int] Int => Tensor[U64 * 256]
+      a2 bytes to blk8 loop blk bs c =
+        | c >= 128  = blk
         | otherwise =
-          blk_(r, 2 * c)       = a2 bytes to u32 le bs (c * 8)
-          blk_(r, (2 * c) + 1) = a2 bytes to u32 le bs ((c * 8) + 4)
-          a2 bytes to blk8 row blk r bs (c + 1)
+          blk_(2 * c)       = a2 bytes to u32 le bs (c * 8)
+          blk_((2 * c) + 1) = a2 bytes to u32 le bs ((c * 8) + 4)
+          a2 bytes to blk8 loop blk bs (c + 1)
 
-fn :: a2 bytes to blk8 loop Tensor[U64 * 8 * 32] Int [Int] => Tensor[U64 * 8 * 32]
-      a2 bytes to blk8 loop blk r bs =
-        | r >= 8    = blk
-        | otherwise =
-          row_bs = a2 take ints bs 128
-          rest   = a2 drop ints bs 128
-          blk2   = a2 bytes to blk8 row blk r row_bs 0
-          a2 bytes to blk8 loop blk2 (r + 1) rest
-
-fn :: a2 bytes to blk8 [Int] => Tensor[U64 * 8 * 32]
+fn :: a2 bytes to blk8 [Int] => Tensor[U64 * 256]
       a2 bytes to blk8 bs    =
-        a2 bytes to blk8 loop (Tensor[U64 * 8 * 32]) 0 bs
+        a2 bytes to blk8 loop (Tensor[U64 * 256]) bs 0
 
-fn :: a2 blk8 row to bytes Tensor[U64 * 8 * 32] Int Int => [Int]
-      a2 blk8 row to bytes b r c =
-        | c >= 16   = []
-        | otherwise = (a2 u32 to le4 b_(r, 2 * c)) :: (a2 u32 to le4 b_(r, (2 * c) + 1)) :: (a2 blk8 row to bytes b r (c + 1))
+fn :: a2 blk8 to bytes loop Tensor[U64 * 256] Int => [Int]
+      a2 blk8 to bytes loop b c =
+        | c >= 128  = []
+        | otherwise = (a2 u32 to le4 b_(2 * c)) :: (a2 u32 to le4 b_((2 * c) + 1)) :: (a2 blk8 to bytes loop b (c + 1))
 
-fn :: a2 blk8 to bytes loop Tensor[U64 * 8 * 32] Int => [Int]
-      a2 blk8 to bytes loop b r =
-        | r >= 8    = []
-        | otherwise = (a2 blk8 row to bytes b r 0) :: (a2 blk8 to bytes loop b (r + 1))
-
-fn :: a2 blk8 to bytes Tensor[U64 * 8 * 32] => [Int]
-      a2 blk8 to bytes b                    =
+fn :: a2 blk8 to bytes Tensor[U64 * 256] => [Int]
+      a2 blk8 to bytes b                 =
         a2 blk8 to bytes loop b 0
 
 fn :: a2 zero mem => A2Mem
@@ -505,7 +494,7 @@ fn :: a2 zero mem => A2Mem
         m3 = A2M4096 m2 m2 m2 m2 m2 m2 m2 m2 m2 m2 m2 m2 m2 m2 m2 m2
         A2Mem m3 m3 m3 m3 m3 m3 m3 m3 m3 m3 m3 m3 m3 m3 m3 m3
 
-fn :: a2 get m16 A2M16 Int => Tensor[U64 * 8 * 32]
+fn :: a2 get m16 A2M16 Int => Tensor[U64 * 256]
       a2 get m16 m     i   =
         | i < 8 =
           | i < 4 =
@@ -530,7 +519,7 @@ fn :: a2 get m16 A2M16 Int => Tensor[U64 * 8 * 32]
             | i == 14   = mb14 m
             | otherwise = mb15 m
 
-fn :: a2 get m256 A2M256 Int Int => Tensor[U64 * 8 * 32]
+fn :: a2 get m256 A2M256 Int Int => Tensor[U64 * 256]
       a2 get m256 m i1 i0 =
         | i1 < 8 =
           | i1 < 4 =
@@ -555,7 +544,7 @@ fn :: a2 get m256 A2M256 Int Int => Tensor[U64 * 8 * 32]
             | i1 == 14  = a2 get m16 (mr14 m) i0
             | otherwise = a2 get m16 (mr15 m) i0
 
-fn :: a2 get m4096 A2M4096 Int Int Int => Tensor[U64 * 8 * 32]
+fn :: a2 get m4096 A2M4096 Int Int Int => Tensor[U64 * 256]
       a2 get m4096 m i2 i1 i0 =
         | i2 < 8 =
           | i2 < 4 =
@@ -580,7 +569,7 @@ fn :: a2 get m4096 A2M4096 Int Int Int => Tensor[U64 * 8 * 32]
             | i2 == 14  = a2 get m256 (mp14 m) i1 i0
             | otherwise = a2 get m256 (mp15 m) i1 i0
 
-fn :: a2 get mem A2Mem Int Int Int Int => Tensor[U64 * 8 * 32]
+fn :: a2 get mem A2Mem Int Int Int Int => Tensor[U64 * 256]
       a2 get mem m i3 i2 i1 i0 =
         | i3 < 8 =
           | i3 < 4 =
@@ -605,11 +594,11 @@ fn :: a2 get mem A2Mem Int Int Int Int => Tensor[U64 * 8 * 32]
             | i3 == 14  = a2 get m4096 (mt14 m) i2 i1 i0
             | otherwise = a2 get m4096 (mt15 m) i2 i1 i0
 
-fn :: a2 nth blk A2Mem Int => Tensor[U64 * 8 * 32]
+fn :: a2 nth blk A2Mem Int => Tensor[U64 * 256]
       a2 nth blk m     idx =
-        a2 get mem m ((idx / 4096) % 16) ((idx / 256) % 16) ((idx / 16) % 16) (idx % 16)
+        a2 get mem m ((idx shr 12) and 15) ((idx shr 8) and 15) ((idx shr 4) and 15) (idx and 15)
 
-fn :: a2 set m16 A2M16 Int Tensor[U64 * 8 * 32] => A2M16
+fn :: a2 set m16 A2M16 Int Tensor[U64 * 256] => A2M16
       a2 set m16 m i val =
         | i < 8 =
           | i < 4 =
@@ -634,7 +623,7 @@ fn :: a2 set m16 A2M16 Int Tensor[U64 * 8 * 32] => A2M16
             | i == 14   = m with mb14 = val
             | otherwise = m with mb15 = val
 
-fn :: a2 set m256 A2M256 Int Int Tensor[U64 * 8 * 32] => A2M256
+fn :: a2 set m256 A2M256 Int Int Tensor[U64 * 256] => A2M256
       a2 set m256 m i1 i0 val =
         | i1 < 8 =
           | i1 < 4 =
@@ -659,7 +648,7 @@ fn :: a2 set m256 A2M256 Int Int Tensor[U64 * 8 * 32] => A2M256
             | i1 == 14  = m with mr14 = (a2 set m16 (mr14 m) i0 val)
             | otherwise = m with mr15 = (a2 set m16 (mr15 m) i0 val)
 
-fn :: a2 set m4096 A2M4096 Int Int Int Tensor[U64 * 8 * 32] => A2M4096
+fn :: a2 set m4096 A2M4096 Int Int Int Tensor[U64 * 256] => A2M4096
       a2 set m4096 m i2 i1 i0 val =
         | i2 < 8 =
           | i2 < 4 =
@@ -684,7 +673,7 @@ fn :: a2 set m4096 A2M4096 Int Int Int Tensor[U64 * 8 * 32] => A2M4096
             | i2 == 14  = m with mp14 = (a2 set m256 (mp14 m) i1 i0 val)
             | otherwise = m with mp15 = (a2 set m256 (mp15 m) i1 i0 val)
 
-fn :: a2 set mem A2Mem Int Int Int Int Tensor[U64 * 8 * 32] => A2Mem
+fn :: a2 set mem A2Mem Int Int Int Int Tensor[U64 * 256] => A2Mem
       a2 set mem m i3 i2 i1 i0 val =
         | i3 < 8 =
           | i3 < 4 =
@@ -709,9 +698,9 @@ fn :: a2 set mem A2Mem Int Int Int Int Tensor[U64 * 8 * 32] => A2Mem
             | i3 == 14  = m with mt14 = (a2 set m4096 (mt14 m) i2 i1 i0 val)
             | otherwise = m with mt15 = (a2 set m4096 (mt15 m) i2 i1 i0 val)
 
-fn :: a2 set blk A2Mem Int Tensor[U64 * 8 * 32] => A2Mem
+fn :: a2 set blk A2Mem Int Tensor[U64 * 256] => A2Mem
       a2 set blk m idx val =
-        a2 set mem m ((idx / 4096) % 16) ((idx / 256) % 16) ((idx / 16) % 16) (idx % 16) val
+        a2 set mem m ((idx shr 12) and 15) ((idx shr 8) and 15) ((idx shr 4) and 15) (idx and 15) val
 
 fn :: a2 init all lanes loop A2Mem [Int] Int Int Int => A2Mem
       a2 init all lanes loop mem h0 l lanes q =
@@ -727,17 +716,17 @@ fn :: a2 init all lanes [Int] Int Int Int => A2Mem
       a2 init all lanes h0 l lanes q =
         a2 init all lanes loop (a2 zero mem) h0 l lanes q
 
-fn :: a2 make addr blk A2Ctx Int => Tensor[U64 * 8 * 32]
+fn :: a2 make addr blk A2Ctx Int => Tensor[U64 * 256]
       a2 make addr blk ctx ctr =
-        zb             = Tensor[U64 * 8 * 32]
-        in_blk         = Tensor[U64 * 8 * 32]
-        in_blk_(0, 0)  = r_pass ctx
-        in_blk_(0, 2)  = l_lane ctx
-        in_blk_(0, 4)  = s_slice ctx
-        in_blk_(0, 6)  = (p_lanes ctx) * (q_cols ctx)
-        in_blk_(0, 8)  = t_iters ctx
-        in_blk_(0, 10) = 2
-        in_blk_(0, 12) = ctr
+        zb           = Tensor[U64 * 256]
+        in_blk       = Tensor[U64 * 256]
+        in_blk_(0)   = r_pass ctx
+        in_blk_(2)   = l_lane ctx
+        in_blk_(4)   = s_slice ctx
+        in_blk_(6)   = (p_lanes ctx) * (q_cols ctx)
+        in_blk_(8)   = t_iters ctx
+        in_blk_(10)  = 2
+        in_blk_(12)  = ctr
         a2 compress blk8 zb (a2 compress blk8 zb in_blk)
 
 fn :: a2 calc w size A2Ctx Int Bool => Int
@@ -751,13 +740,54 @@ fn :: a2 calc w size A2Ctx Int Bool => Int
           | idx == 0  = ((q_cols ctx) - (seg_len ctx)) - 1
           | otherwise = (q_cols ctx) - (seg_len ctx)
 
-fn :: a2 step block A2Mem Int Int Tensor[U64 * 8 * 32] Tensor[U64 * 8 * 32] => A2Mem
-      a2 step block mem r curr_idx prev_blk ref_blk =
-        | r == 0    = a2 set blk mem curr_idx (a2 compress blk8 prev_blk ref_blk)
-        | otherwise = a2 set blk mem curr_idx (a2 compress blk8 bxor prev_blk ref_blk (a2 nth blk mem curr_idx))
+fn :: a2 fill seg ind p1 A2Mem A2Ctx Int Int Int Tensor[U64 * 256] Tensor[U64 * 256] => A2Mem
+      a2 fill seg ind p1 mem ctx idx sl curr_col addr_blk prev_blk =
+        | idx >= sl = mem
+        | otherwise =
+          addr2   =
+            | (idx and 127) == 0 = a2 make addr blk ctx ((idx shr 7) + 1)
+            | otherwise          = addr_blk
+          j1      = addr2_(2 * (idx and 127))
+          w_size  = curr_col - 1
+          x_val   = ((((j1 and 0x3FFFFFFF) * j1) shr 30) + ((j1 shr 30) * j1)) shr 2
+          ref_col = (w_size - 1) - ((w_size * x_val) shr 32)
+          new_blk = a2 compress blk8 prev_blk (a2 nth blk mem ref_col)
+          a2 fill seg ind p1 (a2 set blk mem curr_col new_blk) ctx (idx + 1) sl (curr_col + 1) addr2 new_blk
 
-fn :: a2 fill segment A2Mem A2Ctx Int Tensor[U64 * 8 * 32] => A2Mem
-      a2 fill segment mem ctx idx addr_blk =
+fn :: a2 fill seg r0 p1 A2Mem Int Int Tensor[U64 * 256] => A2Mem
+      a2 fill seg r0 p1 mem curr_col end_col prev_blk =
+        | curr_col >= end_col = mem
+        | otherwise =
+          j1      = prev_blk_(0)
+          w_size  = curr_col - 1
+          x_val   = ((((j1 and 0x3FFFFFFF) * j1) shr 30) + ((j1 shr 30) * j1)) shr 2
+          ref_col = (w_size - 1) - ((w_size * x_val) shr 32)
+          new_blk = a2 compress blk8 prev_blk (a2 nth blk mem ref_col)
+          a2 fill seg r0 p1 (a2 set blk mem curr_col new_blk) (curr_col + 1) end_col new_blk
+
+fn :: a2 fill seg rn p1 A2Mem Int Int Int Int Int Tensor[U64 * 256] => A2Mem
+      a2 fill seg rn p1 mem curr_col end_col w_size st_pos q prev_blk =
+        | curr_col >= end_col = mem
+        | otherwise =
+          j1      = prev_blk_(0)
+          x_val   = ((((j1 and 0x3FFFFFFF) * j1) shr 30) + ((j1 shr 30) * j1)) shr 2
+          ref_col = (st_pos + ((w_size - 1) - ((w_size * x_val) shr 32))) % q
+          old_blk = a2 nth blk mem curr_col
+          ref_blk = a2 nth blk mem ref_col
+          new_blk = a2 compress blk8 bxor prev_blk ref_blk old_blk
+          a2 fill seg rn p1 (a2 set blk mem curr_col new_blk) (curr_col + 1) end_col (w_size + 1) st_pos q new_blk
+
+fn :: a2 step block A2Mem Int Int Tensor[U64 * 256] Tensor[U64 * 256] => A2Mem Tensor[U64 * 256]
+      a2 step block mem r curr_idx prev_blk ref_blk =
+        | r == 0 =
+          nb = a2 compress blk8 prev_blk ref_blk
+          (a2 set blk mem curr_idx nb, nb)
+        | otherwise =
+          nb = a2 compress blk8 bxor prev_blk ref_blk (a2 nth blk mem curr_idx)
+          (a2 set blk mem curr_idx nb, nb)
+
+fn :: a2 fill segment A2Mem A2Ctx Int Tensor[U64 * 256] Tensor[U64 * 256] => A2Mem
+      a2 fill segment mem ctx idx addr_blk prev_blk =
         | idx >= (seg_len ctx) = mem
         | otherwise =
           r        = r_pass ctx
@@ -767,21 +797,18 @@ fn :: a2 fill segment A2Mem A2Ctx Int Tensor[U64 * 8 * 32] => A2Mem
           q        = q_cols ctx
           sl       = seg_len ctx
           curr_col = (s * sl) + idx
-          prev_col = ((curr_col - 1) + q) % q
           data_ind = r == 0 and s < 2
-          need_adr = data_ind and ((idx % 128) == 0 or (idx == 2 and r == 0 and s == 0))
+          need_adr = data_ind and ((idx and 127) == 0 or (idx == 2 and r == 0 and s == 0))
           addr2    =
-            | need_adr  = a2 make addr blk ctx ((idx / 128) + 1)
+            | need_adr  = a2 make addr blk ctx ((idx shr 7) + 1)
             | otherwise = addr_blk
-          prev_blk = a2 nth blk mem ((l * q) + prev_col)
-          ar       = ((idx % 128) / 16) % 8
-          ac       = 2 * (idx % 16)
+          ai       = 2 * (idx and 127)
           j1       =
-            | data_ind  = addr2_(ar, ac)
-            | otherwise = prev_blk_(0, 0)
+            | data_ind  = addr2_(ai)
+            | otherwise = prev_blk_(0)
           j2       =
-            | data_ind  = addr2_(ar, ac + 1)
-            | otherwise = prev_blk_(0, 1)
+            | data_ind  = addr2_(ai + 1)
+            | otherwise = prev_blk_(1)
           ref_lane =
             | r == 0 and s == 0 = l
             | otherwise         = j2 % p
@@ -793,21 +820,37 @@ fn :: a2 fill segment A2Mem A2Ctx Int Tensor[U64 * 8 * 32] => A2Mem
           zz       = w_size - 1 - y_val
           st_pos   =
             | r == 0    = 0
-            | otherwise = ((s + 1) % 4) * sl
+            | otherwise = ((s + 1) and 3) * sl
           ref_col  = (st_pos + zz) % q
           ref_blk  = a2 nth blk mem ((ref_lane * q) + ref_col)
-          mem2     = a2 step block mem r ((l * q) + curr_col) prev_blk ref_blk
-          a2 fill segment mem2 ctx (idx + 1) addr2
+          mem2, nb = a2 step block mem r ((l * q) + curr_col) prev_blk ref_blk
+          a2 fill segment mem2 ctx (idx + 1) addr2 nb
+
+fn :: a2 run lane seg A2Mem A2Ctx Int Int Int Int Int Int Int Tensor[U64 * 256] => A2Mem
+      a2 run lane seg mem ctx start_j r s p q sl curr_col prev_blk =
+        | p == 1 and r == 0 and s == 0 = a2 fill seg ind p1 mem ctx start_j sl curr_col (a2 make addr blk ctx 1) prev_blk
+        | p == 1 and r == 0 and s == 1 = a2 fill seg ind p1 mem ctx start_j sl curr_col (a2 zero blk8) prev_blk
+        | p == 1 and r == 0            = a2 fill seg r0 p1 mem curr_col ((s + 1) * sl) prev_blk
+        | p == 1                       = a2 fill seg rn p1 mem curr_col ((s + 1) * sl) ((q - sl) + start_j - 1) (((s + 1) and 3) * sl) q prev_blk
+        | otherwise                    = a2 fill segment mem ctx start_j (a2 zero blk8) prev_blk
 
 fn :: a2 run lanes A2Mem A2Ctx Int => A2Mem
       a2 run lanes mem ctx l =
         | l >= (p_lanes ctx) = mem
         | otherwise =
-          ctx_l   = ctx with l_lane = l
-          start_j =
-            | (r_pass ctx) == 0 and (s_slice ctx) == 0 = 2
-            | otherwise                                = 0
-          mem2    = a2 fill segment mem ctx_l start_j (a2 zero blk8)
+          ctx_l    = ctx with l_lane = l
+          r        = r_pass ctx
+          s        = s_slice ctx
+          p        = p_lanes ctx
+          q        = q_cols ctx
+          sl       = seg_len ctx
+          start_j  =
+            | r == 0 and s == 0 = 2
+            | otherwise         = 0
+          curr_col = (s * sl) + start_j
+          prev_col = ((curr_col - 1) + q) % q
+          prev_blk = a2 nth blk mem ((l * q) + prev_col)
+          mem2     = a2 run lane seg mem ctx_l start_j r s p q sl curr_col prev_blk
           a2 run lanes mem2 ctx (l + 1)
 
 fn :: a2 run slices A2Mem A2Ctx Int => A2Mem
@@ -826,7 +869,7 @@ fn :: a2 run passes A2Mem A2Ctx Int => A2Mem
           mem2  = a2 run slices mem ctx_r 0
           a2 run passes mem2 ctx (r + 1)
 
-fn :: a2 bitxor final lanes A2Mem Int Int Int Tensor[U64 * 8 * 32] => Tensor[U64 * 8 * 32]
+fn :: a2 bitxor final lanes A2Mem Int Int Int Tensor[U64 * 256] => Tensor[U64 * 256]
       a2 bitxor final lanes mem l lanes q acc =
         | l >= lanes = acc
         | otherwise  =
