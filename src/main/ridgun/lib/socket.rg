@@ -11,6 +11,8 @@
 -- @mitigates VUL-INJ-002
 -- @mitigates VUL-INPUT-001
 
+module :: socket
+
 type SockAddr = family: String, host: String, port: Int, path: String
 type SockOpts = reuse_addr: Bool, keep_alive: Bool, non_blocking: Bool, tcp_nodelay: Bool, broadcast: Bool, timeout_ms: Int, rcvbuf: Int, sndbuf: Int
 type SockPoll = readable: Bool, writable: Bool, has_error: Bool

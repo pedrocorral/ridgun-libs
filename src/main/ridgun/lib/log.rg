@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: log
+
 fn :: lg lower char String Int Int => String
       lg lower char s idx c =
         | c >= 65 and c <= 90 = char from code (c + 32)

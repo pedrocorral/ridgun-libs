@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: cli
+
 -- ── Internal String & List Helpers ───────────────────────────
 
 fn :: cl str contains char String Int Int Int => Bool

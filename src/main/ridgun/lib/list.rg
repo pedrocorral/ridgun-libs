@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: list
+
 -- ── List Length & Emptiness ──────────────────────────────────
 
 -- @implements FR-LIST-001

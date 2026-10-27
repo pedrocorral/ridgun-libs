@@ -8,6 +8,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: linalg
+
 -- ── Internal Scalar Helpers ──────────────────────────────────
 
 fn :: la abs Int => Int

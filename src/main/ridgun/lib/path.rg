@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: path
+
 fn :: pa split slash loop String Int Int Int => [String]
       pa split slash loop p start idx len =
         | idx >= len                = [(str slice p start len)]

@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: pool
+
 type AgentPool = Pool Int [Agent]
 
 -- @implements FR-AGENT-001

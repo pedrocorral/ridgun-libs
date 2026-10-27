@@ -8,6 +8,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: jwt
+
 import json
 
 type JwtClaims = issuer: String, subject: String, expires_at: Int, not_before_at: Int, custom_json: String

@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: csv
+
 type CsvTable = headers: [String], rows: [[String]], delimiter_char: String, has_headers: Bool
 
 -- ── RFC 4180 State-Machine Parser ────────────────────────────

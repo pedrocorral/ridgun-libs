@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: template
+
 type TmplEscape = TmplEscapeNone | TmplEscapeHtml | TmplEscapeLatex
 
 -- ── Internal Helpers ─────────────────────────────────────────

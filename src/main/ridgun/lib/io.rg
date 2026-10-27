@@ -10,6 +10,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: io
+
 import posix
 
 -- ── Extensible I/O Error & Result Sum Types (§5.1) ───────────

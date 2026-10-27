@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: codec
+
 -- ── Zero-Syscall Raw Byte Extraction (0..255) ────────────────
 
 fn :: cd raw byte ub Int => String

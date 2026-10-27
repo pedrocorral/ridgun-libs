@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: btree
+
 type BTreeMap = BMapEmpty | BMapNode String String Int BTreeMap BTreeMap
 
 type BTreeSet = BSetEmpty | BSetNode String Int BTreeSet BTreeSet

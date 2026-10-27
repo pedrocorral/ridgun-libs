@@ -9,6 +9,8 @@
 -- @mitigates VUL-AUTHN-001
 -- @mitigates VUL-INPUT-001
 
+module :: argon2id
+
 type Argon2Params = m_cost: Int, t_cost: Int, lanes: Int, tag_len: Int, version: Int
 type Argon2Phc    = params: Argon2Params, salt_b64: String, tag_b64: String
 type Argon2Res    = Argon2Ok String | Argon2Err String

@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: diff
+
 type DiffEdit = diff_op: String, line_text: String, old_line_no: Int, new_line_no: Int
 
 type DiffStats = equal_count: Int, insert_count: Int, delete_count: Int

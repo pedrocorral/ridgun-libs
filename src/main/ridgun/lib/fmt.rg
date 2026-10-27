@@ -10,6 +10,8 @@
 -- Pango Markup, LaTeX Verbatim, and RTF.
 -- ============================================================
 
+module :: fmt
+
 type FmtTarget = FmtPlain | FmtTty | FmtTrueColor | FmtHtmlInline | FmtHtmlCss | FmtMarkdown | FmtPango | FmtLatex | FmtRtf
 
 type FmtTheme = FmtThemeNone | FmtThemeDark | FmtThemeLight

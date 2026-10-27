@@ -9,6 +9,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: posix
+
 -- ── Poll & Process Status ADTs ───────────────────────────────
 
 -- @implements FR-POSIX-001

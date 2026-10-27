@@ -6,6 +6,8 @@
 -- @implements NFR-OBS-001
 -- ============================================================
 
+module :: test
+
 fn :: fail test String => ()
       fail test msg    =
         _ = echo "[FAIL] {msg}"

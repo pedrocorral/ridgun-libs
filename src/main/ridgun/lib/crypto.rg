@@ -13,6 +13,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: crypto
+
 import argon2id
 
 type CT16    = ct0: A, ct1: A, ct2: A, ct3: A, ct4: A, ct5: A, ct6: A, ct7: A, ct8: A, ct9: A, ct10: A, ct11: A, ct12: A, ct13: A, ct14: A, ct15: A

@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: net agent
+
 type ConnSlot = ConnSlot Int Agent
 
 type StepOutcome = ConnKeep ConnSlot String | ConnClosed

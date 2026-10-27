@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: agent
+
 type AgentStatus = AgentRunning | AgentStopped | AgentTimedOut Int | AgentFailed String
 type AgentReply  = ReplyInt Int | ReplyStr String | ReplyBool Bool | ReplyEmpty | ReplyStopped | ReplyTimeout Int | ReplyError String
 type CounterState = cnt_val: Int

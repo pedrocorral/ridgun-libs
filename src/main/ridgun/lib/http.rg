@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: http
+
 import socket
 
 -- ── Internal String & Case Helpers ───────────────────────────

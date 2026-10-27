@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: uuid
+
 fn :: uu hex lut Int => String
       uu hex lut _   =  "0123456789abcdef"
 

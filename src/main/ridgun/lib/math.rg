@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: math
+
 -- ── Bounds, Sign & Parity ────────────────────────────────────
 
 -- @implements FR-MATH-001

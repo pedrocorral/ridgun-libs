@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: ini
+
 type IniEntry = IniEntry String String
 
 type IniSection = section_name: String, entries: [IniEntry]

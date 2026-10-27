@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: time
+
 -- ── Leap Year, Month Length & Day of Week ────────────────────
 
 -- @implements FR-TIME-001
