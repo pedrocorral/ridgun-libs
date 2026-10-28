@@ -40,6 +40,9 @@ No `ridgun-libs`, **`crypto`** é uma **lib** de primeira classe localizada em `
 | `pbkdf2 hmac sha256 : String -> String -> Int -> Int -> String` | Derivação de chaves RFC 8018 com estados intermédios SHA-256 pré-computados |
 | `argon2id hash / argon2id verify` | Hashing de palavras-passe PHC RFC 9106 de 5 argumentos e verificação em tempo constante |
 | `aead seal / aead open` | Cifra autenticada RFC 8439 ChaCha20-Poly1305 e decifra com verificação de tag |
+| `sha512 bytes / sha512 hex` | Resumo binário de 64 bytes ou hexadecimal de 128 caracteres FIPS 180-4 SHA-512 |
+| `ed25519 public key / ed25519 sign / ed25519 verify` | Chave pública, assinatura determinística em tempo constante e verificação canónica RFC 8032 §5.1 Ed25519 |
+| `minisign sign / minisign verify / minisign trusted comment` | Chaves públicas e assinaturas `.minisig` compatíveis com a ferramenta padrão `minisign` |
 
 ### 24.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/crypto.rg`
 
@@ -216,6 +219,16 @@ type CA2Ctx  = cr_pass: Int, cs_slice: Int, cl_lane: Int, cp_lanes: Int, cq_cols
 | `159` | `fn :: aead seal String String String String` | `String` |
 | `160` | `fn :: decrypt verified aead Bool [Int] [Int] [Int]` | `Int String` |
 | `161` | `fn :: aead open String String String String` | `Int String` |
+| `162` | `fn :: sha512 bytes String` | `String` |
+| `163` | `fn :: sha512 hex String` | `String` |
+| `164` | `fn :: ed25519 public key String` | `String` |
+| `165` | `fn :: ed25519 sign String String` | `String` |
+| `166` | `fn :: ed25519 verify String String String` | `Bool` |
+| `167` | `fn :: minisign encode pubkey String String` | `String` |
+| `168` | `fn :: minisign decode pubkey String` | `String String` |
+| `169` | `fn :: minisign sign String String String String String` | `String` |
+| `170` | `fn :: minisign trusted comment String` | `String` |
+| `171` | `fn :: minisign verify String String String` | `Bool` |
 
 ---
 
@@ -448,6 +461,30 @@ fn :: test rfc8439 chacha20 poly1305 aead => ()
         res_tinv = aead open key nonce aad "short-tag"
         assert eq (aead rc res_tinv) (0 - 7)
         ()
+```
+
+### 24.3.7. Exemplo 7: Resumo FIPS 180-4 SHA-512 (`sha512 bytes`, `sha512 hex`), Assinaturas RFC 8032 §5.1 Ed25519 (`ed25519 public key`, `ed25519 sign`, `ed25519 verify`) e Formato Minisign (`minisign sign`, `minisign verify`)
+
+Neste exemplo prático verificamos os vetores oficiais FIPS 180-4 SHA-512, a geração de chaves e assinaturas Ed25519 em tempo constante (com rejeição estrita de maleabilidade $S \ge L$ e pontos fora da curva) e a assinatura/verificação de manifestos de lançamento em formato `.minisig`:
+
+```ridgun
+import crypto
+import test
+
+fn :: verificar sha512 ed25519 y minisign => ()
+      verificar sha512 ed25519 y minisign =
+        "abc" sha512 hex -> h_abc
+        assert str eq h_abc "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f" "SHA-512 abc"
+        "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60" hex to byte str -> sk
+        sk ed25519 public key -> pk
+        ed25519 sign sk "" -> sig
+        assert true (ed25519 verify pk "" sig) "RFC 8032 Test 1"
+        assert false (ed25519 verify pk "adulterado" sig) "Mensagem adulterada rejeitada"
+        minisign encode pubkey "01234567" pk -> pub_txt
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ridgun-linux-x86_64.tar.gz\n" -> sums
+        minisign sign sk "01234567" sums "ridgun release key" "timestamp:1761667200\tfile:SHA256SUMS" -> msig
+        assert true (minisign verify pub_txt sums msig) "Minisign válido"
+        assert str eq (minisign trusted comment msig) "timestamp:1761667200\tfile:SHA256SUMS" "Comentário autenticado" -> ()
 ```
 
 ---

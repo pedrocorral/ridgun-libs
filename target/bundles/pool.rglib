@@ -50,10 +50,14 @@ fn :: pool ask shard AgentPool Int A => B
 fn :: pool broadcast AgentPool       A   => ()
       pool broadcast (Pool _ agents) msg =  pool broadcast list agents msg
 
+fn :: pool send one Agent A => ()
+      pool send one ag    m =
+        send m to ag
+
 fn :: pool broadcast list [Agent]   A   => ()
       pool broadcast list []        _   =  ()
       pool broadcast list (ag:rest) msg =
-        send msg to ag
+        pool send one ag msg -> ()
         pool broadcast list rest msg
 
 fn :: pool drain ready Agent => [B]

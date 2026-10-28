@@ -2,7 +2,7 @@
 id: API-CRYPTO-001
 title: Public lib contract for argon2id and crypto (argon2id.rglib, crypto.rglib)
 status: approved
-implements: [FR-CRYPTO-001, FR-CRYPTO-002, FR-CRYPTO-003, FR-CRYPTO-004]
+implements: [FR-CRYPTO-001, FR-CRYPTO-002, FR-CRYPTO-003, FR-CRYPTO-004, FR-CRYPTO-005]
 auth: none
 ---
 # API-CRYPTO-001 — Public lib contract for `argon2id` & `crypto` (`argon2id.rg`, `crypto.rg`)
@@ -36,6 +36,17 @@ auth: none
 - ChaCha20-Poly1305 AEAD API (`RGF-015` in `crypto.rg`):
   - `aead_seal String String String String => String` (`key` 32 B, `nonce` 12 B, `aad`, `plaintext` → `ciphertext || 16-byte tag`)
   - `aead_open String String String String => (Int, String)` (`(0, plaintext)` on valid tag, `(-12, "")` on tag mismatch, `(-7, "")` on invalid key/nonce length)
+- FIPS 180-4 SHA-512, RFC 8032 §5.1 Ed25519 & Minisign API (`FR-CRYPTO-005` in `crypto.rg`):
+  - `sha512 bytes String => String` (64-byte raw SHA-512 digest)
+  - `sha512 hex String => String` (128-char lowercase hex SHA-512 digest)
+  - `ed25519 public key String => String` (32-byte seed → 32-byte compressed public key, or `""` if `str len seed != 32`)
+  - `ed25519 sign String String => String` (32-byte seed, message → 64-byte signature `R || S`, or `""` if `str len seed != 32`)
+  - `ed25519 verify String String String => Bool` (32-byte public key, message, 64-byte signature → `True` if valid with $0 \le S < L$, `False` otherwise)
+  - `minisign encode pubkey String String => String` (8-byte `key_id`, 32-byte `pubkey` → Minisign public-key text)
+  - `minisign decode pubkey String => String String` (Minisign public-key text or `RW...` line → `(key_id, pubkey_32b)`, or `("", "")` on error)
+  - `minisign sign String String String String String => String` (`seed` 32 B, `key_id` 8 B, `msg`, `untrusted_comment`, `trusted_comment` → 4-line `.minisig` text)
+  - `minisign verify String String String => Bool` (`pubkey_text`, `msg`, `minisig_text` → `True` if both payload signature and trusted-comment global signature verify)
+  - `minisign trusted comment String => String` (`minisig_text` → extracted trusted comment string)
 
 ## Responses
 | Code | When | Body |

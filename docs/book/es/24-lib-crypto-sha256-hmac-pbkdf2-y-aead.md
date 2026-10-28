@@ -40,6 +40,9 @@ En `ridgun-libs`, **`crypto`** es una **lib** de primera clase ubicada en `src/m
 | `pbkdf2 hmac sha256 : String -> String -> Int -> Int -> String` | Derivación de claves RFC 8018 con estados intermedios SHA-256 precomputados |
 | `argon2id hash / argon2id verify` | Hashing de contraseñas PHC RFC 9106 de 5 argumentos y verificación en tiempo constante |
 | `aead seal / aead open` | Cifrado autenticado RFC 8439 ChaCha20-Poly1305 y descifrado con verificación de tag |
+| `sha512 bytes / sha512 hex` | Resumen binario de 64 bytes o hexadecimal de 128 caracteres FIPS 180-4 SHA-512 |
+| `ed25519 public key / ed25519 sign / ed25519 verify` | Clave pública, firma determinista en tiempo constante y verificación canónica RFC 8032 §5.1 Ed25519 |
+| `minisign sign / minisign verify / minisign trusted comment` | Claves públicas y firmas `.minisig` compatibles con la herramienta estándar `minisign` |
 
 ### 24.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/crypto.rg`
 
@@ -216,6 +219,16 @@ type CA2Ctx  = cr_pass: Int, cs_slice: Int, cl_lane: Int, cp_lanes: Int, cq_cols
 | `159` | `fn :: aead seal String String String String` | `String` |
 | `160` | `fn :: decrypt verified aead Bool [Int] [Int] [Int]` | `Int String` |
 | `161` | `fn :: aead open String String String String` | `Int String` |
+| `162` | `fn :: sha512 bytes String` | `String` |
+| `163` | `fn :: sha512 hex String` | `String` |
+| `164` | `fn :: ed25519 public key String` | `String` |
+| `165` | `fn :: ed25519 sign String String` | `String` |
+| `166` | `fn :: ed25519 verify String String String` | `Bool` |
+| `167` | `fn :: minisign encode pubkey String String` | `String` |
+| `168` | `fn :: minisign decode pubkey String` | `String String` |
+| `169` | `fn :: minisign sign String String String String String` | `String` |
+| `170` | `fn :: minisign trusted comment String` | `String` |
+| `171` | `fn :: minisign verify String String String` | `Bool` |
 
 ---
 
@@ -448,6 +461,35 @@ fn :: test rfc8439 chacha20 poly1305 aead => ()
         res_tinv = aead open key nonce aad "short-tag"
         assert eq (aead rc res_tinv) (0 - 7)
         ()
+```
+
+### 24.3.7. Ejemplo 7: Resumen FIPS 180-4 SHA-512 (`sha512 bytes`, `sha512 hex`), firmas RFC 8032 §5.1 Ed25519 (`ed25519 public key`, `ed25519 sign`, `ed25519 verify`) y formato Minisign (`minisign sign`, `minisign verify`)
+
+En este ejemplo práctico verificamos los vectores oficiales FIPS 180-4 SHA-512, la generación de claves y firmas Ed25519 en tiempo constante (con rechazo estricto de maleabilidad $S \ge L$ y puntos fuera de la curva) y la firma/verificación de manifiestos de publicación en formato `.minisig`:
+
+```ridgun
+import crypto
+import test
+
+fn :: verificar sha512 ed25519 y minisign => ()
+      verificar sha512 ed25519 y minisign =
+        -- 1. FIPS 180-4 SHA-512 ("abc" -> 128 caracteres hexadecimales / 64 bytes crudos)
+        "abc" sha512 hex -> h_abc
+        assert str eq h_abc "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f" "SHA-512 abc"
+
+        -- 2. RFC 8032 §7.1 Ed25519 (derivación de clave pública, firma y verificación canónica)
+        "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60" hex to byte str -> sk
+        sk ed25519 public key -> pk
+        ed25519 sign sk "" -> sig
+        assert true (ed25519 verify pk "" sig) "RFC 8032 Test 1"
+        assert false (ed25519 verify pk "manipulado" sig) "Mensaje alterado rechazado"
+
+        -- 3. Formato Minisign (clave pública RW... y archivo .minisig con comentario firmado)
+        minisign encode pubkey "01234567" pk -> pub_txt
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ridgun-linux-x86_64.tar.gz\n" -> sums
+        minisign sign sk "01234567" sums "ridgun release key" "timestamp:1761667200\tfile:SHA256SUMS" -> msig
+        assert true (minisign verify pub_txt sums msig) "Minisign válido"
+        assert str eq (minisign trusted comment msig) "timestamp:1761667200\tfile:SHA256SUMS" "Comentario autenticado" -> ()
 ```
 
 ---

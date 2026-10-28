@@ -6,6 +6,7 @@
 -- @implements FR-CRYPTO-002
 -- @implements FR-CRYPTO-003
 -- @implements FR-CRYPTO-004
+-- @implements FR-CRYPTO-005
 -- @implements NFR-PERF-001
 -- @implements API-CRYPTO-001
 -- @implements DM-Argon2
@@ -1056,3 +1057,1144 @@ fn :: aead open String String String String => Int String
           otk       = c take ints (chacha20 block key_bs nonce_bs 0) 32
           exp_tag   = bytes from list (poly1305 aead mac otk aad_bs ct_bs)
           decrypt verified aead (ct equal tag_str exp_tag) key_bs nonce_bs ct_bs
+-- ── FIPS 180-4 SHA-512 (`sha512 bytes`, `sha512 hex`) ────────
+
+fn :: sha512 k hex0 => String
+      sha512 k hex0 =
+        "428a2f98d728ae227137449123ef65cdb5c0fbcfec4d3b2fe9b5dba58189dbbc3956c25bf348b53859f111f1b605d019923f82a4af194f9bab1c5ed5da6d8118d807aa98a303024212835b0145706fbe243185be4ee4b28c550c7dc3d5ffb4e272be5d74f27b896f80deb1fe3b1696b19bdc06a725c71235c19bf174cf692694e49b69c19ef14ad2efbe4786384f25e30fc19dc68b8cd5b5240ca1cc77ac9c652de92c6f592b02754a7484aa6ea6e4835cb0a9dcbd41fbd476f988da831153b5983e5152ee66dfaba831c66d2db43210b00327c898fb213fbf597fc7beef0ee4c6e00bf33da88fc2d5a79147930aa72506ca6351e003826f142929670a0e6e7027b70a8546d22ffc2e1b21385c26c9264d2c6dfc5ac42aed53380d139d95b3df650a73548baf63de766a0abb3c77b2a881c2c92e47edaee692722c851482353b"
+
+fn :: sha512 k hex1 => String
+      sha512 k hex1 =
+        "a2bfe8a14cf10364a81a664bbc423001c24b8b70d0f89791c76c51a30654be30d192e819d6ef5218d69906245565a910f40e35855771202a106aa07032bbd1b819a4c116b8d2d0c81e376c085141ab532748774cdf8eeb9934b0bcb5e19b48a8391c0cb3c5c95a634ed8aa4ae3418acb5b9cca4f7763e373682e6ff3d6b2b8a3748f82ee5defb2fc78a5636f43172f6084c87814a1f0ab728cc702081a6439ec90befffa23631e28a4506cebde82bde9bef9a3f7b2c67915c67178f2e372532bca273eceea26619cd186b8c721c0c207eada7dd6cde0eb1ef57d4f7fee6ed17806f067aa72176fba0a637dc5a2c898a6113f9804bef90dae1b710b35131c471b28db77f523047d8432caab7b40c724933c9ebe0a15c9bebc431d67c49c100d4c4cc5d4becb3e42b6597f299cfc657e2a5fcb6fab3ad6faec6c44198c4a475817"
+
+fn :: sha512 fill hex words Tensor[U64 * 160] String Int Int => Tensor[U64 * 160]
+      sha512 fill hex words k s base idx =
+        | idx >= 80 = k
+        | otherwise =
+          k_(base + idx) = c hex8 word s (idx * 8)
+          sha512 fill hex words k s base (idx + 1)
+
+fn :: sha512 init k => Tensor[U64 * 160]
+      sha512 init k =
+        k0 = Tensor[U64 * 160]
+        k1 = sha512 fill hex words k0 (sha512 k hex0) 0 0
+        sha512 fill hex words k1 (sha512 k hex1) 80 0
+
+fn :: sha512 init h loop Tensor[U64 * 16] String Int => Tensor[U64 * 16]
+      sha512 init h loop h s idx =
+        | idx >= 16 = h
+        | otherwise =
+          h_(idx) = c hex8 word s (idx * 8)
+          sha512 init h loop h s (idx + 1)
+
+fn :: sha512 init h => Tensor[U64 * 16]
+      sha512 init h =
+        h = Tensor[U64 * 16]
+        s = "6a09e667f3bcc908bb67ae8584caa73b3c6ef372fe94f82ba54ff53a5f1d36f1510e527fade682d19b05688c2b3e6c1f1f83d9abfb41bd6b5be0cd19137e2179"
+        sha512 init h loop h s 0
+
+fn :: sha512 rrot lt32 U64 U64 Int => U64 U64
+      sha512 rrot lt32 xh xl n =
+        rh = ((xh shr n) or (xl shl (32 - n))) and 0xFFFFFFFF
+        rl = ((xl shr n) or (xh shl (32 - n))) and 0xFFFFFFFF
+        (rh, rl)
+
+fn :: sha512 rshift lt32 U64 U64 Int => U64 U64
+      sha512 rshift lt32 xh xl n =
+        rh = xh shr n
+        rl = ((xl shr n) or (xh shl (32 - n))) and 0xFFFFFFFF
+        (rh, rl)
+
+fn :: sha512 big sigma0 U64 U64 => U64 U64
+      sha512 big sigma0 ah al =
+        r1h, r1l = sha512 rrot lt32 ah al 28
+        r2h, r2l = sha512 rrot lt32 al ah 2
+        r3h, r3l = sha512 rrot lt32 al ah 7
+        ((r1h xor r2h) xor r3h, (r1l xor r2l) xor r3l)
+
+fn :: sha512 big sigma1 U64 U64 => U64 U64
+      sha512 big sigma1 eh el =
+        r1h, r1l = sha512 rrot lt32 eh el 14
+        r2h, r2l = sha512 rrot lt32 eh el 18
+        r3h, r3l = sha512 rrot lt32 el eh 9
+        ((r1h xor r2h) xor r3h, (r1l xor r2l) xor r3l)
+
+fn :: sha512 small sigma0 U64 U64 => U64 U64
+      sha512 small sigma0 xh xl =
+        r1h, r1l = sha512 rrot lt32 xh xl 1
+        r2h, r2l = sha512 rrot lt32 xh xl 8
+        r3h, r3l = sha512 rshift lt32 xh xl 7
+        ((r1h xor r2h) xor r3h, (r1l xor r2l) xor r3l)
+
+fn :: sha512 small sigma1 U64 U64 => U64 U64
+      sha512 small sigma1 xh xl =
+        r1h, r1l = sha512 rrot lt32 xh xl 19
+        r2h, r2l = sha512 rrot lt32 xl xh 29
+        r3h, r3l = sha512 rshift lt32 xh xl 6
+        ((r1h xor r2h) xor r3h, (r1l xor r2l) xor r3l)
+
+fn :: sha512 vbyte String Int Int Int => U64
+      sha512 vbyte msg mlen total_len pos =
+        | pos < mlen  = norm byte (str char at msg pos)
+        | pos == mlen = 128
+        | pos >= (total_len - 8) =
+          bit_len = mlen * 8
+          shift   = ((total_len - 1) - pos) * 8
+          (bit_len shr shift) and 255
+        | otherwise = 0
+
+fn :: sha512 load w fast Tensor[U64 * 160] String Int Int => Tensor[U64 * 160]
+      sha512 load w fast w msg off idx =
+        | idx >= 32 = w
+        | otherwise =
+          p  = off + (idx * 4)
+          b0 = norm byte (str char at msg p)
+          b1 = norm byte (str char at msg (p + 1))
+          b2 = norm byte (str char at msg (p + 2))
+          b3 = norm byte (str char at msg (p + 3))
+          w_(idx) = (b0 shl 24) or (b1 shl 16) or (b2 shl 8) or b3
+          sha512 load w fast w msg off (idx + 1)
+
+fn :: sha512 load w pad Tensor[U64 * 160] String Int Int Int Int => Tensor[U64 * 160]
+      sha512 load w pad w msg mlen total_len off idx =
+        | idx >= 32 = w
+        | otherwise =
+          p  = off + (idx * 4)
+          b0 = sha512 vbyte msg mlen total_len p
+          b1 = sha512 vbyte msg mlen total_len (p + 1)
+          b2 = sha512 vbyte msg mlen total_len (p + 2)
+          b3 = sha512 vbyte msg mlen total_len (p + 3)
+          w_(idx) = (b0 shl 24) or (b1 shl 16) or (b2 shl 8) or b3
+          sha512 load w pad w msg mlen total_len off (idx + 1)
+
+fn :: sha512 expand w Tensor[U64 * 160] Int => Tensor[U64 * 160]
+      sha512 expand w w t =
+        | t >= 80   = w
+        | otherwise =
+          i2  = (t - 2) * 2
+          i7  = (t - 7) * 2
+          i15 = (t - 15) * 2
+          i16 = (t - 16) * 2
+          s1h, s1l = sha512 small sigma1 w_(i2) w_(i2 + 1)
+          s0h, s0l = sha512 small sigma0 w_(i15) w_(i15 + 1)
+          sum_l    = s1l + w_(i7 + 1) + s0l + w_(i16 + 1)
+          sum_h    = s1h + w_(i7) + s0h + w_(i16) + (sum_l shr 32)
+          it       = t * 2
+          w_(it)     = sum_h and 0xFFFFFFFF
+          w_(it + 1) = sum_l and 0xFFFFFFFF
+          sha512 expand w w (t + 1)
+
+fn :: sha512 copy state Tensor[U64 * 16] Tensor[U64 * 16] Int => Tensor[U64 * 16]
+      sha512 copy state dst src idx =
+        | idx >= 16 = dst
+        | otherwise =
+          dst_(idx) = src_(idx)
+          sha512 copy state dst src (idx + 1)
+
+fn :: sha512 add state Tensor[U64 * 16] Tensor[U64 * 16] Int => Tensor[U64 * 16]
+      sha512 add state h v idx =
+        | idx >= 8  = h
+        | otherwise =
+          hi = idx * 2
+          lo = hi + 1
+          sl = h_(lo) + v_(lo)
+          sh = h_(hi) + v_(hi) + (sl shr 32)
+          h_(hi) = sh and 0xFFFFFFFF
+          h_(lo) = sl and 0xFFFFFFFF
+          sha512 add state h v (idx + 1)
+
+fn :: sha512 rounds loop Tensor[U64 * 16] Tensor[U64 * 160] Tensor[U64 * 160] Int => Tensor[U64 * 16]
+      sha512 rounds loop v k w t =
+        | t >= 80   = v
+        | otherwise =
+          ah = v_(0)
+          al = v_(1)
+          bh = v_(2)
+          bl = v_(3)
+          ch = v_(4)
+          cl = v_(5)
+          dh = v_(6)
+          dl = v_(7)
+          eh = v_(8)
+          el = v_(9)
+          fh = v_(10)
+          fl = v_(11)
+          gh = v_(12)
+          gl = v_(13)
+          hh = v_(14)
+          hl = v_(15)
+          s1h, s1l = sha512 big sigma1 eh el
+          ch_h = (eh and fh) xor ((eh xor 0xFFFFFFFF) and gh)
+          ch_l = (el and fl) xor ((el xor 0xFFFFFFFF) and gl)
+          it   = t * 2
+          t1_l = hl + s1l + ch_l + k_(it + 1) + w_(it + 1)
+          t1_h = (hh + s1h + ch_h + k_(it) + w_(it) + (t1_l shr 32)) and 0xFFFFFFFF
+          t1_l_m = t1_l and 0xFFFFFFFF
+          s0h, s0l = sha512 big sigma0 ah al
+          maj_h = (ah and bh) xor (ah and ch) xor (bh and ch)
+          maj_l = (al and bl) xor (al and cl) xor (bl and cl)
+          t2_l = s0l + maj_l
+          t2_h = (s0h + maj_h + (t2_l shr 32)) and 0xFFFFFFFF
+          t2_l_m = t2_l and 0xFFFFFFFF
+          ne_l = dl + t1_l_m
+          ne_h = (dh + t1_h + (ne_l shr 32)) and 0xFFFFFFFF
+          na_l = t1_l_m + t2_l_m
+          na_h = (t1_h + t2_h + (na_l shr 32)) and 0xFFFFFFFF
+          v_(0)  = na_h
+          v_(1)  = na_l and 0xFFFFFFFF
+          v_(2)  = ah
+          v_(3)  = al
+          v_(4)  = bh
+          v_(5)  = bl
+          v_(6)  = ch
+          v_(7)  = cl
+          v_(8)  = ne_h
+          v_(9)  = ne_l and 0xFFFFFFFF
+          v_(10) = eh
+          v_(11) = el
+          v_(12) = fh
+          v_(13) = fl
+          v_(14) = gh
+          v_(15) = gl
+          sha512 rounds loop v k w (t + 1)
+
+fn :: sha512 blocks loop Tensor[U64 * 16] Tensor[U64 * 16] Tensor[U64 * 160] Tensor[U64 * 160] String Int Int Int => Tensor[U64 * 16]
+      sha512 blocks loop h v k w msg mlen total_len off =
+        | off >= total_len = h
+        | (off + 128) <= mlen =
+          w1 = sha512 load w fast w msg off 0
+          w2 = sha512 expand w w1 16
+          v1 = sha512 copy state v h 0
+          v2 = sha512 rounds loop v1 k w2 0
+          h1 = sha512 add state h v2 0
+          sha512 blocks loop h1 v2 k w2 msg mlen total_len (off + 128)
+        | otherwise =
+          w1 = sha512 load w pad w msg mlen total_len off 0
+          w2 = sha512 expand w w1 16
+          v1 = sha512 copy state v h 0
+          v2 = sha512 rounds loop v1 k w2 0
+          h1 = sha512 add state h v2 0
+          sha512 blocks loop h1 v2 k w2 msg mlen total_len (off + 128)
+
+fn :: sha512 state to raw CT16 Tensor[U64 * 16] Int => String
+      sha512 state to raw tbl h idx =
+        | idx >= 16 = ""
+        | otherwise = (c word32 to raw4 tbl h_(idx)) + (sha512 state to raw tbl h (idx + 1))
+
+-- @implements FR-CRYPTO-005
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: sha512 bytes String => String
+      sha512 bytes msg =
+        mlen      = str len msg
+        total_len = ((mlen + 17 + 127) / 128) * 128
+        h0        = sha512 init h
+        v0        = Tensor[U64 * 16]
+        k         = sha512 init k
+        w         = Tensor[U64 * 160]
+        hf        = sha512 blocks loop h0 v0 k w msg mlen total_len 0
+        sha512 state to raw (c build b256) hf 0
+
+-- @implements FR-CRYPTO-005
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: sha512 hex String => String
+      sha512 hex msg =
+        msg sha512 bytes -> bytes to hex str
+
+-- ── Ed25519 Field Arithmetic mod p = 2^255 - 19 (10 radix-2^25.5 limbs) ──
+
+fn :: fe lit U64 U64 U64 U64 U64 U64 U64 U64 U64 U64 => Tensor[U64 * 10]
+      fe lit l0 l1 l2 l3 l4 l5 l6 l7 l8 l9 =
+        f = Tensor[U64 * 10]
+        f_(0) = l0
+        f_(1) = l1
+        f_(2) = l2
+        f_(3) = l3
+        f_(4) = l4
+        f_(5) = l5
+        f_(6) = l6
+        f_(7) = l7
+        f_(8) = l8
+        f_(9) = l9
+        f
+
+fn :: fe zero => Tensor[U64 * 10]
+      fe zero =  fe lit 0 0 0 0 0 0 0 0 0 0
+
+fn :: fe one => Tensor[U64 * 10]
+      fe one =  fe lit 1 0 0 0 0 0 0 0 0 0
+
+fn :: fe d => Tensor[U64 * 10]
+      fe d =  fe lit 56195235 13857412 51736253 6949390 114729 24766616 60832955 30306712 48412415 21499315
+
+fn :: fe d2 => Tensor[U64 * 10]
+      fe d2 =  fe lit 45281625 27714825 36363642 13898781 229458 15978800 54557047 27058993 29715967 9444199
+
+fn :: fe sqrt m1 => Tensor[U64 * 10]
+      fe sqrt m1 =  fe lit 34513072 25610706 9377949 3500415 12389472 33281959 41962654 31548777 326685 11406482
+
+fn :: fe bx => Tensor[U64 * 10]
+      fe bx =  fe lit 52811034 25909283 16144682 17082669 27570973 30858332 40966398 8378388 20764389 8758491
+
+fn :: fe by => Tensor[U64 * 10]
+      fe by =  fe lit 40265304 26843545 13421772 20132659 26843545 6710886 53687091 13421772 40265318 26843545
+
+fn :: fe bt => Tensor[U64 * 10]
+      fe bt =  fe lit 28827043 27438313 39759291 244362 8635006 11264893 19351346 13413597 16611511 27139452
+
+fn :: fe carry pass Tensor[U64 * 10] => Tensor[U64 * 10]
+      fe carry pass h =
+        c0 = h_(0) shr 26
+        h_(0) = h_(0) and 67108863
+        h_(1) = h_(1) + c0
+        c1 = h_(1) shr 25
+        h_(1) = h_(1) and 33554431
+        h_(2) = h_(2) + c1
+        c2 = h_(2) shr 26
+        h_(2) = h_(2) and 67108863
+        h_(3) = h_(3) + c2
+        c3 = h_(3) shr 25
+        h_(3) = h_(3) and 33554431
+        h_(4) = h_(4) + c3
+        c4 = h_(4) shr 26
+        h_(4) = h_(4) and 67108863
+        h_(5) = h_(5) + c4
+        c5 = h_(5) shr 25
+        h_(5) = h_(5) and 33554431
+        h_(6) = h_(6) + c5
+        c6 = h_(6) shr 26
+        h_(6) = h_(6) and 67108863
+        h_(7) = h_(7) + c6
+        c7 = h_(7) shr 25
+        h_(7) = h_(7) and 33554431
+        h_(8) = h_(8) + c7
+        c8 = h_(8) shr 26
+        h_(8) = h_(8) and 67108863
+        h_(9) = h_(9) + c8
+        c9 = h_(9) shr 25
+        h_(9) = h_(9) and 33554431
+        h_(0) = h_(0) + (c9 * 19)
+        h
+
+fn :: fe carry Tensor[U64 * 10] => Tensor[U64 * 10]
+      fe carry h =
+        h1 = fe carry pass h
+        h2 = fe carry pass h1
+        c0 = h2_(0) shr 26
+        h2_(0) = h2_(0) and 67108863
+        h2_(1) = h2_(1) + c0
+        h2
+
+fn :: fe add Tensor[U64 * 10] Tensor[U64 * 10] => Tensor[U64 * 10]
+      fe add f g =
+        fe lit (f_(0) + g_(0)) (f_(1) + g_(1)) (f_(2) + g_(2)) (f_(3) + g_(3)) (f_(4) + g_(4)) (f_(5) + g_(5)) (f_(6) + g_(6)) (f_(7) + g_(7)) (f_(8) + g_(8)) (f_(9) + g_(9))
+
+fn :: fe sub Tensor[U64 * 10] Tensor[U64 * 10] => Tensor[U64 * 10]
+      fe sub f g =
+        h = fe lit ((f_(0) + 134217690) - g_(0)) ((f_(1) + 67108862) - g_(1)) ((f_(2) + 134217726) - g_(2)) ((f_(3) + 67108862) - g_(3)) ((f_(4) + 134217726) - g_(4)) ((f_(5) + 67108862) - g_(5)) ((f_(6) + 134217726) - g_(6)) ((f_(7) + 67108862) - g_(7)) ((f_(8) + 134217726) - g_(8)) ((f_(9) + 67108862) - g_(9))
+        fe carry h
+
+fn :: fe mul Tensor[U64 * 10] Tensor[U64 * 10] => Tensor[U64 * 10]
+      fe mul f g =
+        f0 = f_(0)
+        f1 = f_(1)
+        f2 = f_(2)
+        f3 = f_(3)
+        f4 = f_(4)
+        f5 = f_(5)
+        f6 = f_(6)
+        f7 = f_(7)
+        f8 = f_(8)
+        f9 = f_(9)
+        g0 = g_(0)
+        g1 = g_(1)
+        g2 = g_(2)
+        g3 = g_(3)
+        g4 = g_(4)
+        g5 = g_(5)
+        g6 = g_(6)
+        g7 = g_(7)
+        g8 = g_(8)
+        g9 = g_(9)
+        g1_19 = 19 * g1
+        g2_19 = 19 * g2
+        g3_19 = 19 * g3
+        g4_19 = 19 * g4
+        g5_19 = 19 * g5
+        g6_19 = 19 * g6
+        g7_19 = 19 * g7
+        g8_19 = 19 * g8
+        g9_19 = 19 * g9
+        f1_2  = 2 * f1
+        f3_2  = 2 * f3
+        f5_2  = 2 * f5
+        f7_2  = 2 * f7
+        f9_2  = 2 * f9
+        h0 = (f0 * g0) + (f1_2 * g9_19) + (f2 * g8_19) + (f3_2 * g7_19) + (f4 * g6_19) + (f5_2 * g5_19) + (f6 * g4_19) + (f7_2 * g3_19) + (f8 * g2_19) + (f9_2 * g1_19)
+        h1 = (f0 * g1) + (f1 * g0) + (f2 * g9_19) + (f3 * g8_19) + (f4 * g7_19) + (f5 * g6_19) + (f6 * g5_19) + (f7 * g4_19) + (f8 * g3_19) + (f9 * g2_19)
+        h2 = (f0 * g2) + (f1_2 * g1) + (f2 * g0) + (f3_2 * g9_19) + (f4 * g8_19) + (f5_2 * g7_19) + (f6 * g6_19) + (f7_2 * g5_19) + (f8 * g4_19) + (f9_2 * g3_19)
+        h3 = (f0 * g3) + (f1 * g2) + (f2 * g1) + (f3 * g0) + (f4 * g9_19) + (f5 * g8_19) + (f6 * g7_19) + (f7 * g6_19) + (f8 * g5_19) + (f9 * g4_19)
+        h4 = (f0 * g4) + (f1_2 * g3) + (f2 * g2) + (f3_2 * g1) + (f4 * g0) + (f5_2 * g9_19) + (f6 * g8_19) + (f7_2 * g7_19) + (f8 * g6_19) + (f9_2 * g5_19)
+        h5 = (f0 * g5) + (f1 * g4) + (f2 * g3) + (f3 * g2) + (f4 * g1) + (f5 * g0) + (f6 * g9_19) + (f7 * g8_19) + (f8 * g7_19) + (f9 * g6_19)
+        h6 = (f0 * g6) + (f1_2 * g5) + (f2 * g4) + (f3_2 * g3) + (f4 * g2) + (f5_2 * g1) + (f6 * g0) + (f7_2 * g9_19) + (f8 * g8_19) + (f9_2 * g7_19)
+        h7 = (f0 * g7) + (f1 * g6) + (f2 * g5) + (f3 * g4) + (f4 * g3) + (f5 * g2) + (f6 * g1) + (f7 * g0) + (f8 * g9_19) + (f9 * g8_19)
+        h8 = (f0 * g8) + (f1_2 * g7) + (f2 * g6) + (f3_2 * g5) + (f4 * g4) + (f5_2 * g3) + (f6 * g2) + (f7_2 * g1) + (f8 * g0) + (f9_2 * g9_19)
+        h9 = (f0 * g9) + (f1 * g8) + (f2 * g7) + (f3 * g6) + (f4 * g5) + (f5 * g4) + (f6 * g3) + (f7 * g2) + (f8 * g1) + (f9 * g0)
+        fe carry (fe lit h0 h1 h2 h3 h4 h5 h6 h7 h8 h9)
+
+fn :: fe sq Tensor[U64 * 10] => Tensor[U64 * 10]
+      fe sq f =  fe mul f f
+
+fn :: fe sq n Tensor[U64 * 10] Int => Tensor[U64 * 10]
+      fe sq n f n =
+        | n <= 0    = f
+        | otherwise = fe sq n (fe sq f) (n - 1)
+
+fn :: fe freeze Tensor[U64 * 10] => Tensor[U64 * 10]
+      fe freeze f =
+        h  = fe carry (fe lit f_(0) f_(1) f_(2) f_(3) f_(4) f_(5) f_(6) f_(7) f_(8) f_(9))
+        q0 = (h_(0) + 19) shr 26
+        q1 = (h_(1) + q0) shr 25
+        q2 = (h_(2) + q1) shr 26
+        q3 = (h_(3) + q2) shr 25
+        q4 = (h_(4) + q3) shr 26
+        q5 = (h_(5) + q4) shr 25
+        q6 = (h_(6) + q5) shr 26
+        q7 = (h_(7) + q6) shr 25
+        q8 = (h_(8) + q7) shr 26
+        q9 = (h_(9) + q8) shr 25
+        h_(0) = h_(0) + (19 * q9)
+        h1 = fe carry pass h
+        h1_(9) = h1_(9) and 33554431
+        h1
+
+fn :: fe eq Tensor[U64 * 10] Tensor[U64 * 10] => Bool
+      fe eq f g =
+        ff = fe freeze f
+        gf = fe freeze g
+        d  = (ff_(0) xor gf_(0)) or (ff_(1) xor gf_(1)) or (ff_(2) xor gf_(2)) or (ff_(3) xor gf_(3)) or (ff_(4) xor gf_(4)) or (ff_(5) xor gf_(5)) or (ff_(6) xor gf_(6)) or (ff_(7) xor gf_(7)) or (ff_(8) xor gf_(8)) or (ff_(9) xor gf_(9))
+        d == 0
+
+fn :: fe pow22523 Tensor[U64 * 10] => Tensor[U64 * 10]
+      fe pow22523 z =
+        z2  = fe sq z
+        z9  = fe mul (fe sq n z2 2) z
+        z11 = fe mul z9 z2
+        t0  = fe mul (fe sq z11) z9
+        t1  = fe mul (fe sq n t0 5) t0
+        t2  = fe mul (fe sq n t1 10) t1
+        t3  = fe mul (fe sq n t2 20) t2
+        t4  = fe mul (fe sq n t3 10) t1
+        t5  = fe mul (fe sq n t4 50) t4
+        t6  = fe mul (fe sq n t5 100) t5
+        t7  = fe mul (fe sq n t6 50) t4
+        t8  = fe sq n t7 2
+        fe mul t8 z
+
+fn :: fe invert Tensor[U64 * 10] => Tensor[U64 * 10]
+      fe invert z =
+        z2  = fe sq z
+        z9  = fe mul (fe sq n z2 2) z
+        z11 = fe mul z9 z2
+        t0  = fe mul (fe sq z11) z9
+        t1  = fe mul (fe sq n t0 5) t0
+        t2  = fe mul (fe sq n t1 10) t1
+        t3  = fe mul (fe sq n t2 20) t2
+        t4  = fe mul (fe sq n t3 10) t1
+        t5  = fe mul (fe sq n t4 50) t4
+        t6  = fe mul (fe sq n t5 100) t5
+        t7  = fe mul (fe sq n t6 50) t4
+        fe mul (fe sq n t7 5) z11
+
+fn :: fe to words8 Tensor[U64 * 10] => Tensor[U64 * 8]
+      fe to words8 f =
+        h  = fe freeze f
+        w  = Tensor[U64 * 8]
+        w_(0) = (h_(0) or (h_(1) shl 26)) and 0xFFFFFFFF
+        w_(1) = ((h_(1) shr 6) or (h_(2) shl 19)) and 0xFFFFFFFF
+        w_(2) = ((h_(2) shr 13) or (h_(3) shl 13)) and 0xFFFFFFFF
+        w_(3) = ((h_(3) shr 19) or (h_(4) shl 6)) and 0xFFFFFFFF
+        w_(4) = (h_(5) or (h_(6) shl 25)) and 0xFFFFFFFF
+        w_(5) = ((h_(6) shr 7) or (h_(7) shl 19)) and 0xFFFFFFFF
+        w_(6) = ((h_(7) shr 13) or (h_(8) shl 12)) and 0xFFFFFFFF
+        w_(7) = ((h_(8) shr 20) or (h_(9) shl 6)) and 0xFFFFFFFF
+        w
+
+fn :: words8 to raw32 loop CT16 Tensor[U64 * 8] Int => String
+      words8 to raw32 loop tbl w idx =
+        | idx >= 8  = ""
+        | otherwise =
+          v  = w_(idx)
+          b0 = c get b256 tbl ((v shr 4) and 15) (v and 15)
+          b1 = c get b256 tbl ((v shr 12) and 15) ((v shr 8) and 15)
+          b2 = c get b256 tbl ((v shr 20) and 15) ((v shr 16) and 15)
+          b3 = c get b256 tbl ((v shr 28) and 15) ((v shr 24) and 15)
+          ((b0 + b1) + (b2 + b3)) + (words8 to raw32 loop tbl w (idx + 1))
+
+fn :: raw32 to words8 String => Tensor[U64 * 8]
+      raw32 to words8 s =
+        w = Tensor[U64 * 8]
+        w_(0) = (norm byte (str char at s 0)) or ((norm byte (str char at s 1)) shl 8) or ((norm byte (str char at s 2)) shl 16) or ((norm byte (str char at s 3)) shl 24)
+        w_(1) = (norm byte (str char at s 4)) or ((norm byte (str char at s 5)) shl 8) or ((norm byte (str char at s 6)) shl 16) or ((norm byte (str char at s 7)) shl 24)
+        w_(2) = (norm byte (str char at s 8)) or ((norm byte (str char at s 9)) shl 8) or ((norm byte (str char at s 10)) shl 16) or ((norm byte (str char at s 11)) shl 24)
+        w_(3) = (norm byte (str char at s 12)) or ((norm byte (str char at s 13)) shl 8) or ((norm byte (str char at s 14)) shl 16) or ((norm byte (str char at s 15)) shl 24)
+        w_(4) = (norm byte (str char at s 16)) or ((norm byte (str char at s 17)) shl 8) or ((norm byte (str char at s 18)) shl 16) or ((norm byte (str char at s 19)) shl 24)
+        w_(5) = (norm byte (str char at s 20)) or ((norm byte (str char at s 21)) shl 8) or ((norm byte (str char at s 22)) shl 16) or ((norm byte (str char at s 23)) shl 24)
+        w_(6) = (norm byte (str char at s 24)) or ((norm byte (str char at s 25)) shl 8) or ((norm byte (str char at s 26)) shl 16) or ((norm byte (str char at s 27)) shl 24)
+        w_(7) = (norm byte (str char at s 28)) or ((norm byte (str char at s 29)) shl 8) or ((norm byte (str char at s 30)) shl 16) or ((norm byte (str char at s 31)) shl 24)
+        w
+
+fn :: fe from raw32 String => Bool U64 Tensor[U64 * 10]
+      fe from raw32 s =
+        w      = raw32 to words8 s
+        x_sign = (w_(7) shr 31) and 1
+        w7_m   = w_(7) and 0x7FFFFFFF
+        l0 = w_(0) and 67108863
+        l1 = ((w_(0) shr 26) or (w_(1) shl 6)) and 33554431
+        l2 = ((w_(1) shr 19) or (w_(2) shl 13)) and 67108863
+        l3 = ((w_(2) shr 13) or (w_(3) shl 19)) and 33554431
+        l4 = (w_(3) shr 6) and 67108863
+        l5 = w_(4) and 33554431
+        l6 = ((w_(4) shr 25) or (w_(5) shl 7)) and 67108863
+        l7 = ((w_(5) shr 19) or (w_(6) shl 13)) and 33554431
+        l8 = ((w_(6) shr 12) or (w7_m shl 20)) and 67108863
+        l9 = (w7_m shr 6) and 33554431
+        raw_fe = fe lit l0 l1 l2 l3 l4 l5 l6 l7 l8 l9
+        frz_fe = fe freeze raw_fe
+        diff   = (raw_fe_(0) xor frz_fe_(0)) or (raw_fe_(1) xor frz_fe_(1)) or (raw_fe_(2) xor frz_fe_(2)) or (raw_fe_(3) xor frz_fe_(3)) or (raw_fe_(4) xor frz_fe_(4)) or (raw_fe_(5) xor frz_fe_(5)) or (raw_fe_(6) xor frz_fe_(6)) or (raw_fe_(7) xor frz_fe_(7)) or (raw_fe_(8) xor frz_fe_(8)) or (raw_fe_(9) xor frz_fe_(9))
+        (diff == 0, x_sign, raw_fe)
+
+-- ── Ed25519 Extended Twisted Edwards Point Arithmetic (Tensor[U64 * 40]) ──
+
+fn :: ge pack Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] => Tensor[U64 * 40]
+      ge pack x y z t =
+        p = Tensor[U64 * 40]
+        p_(0)  = x_(0)
+        p_(1)  = x_(1)
+        p_(2)  = x_(2)
+        p_(3)  = x_(3)
+        p_(4)  = x_(4)
+        p_(5)  = x_(5)
+        p_(6)  = x_(6)
+        p_(7)  = x_(7)
+        p_(8)  = x_(8)
+        p_(9)  = x_(9)
+        p_(10) = y_(0)
+        p_(11) = y_(1)
+        p_(12) = y_(2)
+        p_(13) = y_(3)
+        p_(14) = y_(4)
+        p_(15) = y_(5)
+        p_(16) = y_(6)
+        p_(17) = y_(7)
+        p_(18) = y_(8)
+        p_(19) = y_(9)
+        p_(20) = z_(0)
+        p_(21) = z_(1)
+        p_(22) = z_(2)
+        p_(23) = z_(3)
+        p_(24) = z_(4)
+        p_(25) = z_(5)
+        p_(26) = z_(6)
+        p_(27) = z_(7)
+        p_(28) = z_(8)
+        p_(29) = z_(9)
+        p_(30) = t_(0)
+        p_(31) = t_(1)
+        p_(32) = t_(2)
+        p_(33) = t_(3)
+        p_(34) = t_(4)
+        p_(35) = t_(5)
+        p_(36) = t_(6)
+        p_(37) = t_(7)
+        p_(38) = t_(8)
+        p_(39) = t_(9)
+        p
+
+fn :: ge coord Tensor[U64 * 40] Int => Tensor[U64 * 10]
+      ge coord p base =
+        fe lit p_(base) p_(base + 1) p_(base + 2) p_(base + 3) p_(base + 4) p_(base + 5) p_(base + 6) p_(base + 7) p_(base + 8) p_(base + 9)
+
+fn :: ge zero => Tensor[U64 * 40]
+      ge zero =  ge pack (fe zero) (fe one) (fe one) (fe zero)
+
+fn :: ge base => Tensor[U64 * 40]
+      ge base =  ge pack (fe bx) (fe by) (fe one) (fe bt)
+
+fn :: ge add Tensor[U64 * 40] Tensor[U64 * 40] => Tensor[U64 * 40]
+      ge add p1 p2 =
+        x1 = ge coord p1 0
+        y1 = ge coord p1 10
+        z1 = ge coord p1 20
+        t1 = ge coord p1 30
+        x2 = ge coord p2 0
+        y2 = ge coord p2 10
+        z2 = ge coord p2 20
+        t2 = ge coord p2 30
+        a  = fe mul (fe sub y1 x1) (fe sub y2 x2)
+        b  = fe mul (fe add y1 x1) (fe add y2 x2)
+        c  = fe mul (fe mul t1 t2) (fe d2)
+        d  = fe mul z1 (fe add z2 z2)
+        e  = fe sub b a
+        f  = fe sub d c
+        g  = fe add d c
+        h  = fe add b a
+        ge pack (fe mul e f) (fe mul g h) (fe mul f g) (fe mul e h)
+
+fn :: ge dbl Tensor[U64 * 40] => Tensor[U64 * 40]
+      ge dbl p =
+        x1 = ge coord p 0
+        y1 = ge coord p 10
+        z1 = ge coord p 20
+        a  = fe sq x1
+        b  = fe sq y1
+        z2 = fe sq z1
+        c  = fe add z2 z2
+        h  = fe add a b
+        xy = fe add x1 y1
+        e  = fe sub h (fe sq xy)
+        g  = fe sub a b
+        f  = fe add c g
+        ge pack (fe mul e f) (fe mul g h) (fe mul f g) (fe mul e h)
+
+fn :: ge cselect loop Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 40] U64 Int => Tensor[U64 * 40]
+      ge cselect loop out p0 p1 mask idx =
+        | idx >= 40 = out
+        | otherwise =
+          v0 = p0_(idx)
+          v1 = p1_(idx)
+          out_(idx) = v0 xor ((v0 xor v1) and mask)
+          ge cselect loop out p0 p1 mask (idx + 1)
+
+fn :: ge cselect Tensor[U64 * 40] Tensor[U64 * 40] U64 => Tensor[U64 * 40]
+      ge cselect p0 p1 bit =
+        mask = (0 - (bit and 1)) and 0xFFFFFFFF
+        out  = Tensor[U64 * 40]
+        ge cselect loop out p0 p1 mask 0
+
+fn :: ge scalarmult loop Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 8] Int => Tensor[U64 * 40]
+      ge scalarmult loop acc zero_pt p s_w bit_idx =
+        | bit_idx < 0 = acc
+        | otherwise   =
+          acc_d = ge dbl acc
+          bit   = (s_w_(bit_idx / 32) shr (bit_idx % 32)) and 1
+          q     = ge cselect zero_pt p bit
+          acc_n = ge add acc_d q
+          ge scalarmult loop acc_n zero_pt p s_w (bit_idx - 1)
+
+fn :: ge scalarmult ct Tensor[U64 * 40] Tensor[U64 * 8] => Tensor[U64 * 40]
+      ge scalarmult ct p s_w =
+        z_pt = ge zero
+        ge scalarmult loop z_pt z_pt p s_w 254
+
+fn :: ge to bytes Tensor[U64 * 40] => String
+      ge to bytes p =
+        recip = fe invert (ge coord p 20)
+        x     = fe mul (ge coord p 0) recip
+        y     = fe mul (ge coord p 10) recip
+        yw    = fe to words8 y
+        xw    = fe to words8 x
+        yw_(7) = yw_(7) or ((xw_(0) and 1) shl 31)
+        words8 to raw32 loop (c build b256) yw 0
+
+fn :: ge finish sign Bool Bool Tensor[U64 * 10] Tensor[U64 * 10] => Bool Tensor[U64 * 40]
+      ge finish sign is_zero_neg flip_sign x y =
+        | is_zero_neg = (False, ge zero)
+        | flip_sign =
+          xn = fe sub (fe zero) x
+          (True, ge pack xn y (fe one) (fe mul xn y))
+        | otherwise =
+          (True, ge pack x y (fe one) (fe mul x y))
+
+fn :: ge decompress step2 Tensor[U64 * 10] Tensor[U64 * 10] U64 => Bool Tensor[U64 * 40]
+      ge decompress step2 x y x_sign =
+        xw   = fe to words8 x
+        is_z = (xw_(0) or xw_(1) or xw_(2) or xw_(3) or xw_(4) or xw_(5) or xw_(6) or xw_(7)) == 0
+        ge finish sign (is_z and (x_sign == 1)) ((xw_(0) and 1) != x_sign) x y
+
+fn :: ge check root Bool Bool Tensor[U64 * 10] Tensor[U64 * 10] U64 => Bool Tensor[U64 * 40]
+      ge check root eq_pos eq_neg x0 y x_sign =
+        | eq_pos    = ge decompress step2 x0 y x_sign
+        | eq_neg    = ge decompress step2 (fe mul x0 (fe sqrt m1)) y x_sign
+        | otherwise = (False, ge zero)
+
+fn :: ge decompress y Bool U64 Tensor[U64 * 10] => Bool Tensor[U64 * 40]
+      ge decompress y False _ _ =  (False, ge zero)
+      ge decompress y True x_sign y =
+        y2    = fe sq y
+        u     = fe sub y2 (fe one)
+        v     = fe add (fe mul (fe d) y2) (fe one)
+        v2    = fe sq v
+        v3    = fe mul v2 v
+        v4    = fe sq v2
+        uv3   = fe mul u v3
+        uv7   = fe mul uv3 v4
+        x0    = fe mul uv3 (fe pow22523 uv7)
+        vx2   = fe mul v (fe sq x0)
+        neg_u = fe sub (fe zero) u
+        ge check root (fe eq vx2 u) (fe eq vx2 neg_u) x0 y x_sign
+
+fn :: ge from bytes String => Bool Tensor[U64 * 40]
+      ge from bytes s =
+        | (str len s) != 32 = (False, ge zero)
+        | otherwise =
+          is_canon, x_sign, y = fe from raw32 s
+          ge decompress y is_canon x_sign y
+
+-- ── Ed25519 Scalar Arithmetic mod L (8 x 32-bit little-endian words) ──
+
+fn :: sc l words => Tensor[U64 * 8]
+      sc l words =
+        lw = Tensor[U64 * 8]
+        lw_(0) = 0x5cf5d3ed
+        lw_(1) = 0x5812631a
+        lw_(2) = 0xa2f79cd6
+        lw_(3) = 0x14def9de
+        lw_(4) = 0
+        lw_(5) = 0
+        lw_(6) = 0
+        lw_(7) = 0x10000000
+        lw
+
+fn :: sc lt l loop Tensor[U64 * 8] Tensor[U64 * 8] Int => Bool
+      sc lt l loop w lw idx =
+        | idx < 0            = False
+        | w_(idx) < lw_(idx) = True
+        | w_(idx) > lw_(idx) = False
+        | otherwise          = sc lt l loop w lw (idx - 1)
+
+fn :: sc lt l Tensor[U64 * 8] => Bool
+      sc lt l w =  sc lt l loop w (sc l words) 7
+
+fn :: sc sub word U64 U64 => U64 U64
+      sc sub word wi wb =
+        | wi >= wb  = ((wi - wb) and 0xFFFFFFFF, 0)
+        | otherwise = (((wi + 0x100000000) - wb) and 0xFFFFFFFF, 1)
+
+fn :: sc sub l loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int U64 => Tensor[U64 * 8]
+      sc sub l loop w lw out idx borrow =
+        | idx >= 8  = out
+        | otherwise =
+          diff, nb  = sc sub word w_(idx) (lw_(idx) + borrow)
+          out_(idx) = diff
+          sc sub l loop w lw out (idx + 1) nb
+
+fn :: sc sub l Tensor[U64 * 8] => Tensor[U64 * 8]
+      sc sub l w =
+        out = Tensor[U64 * 8]
+        sc sub l loop w (sc l words) out 0 0
+
+fn :: sc norm l Tensor[U64 * 8] => Tensor[U64 * 8]
+      sc norm l w =
+        | sc lt l w = w
+        | otherwise = sc norm l (sc sub l w)
+
+fn :: sc add raw loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int U64 => Tensor[U64 * 8]
+      sc add raw loop a b out idx carry =
+        | idx >= 8  = out
+        | otherwise =
+          s = a_(idx) + b_(idx) + carry
+          out_(idx) = s and 0xFFFFFFFF
+          sc add raw loop a b out (idx + 1) (s shr 32)
+
+fn :: sc add mod l Tensor[U64 * 8] Tensor[U64 * 8] => Tensor[U64 * 8]
+      sc add mod l a b =
+        out = Tensor[U64 * 8]
+        sum = sc add raw loop a b out 0 0
+        sc norm l sum
+
+fn :: sc zero => Tensor[U64 * 8]
+      sc zero =
+        z = Tensor[U64 * 8]
+        z_(0) = 0
+        z_(1) = 0
+        z_(2) = 0
+        z_(3) = 0
+        z_(4) = 0
+        z_(5) = 0
+        z_(6) = 0
+        z_(7) = 0
+        z
+
+fn :: sc one => Tensor[U64 * 8]
+      sc one =
+        o = sc zero
+        o_(0) = 1
+        o
+
+fn :: sc cond add bit Bool Tensor[U64 * 8] Tensor[U64 * 8] => Tensor[U64 * 8]
+      sc cond add bit False acc _     =  acc
+      sc cond add bit True  acc add_w =  sc add mod l acc add_w
+
+fn :: sc reduce byte bits Tensor[U64 * 8] Tensor[U64 * 8] U64 Int => Tensor[U64 * 8]
+      sc reduce byte bits acc one_w b bit_idx =
+        | bit_idx < 0 = acc
+        | otherwise   =
+          acc2 = sc add mod l acc acc
+          acc3 = sc cond add bit (((b shr bit_idx) and 1) == 1) acc2 one_w
+          sc reduce byte bits acc3 one_w b (bit_idx - 1)
+
+fn :: sc reduce le64 loop Tensor[U64 * 8] Tensor[U64 * 8] String Int => Tensor[U64 * 8]
+      sc reduce le64 loop acc one_w s64 byte_idx =
+        | byte_idx < 0 = acc
+        | otherwise    =
+          b    = norm byte (str char at s64 byte_idx)
+          acc1 = sc reduce byte bits acc one_w b 7
+          sc reduce le64 loop acc1 one_w s64 (byte_idx - 1)
+
+fn :: sc reduce le64 String => Tensor[U64 * 8]
+      sc reduce le64 s64 =
+        sc reduce le64 loop (sc zero) (sc one) s64 63
+
+fn :: sc mul word bits Tensor[U64 * 8] Tensor[U64 * 8] U64 Int => Tensor[U64 * 8]
+      sc mul word bits acc s_w kw bit_idx =
+        | bit_idx < 0 = acc
+        | otherwise   =
+          acc2 = sc add mod l acc acc
+          acc3 = sc cond add bit (((kw shr bit_idx) and 1) == 1) acc2 s_w
+          sc mul word bits acc3 s_w kw (bit_idx - 1)
+
+fn :: sc mul mod l loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int => Tensor[U64 * 8]
+      sc mul mod l loop acc k_w s_w word_idx =
+        | word_idx < 0 = acc
+        | otherwise    =
+          acc1 = sc mul word bits acc s_w k_w_(word_idx) 31
+          sc mul mod l loop acc1 k_w s_w (word_idx - 1)
+
+fn :: sc muladd mod l Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] => Tensor[U64 * 8]
+      sc muladd mod l r_w k_w s_w =
+        ks = sc mul mod l loop (sc zero) k_w (sc norm l s_w) 7
+        sc add mod l ks r_w
+
+fn :: ed25519 clamp scalar String => Tensor[U64 * 8]
+      ed25519 clamp scalar h64 =
+        w = raw32 to words8 (byte slice h64 0 32)
+        w_(0) = w_(0) and 0xFFFFFFF8
+        w_(7) = (w_(7) and 0x7FFFFFFF) or 0x40000000
+        w
+
+-- ── RFC 8032 §5.1 Pure Ed25519 Public API ────────────────────
+
+-- @implements FR-CRYPTO-005
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: ed25519 public key String => String
+      ed25519 public key seed =
+        | (str len seed) != 32 = ""
+        | otherwise            =
+          h64 = sha512 bytes seed
+          s_w = ed25519 clamp scalar h64
+          ge to bytes (ge scalarmult ct (ge base) s_w)
+
+-- @implements FR-CRYPTO-005
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: ed25519 sign String String => String
+      ed25519 sign seed msg =
+        | (str len seed) != 32 = ""
+        | otherwise            =
+          h64     = sha512 bytes seed
+          s_w     = ed25519 clamp scalar h64
+          prefix  = byte slice h64 32 64
+          a_bytes = ge to bytes (ge scalarmult ct (ge base) s_w)
+          r_w     = sc reduce le64 (sha512 bytes (prefix + msg))
+          r_bytes = ge to bytes (ge scalarmult ct (ge base) r_w)
+          k_w     = sc reduce le64 (sha512 bytes (r_bytes + a_bytes + msg))
+          cap_s_w = sc muladd mod l r_w k_w s_w
+          s_bytes = words8 to raw32 loop (c build b256) cap_s_w 0
+          r_bytes + s_bytes
+
+fn :: ed25519 verify points Bool Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 8] String String String => Bool
+      ed25519 verify points False _ _ _ _ _ _ =  False
+      ed25519 verify points True a_pt r_pt s_w r_bytes pubkey msg =
+        k_w  = sc reduce le64 (sha512 bytes (r_bytes + pubkey + msg))
+        lhs  = ge scalarmult ct (ge base) s_w
+        rhs  = ge add r_pt (ge scalarmult ct a_pt k_w)
+        x_ok = fe eq (fe mul (ge coord lhs 0) (ge coord rhs 20)) (fe mul (ge coord rhs 0) (ge coord lhs 20))
+        y_ok = fe eq (fe mul (ge coord lhs 10) (ge coord rhs 20)) (fe mul (ge coord rhs 10) (ge coord lhs 20))
+        x_ok and y_ok
+
+fn :: ed25519 verify scalar Bool String String String Tensor[U64 * 8] => Bool
+      ed25519 verify scalar False _ _ _ _ =  False
+      ed25519 verify scalar True pubkey msg r_bytes s_w =
+        ok_a, a_pt = ge from bytes pubkey
+        ok_r, r_pt = ge from bytes r_bytes
+        ed25519 verify points (ok_a and ok_r) a_pt r_pt s_w r_bytes pubkey msg
+
+-- @implements FR-CRYPTO-005
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: ed25519 verify String String String => Bool
+      ed25519 verify pubkey msg sig =
+        | (str len pubkey) != 32 or (str len sig) != 64 = False
+        | otherwise =
+          r_bytes = byte slice sig 0 32
+          s_bytes = byte slice sig 32 64
+          s_w     = raw32 to words8 s_bytes
+          ed25519 verify scalar (sc lt l s_w) pubkey msg r_bytes s_w
+
+-- ── Minisign Format Helpers & Public API ─────────────────────
+
+fn :: c is ws Int => Bool
+      c is ws ch =  ch == 32 or ch == 9 or ch == 10 or ch == 13
+
+fn :: c trim start String Int Int => Int
+      c trim start s idx slen =
+        | idx >= slen                         = slen
+        | c is ws (norm byte (str char at s idx)) = c trim start s (idx + 1) slen
+        | otherwise                           = idx
+
+fn :: c trim end String Int Int => Int
+      c trim end s st idx =
+        | idx <= st                                   = st
+        | c is ws (norm byte (str char at s (idx - 1))) = c trim end s st (idx - 1)
+        | otherwise                                   = idx
+
+fn :: c trim String => String
+      c trim s =
+        slen = str len s
+        st   = c trim start s 0 slen
+        en   = c trim end s st slen
+        str slice s st en
+
+fn :: c starts with String String => Bool
+      c starts with s pfx =
+        | (str len s) < (str len pfx) = False
+        | otherwise                   = (str slice s 0 (str len pfx)) == pfx
+
+fn :: c split lines loop String Int Int Int [String] => [String]
+      c split lines loop s st idx slen acc =
+        | idx >= slen = acc :: [c trim (str slice s st slen)]
+        | (norm byte (str char at s idx)) == 10 =
+          c split lines loop s (idx + 1) (idx + 1) slen (acc :: [c trim (str slice s st idx)])
+        | otherwise =
+          c split lines loop s st (idx + 1) slen acc
+
+fn :: c split lines trimmed String Int => [String]
+      c split lines trimmed st slen =
+        | slen == 0 = []
+        | otherwise = c split lines loop st 0 0 slen []
+
+fn :: c split lines String => [String]
+      c split lines s =
+        st = c trim s
+        c split lines trimmed st (str len st)
+
+fn :: c b64 table => String
+      c b64 table =  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+fn :: c b64 ch Int => String
+      c b64 ch idx =
+        t = c b64 table
+        str slice t (idx and 63) ((idx and 63) + 1)
+
+fn :: c b64 encode loop String Int Int => String
+      c b64 encode loop s idx slen =
+        | idx >= slen = ""
+        | (idx + 3) <= slen =
+          b0 = norm byte (str char at s idx)
+          b1 = norm byte (str char at s (idx + 1))
+          b2 = norm byte (str char at s (idx + 2))
+          v  = (b0 shl 16) or (b1 shl 8) or b2
+          q  = (c b64 ch (v shr 18)) + (c b64 ch (v shr 12)) + (c b64 ch (v shr 6)) + (c b64 ch v)
+          q + (c b64 encode loop s (idx + 3) slen)
+        | (idx + 2) == slen =
+          b0 = norm byte (str char at s idx)
+          b1 = norm byte (str char at s (idx + 1))
+          v  = (b0 shl 16) or (b1 shl 8)
+          (c b64 ch (v shr 18)) + (c b64 ch (v shr 12)) + (c b64 ch (v shr 6)) + "="
+        | otherwise =
+          b0 = norm byte (str char at s idx)
+          v  = b0 shl 16
+          (c b64 ch (v shr 18)) + (c b64 ch (v shr 12)) + "=="
+
+fn :: c b64 encode String => String
+      c b64 encode s =  c b64 encode loop s 0 (str len s)
+
+fn :: c b64 val Int => Int
+      c b64 val ch =
+        | ch >= 65 and ch <= 90  = ch - 65
+        | ch >= 97 and ch <= 122 = (ch - 97) + 26
+        | ch >= 48 and ch <= 57  = (ch - 48) + 52
+        | ch == 43               = 62
+        | ch == 47               = 63
+        | ch == 61               = 0 - 2
+        | otherwise              = 0 - 1
+
+fn :: c b64 quad CT16 String Int Int String Int Int Int Int => Bool String
+      c b64 quad tbl s idx slen acc v0 v1 v2 v3 =
+        | v0 < 0 or v1 < 0 or v2 == (0 - 1) or v3 == (0 - 1) = (False, "")
+        | v2 == (0 - 2) =
+          | v3 != (0 - 2) or (idx + 4) != slen = (False, "")
+          | otherwise =
+            b0 = (v0 shl 2) or (v1 shr 4)
+            (True, acc + (c get b256 tbl ((b0 shr 4) and 15) (b0 and 15))) |.
+        | v3 == (0 - 2) =
+          | (idx + 4) != slen = (False, "")
+          | otherwise =
+            b0 = (v0 shl 2) or (v1 shr 4)
+            b1 = ((v1 and 15) shl 4) or (v2 shr 2)
+            s0 = c get b256 tbl ((b0 shr 4) and 15) (b0 and 15)
+            s1 = c get b256 tbl ((b1 shr 4) and 15) (b1 and 15)
+            (True, acc + s0 + s1) |.
+        | otherwise =
+          b0 = (v0 shl 2) or (v1 shr 4)
+          b1 = ((v1 and 15) shl 4) or (v2 shr 2)
+          b2 = ((v2 and 3) shl 6) or v3
+          s0 = c get b256 tbl ((b0 shr 4) and 15) (b0 and 15)
+          s1 = c get b256 tbl ((b1 shr 4) and 15) (b1 and 15)
+          s2 = c get b256 tbl ((b2 shr 4) and 15) (b2 and 15)
+          c b64 decode loop tbl s (idx + 4) slen (acc + s0 + s1 + s2)
+
+fn :: c b64 decode loop CT16 String Int Int String => Bool String
+      c b64 decode loop tbl s idx slen acc =
+        | idx >= slen = (True, acc)
+        | otherwise   =
+          v0 = c b64 val (str char at s idx)
+          v1 = c b64 val (str char at s (idx + 1))
+          v2 = c b64 val (str char at s (idx + 2))
+          v3 = c b64 val (str char at s (idx + 3))
+          c b64 quad tbl s idx slen acc v0 v1 v2 v3
+
+fn :: c b64 decode trimmed String Int => Bool String
+      c b64 decode trimmed st slen =
+        | slen == 0 or (slen % 4) != 0 = (False, "")
+        | otherwise                    = c b64 decode loop (c build b256) st 0 slen ""
+
+fn :: c b64 decode String => Bool String
+      c b64 decode s =
+        st = c trim s
+        c b64 decode trimmed st (str len st)
+
+fn :: c nth str [String] Int => String
+      c nth str []       _   =  ""
+      c nth str (x:rest) idx =
+        | idx <= 0  = x
+        | otherwise = c nth str rest (idx - 1)
+
+fn :: c str list len [String] Int => Int
+      c str list len []       acc =  acc
+      c str list len (_:rest) acc =  c str list len rest (acc + 1)
+
+-- @implements FR-CRYPTO-005
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: minisign encode pubkey String String => String
+      minisign encode pubkey key_id pubkey =
+        | (str len key_id) != 8 or (str len pubkey) != 32 = ""
+        | otherwise = c b64 encode ("Ed" + key_id + pubkey)
+
+fn :: minisign select pubkey line [String] Int => String
+      minisign select pubkey line lines cnt =
+        | cnt <= 0  = ""
+        | cnt == 1  = c nth str lines 0
+        | otherwise = c nth str lines 1
+
+fn :: minisign unpack pubkey Bool String => String String
+      minisign unpack pubkey False _   =  ("", "")
+      minisign unpack pubkey True  raw =
+        | (str len raw) != 42          = ("", "")
+        | (byte slice raw 0 2) != "Ed" = ("", "")
+        | otherwise                    = (byte slice raw 2 10, byte slice raw 10 42)
+
+-- @implements FR-CRYPTO-005
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: minisign decode pubkey String => String String
+      minisign decode pubkey text =
+        lines   = c split lines text
+        b64_str = minisign select pubkey line lines (c str list len lines 0)
+        ok, raw = c b64 decode b64_str
+        minisign unpack pubkey ok raw
+
+-- @implements FR-CRYPTO-005
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: minisign sign String String String String String => String
+      minisign sign seed key_id msg untrusted_comment trusted_comment =
+        | (str len seed) != 32 or (str len key_id) != 8 = ""
+        | otherwise =
+          sig        = ed25519 sign seed msg
+          global_sig = ed25519 sign seed (sig + trusted_comment)
+          l1         = "untrusted comment: " + untrusted_comment
+          l2         = c b64 encode ("Ed" + key_id + sig)
+          l3         = "trusted comment: " + trusted_comment
+          l4         = c b64 encode global_sig
+          l1 + "\n" + l2 + "\n" + l3 + "\n" + l4 + "\n"
+
+fn :: minisign extract tc line String => String
+      minisign extract tc line l3 =
+        | not (c starts with l3 "trusted comment: ") = ""
+        | otherwise = str slice l3 17 (str len l3)
+
+fn :: minisign extract tc lines [String] Int => String
+      minisign extract tc lines lines cnt =
+        | cnt < 4   = ""
+        | otherwise = minisign extract tc line (c nth str lines 2)
+
+-- @implements FR-CRYPTO-005
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: minisign trusted comment String => String
+      minisign trusted comment minisig_text =
+        lines = c split lines minisig_text
+        minisign extract tc lines lines (c str list len lines 0)
+
+fn :: minisign payload for alg String String => Bool String
+      minisign payload for alg alg msg =
+        | alg == "Ed" = (True, msg)
+        | alg == "ED" = (True, bytes from list (argon2id.a2 blake2b (bytes to list msg) 64))
+        | otherwise   = (False, "")
+
+fn :: minisign check sigs Bool String String String String String String => Bool
+      minisign check sigs False _ _ _ _ _ _ =  False
+      minisign check sigs True pk_kid pk_bytes sig_kid payload sig tc_and_gsig =
+        | not (ct equal pk_kid sig_kid) = False
+        | otherwise =
+          gsig = byte slice tc_and_gsig 0 64
+          tc   = byte slice tc_and_gsig 64 (str len tc_and_gsig)
+          (ed25519 verify pk_bytes payload sig) and (ed25519 verify pk_bytes (sig + tc) gsig)
+
+fn :: minisign verify decoded Bool String String String String String => Bool
+      minisign verify decoded False _ _ _ _ _ =  False
+      minisign verify decoded True pk_kid pk_bytes msg raw2 gsig_and_tc =
+        alg             = byte slice raw2 0 2
+        sig_kid         = byte slice raw2 2 10
+        sig             = byte slice raw2 10 74
+        alg_ok, payload = minisign payload for alg alg msg
+        minisign check sigs alg_ok pk_kid pk_bytes sig_kid payload sig gsig_and_tc
+
+fn :: minisign verify body Bool String String String String String String => Bool
+      minisign verify body False _ _ _ _ _ _ =  False
+      minisign verify body True pk_kid pk_bytes msg l2 l3 l4 =
+        ok2, raw2 = c b64 decode l2
+        ok4, gsig = c b64 decode l4
+        tc        = str slice l3 17 (str len l3)
+        ok_all    = ok2 and ok4 and ((str len raw2) == 74) and ((str len gsig) == 64)
+        minisign verify decoded ok_all pk_kid pk_bytes msg raw2 (gsig + tc)
+
+fn :: minisign verify lines Bool String String String [String] => Bool
+      minisign verify lines False _ _ _ _ =  False
+      minisign verify lines True pk_kid pk_bytes msg lines =
+        l1     = c nth str lines 0
+        l2     = c nth str lines 1
+        l3     = c nth str lines 2
+        l4     = c nth str lines 3
+        hdr_ok = (c starts with l1 "untrusted comment: ") and (c starts with l3 "trusted comment: ")
+        minisign verify body hdr_ok pk_kid pk_bytes msg l2 l3 l4
+
+-- @implements FR-CRYPTO-005
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: minisign verify String String String => Bool
+      minisign verify pubkey_text msg minisig_text =
+        pk_kid, pk_bytes = minisign decode pubkey pubkey_text
+        lines            = c split lines minisig_text
+        ok_hdr           = ((str len pk_bytes) == 32) and ((c str list len lines 0) >= 4)
+        minisign verify lines ok_hdr pk_kid pk_bytes msg lines
