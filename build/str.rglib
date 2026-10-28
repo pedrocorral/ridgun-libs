@@ -6,7 +6,9 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
--- ── ASCII Classification & Zero-Syscall Raw Byte Helpers ─────
+module :: str
+
+-- ── ASCII Classification Helpers ─────────────────────────────
 
 fn :: is ascii space Int  => Bool
       is ascii space code =
@@ -28,152 +30,26 @@ fn :: to lower code Int  => Int
         | is ascii upper code = code + 32
         | otherwise           = code
 
-fn :: s raw byte ub Int => String
-      s raw byte ub ub  =
-        | ub >= 1 and ub <= 127 = char from code ub
-        | ub == 0 = str slice (sha256 raw "00679") 0 1
-        | otherwise =
-          idx = (ub - 128) * 5
-          lut = "0056400101002080010000179000010024100109003430040100361007870009100353001870030400471000870020200071002360012501171004140236900275001810016001398004440080400017005250027000314001400024700004006350015700183005940027600207007720028400601003400038000839006850084900617003060113500277000320006900483000580019200151008700008500193000100057000070002880002600326006460038800018009190028900103006000043900073011700038900628007210077300074004740006000041001410019900066003680001900383001730005700558000670024500065002030031900000008250001100128001360034900030003750039600228002380008400618005900031800062001770087900076002570009600034002200001600161"
-          str slice (sha256 raw (str slice lut idx (idx + 5))) 0 1
-
--- ── 4-Level Tail-Recursive String & List Builders ────────────
-
-fn :: s sb append3 String String => String String String String
-      s sb append3 n2 c3 =
-        | (str len n2) < 65536 = ("", "", n2, c3)
-        | otherwise            = ("", "", "", c3 + n2)
-
-fn :: s sb append2 String String String => String String String String
-      s sb append2 n1 c2 c3 =
-        | (str len n1) < 8192 = ("", n1, c2, c3)
-        | otherwise           = s sb append3 (c2 + n1) c3
-
-fn :: s sb append1 String String String String => String String String String
-      s sb append1 n0 c1 c2 c3 =
-        | (str len n0) < 512 = (n0, c1, c2, c3)
-        | otherwise          = s sb append2 (c1 + n0) c2 c3
-
-fn :: s sb append String String String String String => String String String String
-      s sb append chunk c0 c1 c2 c3 =
-        s sb append1 (c0 + chunk) c1 c2 c3
-
-fn :: s sb finish String String String String => String
-      s sb finish c0 c1 c2 c3 =  ((c3 + c2) + c1) + c0
-
-fn :: s lb append2 [String] [String] Int => [String] [String] [String] Int
-      s lb append2 n1 l2 cnt =
-        | (cnt % 1024) == 0 = ([], [], l2 :: n1, cnt)
-        | otherwise         = ([], n1, l2, cnt)
-
-fn :: s lb append1 [String] [String] [String] Int => [String] [String] [String] Int
-      s lb append1 n0 l1 l2 cnt =
-        | (cnt % 32) == 0 = s lb append2 (l1 :: n0) l2 cnt
-        | otherwise       = (n0, l1, l2, cnt)
-
-fn :: s lb append String [String] [String] [String] Int => [String] [String] [String] Int
-      s lb append item l0 l1 l2 cnt =
-        s lb append1 (l0 :: [item]) l1 l2 (cnt + 1)
-
-fn :: s lb finish [String] [String] [String] => [String]
-      s lb finish l0 l1 l2 =  l2 :: (l1 :: l0)
-
--- ── Binary-Safe Substring Slicing ────────────────────────────
-
-fn :: s scan ascii end String Int Int => Int
-      s scan ascii end s idx end_idx =
-        | idx >= end_idx = end_idx
-        | (str char at s idx) == 0 or (str char at s idx) >= 128 = idx
-        | otherwise = s scan ascii end s (idx + 1) end_idx
-
-fn :: s byte slice step String Int Int Int String String String String => String
-      s byte slice step s idx run_end end_idx c0 c1 c2 c3 =
-        | run_end >= end_idx = s sb finish (c0 + (str slice s idx end_idx)) c1 c2 c3
-        | otherwise =
-          piece = (str slice s idx run_end) + (s raw byte ub (((str char at s run_end) % 256 + 256) % 256))
-          n0, n1, n2, n3 = s sb append piece c0 c1 c2 c3
-          s byte slice loop s (run_end + 1) end_idx n0 n1 n2 n3
-
-fn :: s byte slice loop String Int Int String String String String => String
-      s byte slice loop s idx end_idx c0 c1 c2 c3 =
-        | idx >= end_idx = s sb finish c0 c1 c2 c3
-        | otherwise      = s byte slice step s idx (s scan ascii end s idx end_idx) end_idx c0 c1 c2 c3
-
-fn :: s byte prev String Int => Int
-      s byte prev s start =
-        | start == 0 = 0
-        | otherwise  = ((str char at s (start - 1)) % 256 + 256) % 256
-
-fn :: s byte at end String Int => Int
-      s byte at end s end_idx =
-        | end_idx >= (str len s) = 0
-        | otherwise              = ((str char at s end_idx) % 256 + 256) % 256
-
-fn :: s byte slice check String Int Int Int Int => String
-      s byte slice check s start end_idx b_prev b_end =
-        | b_prev < 128 and (b_end < 128 or b_end >= 192) = str slice s start end_idx
-        | otherwise = s byte slice loop s start end_idx "" "" "" ""
-
-fn :: s byte slice String Int Int => String
-      s byte slice s start end_idx =
-        | start >= end_idx = ""
-        | start == 0 and end_idx >= (str len s) = s
-        | otherwise = s byte slice check s start end_idx (s byte prev s start) (s byte at end s end_idx)
-
 -- ── Substring Search & Suffix / Prefix Predicates ────────────
 
-fn :: s match needle at String String Int Int Int => Bool
-      s match needle at haystack needle pos k nlen =
-        | k >= nlen = True
-        | (str char at haystack (pos + k)) == (str char at needle k) =
-          s match needle at haystack needle pos (k + 1) nlen
-        | otherwise = False
-
-fn :: s scan to byte String Int Int Int => Int
-      s scan to byte s pos limit b0 =
-        | (pos + 8) <= limit =
-          | (str char at s pos) == b0       = pos
-          | (str char at s (pos + 1)) == b0 = pos + 1
-          | (str char at s (pos + 2)) == b0 = pos + 2
-          | (str char at s (pos + 3)) == b0 = pos + 3
-          | (str char at s (pos + 4)) == b0 = pos + 4
-          | (str char at s (pos + 5)) == b0 = pos + 5
-          | (str char at s (pos + 6)) == b0 = pos + 6
-          | (str char at s (pos + 7)) == b0 = pos + 7
-          | otherwise                       = s scan to byte s (pos + 8) limit b0
-        | pos >= limit              = limit
-        | (str char at s pos) == b0 = pos
-        | otherwise                 = s scan to byte s (pos + 1) limit b0
-
-fn :: str index of hit String String Int Int Int Int Int => Int
-      str index of hit haystack needle hit limit hlen nlen n0 =
-        | hit >= limit = 0 - 1
-        | s match needle at haystack needle hit 1 nlen = hit
-        | otherwise = str index of from haystack needle (hit + 1) hlen nlen n0
-
-fn :: str index of from String String Int Int Int Int => Int
-      str index of from haystack needle pos hlen nlen n0 =
-        limit = (hlen - nlen) + 1
-        str index of hit haystack needle (s scan to byte haystack pos limit n0) limit hlen nlen n0
-
-fn :: str index of step String String Int Int => Int
-      str index of step haystack needle hlen nlen =
-        | nlen == 0 = 0
-        | nlen > hlen = 0 - 1
-        | not (str contains haystack needle) = 0 - 1
-        | otherwise = str index of from haystack needle 0 hlen nlen (str char at needle 0)
+fn :: str index of from String String Int Int Int => Int
+      str index of from haystack needle pos hlen nlen =
+        | nlen == 0           = 0
+        | pos + nlen > hlen   = 0 - 1
+        | (str slice haystack pos (pos + nlen)) == needle = pos
+        | otherwise           = str index of from haystack needle (pos + 1) hlen nlen
 
 -- @implements FR-STR-001
 -- @implements API-STR-001
 fn :: str index of String   String => Int
       str index of haystack needle =
-        str index of step haystack needle (str len haystack) (str len needle)
+        str index of from haystack needle 0 (str len haystack) (str len needle)
 
 fn :: str ends with step String String Int Int => Bool
       str ends with step s suffix slen suflen =
         | suflen == 0   = True
         | suflen > slen = False
-        | otherwise     = s match needle at s suffix (slen - suflen) 0 suflen
+        | otherwise     = (str slice s (slen - suflen) slen) == suffix
 
 fn :: str ends with String String => Bool
       str ends with s      suffix =
@@ -198,58 +74,39 @@ fn :: last non space end String Int => Int
 
 fn :: str trim left String => String
       str trim left s      =
-        len   = str len s
-        start = first non space idx s 0 len
-        s byte slice s start len
+        s str len -> len
+        first non space idx s 0 len -> start
+        str slice s start len
 
 fn :: str trim right String => String
       str trim right s      =
-        len = str len s
-        end = last non space end s len
-        s byte slice s 0 end
+        s str len -> len
+        last non space end s len -> end
+        str slice s 0 end
 
 fn :: str trim slice String Int Int => String
       str trim slice s start end =
         | start >= end = ""
-        | otherwise    = s byte slice s start end
+        | otherwise    = str slice s start end
 
 -- @implements FR-STR-001
 -- @implements API-STR-001
 fn :: str trim String => String
       str trim s      =
-        len   = str len s
-        start = first non space idx s 0 len
-        end   = last non space end s len
+        s str len -> len
+        first non space idx s 0 len -> start
+        last non space end s len -> end
         str trim slice s start end
 
 fn :: str is blank String => Bool
-      str is blank s      =  (str len (str trim s)) == 0
+      str is blank s      =  s str trim -> str is empty
 
 -- ── Substring Replacement ────────────────────────────────────
-
-fn :: str replace hit String String String Int Int Int Int Int Int String String String String => String
-      str replace hit s old new_s hit limit seg_start slen olen o0 c0 c1 c2 c3 =
-        | hit >= limit =
-          s sb finish (c0 + (s byte slice s seg_start slen)) c1 c2 c3
-        | s match needle at s old hit 1 olen =
-          piece = (s byte slice s seg_start hit) + new_s
-          n0, n1, n2, n3 = s sb append piece c0 c1 c2 c3
-          next_p = hit + olen
-          str replace loop s old new_s next_p next_p slen olen o0 n0 n1 n2 n3
-        | otherwise =
-          str replace loop s old new_s (hit + 1) seg_start slen olen o0 c0 c1 c2 c3
-
-fn :: str replace loop String String String Int Int Int Int Int String String String String => String
-      str replace loop s old new_s pos seg_start slen olen o0 c0 c1 c2 c3 =
-        limit = (slen - olen) + 1
-        hit   = s scan to byte s pos limit o0
-        str replace hit s old new_s hit limit seg_start slen olen o0 c0 c1 c2 c3
 
 fn :: str replace step String String String Int => String
       str replace step s old new_s olen =
         | olen == 0 = s
-        | not (str contains s old) = s
-        | otherwise = str replace loop s old new_s 0 0 (str len s) olen (str char at old 0) "" "" "" ""
+        | otherwise = str join (str split s old) new_s
 
 -- @implements FR-STR-001
 -- @implements API-STR-001
@@ -259,37 +116,34 @@ fn :: str replace String String String => String
 
 -- ── String Splitting & Joining ───────────────────────────────
 
-fn :: str split chars String Int Int [String] [String] [String] Int => [String]
-      str split chars s idx slen l0 l1 l2 cnt =
-        | idx >= slen = s lb finish l0 l1 l2
-        | otherwise   =
-          n0, n1, n2, ncnt = s lb append (s byte slice s idx (idx + 1)) l0 l1 l2 cnt
-          str split chars s (idx + 1) slen n0 n1 n2 ncnt
+fn :: str split chars String Int Int [String] => [String]
+      str split chars s idx slen acc =
+        | idx >= slen = acc
+        | otherwise   = str split chars s (idx + 1) slen (acc :: [str slice s idx (idx + 1)])
 
-fn :: str split hit String String Int Int Int Int Int Int [String] [String] [String] Int => [String]
-      str split hit s delim hit limit slen dlen d0 seg_start l0 l1 l2 cnt =
-        | hit >= limit =
-          n0, n1, n2, _ = s lb append (s byte slice s seg_start slen) l0 l1 l2 cnt
-          s lb finish n0 n1 n2
-        | s match needle at s delim hit 1 dlen =
-          seg = s byte slice s seg_start hit
-          n0, n1, n2, ncnt = s lb append seg l0 l1 l2 cnt
-          next_p = hit + dlen
-          str split loop s delim next_p slen dlen d0 next_p n0 n1 n2 ncnt
+fn :: str split onech loop String Int Int Int Int [String] => [String]
+      str split onech loop s d0 pos slen seg_start acc =
+        | pos >= slen = acc :: [str slice s seg_start slen]
+        | (str char at s pos) == d0 =
+          seg = str slice s seg_start pos
+          str split onech loop s d0 (pos + 1) slen (pos + 1) (acc :: [seg])
         | otherwise =
-          str split loop s delim (hit + 1) slen dlen d0 seg_start l0 l1 l2 cnt
+          str split onech loop s d0 (pos + 1) slen seg_start acc
 
-fn :: str split loop String String Int Int Int Int Int [String] [String] [String] Int => [String]
-      str split loop s delim pos slen dlen d0 seg_start l0 l1 l2 cnt =
-        limit = (slen - dlen) + 1
-        hit   = s scan to byte s pos limit d0
-        str split hit s delim hit limit slen dlen d0 seg_start l0 l1 l2 cnt
+fn :: str split loop String String Int Int Int Int Int [String] => [String]
+      str split loop s delim d0 pos slen dlen seg_start acc =
+        | pos + dlen > slen = acc :: [str slice s seg_start slen]
+        | (str char at s pos) == d0 and (str slice s pos (pos + dlen)) == delim =
+          seg = str slice s seg_start pos
+          str split loop s delim d0 (pos + dlen) slen dlen (pos + dlen) (acc :: [seg])
+        | otherwise =
+          str split loop s delim d0 (pos + 1) slen dlen seg_start acc
 
 fn :: str split step String String Int Int => [String]
       str split step s delim slen dlen =
-        | dlen == 0 = str split chars s 0 slen [] [] [] 0
-        | not (str contains s delim) = [s]
-        | otherwise = str split loop s delim 0 slen dlen (str char at delim 0) 0 [] [] [] 0
+        | dlen == 0 = str split chars s 0 slen []
+        | dlen == 1 = str split onech loop s (str char at delim 0) 0 slen 0 []
+        | otherwise = str split loop s delim (str char at delim 0) 0 slen dlen 0 []
 
 -- @implements FR-STR-001
 -- @implements API-STR-001
@@ -297,71 +151,69 @@ fn :: str split String String => [String]
       str split s      delim  =
         str split step s delim (str len s) (str len delim)
 
-fn :: str join loop [String] String String String String String => String
-      str join loop []     _   c0 c1 c2 c3 =  s sb finish c0 c1 c2 c3
-      str join loop (x:xs) sep c0 c1 c2 c3 =
-        n0, n1, n2, n3 = s sb append (sep + x) c0 c1 c2 c3
-        str join loop xs sep n0 n1 n2 n3
+fn :: str join pair step [String] String [String] => [String]
+      str join pair step []         _   acc =  acc
+      str join pair step (a:[])     _   acc =  acc :: [a]
+      str join pair step (a:b:rest) sep acc =
+        str join pair step rest sep (acc :: [a + sep + b])
+
+fn :: str join pairs [String] String => String
+      str join pairs []       _   =  ""
+      str join pairs (x:[])   _   =  x
+      str join pairs (x:y:[]) sep =  x + sep + y
+      str join pairs xs       sep =
+        str join pairs (str join pair step xs sep []) sep
 
 fn :: str join [String] String => String
-      str join []       _      =  ""
-      str join (x:xs)   sep    =  str join loop xs sep x "" "" ""
+      str join xs       sep    =  str join pairs xs sep
 
 -- ── ASCII Case Conversion ────────────────────────────────────
 
-fn :: s scan no lower String Int Int => Int
-      s scan no lower s idx slen =
-        | idx >= slen = idx
-        | is ascii lower (str char at s idx) = idx
-        | otherwise = s scan no lower s (idx + 1) slen
+fn :: upper char code String Int Int => String
+      upper char code s idx c =
+        | is ascii lower c = char from code (c - 32)
+        | otherwise        = str slice s idx (idx + 1)
 
-fn :: str to upper step String Int Int Int String String String String => String
-      str to upper step s idx end_run slen c0 c1 c2 c3 =
-        | end_run >= slen =
-          | idx == 0  = s
-          | otherwise = s sb finish (c0 + (s byte slice s idx slen)) c1 c2 c3 |.
-        | otherwise =
-          up_ch = char from code ((str char at s end_run) - 32)
-          piece = (s byte slice s idx end_run) + up_ch
-          n0, n1, n2, n3 = s sb append piece c0 c1 c2 c3
-          str to upper loop s (end_run + 1) slen n0 n1 n2 n3
+fn :: upper char slice String Int => String
+      upper char slice s      idx =
+        upper char code s idx (str char at s idx)
 
-fn :: str to upper loop String Int Int String String String String => String
-      str to upper loop s idx slen c0 c1 c2 c3 =
-        | idx >= slen = s sb finish c0 c1 c2 c3
-        | otherwise   = str to upper step s idx (s scan no lower s idx slen) slen c0 c1 c2 c3
+fn :: str to upper range String Int Int => String
+      str to upper range s start end =
+        | start >= end     = ""
+        | end - start == 1 = upper char slice s start
+        | end - start == 2 = (upper char slice s start) + (upper char slice s (start + 1))
+        | otherwise        =
+          mid = (start + end) shr 1
+          (str to upper range s start mid) + (str to upper range s mid end)
 
 -- @implements FR-STR-001
 -- @implements API-STR-001
 fn :: str to upper String => String
-      str to upper s      =  str to upper loop s 0 (str len s) "" "" "" ""
+      str to upper s      =  str to upper range s 0 (str len s)
 
-fn :: s scan no upper String Int Int => Int
-      s scan no upper s idx slen =
-        | idx >= slen = idx
-        | is ascii upper (str char at s idx) = idx
-        | otherwise = s scan no upper s (idx + 1) slen
+fn :: lower char code String Int Int => String
+      lower char code s idx c =
+        | is ascii upper c = char from code (c + 32)
+        | otherwise        = str slice s idx (idx + 1)
 
-fn :: str to lower step String Int Int Int String String String String => String
-      str to lower step s idx end_run slen c0 c1 c2 c3 =
-        | end_run >= slen =
-          | idx == 0  = s
-          | otherwise = s sb finish (c0 + (s byte slice s idx slen)) c1 c2 c3 |.
-        | otherwise =
-          lo_ch = char from code ((str char at s end_run) + 32)
-          piece = (s byte slice s idx end_run) + lo_ch
-          n0, n1, n2, n3 = s sb append piece c0 c1 c2 c3
-          str to lower loop s (end_run + 1) slen n0 n1 n2 n3
+fn :: lower char slice String Int => String
+      lower char slice s      idx =
+        lower char code s idx (str char at s idx)
 
-fn :: str to lower loop String Int Int String String String String => String
-      str to lower loop s idx slen c0 c1 c2 c3 =
-        | idx >= slen = s sb finish c0 c1 c2 c3
-        | otherwise   = str to lower step s idx (s scan no upper s idx slen) slen c0 c1 c2 c3
+fn :: str to lower range String Int Int => String
+      str to lower range s start end =
+        | start >= end     = ""
+        | end - start == 1 = lower char slice s start
+        | end - start == 2 = (lower char slice s start) + (lower char slice s (start + 1))
+        | otherwise        =
+          mid = (start + end) shr 1
+          (str to lower range s start mid) + (str to lower range s mid end)
 
 -- @implements FR-STR-001
 -- @implements API-STR-001
 fn :: str to lower String => String
-      str to lower s      =  str to lower loop s 0 (str len s) "" "" "" ""
+      str to lower s      =  str to lower range s 0 (str len s)
 
 -- ── Repetition & Padding ─────────────────────────────────────
 
@@ -380,7 +232,7 @@ fn :: str repeat String Int => String
 fn :: pad fill unit String => String
       pad fill unit pad_ch =
         | (str len pad_ch) == 0 = " "
-        | otherwise             = s byte slice pad_ch 0 1
+        | otherwise             = str slice pad_ch 0 1
 
 fn :: str pad left step String Int String Int => String
       str pad left step s width pad_ch slen =

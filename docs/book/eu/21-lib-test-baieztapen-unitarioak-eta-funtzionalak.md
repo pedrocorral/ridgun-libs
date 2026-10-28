@@ -12,8 +12,8 @@ Izan gaitezen zintzoak: test framework batek makro magikoak, exekuzio-garaiko is
 
 Ekosistema tradizional batean, **`TST`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`test`** lib-ak (`src/main/ridgun/lib/test.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
-1. **Funtzio osoak eta kontratu esplizituak (`=>`)**: `test`-eko funtzio bakar batek ere ez du ezkutuko salbuespenik jaurtitzen, ezta `null` erabiltzen ere. Muga-kasu orok dokumentatutako balio bat edo batura-mota aljebraiko bat (`Option`, `Result`) itzultzen du.
-2. **Zero C kode eta zero `libc`**: `test`-eko kode guztia zuzenean ELF64 makina-kode natibora konpilatzen da, `ridgunc`-ek egiaztatuta.
+1. **Deklaratu `import test` (edo `import test as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: test` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
+2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
 3. **Isats-errekurtsioa TCOrekin (*Tail-Call Optimization*)**: `test`-eko barne-ibilbide guztiak $O(1)$ pila-espazioko begizta natiboetara konpilatzen dira.
 4. **Memoria determinista (`RMM1` / `RMM2`)**: tarteko egitura bakoitza bere azken irakurketa amaitzen den une zehatzean askatzen da, *Garbage Collector* gabe.
 
@@ -29,7 +29,7 @@ Ekosistema tradizional batean, **`TST`** domeinuko zereginak ebazteak C-ko kanpo
 | **Fitxategi konpilatua** | `target/test.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libtest.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
-> Lib hau edozein `.rg` fitxategitan erabiltzeko, nahikoa da goiburuan `import test` deklaratzea eta bere funtzioei zuriuneekin edo azpimarrarekin deitzea.
+> Lib bakoitzak bere izen-espazioa deklaratzen du `module :: test` bidez: nahikoa da goiburuan `import test` (edo `import test as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 
 ### 21.2.1. `test`-eko familia funtzionalen laburpena
 
@@ -73,10 +73,10 @@ Ikusi nola Ridgunen `=` ikurrak eta `test` bidezko eraldaketa-urratsak taula gar
 import test
 import math
 
-fn :: suite matematicas () => ()
+fn :: suite matematicas => ()
       suite matematicas =
-        _ = assert int equals 12 (math gcd 36 60) "MCD de 36 y 60"
-        _ = assert true (math is prime 97) "97 es primo"
+        assert equals 12 (math gcd 36 60) "MCD de 36 y 60"
+        assert true (math is prime 97) "97 es primo"
         echo "[PASS] suite matematicas"
 ```
 
@@ -87,9 +87,9 @@ fn :: suite matematicas () => ()
 ```ridgun
 import test
 
-fn :: verificar codigo sistema (rc : Int) => ()
+fn :: verificar codigo sistema Int => ()
       verificar codigo sistema rc =
-        assert ok rc "operacion de descriptor exitosa"
+        assert equals rc 0 "operacion de descriptor exitosa"
 ```
 
 ### 21.3.3. 3. adibidea: Predikatu boolearrak (`check eq`, `check str eq`, `check true`) eta diagnostikodun RG-011 asertzioak (`assert equals`, `assert str eq`, `assert int equals`)
@@ -99,21 +99,21 @@ Adibide praktiko honetan `test` bloke funtzional honetan nola portatzen den sako
 ```ridgun
 fn :: test rg011 assertions => ()
       test rg011 assertions =
-        _ = assert equals 4 4 "math int equality"
-        _ = assert equals "ok" "ok" "string equality"
-        _ = assert equals True True "bool equality"
-        _ = assert true (1 < 2) "1 < 2 holds"
-        _ = assert false (1 > 2) "1 > 2 is false"
-        _ = assert str eq "ridgun" "ridgun" "str eq helper"
-        _ = assert int equals 42 42 "int eq helper"
-        _ = assert eq 10 10
-        _ = assert ok True
-        _ = assert not False
-        _ = assert true (check eq 2 2) "check eq True"
-        _ = assert false (check eq 1 2) "check eq False"
-        _ = assert true (check str eq "a" "a") "check str eq True"
-        _ = assert false (check str eq "a" "b") "check str eq False"
-        _ = assert true (check true True) "check true True"
+        assert equals 4 4 "math int equality"
+        assert equals "ok" "ok" "string equality"
+        assert equals True True "bool equality"
+        assert true (1 < 2) "1 < 2 holds"
+        assert false (1 > 2) "1 > 2 is false"
+        assert str eq "ridgun" "ridgun" "str eq helper"
+        assert int equals 42 42 "int eq helper"
+        assert eq 10 10
+        assert ok True
+        assert not False
+        assert true (check eq 2 2) "check eq True"
+        assert false (check eq 1 2) "check eq False"
+        assert true (check str eq "a" "a") "check str eq True"
+        assert false (check str eq "a" "b") "check str eq False"
+        assert true (check true True) "check true True"
         assert false (check true False) "check true False"
 ```
 
@@ -133,14 +133,14 @@ fn :: validar invariantes de dominio (x : Int) (nombre : String) => Bool
 fn :: ejecutar suite de ejemplo => ()
       ejecutar suite de ejemplo =
         -- 1. Predicados puros sin salida del proceso (`check_*`)
-        _ = assert true (validar invariantes de dominio 21 "ridgun") "predicado compuesto"
+        assert true (validar invariantes de dominio 21 "ridgun") "predicado compuesto"
         -- 2. Aserciones anotadas con mensaje diagnóstico (`assert_*`)
-        _ = assert int equals (20 + 22) 42 "suma entera exacta"
-        _ = assert str eq "rglib" "rglib" "etiqueta de artefacto"
+        assert int equals (20 + 22) 42 "suma entera exacta"
+        assert str eq "rglib" "rglib" "etiqueta de artefacto"
         -- 3. Aserciones concisas sin etiqueta (`assert ok`, `assert not`, `assert eq`)
-        _ = assert ok (10 > 5)
-        _ = assert not (10 < 5)
-        _ = assert eq [1, 2, 3] [1, 2, 3]
+        assert ok (10 > 5)
+        assert not (10 < 5)
+        assert eq [1, 2, 3] [1, 2, 3]
         ()
 ```
 
@@ -155,6 +155,8 @@ fn :: ejecutar suite de ejemplo => ()
 Ikusi nola `test.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
+module :: test
+
 fn :: check eq A      A        => Bool
       check eq actual expected =  actual == expected
 

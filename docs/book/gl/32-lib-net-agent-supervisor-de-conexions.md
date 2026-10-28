@@ -12,8 +12,8 @@ A lib **`net_agent`** pecha o círculo de `ridgun-libs` unindo **`posix`**, **`s
 
 Nun ecosistema tradicional, resolver as tarefas do dominio **`AGENT`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`net_agent`** (`src/main/ridgun/lib/net_agent.rg`) aborda o problema con catro principios innegociables:
 
-1. **Funcións totais e contratos explícitos (`=>`)**: ningunha función de `net_agent` lanza excepcións ocultas nin depende de `null`. Todo caso límite devolve un valor sentinela documentado ou un tipo alxébrico suma (`Option`, `Result`).
-2. **Cero código C e cero `libc`**: todo o código de `net_agent` compila directamente a código máquina nativo ELF64 verificado por `ridgunc`.
+1. **Declara `import net_agent` (ou `import net_agent as alias`) ao inicio do ficheiro**: cada lib define o seu espazo de nomes `module :: net agent` e en modo `--strict` as funcións multi-palabra invócanse sempre con espazos naturais.
+2. **Encadea as túas tubaxes de esquerda a dereita con `->`**: escribe `entrada paso un -> paso dous -> resultado`, usa máscaras `(+ _ _ +)` para desestruturar secuencias e omite `_ =` en sentenzas secuenciais (ou descarta con `-> ()`).
 3. **Recursión de cola con TCO (*Tail-Call Optimization*)**: todos os percorridos internos de `net_agent` compílanse a bucles nativos en espazo de pila $O(1)$.
 4. **Memoria determinista (`RMM1` / `RMM2`)**: cada estrutura intermedia libérase no instante exacto en que remata a súa última lectura, sen *Garbage Collector*.
 
@@ -29,7 +29,7 @@ En `ridgun-libs`, **`net_agent`** é unha **lib** de primeira clase situada en `
 | **Ficheiro compilado** | `target/net_agent.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/libnet_agent.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
-> Para usar esta lib en calquera ficheiro `.rg`, abonda con declarar `import net_agent` na cabeceira e chamar ás súas funcións con espazos ou guións baixos indistintamente.
+> Cada lib declara o seu propio espazo de nomes con `module :: net agent`: abonda con escribir `import net_agent` (ou `import net_agent as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).
 
 ### 32.2.1. Resumo de familias funcionais de `net_agent`
 
@@ -76,13 +76,9 @@ Observa como en Ridgun os signos `=` e os pasos de transformación con `net_agen
 ```ridgun
 import net_agent
 
-fn :: supervisar clientes () => (Int, [Int])
-      supervisar clientes =
-        s0        = net supervisor new 100 5000
-        (s1, _)   = net register conn s0 10 "10.0.0.1" 51000 1000
-        (s2, _)   = net register conn s1 11 "10.0.0.2" 51001 6500
-        (s3, exp) = net evict idle s2 7000
-        (net active count s3, exp)
+fn :: barrer conexiones activas [ConnSlot] => [ConnSlot]
+      barrer conexiones activas tabla =
+        tabla reactor sweep
 ```
 
 ### 32.3.2. Exemplo 2: Composición segura e manexo de casos de bordo
@@ -92,9 +88,9 @@ Toda función da lib `net_agent` está deseñada para compoñerse con gardas boo
 ```ridgun
 import net_agent
 
-fn :: probar puente tcp supervisado () => (Int, String)
-      probar puente tcp supervisado =
-        net tcp echo step "ping-supervisado" 1000
+fn :: apagar reactor [ConnSlot] => ()
+      apagar reactor tabla =
+        tabla reactor shutdown
 ```
 
 ### 32.3.3. Exemplo 3: Combinadores de actores (`agent ask`, `try ask`, `send batch`, `map batch`, `drain ready`), pools particionados e reactor de conexións
@@ -105,45 +101,45 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `net_age
 fn :: test spec combinators pool and net agent => ()
       test spec combinators pool and net agent =
         w1 = agent (ag double worker)
-        _  = assert int equals (agent ask w1 21) 42 "agent ask 21 -> 42"
+        assert int equals (agent ask w1 21) 42 "agent ask 21 -> 42"
         mb = agent map batch w1 [3, 5, 7]
-        _  = assert int equals (ag sum ints mb) 30 "agent map batch [3,5,7] -> [6,10,14] sum 30"
-        _  = agent send batch w1 [10, 20]
+        assert int equals (ag sum ints mb) 30 "agent map batch [3,5,7] -> [6,10,14] sum 30"
+        agent send batch w1 [10, 20] -> ()
         rc = agent receive count w1 2
-        _  = assert int equals (ag sum ints rc) 60 "agent send batch + agent receive count -> 60"
+        assert int equals (ag sum ints rc) 60 "agent send batch + agent receive count -> 60"
         c_dr = new counter agent 100
-        _  = send 5 to c_dr
-        _  = send 10 to c_dr
+        send 5 to c_dr
+        send 10 to c_dr
         dr = agent drain ready c_dr
-        _  = assert int equals (ag sum ints dr) 220 "agent drain ready [105, 115] -> 220"
-        _  = agent stop all [w1, c_dr]
-        _  = assert false (is agent alive w1) "w1 stopped by agent stop all"
-        _  = assert false (is agent alive c_dr) "c_dr stopped by agent stop all"
+        assert int equals (ag sum ints dr) 220 "agent drain ready [105, 115] -> 220"
+        agent stop all [w1, c_dr] -> ()
+        assert false (is agent alive w1) "w1 stopped by agent stop all"
+        assert false (is agent alive c_dr) "c_dr stopped by agent stop all"
 
         s0 = new counter agent 0
         s1 = new counter agent 1000
         pl = Pool 2 [s0, s1]
-        _  = assert int equals (pool size pl) 2 "pool size 2"
-        _  = assert int equals (pool ask shard pl 0 5) 5 "pool ask shard 0 -> 5"
-        _  = assert int equals (pool ask shard pl 1 7) 1007 "pool ask shard 1 -> 1007"
-        _  = assert int equals (pool ask shard pl (0 - 3) 3) 1010 "pool ask shard negative key -> shard 1"
-        _  = pool broadcast pl 10
+        assert int equals (pool size pl) 2 "pool size 2"
+        assert int equals (pool ask shard pl 0 5) 5 "pool ask shard 0 -> 5"
+        assert int equals (pool ask shard pl 1 7) 1007 "pool ask shard 1 -> 1007"
+        assert int equals (pool ask shard pl (0 - 3) 3) 1010 "pool ask shard negative key -> shard 1"
+        pool broadcast pl 10 -> ()
         all_dr = pool drain all pl
-        _  = assert int equals (ag sum ints all_dr) 1035 "pool drain all [15, 1020] -> 1035"
-        _  = pool shutdown pl
-        _  = assert false (is agent alive s0) "pool s0 stopped"
-        _  = assert false (is agent alive s1) "pool s1 stopped"
+        assert int equals (ag sum ints all_dr) 1035 "pool drain all [15, 1020] -> 1035"
+        pool shutdown pl -> ()
+        assert false (is agent alive s0) "pool s0 stopped"
+        assert false (is agent alive s1) "pool s1 stopped"
 
         ca = agent (ag echo conn step) (CounterState 0)
         cb = agent (ag echo conn step) (CounterState 0)
         s_eof = conn feed payload (0 - 1) ca ""
         s_err = conn handle event (0 - 1) cb 8
         kept  = reactor sweep next s_eof (reactor sweep next s_err [])
-        _  = assert int equals (agent list len kept 0) 0 "reactor sweep next prunes closed slots"
-        _  = assert false (is agent alive ca) "ca stopped on EOF"
-        _  = assert false (is agent alive cb) "cb stopped on POLLERR"
+        assert int equals (agent list len kept 0) 0 "reactor sweep next prunes closed slots"
+        assert false (is agent alive ca) "ca stopped on EOF"
+        assert false (is agent alive cb) "cb stopped on POLLERR"
         cc = agent (ag echo conn step) (CounterState 0)
-        _  = reactor shutdown [ConnSlot (0 - 1) cc]
+        reactor shutdown [ConnSlot (0 - 1) cc] -> ()
         assert false (is agent alive cc) "cc stopped on reactor shutdown"
 ```
 
@@ -154,50 +150,50 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `net_age
 ```ridgun
 fn :: test agent lifecycle and counter => ()
       test agent lifecycle and counter =
-        _   = assert str eq (format agent status AgentRunning) "running" "format AgentRunning"
-        _   = assert str eq (format agent status AgentStopped) "stopped" "format AgentStopped"
-        _   = assert str eq (format agent status (AgentTimedOut 250)) "timeout after 250 ms" "format AgentTimedOut"
-        _   = assert str eq (format agent status (AgentFailed "boom")) "failed: boom" "format AgentFailed"
-        _   = assert str eq (format agent reply (ReplyInt 42)) "42" "format ReplyInt"
-        _   = assert str eq (format agent reply (ReplyStr "ok")) "ok" "format ReplyStr"
-        _   = assert str eq (format agent reply (ReplyBool True)) "true" "format ReplyBool True"
-        _   = assert str eq (format agent reply (ReplyBool False)) "false" "format ReplyBool False"
-        _   = assert str eq (format agent reply ReplyEmpty) "agent outbox empty" "format ReplyEmpty"
-        _   = assert str eq (format agent reply ReplyStopped) "agent stopped" "format ReplyStopped"
-        _   = assert str eq (format agent reply (ReplyTimeout 50)) "agent timeout after 50 ms" "format ReplyTimeout"
-        _   = assert str eq (format agent reply (ReplyError "bad")) "agent error: bad" "format ReplyError"
+        assert str eq (format agent status AgentRunning) "running" "format AgentRunning"
+        assert str eq (format agent status AgentStopped) "stopped" "format AgentStopped"
+        assert str eq (format agent status (AgentTimedOut 250)) "timeout after 250 ms" "format AgentTimedOut"
+        assert str eq (format agent status (AgentFailed "boom")) "failed: boom" "format AgentFailed"
+        assert str eq (format agent reply (ReplyInt 42)) "42" "format ReplyInt"
+        assert str eq (format agent reply (ReplyStr "ok")) "ok" "format ReplyStr"
+        assert str eq (format agent reply (ReplyBool True)) "true" "format ReplyBool True"
+        assert str eq (format agent reply (ReplyBool False)) "false" "format ReplyBool False"
+        assert str eq (format agent reply ReplyEmpty) "agent outbox empty" "format ReplyEmpty"
+        assert str eq (format agent reply ReplyStopped) "agent stopped" "format ReplyStopped"
+        assert str eq (format agent reply (ReplyTimeout 50)) "agent timeout after 50 ms" "format ReplyTimeout"
+        assert str eq (format agent reply (ReplyError "bad")) "agent error: bad" "format ReplyError"
 
         c   = new counter agent 10
-        _   = assert ok (is agent alive c)
-        _   = assert str eq (format agent status (agent status c)) "running" "counter running"
-        _   = assert str eq (format agent reply (try poll int c)) "agent outbox empty" "empty outbox before send"
-        _   = assert eq (counter get c) 10
-        _   = assert eq (counter add c 5) 15
-        _   = assert eq (counter add c 7) 22
-        _   = assert str eq (format agent reply (ask int c 8)) "30" "ask int 8 -> 30"
-        _   = assert str eq (format agent reply (ask int with timeout c 12 200)) "42" "ask int with timeout -> 42"
-        _   = assert eq (counter reset c) 0
-        _   = assert eq (counter get c) 0
+        assert ok (is agent alive c)
+        assert str eq (format agent status (agent status c)) "running" "counter running"
+        assert str eq (format agent reply (try poll int c)) "agent outbox empty" "empty outbox before send"
+        assert eq (counter get c) 10
+        assert eq (counter add c 5) 15
+        assert eq (counter add c 7) 22
+        assert str eq (format agent reply (ask int c 8)) "30" "ask int 8 -> 30"
+        assert str eq (format agent reply (ask int with timeout c 12 200)) "42" "ask int with timeout -> 42"
+        assert eq (counter reset c) 0
+        assert eq (counter get c) 0
         bs  = ask batch int c [1, 2, 3, 4]
-        _   = assert eq (ag sum ints bs) 20
+        assert eq (ag sum ints bs) 20
 
         c2  = new counter agent 100
         rel = relay int c c2 5
-        _   = assert str eq (format agent reply rel) "115" "relay int c (10+5=15) -> c2 (100+15=115)"
+        assert str eq (format agent reply rel) "115" "relay int c (10+5=15) -> c2 (100+15=115)"
 
         st1 = stop agent c
-        _   = assert str eq (format agent status st1) "stopped" "stop agent returns AgentStopped"
-        _   = assert eq (is agent alive c) False
-        _   = assert str eq (format agent status (agent status c)) "stopped" "agent status after stop"
-        _   = assert str eq (format agent reply (ask int c 1)) "agent stopped" "ask int after stop"
-        _   = assert str eq (format agent reply (try poll int c)) "agent stopped" "try poll int after stop"
-        _   = assert str eq (format agent reply (ask int with timeout c 1 50)) "agent stopped" "ask int with timeout after stop"
-        _   = assert str eq (format agent reply (relay int c c2 1)) "agent stopped" "relay int after stop"
+        assert str eq (format agent status st1) "stopped" "stop agent returns AgentStopped"
+        assert eq (is agent alive c) False
+        assert str eq (format agent status (agent status c)) "stopped" "agent status after stop"
+        assert str eq (format agent reply (ask int c 1)) "agent stopped" "ask int after stop"
+        assert str eq (format agent reply (try poll int c)) "agent stopped" "try poll int after stop"
+        assert str eq (format agent reply (ask int with timeout c 1 50)) "agent stopped" "ask int with timeout after stop"
+        assert str eq (format agent reply (relay int c c2 1)) "agent stopped" "relay int after stop"
         c0  = new counter agent 0
-        _   = assert int equals (counter get c0) 0 "counter 0 initial"
-        _   = assert int equals (counter add c0 3) 3 "counter 0 add 3"
-        _   = stop agent c0
-        _   = stop agent c2
+        assert int equals (counter get c0) 0 "counter 0 initial"
+        assert int equals (counter add c0 3) 3 "counter 0 add 3"
+        stop agent c0
+        stop agent c2
         assert eq (is agent alive c2) False
 ```
 
@@ -209,44 +205,44 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `net_age
 fn :: test log and kv agents => ()
       test log and kv agents =
         lg  = new log agent "\n"
-        _   = assert ok (is agent alive lg)
-        _   = assert str eq (format agent reply (try poll str lg)) "agent outbox empty" "log empty outbox"
-        _   = assert str eq (log read lg) "" "initial log empty"
-        _   = assert str eq (log append lg "alpha") "alpha" "log append alpha"
-        _   = assert str eq (log append lg "beta") "alpha\nbeta" "log append beta"
-        _   = assert str eq (format agent reply (ask str with timeout lg "gamma" 200)) "alpha\nbeta\ngamma" "ask str with timeout gamma"
-        _   = assert str eq (log read lg) "alpha\nbeta\ngamma" "log read"
-        _   = assert str eq (log clear lg) "" "log clear"
-        _   = assert str eq (log read lg) "" "log read after clear"
+        assert ok (is agent alive lg)
+        assert str eq (format agent reply (try poll str lg)) "agent outbox empty" "log empty outbox"
+        assert str eq (log read lg) "" "initial log empty"
+        assert str eq (log append lg "alpha") "alpha" "log append alpha"
+        assert str eq (log append lg "beta") "alpha\nbeta" "log append beta"
+        assert str eq (format agent reply (ask str with timeout lg "gamma" 200)) "alpha\nbeta\ngamma" "ask str with timeout gamma"
+        assert str eq (log read lg) "alpha\nbeta\ngamma" "log read"
+        assert str eq (log clear lg) "" "log clear"
+        assert str eq (log read lg) "" "log read after clear"
         b   = ask batch str lg ["one", "two"]
-        _   = assert str eq (ag join strs b) "one|one\ntwo" "ask batch str"
+        assert str eq (ag join strs b) "one|one\ntwo" "ask batch str"
         lg2 = new log agent ":"
-        _   = assert str eq (format agent reply (relay str lg lg2 "three")) "one\ntwo\nthree" "relay str"
-        _   = stop agent lg
-        _   = stop agent lg2
-        _   = assert str eq (format agent reply (ask str lg "x")) "agent stopped" "ask str after stop"
+        assert str eq (format agent reply (relay str lg lg2 "three")) "one\ntwo\nthree" "relay str"
+        stop agent lg
+        stop agent lg2
+        assert str eq (format agent reply (ask str lg "x")) "agent stopped" "ask str after stop"
 
         kv  = new kv agent
-        _   = assert ok (is agent alive kv)
-        _   = assert int equals (kv count kv) 0 "kv count 0"
-        _   = assert false (kv has kv "host") "kv has host false"
-        _   = assert str eq (kv put kv "host" "127.0.0.1") "127.0.0.1" "kv put host"
-        _   = assert str eq (kv put kv "port" "8080") "8080" "kv put port"
-        _   = assert int equals (kv count kv) 2 "kv count 2"
-        _   = assert ok (kv has kv "host")
-        _   = assert ok (kv has kv "port")
-        _   = assert str eq (kv get kv "host") "127.0.0.1" "kv get host"
-        _   = assert str eq (kv get kv "port") "8080" "kv get port"
-        _   = assert str eq (kv keys kv) "host,port" "kv keys"
-        _   = assert str eq (kv put kv "port" "9090") "9090" "kv overwrite port"
-        _   = assert str eq (kv get kv "port") "9090" "kv get updated port"
-        _   = assert int equals (kv count kv) 2 "kv count after overwrite"
-        _   = assert str eq (kv delete kv "host") "127.0.0.1" "kv delete host"
-        _   = assert false (kv has kv "host") "kv has host after delete"
-        _   = assert int equals (kv count kv) 1 "kv count 1"
-        _   = assert str eq (kv clear kv) "" "kv clear"
-        _   = assert int equals (kv count kv) 0 "kv count after clear"
-        _   = stop agent kv
+        assert ok (is agent alive kv)
+        assert int equals (kv count kv) 0 "kv count 0"
+        assert false (kv has kv "host") "kv has host false"
+        assert str eq (kv put kv "host" "127.0.0.1") "127.0.0.1" "kv put host"
+        assert str eq (kv put kv "port" "8080") "8080" "kv put port"
+        assert int equals (kv count kv) 2 "kv count 2"
+        assert ok (kv has kv "host")
+        assert ok (kv has kv "port")
+        assert str eq (kv get kv "host") "127.0.0.1" "kv get host"
+        assert str eq (kv get kv "port") "8080" "kv get port"
+        assert str eq (kv keys kv) "host,port" "kv keys"
+        assert str eq (kv put kv "port" "9090") "9090" "kv overwrite port"
+        assert str eq (kv get kv "port") "9090" "kv get updated port"
+        assert int equals (kv count kv) 2 "kv count after overwrite"
+        assert str eq (kv delete kv "host") "127.0.0.1" "kv delete host"
+        assert false (kv has kv "host") "kv has host after delete"
+        assert int equals (kv count kv) 1 "kv count 1"
+        assert str eq (kv clear kv) "" "kv clear"
+        assert int equals (kv count kv) 0 "kv count after clear"
+        stop agent kv
         assert false (is agent alive kv) "kv stopped"
 ```
 
@@ -268,10 +264,10 @@ fn :: ejemplo reactor conexiones (fd1 : Int) (fd2 : Int) => [ConnSlot]
         ag1     = agent sesion eco 0
         ag2     = agent sesion eco 0
         activas = [ConnSlot fd1 ag1, ConnSlot fd2 ag2]
-        -- Barrido no bloqueante (sys_poll timeout=0) de todas las conexiones
+        -- Barrido no bloqueante (sys poll timeout=0) de todas las conexiones
         vivas   = reactor sweep activas
         -- Cierre ordenado de descriptores y parada determinista de agentes
-        _       = reactor shutdown vivas
+        reactor shutdown vivas -> ()
         []
 ```
 
@@ -286,40 +282,36 @@ Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**
 Fíxate en como `net_agent.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
+module :: net agent
+
 type ConnSlot = ConnSlot Int Agent
 
 type StepOutcome = ConnKeep ConnSlot String | ConnClosed
 
--- Poll a single connection fd (non-blocking, timeout = 0) and route incoming data to its Agent
 fn :: conn poll step ConnSlot         => StepOutcome
       conn poll step (ConnSlot fd ag) =
-        ev = sys poll fd 1 0
+        sys poll fd 1 0 -> ev
         conn handle event fd ag ev
 
 fn :: conn handle event Int Agent Int => StepOutcome
       conn handle event fd ag ev
         | ev < 0 =
-          -- Poll error: close descriptor and stop agent
           _ = sys close fd
           stop ag
           ConnClosed
         | ev >= 8 =
-          -- POLLERR (8) or POLLHUP (16): peer disconnected
           _ = sys close fd
           stop ag
           ConnClosed
         | ev == 0 =
-          -- No new bytes to read; check if the agent has a queued async reply
       conn drain outbound fd ag (try receive from ag)
         | otherwise =
-          -- POLLIN (1): read frame and forward to the connection's stateful agent
           payload = sys read fd fd 65536
           conn feed payload fd ag payload
 
 fn :: conn feed payload Int Agent String => StepOutcome
       conn feed payload fd ag "" =
-        -- EOF on socket: close descriptor and stop agent deterministically
-        _ = sys close fd
+        sys close fd -> ()
         stop ag
         ConnClosed
       conn feed payload fd ag data =
@@ -338,25 +330,25 @@ fn :: conn cast str A => String
 fn :: conn drain outbound Int Agent Option => StepOutcome
       conn drain outbound fd ag None = ConnKeep (ConnSlot fd ag) ""
       conn drain outbound fd ag (Some resp) =
-        s = conn cast str resp
-        _ = sys write fd fd s
+        resp conn cast str -> s
+        sys write fd fd s -> ()
         ConnKeep (ConnSlot fd ag) s
 
--- Sweep an entire connection table, pruning closed connections and keeping active ones
 fn :: reactor sweep [ConnSlot]  => [ConnSlot]
       reactor sweep []          =  []
       reactor sweep (slot:rest) =
-        reactor sweep next (conn poll step slot) (reactor sweep rest)
+        slot conn poll step -> outcome
+        rest reactor sweep -> kept
+        reactor sweep next outcome kept
 
 fn :: reactor sweep next StepOutcome       [ConnSlot] => [ConnSlot]
       reactor sweep next ConnClosed        kept       =  kept
       reactor sweep next (ConnKeep slot _) kept       =  [slot] :: kept
 
--- Gracefully close all sockets and stop all connection agents on server shutdown
 fn :: reactor shutdown [ConnSlot] => ()
       reactor shutdown []         =  ()
       reactor shutdown ((ConnSlot fd ag):rest) =
-        _ = sys close fd
+        sys close fd -> ()
         stop ag
         reactor shutdown rest
 ```

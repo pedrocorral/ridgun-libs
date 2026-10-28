@@ -27,12 +27,12 @@ fn :: bt str cmp loop String String Int Int Int => Int
         | idx >= la and idx >= lb = 0
         | idx >= la = (0 - 1)
         | idx >= lb = 1
-        | (str_char_at a idx) < (str_char_at b idx) = (0 - 1)
-        | (str_char_at a idx) > (str_char_at b idx) = 1
+        | (str char at a idx) < (str char at b idx) = (0 - 1)
+        | (str char at a idx) > (str char at b idx) = 1
         | otherwise = bt str cmp loop a b (idx + 1) la lb
 
 fn :: bt str cmp String String => Int
-      bt str cmp a b = bt str cmp loop a b 0 (str_len a) (str_len b)
+      bt str cmp a b = bt str cmp loop a b 0 (str len a) (str len b)
 
 -- ── AVL-Balanced Ordered Map (`BTreeMap`) ────────────────────
 
@@ -117,9 +117,9 @@ fn :: bt delete root BTreeMap BTreeMap => BTreeMap
       bt delete root BMapEmpty r = r
       bt delete root l BMapEmpty = l
       bt delete root l r =
-        succ = bt min pair r
-        sk = bt pair k succ
-        sv = bt pair v succ
+        r bt min pair -> succ
+        succ bt pair k -> sk
+        succ bt pair v -> sv
         bt rebalance sk sv l (btree remove r sk)
 
 -- @implements FR-BTREE-001

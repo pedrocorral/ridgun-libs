@@ -8,6 +8,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: linalg
+
 -- ── Internal Scalar Helpers ──────────────────────────────────
 
 fn :: la abs Int => Int
@@ -139,7 +141,7 @@ fn :: la identity loop Tensor[Real * n * n] Int Int => Tensor[Real * n * n]
 -- @mitigates VUL-INPUT-001
 fn :: linalg identity Int => Tensor[Real * n * n]
       linalg identity dim =
-        n   = la max 1 dim
+        la max 1 dim -> n
         out = Tensor[Real * n * n]
         la identity loop out 0 n
 

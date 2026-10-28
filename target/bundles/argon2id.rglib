@@ -9,6 +9,8 @@
 -- @mitigates VUL-AUTHN-001
 -- @mitigates VUL-INPUT-001
 
+module :: argon2id
+
 type Argon2Params = m_cost: Int, t_cost: Int, lanes: Int, tag_len: Int, version: Int
 type Argon2Phc    = params: Argon2Params, salt_b64: String, tag_b64: String
 type Argon2Res    = Argon2Ok String | Argon2Err String
@@ -1199,13 +1201,16 @@ fn :: argon2id needs rehash String Argon2Params => Bool
 fn :: verify parsed ctx Argon2PhcRes String String String => Bool
       verify parsed ctx (Argon2PhcErr _) _ _ _ = False
       verify parsed ctx (Argon2PhcOk parsed) pwd secret ad =
-        salt_bytes = b64 decode nopad (salt_b64 parsed)
-        tag_bytes  = b64 decode nopad (tag_b64 parsed)
-        computed   = derive raw tag ctx (a2 str to bytes pwd) salt_bytes secret ad (params parsed)
+        parsed salt_b64 -> b64 decode nopad -> salt_bytes
+        parsed tag_b64 -> b64 decode nopad -> tag_bytes
+        pwd a2 str to bytes -> pwd_bytes
+        derive raw tag ctx pwd_bytes salt_bytes secret ad (params parsed) -> computed
         constant time bytes eq computed tag_bytes
 
 fn :: argon2id verify ctx String String String String => Bool
-      argon2id verify ctx pwd phc secret ad = verify parsed ctx (argon2id parse phc phc) pwd secret ad
+      argon2id verify ctx pwd phc secret ad =
+        phc argon2id parse phc -> parsed
+        verify parsed ctx parsed pwd secret ad
 
 -- @implements FR-CRYPTO-001
 -- @implements FR-CRYPTO-004
@@ -1225,7 +1230,7 @@ fn :: unwrap phc res Argon2Res      => String
 -- @implements API-CRYPTO-001
 fn :: argon2id hash String String Int Int Int => String
       argon2id hash pwd salt m_kib t_iters p_lanes =
-        unwrap phc res (argon2id hash params pwd salt (Argon2Params m_kib t_iters p_lanes 32 19))
+        argon2id hash params pwd salt (Argon2Params m_kib t_iters p_lanes 32 19) -> unwrap phc res
 
 -- @implements FR-CRYPTO-004
 -- @implements API-CRYPTO-001

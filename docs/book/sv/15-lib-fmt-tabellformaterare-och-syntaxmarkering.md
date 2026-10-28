@@ -12,8 +12,8 @@ Lib:en **`fmt`** är Ridguns officiella 2D-tabellformaterare och syntaxmarkerare
 
 I ett traditionellt ekosystem innebär uppgifter inom domänen **`FMT`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`fmt`** (`src/main/ridgun/lib/fmt.rg`) problemet genom fyra kompromisslösa principer:
 
-1. **Totala funktioner och explicita kontrakt (`=>`)**: ingen funktion i `fmt` kastar dolda undantag eller förlitar sig på `null`. Varje gränsfall returnerar ett dokumenterat sentinelvärde eller en algebraisk summatyp (`Option`, `Result`).
-2. **Noll C-kod och noll `libc`**: varje rad i `fmt` kompileras direkt till inbyggd ELF64-maskinkod verifierad av `ridgunc`.
+1. **Deklarera `import fmt` (eller `import fmt as alias`) överst i filen**: varje lib definierar sin `module :: fmt`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
+2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
 3. **Svansrekursion med TCO (*Tail-Call Optimization*)**: alla interna genomlöpningar i `fmt` kompileras till inbyggda hårdvaruloopar med $O(1)$ stackutrymme.
 4. **Deterministiskt minne (`RMM1` / `RMM2`)**: varje mellanliggande struktur frigörs i exakt det ögonblick dess sista läsning avslutas, helt utan *Garbage Collector*.
 
@@ -29,7 +29,7 @@ I `ridgun-libs` är **`fmt`** en förstklassig **lib** placerad i `src/main/ridg
 | **Kompilerat arkiv** | `target/fmt.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libfmt.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
-> För att använda denna lib i valfri `.rg`-fil deklarerar du bara `import fmt` överst och anropar funktionerna med mellanslag eller understreck.
+> Varje lib deklarerar sin egen namnrymd med `module :: fmt`: skriv bara `import fmt` (eller `import fmt as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).
 
 ### 15.2.1. Översikt över funktionella familjer i `fmt`
 
@@ -238,10 +238,10 @@ Lägg märke till hur `=`-tecknen och transformationsstegen med `fmt` linjeras s
 ```ridgun
 import fmt
 
-fn :: formatear y verificar (codigo : String) => (String, Bool)
+fn :: formatear y verificar String => String Bool
       formatear y verificar codigo =
-        limpio = fmt source codigo
-        es_ok  = fmt check limpio
+        codigo fmt ridgun -> limpio
+        limpio fmt check ridgun -> es_ok
         (limpio, es_ok)
 ```
 
@@ -252,9 +252,9 @@ Varje funktion i lib:en `fmt` är utformad för att kombineras sömlöst med boo
 ```ridgun
 import fmt
 
-fn :: exportar bloque html (codigo : String) => String
+fn :: exportar bloque html String => String
       exportar bloque html codigo =
-        fmt render codigo FmtHtmlCss
+        fmt highlight ridgun codigo FmtHtmlCss
 ```
 
 ### 15.3.3. Exempel 3: Kanonisk tabelljustering (`fmt ridgun`, `fmt ridgun with`) av `=>`-signaturer, `=`-klausuler, `->`-bindningar och `--`-kommentarer
@@ -264,24 +264,24 @@ I detta praktiska exempel undersöker vi grundligt hur `fmt` beter sig inom dett
 ```ridgun
 fn :: test fmt canonical alignment and config => ()
       test fmt canonical alignment and config =
-        nl = char_from_code 10
+        nl = char from code 10
         raw_src = "fn :: add Int Int => Int" + nl + "add x y = x + y" + nl + "add 0 y_long = y_long" + nl
         expected_2d = "fn :: add Int Int    => Int" + nl + "      add x   y      =  x + y" + nl + "      add 0   y_long =  y_long" + nl
         out_2d = format ridgun source raw_src
-        _ = assert str eq out_2d expected_2d "AC1: canonical 2D tabular alignment"
+        assert str eq out_2d expected_2d "AC1: canonical 2D tabular alignment"
 
         -- Unaligned config (`is_aligned = False`) uses single-space separation
         cfg_unaligned = fmt config 2 4 80 False FmtPlain FmtThemeNone
         out_unaligned = fmt source with config raw_src cfg_unaligned
         expected_unaligned = "fn :: add Int Int => Int" + nl + "      add x y = x + y" + nl + "      add 0 y_long = y_long" + nl
-        _ = assert str eq out_unaligned expected_unaligned "AC1: unaligned FmtConfig"
+        assert str eq out_unaligned expected_unaligned "AC1: unaligned FmtConfig"
 
         -- Guard and `where` alignment with custom indent_width = 4
         guard_src = "fn :: clamp Int => Int" + nl + "clamp x" + nl + "| x < 0 = 0" + nl + "| otherwise = x" + nl + "where" + nl + "lo -> 0" + nl
         cfg_ind4 = fmt config 4 4 80 True FmtPlain FmtThemeNone
         out_ind4 = fmt source with config guard_src cfg_ind4
-        _ = assert true (str_contains out_ind4 "          | x < 0 = 0") "AC1: custom indent_width = 4 guard indentation"
-        _ = assert true (str_contains out_ind4 "              lo -> 0") "AC1: custom indent_width = 4 where binding alignment"
+        assert true (str contains out_ind4 "          | x < 0 = 0") "AC1: custom indent_width = 4 guard indentation"
+        assert true (str contains out_ind4 "              lo -> 0") "AC1: custom indent_width = 4 where binding alignment"
         ()
 ```
 
@@ -292,29 +292,29 @@ I detta praktiska exempel undersöker vi grundligt hur `fmt` beter sig inom dett
 ```ridgun
 fn :: test fmt terminal highlighting tty and truecolor => ()
       test fmt terminal highlighting tty and truecolor =
-        nl = char_from_code 10
-        esc = char_from_code 27
-        interp_tok = (char_from_code 123) + "name" + (char_from_code 125)
+        nl = char from code 10
+        esc = char from code 27
+        interp_tok = (char from code 123) + "name" + (char from code 125)
         sample = "-- @implements FR-FMT-001" + nl + "-- comment line" + nl + "fn :: greet String => String" + nl + "greet name = \"Hello " + interp_tok + "\" + (int_to_str 0x2A)" + nl
 
         tty_dark = fmt to tty sample
-        _ = assert true (str_contains tty_dark (esc + "[1;32m-- @implements FR-FMT-001" + esc + "[0m")) "AC2: TTY pragma highlight"
-        _ = assert true (str_contains tty_dark (esc + "[90m-- comment line" + esc + "[0m")) "AC2: TTY comment highlight"
-        _ = assert true (str_contains tty_dark (esc + "[1;35mfn" + esc + "[0m")) "AC2: TTY keyword highlight"
-        _ = assert true (str_contains tty_dark (esc + "[1;34mgreet" + esc + "[0m")) "AC2: TTY function name highlight"
-        _ = assert true (str_contains tty_dark (esc + "[33mString" + esc + "[0m")) "AC2: TTY type highlight"
-        _ = assert true (str_contains tty_dark (esc + "[36m" + interp_tok + esc + "[0m")) "AC2: TTY string interpolation highlight"
-        _ = assert true (str_contains tty_dark (esc + "[36m0x2A" + esc + "[0m")) "AC2: TTY hex number highlight"
+        assert true (str contains tty_dark (esc + "[1;32m-- @implements FR-FMT-001" + esc + "[0m")) "AC2: TTY pragma highlight"
+        assert true (str contains tty_dark (esc + "[90m-- comment line" + esc + "[0m")) "AC2: TTY comment highlight"
+        assert true (str contains tty_dark (esc + "[1;35mfn" + esc + "[0m")) "AC2: TTY keyword highlight"
+        assert true (str contains tty_dark (esc + "[1;34mgreet" + esc + "[0m")) "AC2: TTY function name highlight"
+        assert true (str contains tty_dark (esc + "[33mString" + esc + "[0m")) "AC2: TTY type highlight"
+        assert true (str contains tty_dark (esc + "[36m" + interp_tok + esc + "[0m")) "AC2: TTY string interpolation highlight"
+        assert true (str contains tty_dark (esc + "[36m0x2A" + esc + "[0m")) "AC2: TTY hex number highlight"
 
         tty_none = fmt to tty with theme sample FmtThemeNone
-        _ = assert false (str_contains tty_none esc) "AC2: FmtThemeNone emits no ANSI escape codes"
+        assert false (str contains tty_none esc) "AC2: FmtThemeNone emits no ANSI escape codes"
 
         tc_dark = fmt to truecolor sample
-        _ = assert true (str_contains tc_dark (esc + "[1;38;2;198;120;221mfn" + esc + "[0m")) "AC2: TrueColor dark keyword RGB"
-        _ = assert true (str_contains tc_dark (esc + "[1;38;2;97;175;239mgreet" + esc + "[0m")) "AC2: TrueColor dark function RGB"
+        assert true (str contains tc_dark (esc + "[1;38;2;198;120;221mfn" + esc + "[0m")) "AC2: TrueColor dark keyword RGB"
+        assert true (str contains tc_dark (esc + "[1;38;2;97;175;239mgreet" + esc + "[0m")) "AC2: TrueColor dark function RGB"
 
         tc_light = fmt to truecolor with theme sample FmtThemeLight
-        _ = assert true (str_contains tc_light (esc + "[1;38;2;166;38;164mfn" + esc + "[0m")) "AC2: TrueColor light keyword RGB"
+        assert true (str contains tc_light (esc + "[1;38;2;166;38;164mfn" + esc + "[0m")) "AC2: TrueColor light keyword RGB"
         ()
 ```
 
@@ -325,30 +325,31 @@ I detta praktiska exempel undersöker vi grundligt hur `fmt` beter sig inom dett
 ```ridgun
 fn :: test fmt enriched document targets => ()
       test fmt enriched document targets =
-        nl = char_from_code 10
+        nl = char from code 10
         src = "fn :: cmp Int Int => Bool" + nl + "cmp a b = a < b AND b > 0" + nl
 
         -- 1. Inline HTML
         html_out = fmt to html src
-        _ = assert true (str_starts_with html_out "<pre class=\"ridgun-code\"") "AC3: HTML inline wrapper"
-        _ = assert true (str_contains html_out "<span style=\"color:#c678dd;font-weight:bold\">fn</span>") "AC3: HTML inline keyword span"
-        _ = assert true (str_contains html_out "&lt;") "AC3: HTML escapes < operator"
-        _ = assert true (str_contains html_out "&gt;") "AC3: HTML escapes > operator"
+        assert true (str starts with html_out "<pre class=\"ridgun-code\"") "AC3: HTML inline wrapper"
+        assert true (str contains html_out "<span style=\"color:#c678dd;font-weight:bold\">fn</span>") "AC3: HTML inline keyword span"
+        assert true (str contains html_out "&lt;") "AC3: HTML escapes < operator"
+        assert true (str contains html_out "&gt;") "AC3: HTML escapes > operator"
 
         -- 2. CSS-class HTML + Stylesheet
         css_html = fmt to html css src
-        _ = assert true (str_contains css_html "<span class=\"rg-kw\">fn</span>") "AC3: HTML CSS keyword class"
-        _ = assert true (str_contains css_html "<span class=\"rg-fn\">cmp</span>") "AC3: HTML CSS function class"
-        _ = assert true (str_contains css_html "<span class=\"rg-type\">Int</span>") "AC3: HTML CSS type class"
-        _ = assert true (str_contains css_html "<span class=\"rg-logic\">AND</span>") "AC3: HTML CSS logic operator class"
+        assert true (str contains css_html "<span class=\"rg-kw\">fn</span>") "AC3: HTML CSS keyword class"
+        assert true (str contains css_html "<span class=\"rg-fn\">cmp</span>") "AC3: HTML CSS function class"
+        assert true (str contains css_html "<span class=\"rg-type\">Int</span>") "AC3: HTML CSS type class"
+        assert true (str contains css_html "<span class=\"rg-logic\">AND</span>") "AC3: HTML CSS logic operator class"
         sheet_dark = fmt html stylesheet FmtThemeDark
         sheet_light = fmt html stylesheet FmtThemeLight
-        _ = assert true (str_contains sheet_dark ".rg-kw") "AC3: Dark CSS stylesheet"
-        _ = assert true (str_contains sheet_light "#fafafa") "AC3: Light CSS stylesheet"
+        assert true (str contains sheet_dark ".rg-kw") "AC3: Dark CSS stylesheet"
+        assert true (str contains sheet_light "#fafafa") "AC3: Light CSS stylesheet"
 
         -- 3. Markdown
         md_out = fmt to markdown src
-        _ = assert true (str_starts_with md_out ("```ridgun" + nl)) "AC3: Markdown fenced code block"
+        assert true (str starts with md_out ("
+```ridgun" + nl)) "AC3: Markdown fenced code block"
 
         -- 4. Pango Markup
         pango_out = fmt to pango src
@@ -379,12 +380,14 @@ En av de största fördelarna med `ridgun-libs` är att **det inte finns några 
 Se hur `fmt.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
+module :: fmt
+
 fn :: default fmt config => FmtConfig
-      default fmt config =  FmtConfig 2 4 80 True FmtPlain FmtThemeNone
+      default fmt config = FmtConfig 2 4 80 True FmtPlain FmtThemeNone
 
 fn :: fmt config Int Int Int Bool FmtTarget FmtTheme => FmtConfig
       fmt config indent_w max_params max_w aligned target theme =
-        FmtConfig (fmt_max 1 indent_w) (fmt_max 0 max_params) (fmt_max 20 max_w) aligned target theme
+        FmtConfig (fmt max 1 indent_w) (fmt max 0 max_params) (fmt max 20 max_w) aligned target theme
 ```
 
 ### 15.4.2. Intern implementation: Signature Parsing (`fn ::` / `op ::`)
@@ -392,54 +395,54 @@ fn :: fmt config Int Int Int Bool FmtTarget FmtTheme => FmtConfig
 Se hur `fmt.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
-fn :: fmt_split_sig_arrow [FmtToken] [String] => (Bool, [String], String, Int)
-      fmt_split_sig_arrow []         _        =  (False, [], "", 0)
-      fmt_split_sig_arrow ((FmtTok tok col):rest) lhs_acc
+fn :: fmt split sig arrow [FmtToken] [String] => (Bool, [String], String, Int)
+      fmt split sig arrow []         _        =  (False, [], "", 0)
+      fmt split sig arrow ((FmtTok tok col):rest) lhs_acc
         | tok == "=>" OR tok == "->" = (True, lhs_acc, tok, col)
-        | otherwise = fmt_split_sig_arrow rest (lhs_acc :: [tok])
+        | otherwise = fmt split sig arrow rest (lhs_acc :: [tok])
 
-fn :: fmt_is_sig_type_tok String => Bool
-      fmt_is_sig_type_tok ""     =  False
-      fmt_is_sig_type_tok tok    =
-        ch = str_char_at tok 0
+fn :: fmt is sig type tok String => Bool
+      fmt is sig type tok ""     =  False
+      fmt is sig type tok tok    =
+        ch = str char at tok 0
         (ch >= 65 AND ch <= 90) OR ch == 91 OR ch == 40
 
-fn :: fmt_all_type_toks [String] => Bool
-      fmt_all_type_toks []       =  True
-      fmt_all_type_toks (t:rest)
-        | fmt_is_sig_type_tok t = fmt_all_type_toks rest
+fn :: fmt all type toks [String] => Bool
+      fmt all type toks []       =  True
+      fmt all type toks (t:rest)
+        | fmt is sig type tok t = fmt all type toks rest
         | otherwise = False
 
-fn :: fmt_is_bare_fn_lhs [String]       => Bool
-      fmt_is_bare_fn_lhs (first_w:rest)
-        | NOT (fmt_is_sig_type_tok first_w) = fmt_all_type_toks rest
-      fmt_is_bare_fn_lhs _              =  False
+fn :: fmt is bare fn lhs [String]       => Bool
+      fmt is bare fn lhs (first_w:rest)
+        | NOT (fmt is sig type tok first_w) = fmt all type toks rest
+      fmt is bare fn lhs _              =  False
 
-fn :: fmt_infer_bare_kind [String] => String
-      fmt_infer_bare_kind lhs_strs
-        | fmt_is_bare_fn_lhs lhs_strs = "bare_fn"
+fn :: fmt infer bare kind [String] => String
+      fmt infer bare kind lhs_strs
+        | fmt is bare fn lhs lhs_strs = "bare_fn"
         | otherwise = "bare_op"
 
-fn :: fmt_parse_sig_line String => FmtSig
-      fmt_parse_sig_line line   =
-        clean = fmt_strip_comment line
-        cmt = fmt_extract_comment line
-        toks = fmt_scan_tokens clean
-        fmt_parse_sig_tokens (fmt_leading_indent line) clean cmt toks
+fn :: fmt parse sig line String => FmtSig
+      fmt parse sig line line   =
+        clean = fmt strip comment line
+        cmt = fmt extract comment line
+        toks = fmt scan tokens clean
+        fmt parse sig tokens (fmt leading indent line) clean cmt toks
 
-fn :: fmt_parse_sig_tokens Int String String [FmtToken] => FmtSig
-      fmt_parse_sig_tokens _   clean  cmt    ((FmtTok kind _):(FmtTok "::" _):rest)
-        | kind == "fn" OR kind == "op" = fmt_finish_sig_parse clean cmt kind (fmt_split_sig_arrow rest [])
-      fmt_parse_sig_tokens 0   clean  cmt    ((FmtTok w col):rest)
-        | w == "type" OR w == "expand" OR w == "import" OR w == "global" OR w == "context" OR w == "shared" OR w == "hardware" OR (str_starts_with w "@") OR (str_starts_with w "--") OR (str_starts_with w "|") = NoSig
-        | otherwise = fmt_finish_bare_sig_parse clean cmt (fmt_split_sig_arrow ([FmtTok w col] :: rest) [])
-      fmt_parse_sig_tokens _   _      _      _          =  NoSig
+fn :: fmt parse sig tokens Int String String [FmtToken] => FmtSig
+      fmt parse sig tokens _   clean  cmt    ((FmtTok kind _):(FmtTok "::" _):rest)
+        | kind == "fn" OR kind == "op" = fmt finish sig parse clean cmt kind (fmt split sig arrow rest [])
+      fmt parse sig tokens 0   clean  cmt    ((FmtTok w col):rest)
+        | w == "type" OR w == "expand" OR w == "import" OR w == "global" OR w == "context" OR w == "shared" OR w == "hardware" OR (str starts with w "@") OR (str starts with w "--") OR (str starts with w "|") = NoSig
+        | otherwise = fmt finish bare sig parse clean cmt (fmt split sig arrow ([FmtTok w col] :: rest) [])
+      fmt parse sig tokens _   _      _      _          =  NoSig
 
-fn :: fmt_finish_bare_sig_parse String String (Bool, [String], String, Int) => FmtSig
-      fmt_finish_bare_sig_parse _ _ (False, _, _, _) = NoSig
-      fmt_finish_bare_sig_parse _ _ (True, [], _, _) = NoSig
-      fmt_finish_bare_sig_parse clean cmt (True, lhs_strs, arrow_s, arrow_col)
-        | arrow_s == "=>" = fmt_finish_sig_parse clean cmt (fmt_infer_bare_kind lhs_strs) (True, lhs_strs, arrow_s, arrow_col)
+fn :: fmt finish bare sig parse String String (Bool, [String], String, Int) => FmtSig
+      fmt finish bare sig parse _ _ (False, _, _, _) = NoSig
+      fmt finish bare sig parse _ _ (True, [], _, _) = NoSig
+      fmt finish bare sig parse clean cmt (True, lhs_strs, arrow_s, arrow_col)
+        | arrow_s == "=>" = fmt finish sig parse clean cmt (fmt infer bare kind lhs_strs) (True, lhs_strs, arrow_s, arrow_col)
         | otherwise = NoSig
 ```
 
@@ -448,37 +451,37 @@ fn :: fmt_finish_bare_sig_parse String String (Bool, [String], String, Int) => F
 Se hur `fmt.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
-fn :: fmt_is_digit Int => Bool
-      fmt_is_digit c   =  c >= 48 AND c <= 57
+fn :: fmt is digit Int => Bool
+      fmt is digit c = c >= 48 and c <= 57
 
-fn :: fmt_is_upper Int => Bool
-      fmt_is_upper c   =  c >= 65 AND c <= 90
+fn :: fmt is upper Int => Bool
+      fmt is upper c = c >= 65 and c <= 90
 
-fn :: fmt_is_lower Int => Bool
-      fmt_is_lower c   =  c >= 97 AND c <= 122
+fn :: fmt is lower Int => Bool
+      fmt is lower c = c >= 97 and c <= 122
 
-fn :: fmt_is_ident_char Int => Bool
-      fmt_is_ident_char c   =  (fmt_is_upper c) OR (fmt_is_lower c) OR (fmt_is_digit c) OR c == 95
+fn :: fmt is ident char Int => Bool
+      fmt is ident char c = (fmt is upper c) or (fmt is lower c) or (fmt is digit c) or c == 95
 
-fn :: fmt_is_keyword String => Bool
-      fmt_is_keyword w      =
-        w == "fn" OR w == "op" OR w == "type" OR w == "expand" OR w == "import" OR w == "module" OR w == "where" OR w == "otherwise" OR w == "with" OR w == "do" OR w == "mut" OR w == "in" OR w == "agent" OR w == "send" OR w == "to" OR w == "receive" OR w == "from" OR w == "try" OR w == "stop" OR w == "timeout" OR w == "global" OR w == "context" OR w == "shared" OR w == "hardware" OR w == "atomic" OR w == "region" OR w == "limit" OR w == "map" OR w == "filter" OR w == "fold"
+fn :: fmt is keyword String => Bool
+      fmt is keyword w =
+        w == "fn" or w == "op" or w == "type" or w == "expand" or w == "import" or w == "module" or w == "where" or w == "otherwise" or w == "with" or w == "do" or w == "mut" or w == "in" or w == "agent" or w == "send" or w == "to" or w == "receive" or w == "from" or w == "try" or w == "stop" or w == "timeout" or w == "global" or w == "context" or w == "shared" or w == "hardware" or w == "atomic" or w == "region" or w == "limit" or w == "map" or w == "filter" or w == "fold"
 
-fn :: fmt_is_logic_op String => Bool
-      fmt_is_logic_op w      =
-        w == "AND" OR w == "OR" OR w == "XOR" OR w == "NOT" OR w == "and" OR w == "or" OR w == "xor" OR w == "not" OR w == "shl" OR w == "shr" OR w == "rotr" OR w == "rotl"
+fn :: fmt is logic op String => Bool
+      fmt is logic op w =
+        w == "AND" or w == "OR" or w == "XOR" or w == "NOT" or w == "and" or w == "or" or w == "xor" or w == "not" or w == "shl" or w == "shr" or w == "rotr" or w == "rotl"
 
-fn :: fmt_is_bool_lit String => Bool
-      fmt_is_bool_lit w      =  w == "True" OR w == "False"
+fn :: fmt is bool lit String => Bool
+      fmt is bool lit w = w == "True" or w == "False"
 
-fn :: fmt_classify_word String Bool  => String
-      fmt_classify_word ""     _     =  "plain"
-      fmt_classify_word w      in_fn
-        | fmt_is_keyword w = "keyword"
-        | fmt_is_logic_op w = "logic"
-        | fmt_is_bool_lit w = "bool"
-        | fmt_is_upper (str_char_at w 0) = "type"
-        | fmt_is_digit (str_char_at w 0) = "number"
+fn :: fmt classify word String Bool => String
+      fmt classify word "" _ = "plain"
+      fmt classify word w in_fn =
+        | fmt is keyword w = "keyword"
+        | fmt is logic op w = "logic"
+        | fmt is bool lit w = "bool"
+        | fmt is upper (str char at w 0) = "type"
+        | fmt is digit (str char at w 0) = "number"
         | in_fn = "function"
         | otherwise = "plain"
 ```
@@ -490,43 +493,43 @@ Se hur `fmt.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och lös
 ```ridgun
 fn :: fmt source with config String FmtConfig => String
       fmt source with config src cfg =
-        raw_lines = fmt_split_raw_lines src
-        formatted_lines = fmt_format_top_lines raw_lines 0 "" cfg
-        target = target_format cfg
-        theme = color_theme cfg
-        highlighted = fmt_highlight_lines formatted_lines target theme
-        fmt_wrap_target_doc highlighted target theme
+        src fmt split raw lines -> raw_lines
+        fmt format top lines raw_lines 0 "" cfg -> formatted_lines
+        cfg target_format -> target
+        cfg color_theme -> theme
+        fmt highlight lines formatted_lines target theme -> highlighted
+        fmt wrap target doc highlighted target theme
 
 fn :: format ridgun source String => String
-      format ridgun source src    =  fmt source with config src (default fmt config)
+      format ridgun source src = fmt source with config src (default fmt config)
 
 fn :: fmt to tty with theme String FmtTheme => String
       fmt to tty with theme src theme =
         fmt source with config src (FmtConfig 2 4 80 True FmtTty theme)
 
 fn :: fmt to tty String => String
-      fmt to tty src    =  fmt to tty with theme src FmtThemeDark
+      fmt to tty src = fmt to tty with theme src FmtThemeDark
 
 fn :: fmt to truecolor with theme String FmtTheme => String
       fmt to truecolor with theme src theme =
         fmt source with config src (FmtConfig 2 4 80 True FmtTrueColor theme)
 
 fn :: fmt to truecolor String => String
-      fmt to truecolor src    =  fmt to truecolor with theme src FmtThemeDark
+      fmt to truecolor src = fmt to truecolor with theme src FmtThemeDark
 
 fn :: fmt to html with theme String FmtTheme => String
       fmt to html with theme src theme =
         fmt source with config src (FmtConfig 2 4 80 True FmtHtmlInline theme)
 
 fn :: fmt to html String => String
-      fmt to html src    =  fmt to html with theme src FmtThemeDark
+      fmt to html src = fmt to html with theme src FmtThemeDark
 
 fn :: fmt to html css String => String
-      fmt to html css src    =
+      fmt to html css src =
         fmt source with config src (FmtConfig 2 4 80 True FmtHtmlCss FmtThemeDark)
 
 fn :: fmt to markdown String => String
-      fmt to markdown src    =
+      fmt to markdown src =
         fmt source with config src (FmtConfig 2 4 80 True FmtMarkdown FmtThemeNone)
 
 fn :: fmt to pango with theme String FmtTheme => String
@@ -534,7 +537,21 @@ fn :: fmt to pango with theme String FmtTheme => String
         fmt source with config src (FmtConfig 2 4 80 True FmtPango theme)
 
 fn :: fmt to pango String => String
-      fmt to pango src    =  fmt to pango with theme src FmtThemeDark
+      fmt to pango src = fmt to pango with theme src FmtThemeDark
+
+fn :: fmt to latex with theme String FmtTheme => String
+      fmt to latex with theme src theme =
+        fmt source with config src (FmtConfig 2 4 80 True FmtLatex theme)
+
+fn :: fmt to latex String => String
+      fmt to latex src = fmt to latex with theme src FmtThemeDark
+
+fn :: fmt to rtf with theme String FmtTheme => String
+      fmt to rtf with theme src theme =
+        fmt source with config src (FmtConfig 2 4 80 True FmtRtf theme)
+
+fn :: fmt to rtf String => String
+      fmt to rtf src = fmt to rtf with theme src FmtThemeDark
 ```
 
 ---

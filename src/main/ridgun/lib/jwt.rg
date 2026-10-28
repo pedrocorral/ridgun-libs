@@ -25,9 +25,9 @@ fn :: jwt b64url lut Int => String
 
 fn :: jwt b64 char Int => String
       jwt b64 char idx =
-        tbl = jwt b64url lut 0
-        i = ((idx % 64) + 64) % 64
-        str_slice tbl i (i + 1)
+        jwt b64url lut 0 -> tbl
+        ((idx % 64) + 64) % 64 -> i
+        str slice tbl i (i + 1)
 
 fn :: jwt b64 val Int => Int
       jwt b64 val c =
@@ -42,67 +42,67 @@ fn :: jwt b64url enc bytes [Int] => String
       jwt b64url enc bytes [] = ""
       jwt b64url enc bytes (b0:[]) = (jwt b64 char (b0 / 4)) + (jwt b64 char ((b0 % 4) * 16))
       jwt b64url enc bytes (b0:b1:[]) =
-        n = (b0 * 256) + b1
+        (b0 * 256) + b1 -> n
         (jwt b64 char (n / 1024)) + (jwt b64 char ((n / 16) % 64)) + (jwt b64 char ((n % 16) * 4))
       jwt b64url enc bytes (b0:b1:b2:rs) =
-        n = (b0 * 65536) + (b1 * 256) + b2
+        (b0 * 65536) + (b1 * 256) + b2 -> n
         (jwt b64 char (n / 262144)) + (jwt b64 char ((n / 4096) % 64)) + (jwt b64 char ((n / 64) % 64)) + (jwt b64 char (n % 64)) + (jwt b64url enc bytes rs)
 
 fn :: jwt str to bytes loop String Int Int [Int] => [Int]
       jwt str to bytes loop s pos len acc =
         | pos >= len = acc
-        | otherwise = jwt str to bytes loop s (pos + 1) len (acc :: [((str_char_at s pos) % 256 + 256) % 256])
+        | otherwise = jwt str to bytes loop s (pos + 1) len (acc :: [((str char at s pos) % 256 + 256) % 256])
 
 fn :: jwt str to bytes String => [Int]
-      jwt str to bytes s = jwt str to bytes loop s 0 (str_len s) []
+      jwt str to bytes s = jwt str to bytes loop s 0 (str len s) []
 
 fn :: jwt bytes to str [Int] => String
       jwt bytes to str [] = ""
-      jwt bytes to str (b:rest) = (char_from_code b) + (jwt bytes to str rest)
+      jwt bytes to str (b:rest) = (char from code b) + (jwt bytes to str rest)
 
 fn :: jwt b64url encode String => String
-      jwt b64url encode s = jwt b64url enc bytes (jwt str to bytes s)
+      jwt b64url encode s = s jwt str to bytes -> jwt b64url enc bytes
 
 fn :: jwt b64url valid loop String Int Int => Bool
       jwt b64url valid loop s pos len =
         | pos >= len = True
-        | (jwt b64 val (str_char_at s pos)) < 0 = False
+        | (jwt b64 val (str char at s pos)) < 0 = False
         | otherwise = jwt b64url valid loop s (pos + 1) len
 
 fn :: jwt b64url is valid String => Bool
       jwt b64url is valid s =
-        | ((str_len s) % 4) == 1 = False
-        | otherwise = jwt b64url valid loop s 0 (str_len s)
+        | ((str len s) % 4) == 1 = False
+        | otherwise = jwt b64url valid loop s 0 (str len s)
 
 fn :: jwt b64url dec rem String Int Int => [Int]
       jwt b64url dec rem s pos rem =
         | rem <= 1 = []
-        | rem == 2 = [(((jwt b64 val (str_char_at s pos)) * 4) + ((jwt b64 val (str_char_at s (pos + 1))) / 16)) % 256]
+        | rem == 2 = [(((jwt b64 val (str char at s pos)) * 4) + ((jwt b64 val (str char at s (pos + 1))) / 16)) % 256]
         | rem == 3 = jwt b64url dec3 s pos
         | otherwise = (jwt b64url dec4 s pos) :: (jwt b64url dec rem s (pos + 4) (rem - 4))
 
 fn :: jwt b64url dec3 String Int => [Int]
       jwt b64url dec3 s pos =
-        v0 = jwt b64 val (str_char_at s pos)
-        v1 = jwt b64 val (str_char_at s (pos + 1))
-        v2 = jwt b64 val (str_char_at s (pos + 2))
-        n = (v0 * 1024) + (v1 * 16) + (v2 / 4)
+        jwt b64 val (str char at s pos) -> v0
+        jwt b64 val (str char at s (pos + 1)) -> v1
+        jwt b64 val (str char at s (pos + 2)) -> v2
+        (v0 * 1024) + (v1 * 16) + (v2 / 4) -> n
         [(n / 256) % 256, n % 256]
 
 fn :: jwt b64url dec4 String Int => [Int]
       jwt b64url dec4 s pos =
-        v0 = jwt b64 val (str_char_at s pos)
-        v1 = jwt b64 val (str_char_at s (pos + 1))
-        v2 = jwt b64 val (str_char_at s (pos + 2))
-        v3 = jwt b64 val (str_char_at s (pos + 3))
-        n = (v0 * 262144) + (v1 * 4096) + (v2 * 64) + v3
+        jwt b64 val (str char at s pos) -> v0
+        jwt b64 val (str char at s (pos + 1)) -> v1
+        jwt b64 val (str char at s (pos + 2)) -> v2
+        jwt b64 val (str char at s (pos + 3)) -> v3
+        (v0 * 262144) + (v1 * 4096) + (v2 * 64) + v3 -> n
         [(n / 65536) % 256, (n / 256) % 256, n % 256]
 
 fn :: jwt b64url decode bytes String => [Int]
-      jwt b64url decode bytes s = jwt b64url dec rem s 0 (str_len s)
+      jwt b64url decode bytes s = jwt b64url dec rem s 0 (str len s)
 
 fn :: jwt b64url decode String => String
-      jwt b64url decode s = jwt bytes to str (jwt b64url decode bytes s)
+      jwt b64url decode s = s jwt b64url decode bytes -> jwt bytes to str
 
 -- ── Constant-Time Equality & Bitwise XOR ─────────────────────
 
@@ -118,12 +118,12 @@ fn :: jwt byte bxor Int Int => Int
 fn :: jwt ct diff String String Int Int Int => Int
       jwt ct diff a b idx len acc =
         | idx >= len = acc
-        | otherwise = jwt ct diff a b (idx + 1) len (acc + (jwt byte bxor (str_char_at a idx) (str_char_at b idx)))
+        | otherwise = jwt ct diff a b (idx + 1) len (acc + (jwt byte bxor (str char at a idx) (str char at b idx)))
 
 fn :: jwt ct eq String String => Bool
       jwt ct eq a b =
-        | (str_len a) != (str_len b) = False
-        | otherwise = (jwt ct diff a b 0 (str_len a) 0) == 0
+        | (str len a) != (str len b) = False
+        | otherwise = (jwt ct diff a b 0 (str len a) 0) == 0
 
 -- ── HS256 (HMAC-SHA256) Signing & Verification ───────────────
 
@@ -137,10 +137,10 @@ fn :: jwt hex nib Int => Int
 fn :: jwt hex to bytes loop String Int Int [Int] => [Int]
       jwt hex to bytes loop h pos len acc =
         | (pos + 1) >= len = acc
-        | otherwise = jwt hex to bytes loop h (pos + 2) len (acc :: [((jwt hex nib (str_char_at h pos)) * 16) + (jwt hex nib (str_char_at h (pos + 1)))])
+        | otherwise = jwt hex to bytes loop h (pos + 2) len (acc :: [((jwt hex nib (str char at h pos)) * 16) + (jwt hex nib (str char at h (pos + 1)))])
 
 fn :: jwt hex to bytes String => [Int]
-      jwt hex to bytes h = jwt hex to bytes loop h 0 (str_len h) []
+      jwt hex to bytes h = jwt hex to bytes loop h 0 (str len h) []
 
 fn :: jwt pad key bytes [Int] Int => [Int]
       jwt pad key bytes bs idx =
@@ -154,24 +154,24 @@ fn :: jwt pad key head [Int] Int => [Int]
 
 fn :: jwt key block String => [Int]
       jwt key block secret =
-        | (str_len secret) > 64 = jwt pad key bytes (jwt hex to bytes (sha256_str secret)) 0
-        | otherwise = jwt pad key bytes (jwt str to bytes secret) 0
+        | (str len secret) > 64 = secret sha256 str -> jwt hex to bytes -> jwt pad key bytes 0
+        | otherwise = secret jwt str to bytes -> jwt pad key bytes 0
 
 fn :: jwt bxor pad str [Int] Int => String
       jwt bxor pad str [] _ = ""
       jwt bxor pad str (b:rest) pad =
-        xb = jwt byte bxor b pad
-        safe_c = (xb % 126) + 1
-        (char_from_code safe_c) + (jwt bxor pad str rest pad)
+        jwt byte bxor b pad -> xb
+        (xb % 126) + 1 -> safe_c
+        (char from code safe_c) + (jwt bxor pad str rest pad)
 
 fn :: jwt hmac sha256 b64url String String => String
       jwt hmac sha256 b64url secret signing_input =
-        kb = jwt key block secret
-        ipad = jwt bxor pad str kb 54
-        opad = jwt bxor pad str kb 92
-        inner_hex = sha256_str (ipad + signing_input)
-        outer_hex = sha256_str (opad + inner_hex)
-        jwt b64url enc bytes (jwt hex to bytes outer_hex)
+        secret jwt key block -> kb
+        jwt bxor pad str kb 54 -> ipad
+        jwt bxor pad str kb 92 -> opad
+        (ipad + signing_input) -> sha256 str -> inner_hex
+        (opad + inner_hex) -> sha256 str -> outer_hex
+        outer_hex jwt hex to bytes -> jwt b64url enc bytes
 
 fn :: jwt hs256 header json Int => String
       jwt hs256 header json _ = '{"alg":"HS256","typ":"JWT"}'
@@ -181,16 +181,16 @@ fn :: jwt hs256 header json Int => String
 -- @mitigates VUL-AUTHN-001
 fn :: jwt sign hs256 String String => String
       jwt sign hs256 payload_json secret =
-        hdr_b64 = jwt b64url encode (jwt hs256 header json 0)
-        pay_b64 = jwt b64url encode payload_json
-        signing_in = hdr_b64 + "." + pay_b64
-        sig_b64 = jwt hmac sha256 b64url secret signing_in
+        jwt hs256 header json 0 -> jwt b64url encode -> hdr_b64
+        payload_json jwt b64url encode -> pay_b64
+        hdr_b64 + "." + pay_b64 -> signing_in
+        jwt hmac sha256 b64url secret signing_in -> sig_b64
         signing_in + "." + sig_b64
 
 fn :: jwt split dots loop String Int Int Int [String] => [String]
       jwt split dots loop s pos len start acc =
-        | pos >= len = acc :: [str_slice s start len]
-        | (str_char_at s pos) == 46 = jwt split dots loop s (pos + 1) len (pos + 1) (acc :: [str_slice s start pos])
+        | pos >= len = acc :: [str slice s start len]
+        | (str char at s pos) == 46 = jwt split dots loop s (pos + 1) len (pos + 1) (acc :: [str slice s start pos])
         | otherwise = jwt split dots loop s (pos + 1) len start acc
 
 fn :: jwt str list len [String] => Int
@@ -207,20 +207,20 @@ fn :: jwt str at [String] Int => String
 -- @mitigates VUL-INPUT-001
 fn :: jwt decode payload String => JwtRes
       jwt decode payload token =
-        parts = jwt split dots loop token 0 (str_len token) 0 []
+        jwt split dots loop token 0 (str len token) 0 [] -> parts
         jwt decode parts parts
 
 fn :: jwt decode parts [String] => JwtRes
       jwt decode parts parts =
         | (jwt str list len parts) != 3 = JwtErr "invalid JWT format: expected 3 dot-separated parts"
-        | (str_len (jwt str at parts 0)) == 0 or (str_len (jwt str at parts 1)) == 0 or (str_len (jwt str at parts 2)) == 0 = JwtErr "invalid JWT format: empty segment"
+        | (str len (jwt str at parts 0)) == 0 or (str len (jwt str at parts 1)) == 0 or (str len (jwt str at parts 2)) == 0 = JwtErr "invalid JWT format: empty segment"
         | not (jwt b64url is valid (jwt str at parts 1)) = JwtErr "invalid JWT payload Base64url encoding"
         | otherwise = JwtOk (jwt b64url decode (jwt str at parts 1))
 
 fn :: jwt header is hs256 String => Bool
       jwt header is hs256 hdr_b64 =
         | not (jwt b64url is valid hdr_b64) = False
-        | otherwise = jwt check hdr json (json parse (jwt b64url decode hdr_b64))
+        | otherwise = hdr_b64 jwt b64url decode -> json parse -> jwt check hdr json
 
 fn :: jwt check hdr json JsonRes => Bool
       jwt check hdr json (JsonErr _) = False
@@ -232,19 +232,19 @@ fn :: jwt check hdr json JsonRes => Bool
 -- @mitigates VUL-INPUT-001
 fn :: jwt verify hs256 String String => JwtRes
       jwt verify hs256 token secret =
-        parts = jwt split dots loop token 0 (str_len token) 0 []
+        jwt split dots loop token 0 (str len token) 0 [] -> parts
         jwt verify parts parts secret
 
 fn :: jwt verify parts [String] String => JwtRes
       jwt verify parts parts secret =
         | (jwt str list len parts) != 3 = JwtErr "invalid JWT format"
-        | (str_len (jwt str at parts 2)) == 0 = JwtErr "missing JWT signature"
+        | (str len (jwt str at parts 2)) == 0 = JwtErr "missing JWT signature"
         | not (jwt header is hs256 (jwt str at parts 0)) = JwtErr "unsupported or missing alg: expected HS256"
         | otherwise = jwt verify sig (jwt str at parts 0) (jwt str at parts 1) (jwt str at parts 2) secret
 
 fn :: jwt verify sig String String String String => JwtRes
       jwt verify sig hdr_b64 pay_b64 sig_b64 secret =
-        expected_sig = jwt hmac sha256 b64url secret (hdr_b64 + "." + pay_b64)
+        jwt hmac sha256 b64url secret (hdr_b64 + "." + pay_b64) -> expected_sig
         jwt verify sig ct (jwt ct eq sig_b64 expected_sig) pay_b64
 
 fn :: jwt verify sig ct Bool String => JwtRes
@@ -259,7 +259,7 @@ fn :: jwt verify sig ct Bool String => JwtRes
 -- @implements API-JWT-001
 fn :: jwt sign claims JwtClaims String => String
       jwt sign claims c secret =
-        base_obj = JsonObj [JsonField "iss" (JsonStr (issuer c)), JsonField "sub" (JsonStr (subject c)), JsonField "exp" (JsonInt (expires_at c)), JsonField "nbf" (JsonInt (not_before_at c)), JsonField "custom" (JsonStr (custom_json c))]
+        JsonObj [JsonField "iss" (JsonStr (issuer c)), JsonField "sub" (JsonStr (subject c)), JsonField "exp" (JsonInt (expires_at c)), JsonField "nbf" (JsonInt (not_before_at c)), JsonField "custom" (JsonStr (custom_json c))] -> base_obj
         jwt sign hs256 (json stringify base_obj) secret
 
 -- @implements FR-JWT-001
@@ -267,7 +267,7 @@ fn :: jwt sign claims JwtClaims String => String
 -- @mitigates VUL-AUTHN-001
 fn :: jwt verify claims String String Int => JwtClaimsRes
       jwt verify claims token secret now =
-        vres = jwt verify hs256 token secret
+        jwt verify hs256 token secret -> vres
         jwt validate verified payload vres now
 
 fn :: jwt validate verified payload JwtRes Int => JwtClaimsRes
@@ -277,11 +277,11 @@ fn :: jwt validate verified payload JwtRes Int => JwtClaimsRes
 fn :: jwt validate parsed claims JsonRes Int => JwtClaimsRes
       jwt validate parsed claims (JsonErr msg) _ = JwtClaimsErr ("invalid claims JSON: " + msg)
       jwt validate parsed claims (JsonOk node) now =
-        iss = json get str node "iss" ""
-        sub = json get str node "sub" ""
-        exp_t = json get int node "exp" 0
-        nbf_t = json get int node "nbf" 0
-        cust = json get str node "custom" ""
+        json get str node "iss" "" -> iss
+        json get str node "sub" "" -> sub
+        json get int node "exp" 0 -> exp_t
+        json get int node "nbf" 0 -> nbf_t
+        json get str node "custom" "" -> cust
         jwt check claim times (JwtClaims iss sub exp_t nbf_t cust) now
 
 fn :: jwt check claim times JwtClaims Int => JwtClaimsRes
@@ -295,7 +295,7 @@ fn :: jwt check claim times JwtClaims Int => JwtClaimsRes
 fn :: jwt keystream bytes String String Int Int => [Int]
       jwt keystream bytes key nonce blk rem =
         | rem <= 0 = []
-        | otherwise = (jwt hex to bytes (sha256_str (key + ":" + nonce + ":" + (int_to_str blk)))) :: (jwt keystream bytes key nonce (blk + 1) (rem - 32))
+        | otherwise = (jwt hex to bytes (sha256 str (key + ":" + nonce + ":" + (int to str blk)))) :: (jwt keystream bytes key nonce (blk + 1) (rem - 32))
 
 fn :: jwt bxor lists [Int] [Int] => [Int]
       jwt bxor lists [] _ = []
@@ -308,19 +308,19 @@ fn :: jwt bxor lists [Int] [Int] => [Int]
 -- @mitigates VUL-INPUT-001
 fn :: jwt seal aead String String String => JwtRes
       jwt seal aead key nonce plaintext =
-        | (str_len key) != 32 = JwtErr "AEAD key must be 32 bytes"
-        | (str_len nonce) != 12 = JwtErr "AEAD nonce must be 12 bytes"
+        | (str len key) != 32 = JwtErr "AEAD key must be 32 bytes"
+        | (str len nonce) != 12 = JwtErr "AEAD nonce must be 12 bytes"
         | otherwise = jwt seal aead ok key nonce plaintext
 
 fn :: jwt seal aead ok String String String => JwtRes
       jwt seal aead ok key nonce plaintext =
-        pt_bs = jwt str to bytes plaintext
-        ks_bs = jwt keystream bytes key nonce 1 (str_len plaintext)
-        ct_bs = jwt bxor lists pt_bs ks_bs
-        nonce_b64 = jwt b64url encode nonce
-        ct_b64 = jwt b64url enc bytes ct_bs
-        aad_in = "RGAEAD1." + nonce_b64 + "." + ct_b64
-        tag_b64 = jwt hmac sha256 b64url key aad_in
+        plaintext jwt str to bytes -> pt_bs
+        jwt keystream bytes key nonce 1 (str len plaintext) -> ks_bs
+        jwt bxor lists pt_bs ks_bs -> ct_bs
+        nonce jwt b64url encode -> nonce_b64
+        ct_bs jwt b64url enc bytes -> ct_b64
+        "RGAEAD1." + nonce_b64 + "." + ct_b64 -> aad_in
+        jwt hmac sha256 b64url key aad_in -> tag_b64
         JwtOk (aad_in + "." + tag_b64)
 
 -- @implements FR-JWT-001
@@ -329,9 +329,9 @@ fn :: jwt seal aead ok String String String => JwtRes
 -- @mitigates VUL-INPUT-001
 fn :: jwt open aead String String String => JwtRes
       jwt open aead key nonce token =
-        | (str_len key) != 32 = JwtErr "AEAD key must be 32 bytes"
-        | (str_len nonce) != 12 = JwtErr "AEAD nonce must be 12 bytes"
-        | otherwise = jwt open aead parts key nonce (jwt split dots loop token 0 (str_len token) 0 [])
+        | (str len key) != 32 = JwtErr "AEAD key must be 32 bytes"
+        | (str len nonce) != 12 = JwtErr "AEAD nonce must be 12 bytes"
+        | otherwise = jwt open aead parts key nonce (jwt split dots loop token 0 (str len token) 0 [])
 
 fn :: jwt open aead parts String String [String] => JwtRes
       jwt open aead parts key nonce parts =

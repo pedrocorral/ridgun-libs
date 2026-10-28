@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: tensor
+
 -- @implements FR-TENSOR-001
 -- @implements API-TENSOR-001
 -- @implements DM-Tensor

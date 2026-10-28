@@ -99,7 +99,7 @@ fn :: write fd Int String Int        => IoResult
       write fd fd  data   timeout_ms =
         | fd < 0    = SysErr 9 "write"
         | otherwise =
-          status = wait fd fd poll_out timeout_ms
+          status = wait fd fd (poll out) timeout_ms
           write fd after poll status fd data timeout_ms
 
 -- @implements FR-IO-001
@@ -162,15 +162,18 @@ fn :: read existing or empty String => String
         | lstat exists (file lstat path) = read file path
         | otherwise                      = ""
 
+fn :: append file step String String => Int
+      append file step path   data   =
+        path read existing or empty -> prev
+        write file path (prev + data)
+        0
+
 -- @implements FR-IO-002
 -- @implements API-IO-001
 fn :: append file String String => Int
       append file path   data   =
         | not (is safe posix path path) = 0 - 22
-        | otherwise                     =
-          prev = read existing or empty path
-          _    = write file path (prev + data)
-          0
+        | otherwise                     = append file step path data
 
 -- @implements FR-IO-002
 -- @implements API-IO-001
@@ -291,14 +294,18 @@ fn :: join lines nl [String]    => String
         | str list is empty rest = line + "\n"
         | otherwise              = line + "\n" + (join lines nl rest)
 
+fn :: io write lines step String [String] => Int
+      io write lines step path   lines    =
+        lines join lines nl -> body
+        write file path body
+        0
+
 -- @implements FR-IO-002
 -- @implements API-IO-001
 fn :: io write lines String [String] => Int
       io write lines path   lines    =
         | not (is safe posix path path) = 0 - 22
-        | otherwise                     =
-          _ = write file path (join lines nl lines)
-          0
+        | otherwise                     = io write lines step path lines
 
 -- ── Ridgun v0.9.5 PAL & Ambient Deadline `io read with timeout` (§3.1) ────
 
@@ -306,25 +313,32 @@ fn :: io wrap chunk String => IoResult
       io wrap chunk ""     =  IoEof
       io wrap chunk s      =  IoOk s
 
+fn :: io close and return Int IoResult => IoResult
+      io close and return fd  res      =
+        sys close fd -> ()
+        res
+
+fn :: io read chunk and close Int => IoResult
+      io read chunk and close fd  =
+        sys read fd fd 65536 -> chunk
+        sys close fd -> ()
+        chunk io wrap chunk
+
 fn :: io read after poll Int Int => IoResult
       io read after poll fd ev =
-        | ev == 0 =
-          _ = sys close fd
-          IoTimeout
-        | ev < 0 =
-          _ = sys close fd
-          IoError ev
-        | otherwise =
-          chunk = sys read fd fd 65536
-          _     = sys close fd
-          io wrap chunk chunk
+        | ev == 0   = io close and return fd IoTimeout
+        | ev < 0    = io close and return fd (IoError ev)
+        | otherwise = io read chunk and close fd
+
+fn :: io poll and read Int => IoResult
+      io poll and read fd  =
+        sys poll fd 1 (0 - 1) -> ev
+        io read after poll fd ev
 
 fn :: io read poll step Int => IoResult
       io read poll step fd  =
         | fd < 0    = IoError fd
-        | otherwise =
-          ev = sys poll fd 1 (0 - 1)
-          io read after poll fd ev
+        | otherwise = io poll and read fd
 
 -- @implements FR-IO-001
 -- @implements API-IO-001

@@ -23,7 +23,7 @@ fn :: df max Int Int => Int
 fn :: df int to str pos Int => String
       df int to str pos n =
         | n == 0 = ""
-        | otherwise = (df int to str pos (n / 10)) + (char_from_code ((n % 10) + 48))
+        | otherwise = (df int to str pos (n / 10)) + (char from code ((n % 10) + 48))
 
 fn :: df int to str Int => String
       df int to str n =
@@ -41,14 +41,14 @@ fn :: df rev ints [Int] [Int] => [Int]
 
 fn :: df split lines loop String Int Int Int [String] => [String]
       df split lines loop s idx n start acc =
-        | idx >= n = df rev ([str_slice s start n] :: acc) []
-        | (str_char_at s idx) == 10 = df split lines loop s (idx + 1) n (idx + 1) ([str_slice s start idx] :: acc)
+        | idx >= n = df rev ([str slice s start n] :: acc) []
+        | (str char at s idx) == 10 = df split lines loop s (idx + 1) n (idx + 1) ([str slice s start idx] :: acc)
         | otherwise = df split lines loop s (idx + 1) n start acc
 
 fn :: df split lines String => [String]
       df split lines s =
-        | (str_len s) == 0 = []
-        | otherwise = df split lines loop s 0 (str_len s) 0 []
+        | (str len s) == 0 = []
+        | otherwise = df split lines loop s 0 (str len s) 0 []
 
 fn :: df zeros Int [Int] => [Int]
       df zeros n acc =
@@ -134,10 +134,10 @@ fn :: df list length [String] => Int
 -- @mitigates VUL-INPUT-001
 fn :: diff lines [String] [String] => [DiffEdit]
       diff lines old_lines new_lines =
-        rev_old = df rev old_lines []
-        rev_new = df rev new_lines []
-        zero_row = df zeros ((df list length new_lines) + 1) []
-        dp_rows = df build dp rev_old rev_new [zero_row]
+        old_lines df rev [] -> rev_old
+        new_lines df rev [] -> rev_new
+        df zeros ((df list length new_lines) + 1) [] -> zero_row
+        df build dp rev_old rev_new [zero_row] -> dp_rows
         df backtrack old_lines new_lines dp_rows 0 1 1 []
 
 -- @implements FR-DIFF-001
@@ -161,7 +161,7 @@ fn :: diff stats [DiffEdit] => DiffStats
 -- @implements API-DIFF-001
 fn :: diff edit distance String String => Int
       diff edit distance old_s new_s =
-        st = diff stats (diff text old_s new_s)
+        diff text old_s new_s -> diff stats -> st
         (insert_count st) + (delete_count st)
 
 -- @implements FR-DIFF-001
@@ -175,9 +175,9 @@ fn :: diff has changes [DiffEdit] => Bool
 fn :: df format unified lines [DiffEdit] String => String
       df format unified lines [] acc = acc
       df format unified lines (e:es) acc =
-        | (diff_op e) == "equal" = df format unified lines es (acc + " " + (line_text e) + (char_from_code 10))
-        | (diff_op e) == "delete" = df format unified lines es (acc + "-" + (line_text e) + (char_from_code 10))
-        | otherwise = df format unified lines es (acc + "+" + (line_text e) + (char_from_code 10))
+        | (diff_op e) == "equal" = df format unified lines es (acc + " " + (line_text e) + (char from code 10))
+        | (diff_op e) == "delete" = df format unified lines es (acc + "-" + (line_text e) + (char from code 10))
+        | otherwise = df format unified lines es (acc + "+" + (line_text e) + (char from code 10))
 
 fn :: df hunk start Int => Int
       df hunk start cnt =
@@ -186,20 +186,20 @@ fn :: df hunk start Int => Int
 
 fn :: df unified header String String Int Int => String
       df unified header old_label new_label old_cnt new_cnt =
-        old_start = df hunk start old_cnt
-        new_start = df hunk start new_cnt
-        nl = char_from_code 10
+        old_cnt df hunk start -> old_start
+        new_cnt df hunk start -> new_start
+        char from code 10 -> nl
         "--- " + old_label + nl + "+++ " + new_label + nl + "@@ -" + (df int to str old_start) + "," + (df int to str old_cnt) + " +" + (df int to str new_start) + "," + (df int to str new_cnt) + " @@" + nl
 
 -- @implements FR-DIFF-001
 -- @implements API-DIFF-001
 fn :: diff unified String String String String => String
       diff unified old_label new_label old_s new_s =
-        edits = diff text old_s new_s
-        st = diff stats edits
-        old_cnt = (equal_count st) + (delete_count st)
-        new_cnt = (equal_count st) + (insert_count st)
-        hdr = df unified header old_label new_label old_cnt new_cnt
+        diff text old_s new_s -> edits
+        edits diff stats -> st
+        (equal_count st) + (delete_count st) -> old_cnt
+        (equal_count st) + (insert_count st) -> new_cnt
+        df unified header old_label new_label old_cnt new_cnt -> hdr
         df format unified lines edits hdr
 
 fn :: df apply collect [DiffEdit] [String] => [String]
@@ -211,7 +211,7 @@ fn :: df apply collect [DiffEdit] [String] => [String]
 fn :: df join lines [String] => String
       df join lines [] = ""
       df join lines (x:[]) = x
-      df join lines (x:xs) = x + (char_from_code 10) + (df join lines xs)
+      df join lines (x:xs) = x + (char from code 10) + (df join lines xs)
 
 -- @implements FR-DIFF-001
 -- @implements API-DIFF-001

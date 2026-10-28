@@ -59,7 +59,7 @@ fn :: agent status (Agent A B) => AgentStatus
 -- @implements API-AGENT-001
 fn :: stop agent (Agent A B) => AgentStatus
       stop agent ag          =
-        _ = stop ag
+        stop ag -> ()
         AgentStopped
 
 -- @implements FR-AGENT-001
@@ -108,8 +108,8 @@ fn :: agent receive count loop Agent Int [B] => [B]
 -- @implements API-AGENT-001
 fn :: agent map batch Agent [A]  => [B]
       agent map batch ag    msgs =
-        n = agent list len msgs 0
-        _ = agent send batch ag msgs
+        agent list len msgs 0 -> n
+        agent send batch ag msgs -> ()
         agent receive count ag n
 
 fn :: agent list len [A]    Int => Int

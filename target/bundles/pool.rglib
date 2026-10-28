@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: pool
+
 type AgentPool = Pool Int [Agent]
 
 -- @implements FR-AGENT-001
@@ -38,8 +40,8 @@ fn :: pool abs Int => Int
 -- @implements API-AGENT-001
 fn :: pool ask shard AgentPool Int A => B
       pool ask shard (Pool size agents) key_hash msg =
-        shard_idx = (pool abs key_hash) % size
-        target_ag = pool get agent agents shard_idx
+        (pool abs key_hash) % size -> shard_idx
+        pool get agent agents shard_idx -> target_ag
         ask target_ag msg
 
 -- Broadcast a message to every agent in the pool (e.g. configuration reload or tick)
@@ -74,7 +76,7 @@ fn :: pool drain all AgentPool       => [B]
 fn :: pool drain list [Agent]   [B] => [B]
       pool drain list []        acc =  acc
       pool drain list (ag:rest) acc =
-        ready = pool drain ready ag
+        ag pool drain ready -> ready
         pool drain list rest (acc :: ready)
 
 fn :: pool stop list [Agent]   => ()

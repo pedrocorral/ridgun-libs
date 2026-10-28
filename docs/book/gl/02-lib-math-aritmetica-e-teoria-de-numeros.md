@@ -12,8 +12,8 @@ A lib **`math`** ofrece divisións totais a proba de `d == 0` (`div ceil`, `div 
 
 Nun ecosistema tradicional, resolver as tarefas do dominio **`MATH`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`math`** (`src/main/ridgun/lib/math.rg`) aborda o problema con catro principios innegociables:
 
-1. **Funcións totais e contratos explícitos (`=>`)**: ningunha función de `math` lanza excepcións ocultas nin depende de `null`. Todo caso límite devolve un valor sentinela documentado ou un tipo alxébrico suma (`Option`, `Result`).
-2. **Cero código C e cero `libc`**: todo o código de `math` compila directamente a código máquina nativo ELF64 verificado por `ridgunc`.
+1. **Declara `import math` (ou `import math as alias`) ao inicio do ficheiro**: cada lib define o seu espazo de nomes `module :: math` e en modo `--strict` as funcións multi-palabra invócanse sempre con espazos naturais.
+2. **Encadea as túas tubaxes de esquerda a dereita con `->`**: escribe `entrada paso un -> paso dous -> resultado`, usa máscaras `(+ _ _ +)` para desestruturar secuencias e omite `_ =` en sentenzas secuenciais (ou descarta con `-> ()`).
 3. **Recursión de cola con TCO (*Tail-Call Optimization*)**: todos os percorridos internos de `math` compílanse a bucles nativos en espazo de pila $O(1)$.
 4. **Memoria determinista (`RMM1` / `RMM2`)**: cada estrutura intermedia libérase no instante exacto en que remata a súa última lectura, sen *Garbage Collector*.
 
@@ -29,7 +29,7 @@ En `ridgun-libs`, **`math`** é unha **lib** de primeira clase situada en `src/m
 | **Ficheiro compilado** | `target/math.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/libmath.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
-> Para usar esta lib en calquera ficheiro `.rg`, abonda con declarar `import math` na cabeceira e chamar ás súas funcións con espazos ou guións baixos indistintamente.
+> Cada lib declara o seu propio espazo de nomes con `module :: math`: abonda con escribir `import math` (ou `import math as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).
 
 ### 02.2.1. Resumo de familias funcionais de `math`
 
@@ -124,11 +124,11 @@ Observa como en Ridgun os signos `=` e os pasos de transformación con `math` qu
 ```ridgun
 import math
 
-fn :: verificar clave modular (base : Int) (primo : Int) => (Int, Int, Bool)
+fn :: verificar clave modular Int Int => Int Int Bool
       verificar clave modular base primo =
-        es_p = math is prime primo
-        pot  = math mod pow base (primo - 1) primo
-        inv  = math mod inv base primo
+        primo math is prime -> es_p
+        math mod pow base (primo - 1) primo -> pot
+        math mod inv base primo -> inv
         (pot, inv, es_p)
 ```
 
@@ -139,10 +139,10 @@ Toda función da lib `math` está deseñada para compoñerse con gardas booleana
 ```ridgun
 import math
 
-fn :: calcular paginas y cuota (items : Int) (por_pag : Int) (uso : Int) => (Int, Int)
+fn :: calcular paginas y cuota Int Int Int => Int Int
       calcular paginas y cuota items por_pag uso =
-        pags  = math div ceil items por_pag
-        cuota = clamp uso between 0 and 100
+        math div ceil items por_pag -> pags
+        clamp uso between 0 and 100 -> cuota
         (pags, cuota)
 ```
 
@@ -153,33 +153,33 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `math` n
 ```ridgun
 fn :: test math bounds and division => ()
       test math bounds and division =
-        _ = assert int equals (math abs (0 - 42)) 42 "math abs negative"
-        _ = assert int equals (math abs 42) 42 "math abs positive"
-        _ = assert int equals (math abs 0) 0 "math abs zero"
-        _ = assert int equals (math sign (0 - 99)) (0 - 1) "math sign negative"
-        _ = assert int equals (math sign 0) 0 "math sign zero"
-        _ = assert int equals (math sign 99) 1 "math sign positive"
-        _ = assert int equals (math min 10 (0 - 5)) (0 - 5) "math min"
-        _ = assert int equals (math max 10 (0 - 5)) 10 "math max"
-        _ = assert int equals (math clamp (0 - 10) 0 100) 0 "math clamp low"
-        _ = assert int equals (math clamp 50 0 100) 50 "math clamp mid"
-        _ = assert int equals (math clamp 250 0 100) 100 "math clamp high"
-        _ = assert int equals (clamp 150 between 10 and 100) 100 "op clamp between and"
-        _ = assert true (math is even 42) "math is even 42"
-        _ = assert false (math is even 41) "math is even 41"
-        _ = assert true (math is odd (0 - 7)) "math is odd -7"
-        _ = assert int equals (math div ceil 7 3) 3 "math div ceil 7/3"
-        _ = assert int equals (math div ceil 6 3) 2 "math div ceil 6/3"
-        _ = assert int equals (math div ceil (0 - 7) 3) (0 - 2) "math div ceil -7/3"
-        _ = assert int equals (math div floor (0 - 7) 3) (0 - 3) "math div floor -7/3"
-        _ = assert int equals (math div floor 7 3) 2 "math div floor 7/3"
-        _ = assert int equals (math mod euclid (0 - 7) 3) 2 "math mod euclid -7 % 3 == 2"
-        _ = assert int equals (math div euclid (0 - 7) 3) (0 - 3) "math div euclid -7 / 3 == -3"
+        assert int equals (math abs (0 - 42)) 42 "math abs negative"
+        assert int equals (math abs 42) 42 "math abs positive"
+        assert int equals (math abs 0) 0 "math abs zero"
+        assert int equals (math sign (0 - 99)) (0 - 1) "math sign negative"
+        assert int equals (math sign 0) 0 "math sign zero"
+        assert int equals (math sign 99) 1 "math sign positive"
+        assert int equals (math min 10 (0 - 5)) (0 - 5) "math min"
+        assert int equals (math max 10 (0 - 5)) 10 "math max"
+        assert int equals (math clamp (0 - 10) 0 100) 0 "math clamp low"
+        assert int equals (math clamp 50 0 100) 50 "math clamp mid"
+        assert int equals (math clamp 250 0 100) 100 "math clamp high"
+        assert int equals (clamp 150 between 10 and 100) 100 "op clamp between and"
+        assert true (math is even 42) "math is even 42"
+        assert false (math is even 41) "math is even 41"
+        assert true (math is odd (0 - 7)) "math is odd -7"
+        assert int equals (math div ceil 7 3) 3 "math div ceil 7/3"
+        assert int equals (math div ceil 6 3) 2 "math div ceil 6/3"
+        assert int equals (math div ceil (0 - 7) 3) (0 - 2) "math div ceil -7/3"
+        assert int equals (math div floor (0 - 7) 3) (0 - 3) "math div floor -7/3"
+        assert int equals (math div floor 7 3) 2 "math div floor 7/3"
+        assert int equals (math mod euclid (0 - 7) 3) 2 "math mod euclid -7 % 3 == 2"
+        assert int equals (math div euclid (0 - 7) 3) (0 - 3) "math div euclid -7 / 3 == -3"
         -- Division by zero safety
-        _ = assert int equals (math div ceil 10 0) 0 "math div ceil / 0 == 0"
-        _ = assert int equals (math div floor 10 0) 0 "math div floor / 0 == 0"
-        _ = assert int equals (math div euclid 10 0) 0 "math div euclid / 0 == 0"
-        _ = assert int equals (math mod euclid 10 0) 0 "math mod euclid % 0 == 0"
+        assert int equals (math div ceil 10 0) 0 "math div ceil / 0 == 0"
+        assert int equals (math div floor 10 0) 0 "math div floor / 0 == 0"
+        assert int equals (math div euclid 10 0) 0 "math div euclid / 0 == 0"
+        assert int equals (math mod euclid 10 0) 0 "math mod euclid % 0 == 0"
         ()
 ```
 
@@ -190,40 +190,40 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `math` n
 ```ridgun
 fn :: test math powers number theory and combinatorics => ()
       test math powers number theory and combinatorics =
-        _ = assert int equals (math pow 2 10) 1024 "2^10 == 1024"
-        _ = assert int equals (math pow 5 0) 1 "5^0 == 1"
-        _ = assert int equals (math pow 5 (0 - 2)) 0 "negative exp -> 0"
-        _ = assert int equals (math isqrt 0) 0 "isqrt 0"
-        _ = assert int equals (math isqrt 1) 1 "isqrt 1"
-        _ = assert int equals (math isqrt 15) 3 "isqrt 15"
-        _ = assert int equals (math isqrt 16) 4 "isqrt 16"
-        _ = assert int equals (math isqrt 10000) 100 "isqrt 10000"
-        _ = assert int equals (math isqrt (0 - 4)) (0 - 1) "isqrt negative -> -1"
-        _ = assert int equals (math ilog2 1) 0 "ilog2 1 == 0"
-        _ = assert int equals (math ilog2 1024) 10 "ilog2 1024 == 10"
-        _ = assert int equals (math ilog2 0) (0 - 1) "ilog2 0 == -1"
-        _ = assert int equals (math ilog10 999) 2 "ilog10 999 == 2"
-        _ = assert int equals (math ilog10 1000) 3 "ilog10 1000 == 3"
-        _ = assert true (math is power of two 64) "64 is power of two"
-        _ = assert false (math is power of two 63) "63 is not power of two"
-        _ = assert false (math is power of two 0) "0 is not power of two"
-        _ = assert int equals (math next power of two 33) 64 "next power of two 33 == 64"
-        _ = assert int equals (math gcd 48 18) 6 "gcd(48, 18) == 6"
-        _ = assert int equals (math gcd (0 - 48) 18) 6 "gcd(-48, 18) == 6"
-        _ = assert int equals (math lcm 12 18) 36 "lcm(12, 18) == 36"
-        _ = assert int equals (math lcm 0 18) 0 "lcm(0, 18) == 0"
-        _ = assert int equals (math mod pow 2 10 1000) 24 "2^10 mod 1000 == 24"
-        _ = assert int equals (math mod pow 3 200 97) 62 "3^200 mod 97 == 62"
-        _ = assert int equals (math mod inv 3 11) 4 "3 * 4 == 12 == 1 mod 11"
-        _ = assert int equals (math mod inv 6 12) (0 - 1) "mod inv non-coprime -> -1"
-        _ = assert false (math is prime 1) "1 not prime"
-        _ = assert true (math is prime 2) "2 prime"
-        _ = assert true (math is prime 97) "97 prime"
-        _ = assert false (math is prime 99) "99 not prime"
-        _ = assert int equals (math factorial 5) 120 "5! == 120"
-        _ = assert int equals (math factorial 0) 1 "0! == 1"
-        _ = assert int equals (math ncr 10 3) 120 "C(10, 3) == 120"
-        _ = assert int equals (math fibonacci 10) 55 "fib(10) == 55"
+        assert int equals (math pow 2 10) 1024 "2^10 == 1024"
+        assert int equals (math pow 5 0) 1 "5^0 == 1"
+        assert int equals (math pow 5 (0 - 2)) 0 "negative exp -> 0"
+        assert int equals (math isqrt 0) 0 "isqrt 0"
+        assert int equals (math isqrt 1) 1 "isqrt 1"
+        assert int equals (math isqrt 15) 3 "isqrt 15"
+        assert int equals (math isqrt 16) 4 "isqrt 16"
+        assert int equals (math isqrt 10000) 100 "isqrt 10000"
+        assert int equals (math isqrt (0 - 4)) (0 - 1) "isqrt negative -> -1"
+        assert int equals (math ilog2 1) 0 "ilog2 1 == 0"
+        assert int equals (math ilog2 1024) 10 "ilog2 1024 == 10"
+        assert int equals (math ilog2 0) (0 - 1) "ilog2 0 == -1"
+        assert int equals (math ilog10 999) 2 "ilog10 999 == 2"
+        assert int equals (math ilog10 1000) 3 "ilog10 1000 == 3"
+        assert true (math is power of two 64) "64 is power of two"
+        assert false (math is power of two 63) "63 is not power of two"
+        assert false (math is power of two 0) "0 is not power of two"
+        assert int equals (math next power of two 33) 64 "next power of two 33 == 64"
+        assert int equals (math gcd 48 18) 6 "gcd(48, 18) == 6"
+        assert int equals (math gcd (0 - 48) 18) 6 "gcd(-48, 18) == 6"
+        assert int equals (math lcm 12 18) 36 "lcm(12, 18) == 36"
+        assert int equals (math lcm 0 18) 0 "lcm(0, 18) == 0"
+        assert int equals (math mod pow 2 10 1000) 24 "2^10 mod 1000 == 24"
+        assert int equals (math mod pow 3 200 97) 62 "3^200 mod 97 == 62"
+        assert int equals (math mod inv 3 11) 4 "3 * 4 == 12 == 1 mod 11"
+        assert int equals (math mod inv 6 12) (0 - 1) "mod inv non-coprime -> -1"
+        assert false (math is prime 1) "1 not prime"
+        assert true (math is prime 2) "2 prime"
+        assert true (math is prime 97) "97 prime"
+        assert false (math is prime 99) "99 not prime"
+        assert int equals (math factorial 5) 120 "5! == 120"
+        assert int equals (math factorial 0) 1 "0! == 1"
+        assert int equals (math ncr 10 3) 120 "C(10, 3) == 120"
+        assert int equals (math fibonacci 10) 55 "fib(10) == 55"
         ()
 ```
 
@@ -235,16 +235,16 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `math` n
 fn :: test math list statistics => ()
       test math list statistics =
         xs = [30, 10, 50, 20, 40]
-        _  = assert int equals (math sum xs) 150 "sum"
-        _  = assert int equals (math product [2, 3, 4]) 24 "product"
-        _  = assert int equals (math mean xs) 30 "mean"
-        _  = assert int equals (math median xs) 30 "median odd"
-        _  = assert int equals (math median [10, 20, 30, 40]) 25 "median even"
-        _  = assert int equals (math min list xs) 10 "min list"
-        _  = assert int equals (math max list xs) 50 "max list"
-        _  = assert int equals (math sum []) 0 "sum []"
-        _  = assert int equals (math mean []) 0 "mean []"
-        _  = assert int equals (math median []) 0 "median []"
+        assert int equals (math sum xs) 150 "sum"
+        assert int equals (math product [2, 3, 4]) 24 "product"
+        assert int equals (math mean xs) 30 "mean"
+        assert int equals (math median xs) 30 "median odd"
+        assert int equals (math median [10, 20, 30, 40]) 25 "median even"
+        assert int equals (math min list xs) 10 "min list"
+        assert int equals (math max list xs) 50 "max list"
+        assert int equals (math sum []) 0 "sum []"
+        assert int equals (math mean []) 0 "mean []"
+        assert int equals (math median []) 0 "median []"
         ()
 ```
 
@@ -259,6 +259,8 @@ Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**
 Fíxate en como `math.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
+module :: math
+
 fn :: math abs Int => Int
       math abs x   =
         | x < 0     = 0 - x
@@ -347,6 +349,21 @@ fn :: math ilog10 Int => Int
       math ilog10 n   =
         | n <= 0    = 0 - 1
         | otherwise = m ilog10 loop n 0
+
+fn :: m next pow2 loop Int Int => Int
+      m next pow2 loop target cur =
+        | cur >= target = cur
+        | otherwise     = m next pow2 loop target (cur * 2)
+
+fn :: math next power of two Int => Int
+      math next power of two n =
+        | n <= 1    = 1
+        | otherwise = m next pow2 loop n 1
+
+fn :: math is power of two Int => Bool
+      math is power of two n =
+        | n <= 0    = False
+        | otherwise = (math next power of two n) == n
 ```
 
 ### 02.4.3. Implementación interna: Combinatorics & Sequences
@@ -440,6 +457,21 @@ fn :: m insert sorted Int [Int]    => [Int]
       m insert sorted v   (x:rest) =
         | v <= x    = [v, x] :: rest
         | otherwise = [x] :: (m insert sorted v rest)
+
+fn :: m sort ints [Int]    => [Int]
+      m sort ints []       =  []
+      m sort ints (x:rest) =  m insert sorted x (m sort ints rest)
+
+fn :: m median sorted [Int] Int Int => Int
+      m median sorted sorted n mid =
+        | n == 0       = 0
+        | (n % 2) == 1 = m nth int sorted mid
+        | otherwise    = ((m nth int sorted (mid - 1)) + (m nth int sorted mid)) / 2
+
+fn :: math median [Int] => Int
+      math median xs    =
+        n = m list len xs
+        m median sorted (m sort ints xs) n (n / 2)
 ```
 
 ---

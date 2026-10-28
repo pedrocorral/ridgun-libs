@@ -12,8 +12,8 @@ Izan gaitezen zintzoak: `libc`-ko data-funtzioak (`localtime`, `gmtime`, `mktime
 
 Ekosistema tradizional batean, **`TIME`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`time`** lib-ak (`src/main/ridgun/lib/time.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
-1. **Funtzio osoak eta kontratu esplizituak (`=>`)**: `time`-eko funtzio bakar batek ere ez du ezkutuko salbuespenik jaurtitzen, ezta `null` erabiltzen ere. Muga-kasu orok dokumentatutako balio bat edo batura-mota aljebraiko bat (`Option`, `Result`) itzultzen du.
-2. **Zero C kode eta zero `libc`**: `time`-eko kode guztia zuzenean ELF64 makina-kode natibora konpilatzen da, `ridgunc`-ek egiaztatuta.
+1. **Deklaratu `import time` (edo `import time as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: time` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
+2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
 3. **Isats-errekurtsioa TCOrekin (*Tail-Call Optimization*)**: `time`-eko barne-ibilbide guztiak $O(1)$ pila-espazioko begizta natiboetara konpilatzen dira.
 4. **Memoria determinista (`RMM1` / `RMM2`)**: tarteko egitura bakoitza bere azken irakurketa amaitzen den une zehatzean askatzen da, *Garbage Collector* gabe.
 
@@ -29,7 +29,7 @@ Ekosistema tradizional batean, **`TIME`** domeinuko zereginak ebazteak C-ko kanp
 | **Fitxategi konpilatua** | `target/time.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libtime.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
-> Lib hau edozein `.rg` fitxategitan erabiltzeko, nahikoa da goiburuan `import time` deklaratzea eta bere funtzioei zuriuneekin edo azpimarrarekin deitzea.
+> Lib bakoitzak bere izen-espazioa deklaratzen du `module :: time` bidez: nahikoa da goiburuan `import time` (edo `import time as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 
 ### 18.2.1. `time`-eko familia funtzionalen laburpena
 
@@ -86,11 +86,11 @@ Ikusi nola Ridgunen `=` ikurrak eta `time` bidezko eraldaketa-urratsak taula gar
 ```ridgun
 import time
 
-fn :: registrar evento temporal (epoch_s : Int) => (String, Int, String)
+fn :: registrar evento temporal Int => String Int String
       registrar evento temporal epoch_s =
-        iso = time format iso8601 epoch_s
-        sem = time day of week epoch_s
-        dur = time format duration ms 3661005
+        epoch_s time format iso8601 -> iso
+        time day of week 2026 10 27 -> sem
+        3661005 time format duration ms -> dur
         (iso, sem, dur)
 ```
 
@@ -101,7 +101,7 @@ fn :: registrar evento temporal (epoch_s : Int) => (String, Int, String)
 ```ridgun
 import time
 
-fn :: planificar reintentos () => [Int]
+fn :: planificar reintentos => [Int]
       planificar reintentos =
         [time backoff ms 0 100 5000, time backoff ms 1 100 5000, time backoff ms 2 100 5000, time backoff ms 9 100 5000]
 ```
@@ -114,62 +114,62 @@ Adibide praktiko honetan `time` bloke funtzional honetan nola portatzen den sako
 fn :: test utc calendar and iso8601 => ()
       test utc calendar and iso8601 =
         -- Gregorian 4/100/400 leap year rules
-        _ = assert true (time is leap year 1600) "AC1: 1600 divisible by 400 is leap"
-        _ = assert false (time is leap year 1700) "AC1: 1700 divisible by 100 not leap"
-        _ = assert false (time is leap year 1800) "AC1: 1800 divisible by 100 not leap"
-        _ = assert false (time is leap year 1900) "AC1: 1900 divisible by 100 not leap"
-        _ = assert true (time is leap year 2000) "AC1: 2000 divisible by 400 is leap"
-        _ = assert true (time is leap year 2024) "AC1: 2024 divisible by 4 is leap"
-        _ = assert false (time is leap year 2026) "AC1: 2026 not leap"
-        _ = assert true (time is leap year 2400) "AC1: 2400 divisible by 400 is leap"
+        assert true (time is leap year 1600) "AC1: 1600 divisible by 400 is leap"
+        assert false (time is leap year 1700) "AC1: 1700 divisible by 100 not leap"
+        assert false (time is leap year 1800) "AC1: 1800 divisible by 100 not leap"
+        assert false (time is leap year 1900) "AC1: 1900 divisible by 100 not leap"
+        assert true (time is leap year 2000) "AC1: 2000 divisible by 400 is leap"
+        assert true (time is leap year 2024) "AC1: 2024 divisible by 4 is leap"
+        assert false (time is leap year 2026) "AC1: 2026 not leap"
+        assert true (time is leap year 2400) "AC1: 2400 divisible by 400 is leap"
 
         -- Month lengths & out-of-range month safety
-        _ = assert int equals (time days in month 2024 2) 29 "AC1: Feb 2024 == 29"
-        _ = assert int equals (time days in month 2026 2) 28 "AC1: Feb 2026 == 28"
-        _ = assert int equals (time days in month 2026 1) 31 "AC1: Jan == 31"
-        _ = assert int equals (time days in month 2026 4) 30 "AC1: Apr == 30"
-        _ = assert int equals (time days in month 2026 6) 30 "AC1: Jun == 30"
-        _ = assert int equals (time days in month 2026 9) 30 "AC1: Sep == 30"
-        _ = assert int equals (time days in month 2026 11) 30 "AC1: Nov == 30"
-        _ = assert int equals (time days in month 2026 12) 31 "AC1: Dec == 31"
-        _ = assert int equals (time days in month 2026 0) 0 "AC1: month 0 -> 0"
-        _ = assert int equals (time days in month 2026 13) 0 "AC1: month 13 -> 0"
+        assert int equals (time days in month 2024 2) 29 "AC1: Feb 2024 == 29"
+        assert int equals (time days in month 2026 2) 28 "AC1: Feb 2026 == 28"
+        assert int equals (time days in month 2026 1) 31 "AC1: Jan == 31"
+        assert int equals (time days in month 2026 4) 30 "AC1: Apr == 30"
+        assert int equals (time days in month 2026 6) 30 "AC1: Jun == 30"
+        assert int equals (time days in month 2026 9) 30 "AC1: Sep == 30"
+        assert int equals (time days in month 2026 11) 30 "AC1: Nov == 30"
+        assert int equals (time days in month 2026 12) 31 "AC1: Dec == 31"
+        assert int equals (time days in month 2026 0) 0 "AC1: month 0 -> 0"
+        assert int equals (time days in month 2026 13) 0 "AC1: month 13 -> 0"
 
         -- Day of week (0=Sunday .. 6=Saturday)
-        _ = assert int equals (time day of week 1970 1 1) 4 "AC1: 1970-01-01 was Thursday (4)"
-        _ = assert int equals (time day of week 2000 1 1) 6 "AC1: 2000-01-01 was Saturday (6)"
-        _ = assert int equals (time day of week 2026 10 24) 6 "AC1: 2026-10-24 is Saturday (6)"
+        assert int equals (time day of week 1970 1 1) 4 "AC1: 1970-01-01 was Thursday (4)"
+        assert int equals (time day of week 2000 1 1) 6 "AC1: 2000-01-01 was Saturday (6)"
+        assert int equals (time day of week 2026 10 24) 6 "AC1: 2026-10-24 is Saturday (6)"
 
         -- Famous Unix epoch milestones: 0, 1000000000 (2001-09-09T01:46:40Z), Y2038 (2147483647 -> 2038-01-19T03:14:07Z)
-        _ = assert int equals (time utc to epoch 1970 1 1 0 0 0) 0 "AC2: Unix epoch 0"
-        _ = assert str eq (time format iso8601 0) "1970-01-01T00:00:00Z" "AC2: format epoch 0"
-        _ = assert str eq (time format iso8601 1000000000) "2001-09-09T01:46:40Z" "AC2: format billennium 1000000000"
-        _ = assert int equals (time parse iso8601 "2001-09-09T01:46:40Z") 1000000000 "AC2: parse billennium"
-        _ = assert str eq (time format iso8601 2147483647) "2038-01-19T03:14:07Z" "AC2: 64-bit Y2038 boundary 2147483647"
-        _ = assert int equals (time parse iso8601 "2038-01-19 03:14:07") 2147483647 "AC2: RFC 3339 space separator without Z"
+        assert int equals (time utc to epoch 1970 1 1 0 0 0) 0 "AC2: Unix epoch 0"
+        assert str eq (time format iso8601 0) "1970-01-01T00:00:00Z" "AC2: format epoch 0"
+        assert str eq (time format iso8601 1000000000) "2001-09-09T01:46:40Z" "AC2: format billennium 1000000000"
+        assert int equals (time parse iso8601 "2001-09-09T01:46:40Z") 1000000000 "AC2: parse billennium"
+        assert str eq (time format iso8601 2147483647) "2038-01-19T03:14:07Z" "AC2: 64-bit Y2038 boundary 2147483647"
+        assert int equals (time parse iso8601 "2038-01-19 03:14:07") 2147483647 "AC2: RFC 3339 space separator without Z"
 
         ts = time utc to epoch 2026 10 22 10 20 59
         iso = time format iso8601 ts
-        _ = assert str eq iso "2026-10-22T10:20:59Z" "AC2: format 2026-10-22T10:20:59Z"
-        _ = assert int equals (time parse iso8601 iso) ts "AC2: parse roundtrip"
+        assert str eq iso "2026-10-22T10:20:59Z" "AC2: format 2026-10-22T10:20:59Z"
+        assert int equals (time parse iso8601 iso) ts "AC2: parse roundtrip"
         tup = time epoch to utc ts
-        _ = assert int equals (utc y tup) 2026 "AC1: year 2026"
-        _ = assert int equals (utc m tup) 10 "AC1: month 10"
-        _ = assert int equals (utc d tup) 22 "AC1: day 22"
-        _ = assert int equals (utc hh tup) 10 "AC1: hour 10"
-        _ = assert int equals (utc mm tup) 20 "AC1: minute 20"
-        _ = assert int equals (utc ss tup) 59 "AC1: second 59"
+        assert int equals (utc y tup) 2026 "AC1: year 2026"
+        assert int equals (utc m tup) 10 "AC1: month 10"
+        assert int equals (utc d tup) 22 "AC1: day 22"
+        assert int equals (utc hh tup) 10 "AC1: hour 10"
+        assert int equals (utc mm tup) 20 "AC1: minute 20"
+        assert int equals (utc ss tup) 59 "AC1: second 59"
 
         -- Negative validation on invalid calendar dates and timestamps
-        _ = assert int equals (time parse iso8601 "2026-13-01T00:00:00Z") (0 - 1) "AC2: invalid month 13 -> -1"
-        _ = assert int equals (time parse iso8601 "2026-00-01T00:00:00Z") (0 - 1) "AC2: invalid month 00 -> -1"
-        _ = assert int equals (time parse iso8601 "2026-02-29T00:00:00Z") (0 - 1) "AC2: 2026-02-29 non-leap -> -1"
-        _ = assert true ((time parse iso8601 "2024-02-29T00:00:00Z") > 0) "AC2: 2024-02-29 leap year valid"
-        _ = assert int equals (time parse iso8601 "2026-04-31T00:00:00Z") (0 - 1) "AC2: April 31 -> -1"
-        _ = assert int equals (time parse iso8601 "2026-01-01T24:00:00Z") (0 - 1) "AC2: hour 24 -> -1"
-        _ = assert int equals (time parse iso8601 "2026-01-01T00:60:00Z") (0 - 1) "AC2: minute 60 -> -1"
-        _ = assert int equals (time parse iso8601 "2026-01-01T00:00:60Z") (0 - 1) "AC2: second 60 -> -1"
-        _ = assert int equals (time parse iso8601 "malformed") (0 - 1) "AC2: malformed -> -1"
+        assert int equals (time parse iso8601 "2026-13-01T00:00:00Z") (0 - 1) "AC2: invalid month 13 -> -1"
+        assert int equals (time parse iso8601 "2026-00-01T00:00:00Z") (0 - 1) "AC2: invalid month 00 -> -1"
+        assert int equals (time parse iso8601 "2026-02-29T00:00:00Z") (0 - 1) "AC2: 2026-02-29 non-leap -> -1"
+        assert true ((time parse iso8601 "2024-02-29T00:00:00Z") > 0) "AC2: 2024-02-29 leap year valid"
+        assert int equals (time parse iso8601 "2026-04-31T00:00:00Z") (0 - 1) "AC2: April 31 -> -1"
+        assert int equals (time parse iso8601 "2026-01-01T24:00:00Z") (0 - 1) "AC2: hour 24 -> -1"
+        assert int equals (time parse iso8601 "2026-01-01T00:60:00Z") (0 - 1) "AC2: minute 60 -> -1"
+        assert int equals (time parse iso8601 "2026-01-01T00:00:60Z") (0 - 1) "AC2: second 60 -> -1"
+        assert int equals (time parse iso8601 "malformed") (0 - 1) "AC2: malformed -> -1"
         ()
 ```
 
@@ -180,21 +180,21 @@ Adibide praktiko honetan `time` bloke funtzional honetan nola portatzen den sako
 ```ridgun
 fn :: test durations and backoff => ()
       test durations and backoff =
-        _ = assert str eq (time format duration ms 0) "0ms" "AC3: 0ms"
-        _ = assert str eq (time format duration ms (0 - 50)) "0ms" "AC3: negative ms -> 0ms"
-        _ = assert str eq (time format duration ms 450) "450ms" "AC3: 450ms"
-        _ = assert str eq (time format duration ms 1000) "1s" "AC3: exact 1s omits 0ms"
-        _ = assert str eq (time format duration ms 60000) "1m" "AC3: exact 1m"
-        _ = assert str eq (time format duration ms 3600000) "1h" "AC3: exact 1h"
-        _ = assert str eq (time format duration ms 3661005) "1h 1m 1s 5ms" "AC3: 1h 1m 1s 5ms"
+        assert str eq (time format duration ms 0) "0ms" "AC3: 0ms"
+        assert str eq (time format duration ms (0 - 50)) "0ms" "AC3: negative ms -> 0ms"
+        assert str eq (time format duration ms 450) "450ms" "AC3: 450ms"
+        assert str eq (time format duration ms 1000) "1s" "AC3: exact 1s omits 0ms"
+        assert str eq (time format duration ms 60000) "1m" "AC3: exact 1m"
+        assert str eq (time format duration ms 3600000) "1h" "AC3: exact 1h"
+        assert str eq (time format duration ms 3661005) "1h 1m 1s 5ms" "AC3: 1h 1m 1s 5ms"
 
-        _ = assert int equals (time backoff ms (0 - 1) 100 5000) 100 "AC3: negative attempt -> base_ms"
-        _ = assert int equals (time backoff ms 0 100 5000) 100 "AC3: attempt 0 -> 100"
-        _ = assert int equals (time backoff ms 1 100 5000) 200 "AC3: attempt 1 -> 200"
-        _ = assert int equals (time backoff ms 3 100 5000) 800 "AC3: attempt 3 -> 800"
-        _ = assert int equals (time backoff ms 10 100 5000) 5000 "AC3: clamped at max_ms 5000"
-        _ = assert int equals (time backoff ms 3 0 5000) 0 "AC3: base_ms <= 0 -> 0"
-        _ = assert int equals (time backoff ms 3 500 200) 500 "AC3: max_ms <= base_ms -> base_ms"
+        assert int equals (time backoff ms (0 - 1) 100 5000) 100 "AC3: negative attempt -> base_ms"
+        assert int equals (time backoff ms 0 100 5000) 100 "AC3: attempt 0 -> 100"
+        assert int equals (time backoff ms 1 100 5000) 200 "AC3: attempt 1 -> 200"
+        assert int equals (time backoff ms 3 100 5000) 800 "AC3: attempt 3 -> 800"
+        assert int equals (time backoff ms 10 100 5000) 5000 "AC3: clamped at max_ms 5000"
+        assert int equals (time backoff ms 3 0 5000) 0 "AC3: base_ms <= 0 -> 0"
+        assert int equals (time backoff ms 3 500 200) 500 "AC3: max_ms <= base_ms -> base_ms"
         ()
 ```
 
@@ -226,6 +226,8 @@ fn :: planificar ventana reintentos (iso_inicio : String) => (String, String, In
 Ikusi nola `time.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
+module :: time
+
 fn :: time is leap year Int  => Bool
       time is leap year year =
         | (year % 400) == 0 = True
@@ -268,17 +270,17 @@ fn :: tm calc mp Int => Int
 
 fn :: tm days from civil Int Int Int => Int
       tm days from civil y m d =
-        y_adj = tm adj year y m
-        era   = tm calc era y_adj
-        yoe   = y_adj - (era * 400)
-        mp    = tm calc mp m
-        doy   = (((153 * mp) + 2) / 5) + d - 1
-        doe   = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy
+        tm adj year y m -> y_adj
+        y_adj tm calc era -> era
+        y_adj - (era * 400) -> yoe
+        m tm calc mp -> mp
+        (((153 * mp) + 2) / 5) + d - 1 -> doy
+        (yoe * 365) + (yoe / 4) - (yoe / 100) + doy -> doe
         (era * 146097) + doe - 719468
 
 fn :: time day of week Int Int Int => Int
       time day of week year month day =
-        z = tm days from civil year month day
+        tm days from civil year month day -> z
         (((z + 4) % 7) + 7) % 7
 
 fn :: time utc to epoch Int Int Int Int Int Int => Int
@@ -301,6 +303,34 @@ fn :: tm mp to month Int => Int
       tm mp to month mp  =
         | mp < 10   = mp + 3
         | otherwise = mp - 9
+
+fn :: tm finish year Int Int => Int
+      tm finish year y0  m   =
+        | m <= 2    = y0 + 1
+        | otherwise = y0
+
+fn :: tm civil from days Int Int Int Int => Int Int Int Int Int Int
+      tm civil from days z hh mm ss =
+        z_shift = z + 719468
+        era     = tm z era z_shift
+        doe     = z_shift - (era * 146097)
+        yoe     = (doe - (doe / 1460) + (doe / 36524) - (doe / 146096)) / 365
+        y0      = yoe + (era * 400)
+        doy     = doe - ((365 * yoe) + (yoe / 4) - (yoe / 100))
+        mp      = ((5 * doy) + 2) / 153
+        d       = doy - (((153 * mp) + 2) / 5) + 1
+        m       = tm mp to month mp
+        y       = tm finish year y0 m
+        (y, m, d, hh, mm, ss)
+
+fn :: time epoch to utc Int       => Int Int Int Int Int Int
+      time epoch to utc epoch_sec =
+        rem_raw = ((epoch_sec % 86400) + 86400) % 86400
+        days    = (epoch_sec - rem_raw) / 86400
+        hh      = rem_raw / 3600
+        mm      = (rem_raw % 3600) / 60
+        ss      = rem_raw % 60
+        tm civil from days days hh mm ss
 ```
 
 ### 18.4.3. Barne-inplementazioa: ISO-8601 / RFC 3339 Formatting & Parsing
@@ -325,7 +355,7 @@ fn :: tm fmt utc tuple (Int Int Int Int Int Int) => String
         (tm pad4 y) + "-" + (tm pad2 m) + "-" + (tm pad2 d) + "T" + (tm pad2 hh) + ":" + (tm pad2 mm) + ":" + (tm pad2 ss) + "Z"
 
 fn :: time format iso8601 Int       => String
-      time format iso8601 epoch_sec =  tm fmt utc tuple (time epoch to utc epoch_sec)
+      time format iso8601 epoch_sec =  epoch_sec time epoch to utc -> tm fmt utc tuple
 
 fn :: tm all digits String Int Int => Bool
       tm all digits s idx end_idx =
@@ -337,6 +367,33 @@ fn :: tm is sep at String Int Int Int => Bool
       tm is sep at s idx c1 c2 =
         ch = str char at s idx
         (ch == c1) or (ch == c2)
+
+fn :: tm parse iso8601 len String Int => Int
+      tm parse iso8601 len s n =
+        | n < 19 or n > 20                         = 0 - 1
+        | not (tm all digits s 0 4)                = 0 - 1
+        | (str char at s 4) != 45                  = 0 - 1
+        | not (tm all digits s 5 7)                = 0 - 1
+        | (str char at s 7) != 45                  = 0 - 1
+        | not (tm all digits s 8 10)               = 0 - 1
+        | not (tm is sep at s 10 84 32)            = 0 - 1
+        | not (tm all digits s 11 13)              = 0 - 1
+        | (str char at s 13) != 58                 = 0 - 1
+        | not (tm all digits s 14 16)              = 0 - 1
+        | (str char at s 16) != 58                 = 0 - 1
+        | not (tm all digits s 17 19)              = 0 - 1
+        | n == 20 and (str char at s 19) != 90     = 0 - 1
+        | otherwise =
+          y  = str to int (str slice s 0 4)
+          m  = str to int (str slice s 5 7)
+          d  = str to int (str slice s 8 10)
+          hh = str to int (str slice s 11 13)
+          mm = str to int (str slice s 14 16)
+          ss = str to int (str slice s 17 19)
+          time utc to epoch y m d hh mm ss
+
+fn :: time parse iso8601 String => Int
+      time parse iso8601 s      =  tm parse iso8601 len s (str len s)
 ```
 
 ### 18.4.4. Barne-inplementazioa: Human-Readable Duration & Exponential Backoff

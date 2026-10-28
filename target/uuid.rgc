@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: uuid
+
 fn :: uu hex lut Int => String
       uu hex lut _   =  "0123456789abcdef"
 
@@ -103,7 +105,7 @@ fn :: uu alloc page Int => Int
 
 fn :: uu free page Int Int Int => Int
       uu free page mfd ptr sz =
-        _ = sys close mfd
+        sys close mfd -> ()
         sys call 11 ptr sz 0 0 0 0
 
 fn :: uu alloc mfd => Int
@@ -111,8 +113,8 @@ fn :: uu alloc mfd => Int
 
 fn :: uu peek Int Int Int => String
       uu peek mfd ptr len =
-        _ = sys call 18 mfd ptr len 0 0 0
-        _ = sys call 8 mfd 0 0 0 0 0
+        sys call 18 mfd ptr len 0 0 0 -> ()
+        sys call 8 mfd 0 0 0 0 0 -> ()
         sys read fd mfd len
 
 fn :: uu decode u32 le String Int => Int
@@ -125,19 +127,19 @@ fn :: uu decode u32 le String Int => Int
 
 fn :: uu decode u64 le String Int => Int
       uu decode u64 le s off =
-        lo = uu decode u32 le s off
-        hi = uu decode u32 le s (off + 4)
+        uu decode u32 le s off -> lo
+        uu decode u32 le s (off + 4) -> hi
         lo + (hi * 4294967296)
 
 fn :: uu wall time ms => Int
       uu wall time ms =
-        ptr  = uu alloc page 4096
-        mfd  = uu alloc mfd
-        _    = sys call 228 0 ptr 0 0 0 0
-        raw  = uu peek mfd ptr 16
-        _    = uu free page mfd ptr 4096
-        sec  = uu decode u64 le raw 0
-        nsec = uu decode u64 le raw 8
+        uu alloc page 4096 -> ptr
+        uu alloc mfd -> mfd
+        sys call 228 0 ptr 0 0 0 0 -> ()
+        uu peek mfd ptr 16 -> raw
+        uu free page mfd ptr 4096 -> ()
+        uu decode u64 le raw 0 -> sec
+        uu decode u64 le raw 8 -> nsec
         (sec * 1000) + (nsec / 1000000)
 
 fn :: uu bytes to hex loop String Int Int => String
@@ -152,11 +154,11 @@ fn :: uu bytes to hex loop String Int Int => String
 
 fn :: uu random hex16 => String
       uu random hex16 =
-        ptr = uu alloc page 4096
-        mfd = uu alloc mfd
-        _   = sys call 318 ptr 16 0 0 0 0
-        raw = uu peek mfd ptr 16
-        _   = uu free page mfd ptr 4096
+        uu alloc page 4096 -> ptr
+        uu alloc mfd -> mfd
+        sys call 318 ptr 16 0 0 0 0 -> ()
+        uu peek mfd ptr 16 -> raw
+        uu free page mfd ptr 4096 -> ()
         uu bytes to hex loop raw 0 16
 
 fn :: uu hex val Int => Int

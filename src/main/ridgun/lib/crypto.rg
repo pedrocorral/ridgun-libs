@@ -1007,11 +1007,11 @@ fn :: u64 le8 Int => [Int]
 
 fn :: poly1305 aead mac [Int] [Int] [Int] => [Int]
       poly1305 aead mac otk aad_b ct_b =
-        alen  = c list len aad_b
-        clen  = c list len ct_b
-        msg   = aad_b :: (pad16 zeroes alen) :: ct_b :: (pad16 zeroes clen) :: (u64 le8 alen) :: (u64 le8 clen)
-        r     = poly1305 r limbs (poly1305 clamp r otk)
-        h_fin = poly1305 blocks loop [0, 0, 0, 0, 0] r msg
+        aad_b c list len -> alen
+        ct_b c list len -> clen
+        aad_b :: (pad16 zeroes alen) :: ct_b :: (pad16 zeroes clen) :: (u64 le8 alen) :: (u64 le8 clen) -> msg
+        otk poly1305 clamp r -> poly1305 r limbs -> r
+        poly1305 blocks loop [0, 0, 0, 0, 0] r msg -> h_fin
         poly1305 finalize h_fin otk
 
 -- @implements FR-CRYPTO-004
@@ -1034,7 +1034,7 @@ fn :: aead seal String String String String => String
 fn :: decrypt verified aead Bool [Int] [Int] [Int] => Int String
       decrypt verified aead False _ _ _ = (0 - 12, "")
       decrypt verified aead True key_bs nonce_bs ct_bs =
-        pt_bs = chacha20 bitxor loop key_bs nonce_bs 1 ct_bs [] [] [] 0
+        chacha20 bitxor loop key_bs nonce_bs 1 ct_bs [] [] [] 0 -> pt_bs
         (0, bytes from list pt_bs)
 
 -- @implements FR-CRYPTO-004

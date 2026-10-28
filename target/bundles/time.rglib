@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: time
+
 -- ── Leap Year, Month Length & Day of Week ────────────────────
 
 -- @implements FR-TIME-001
@@ -51,19 +53,19 @@ fn :: tm calc mp Int => Int
 
 fn :: tm days from civil Int Int Int => Int
       tm days from civil y m d =
-        y_adj = tm adj year y m
-        era   = tm calc era y_adj
-        yoe   = y_adj - (era * 400)
-        mp    = tm calc mp m
-        doy   = (((153 * mp) + 2) / 5) + d - 1
-        doe   = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy
+        tm adj year y m -> y_adj
+        y_adj tm calc era -> era
+        y_adj - (era * 400) -> yoe
+        m tm calc mp -> mp
+        (((153 * mp) + 2) / 5) + d - 1 -> doy
+        (yoe * 365) + (yoe / 4) - (yoe / 100) + doy -> doe
         (era * 146097) + doe - 719468
 
 -- @implements FR-TIME-001
 -- @implements API-TIME-001
 fn :: time day of week Int Int Int => Int
       time day of week year month day =
-        z = tm days from civil year month day
+        tm days from civil year month day -> z
         (((z + 4) % 7) + 7) % 7
 
 -- @implements FR-TIME-001
@@ -141,7 +143,7 @@ fn :: tm fmt utc tuple (Int Int Int Int Int Int) => String
 -- @implements FR-TIME-001
 -- @implements API-TIME-001
 fn :: time format iso8601 Int       => String
-      time format iso8601 epoch_sec =  tm fmt utc tuple (time epoch to utc epoch_sec)
+      time format iso8601 epoch_sec =  epoch_sec time epoch to utc -> tm fmt utc tuple
 
 fn :: tm all digits String Int Int => Bool
       tm all digits s idx end_idx =

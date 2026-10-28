@@ -158,7 +158,7 @@ fn :: cl first str [String] => String
 -- @implements FR-CLI-001
 -- @implements API-CLI-001
 fn :: cli subcommand [String] => String
-      cli subcommand args     =  cl first str (cli positionals args)
+      cli subcommand args     =  args cli positionals -> cl first str
 
 -- ── Typed Environment Variable Readers ───────────────────────
 
@@ -188,5 +188,6 @@ fn :: cl parse bool val String Bool => Bool
 -- @implements API-CLI-001
 fn :: env get bool or String Bool => Bool
       env get bool or key fallback =
-        raw = sys getenv key
-        cl parse bool val (cl trim lower loop raw 0 (str len raw)) fallback
+        key sys getenv -> raw
+        cl trim lower loop raw 0 (str len raw) -> norm
+        cl parse bool val norm fallback

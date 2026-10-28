@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: http
+
 import socket
 
 -- ── Internal String & Case Helpers ───────────────────────────
@@ -51,8 +53,9 @@ fn :: ht trim right String Int Int => Int
 
 fn :: ht trim String => String
       ht trim s      =
-        st = ht trim left s 0 (str len s)
-        en = ht trim right s st (str len s)
+        s str len -> len
+        ht trim left s 0 len -> st
+        ht trim right s st len -> en
         str slice s st en
 
 fn :: ht strip crlf loop String Int Int => String
@@ -110,12 +113,12 @@ fn :: ht finish uri String (String Int) (String String) => String String Int Str
 
 fn :: ht parse uri after scheme String String => String String Int String String
       ht parse uri after scheme scheme rem =
-        ap       = ht split auth rest rem (ht index of rem "/")
-        auth     = ht pair key ap
-        pq_raw   = ht pair val ap
-        def_port = ht default port scheme
-        hp       = ht split host port auth (ht index of auth ":") def_port
-        pq       = ht split path query pq_raw (ht index of pq_raw "?")
+        ht split auth rest rem (ht index of rem "/") -> ap
+        ap ht pair key -> auth
+        ap ht pair val -> pq_raw
+        scheme ht default port -> def_port
+        ht split host port auth (ht index of auth ":") def_port -> hp
+        ht split path query pq_raw (ht index of pq_raw "?") -> pq
         ht finish uri scheme hp pq
 
 fn :: ht parse uri at String Int => String String Int String String

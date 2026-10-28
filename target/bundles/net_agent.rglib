@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: net agent
+
 type ConnSlot = ConnSlot Int Agent
 
 type StepOutcome = ConnKeep ConnSlot String | ConnClosed
@@ -16,7 +18,7 @@ type StepOutcome = ConnKeep ConnSlot String | ConnClosed
 -- @implements API-AGENT-001
 fn :: conn poll step ConnSlot         => StepOutcome
       conn poll step (ConnSlot fd ag) =
-        ev = sys poll fd 1 0
+        sys poll fd 1 0 -> ev
         conn handle event fd ag ev
 
 -- @implements FR-AGENT-001
@@ -46,7 +48,7 @@ fn :: conn handle event Int Agent Int => StepOutcome
 fn :: conn feed payload Int Agent String => StepOutcome
       conn feed payload fd ag "" =
         -- EOF on socket: close descriptor and stop agent deterministically
-        _ = sys close fd
+        sys close fd -> ()
         stop ag
         ConnClosed
       conn feed payload fd ag data =
@@ -61,8 +63,8 @@ fn :: conn cast str A => String
 fn :: conn drain outbound Int Agent Option => StepOutcome
       conn drain outbound fd ag None = ConnKeep (ConnSlot fd ag) ""
       conn drain outbound fd ag (Some resp) =
-        s = conn cast str resp
-        _ = sys write fd fd s
+        resp conn cast str -> s
+        sys write fd fd s -> ()
         ConnKeep (ConnSlot fd ag) s
 
 -- Sweep an entire connection table, pruning closed connections and keeping active ones
@@ -71,7 +73,9 @@ fn :: conn drain outbound Int Agent Option => StepOutcome
 fn :: reactor sweep [ConnSlot]  => [ConnSlot]
       reactor sweep []          =  []
       reactor sweep (slot:rest) =
-        reactor sweep next (conn poll step slot) (reactor sweep rest)
+        slot conn poll step -> outcome
+        rest reactor sweep -> kept
+        reactor sweep next outcome kept
 
 -- @implements FR-AGENT-001
 -- @implements API-AGENT-001
@@ -85,6 +89,6 @@ fn :: reactor sweep next StepOutcome       [ConnSlot] => [ConnSlot]
 fn :: reactor shutdown [ConnSlot] => ()
       reactor shutdown []         =  ()
       reactor shutdown ((ConnSlot fd ag):rest) =
-        _ = sys close fd
+        sys close fd -> ()
         stop ag
         reactor shutdown rest

@@ -12,8 +12,8 @@ La lib **`posix`** implementa la **Capa d'Abstracció de Plataforma (PAL)** de 2
 
 En un ecosistema tradicional, resoldre les tasques del domini **`POSIX`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`posix`** (`src/main/ridgun/lib/posix.rg`) aborda el problema amb quatre principis innegociables:
 
-1. **Funcions totals i contractes explícits (`=>`)**: cap funció de `posix` llança excepcions ocultes ni depèn de `null`. Tot cas límit retorna un valor sentinella documentat o un tipus algebraic suma (`Option`, `Result`).
-2. **Zero codi C i zero `libc`**: tot el codi de `posix` compila directament a codi màquina natiu ELF64 verificat per `ridgunc`.
+1. **Declara `import posix` (o `import posix as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: posix` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
+2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
 3. **Recursió de cua amb TCO (*Tail-Call Optimization*)**: tots els recorreguts interns de `posix` es compilen a bucles natius en espai de pila $O(1)$.
 4. **Memòria determinista (`RMM1` / `RMM2`)**: cada estructura intermèdia s'allibera en l'instant exacte en què acaba la seva última lectura, sense *Garbage Collector*.
 
@@ -29,7 +29,7 @@ A `ridgun-libs`, **`posix`** és una **lib** de primera classe situada a `src/ma
 | **Fitxer compilat** | `target/posix.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libposix.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
-> Per fer servir aquesta lib en qualsevol fitxer `.rg`, n'hi ha prou de declarar `import posix` a la capçalera i cridar les seves funcions amb espais o guions baixos indistintament.
+> Cada lib declara el seu propi espai de noms amb `module :: posix`: n'hi ha prou d'escriure `import posix` (o `import posix as alias`) a la capçalera i cridar les seves funcions amb espais naturals (`la meva funcio x`) i canonades `->` (`x la meva funcio -> resultat`).
 
 ### 22.2.1. Resum de famílies funcionals de `posix`
 
@@ -43,7 +43,7 @@ A `ridgun-libs`, **`posix`** és una **lib** de primera classe situada a `src/ma
 
 ### 22.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/posix.rg`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/posix.rg` (`2` tipus, `0` operadors i `92` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/posix.rg` (`2` tipus, `0` operadors i `103` funcions):
 
 **Tipus algebraics i registres (`type`) de `posix`:**
 
@@ -160,12 +160,12 @@ Observa com en Ridgun els signes `=` i els passos de transformació amb `posix` 
 ```ridgun
 import posix
 
-fn :: medir operacion () => (Int, Int)
+fn :: medir operacion => Int Int
       medir operacion =
-        t0  = clock monotonic ms
-        rnd = len (sys random bytes 32)
-        t1  = clock monotonic ms
-        (rnd, t1 - t0)
+        clock monotonic ms -> t0
+        sys random bytes 32 -> (+ _) -> rc
+        clock monotonic ms -> t1
+        (rc, t1 - t0)
 ```
 
 ### 22.3.2. Exemple 2: Composició segura i gestió de casos de vora
@@ -175,10 +175,9 @@ Tota funció de la lib `posix` està dissenyada per compondre's amb guardes bool
 ```ridgun
 import posix
 
-fn :: esperar lectura (fd : Int) => Bool
+fn :: esperar lectura Int => PollStatus
       esperar lectura fd =
-        est = wait fd fd poll_in 100
-        est == PollReady
+        wait fd fd (poll in) 100
 ```
 
 ### 22.3.3. Exemple 3: Constants POSIX (`O_*`, `POLL*`, `SIG*`), validació de rutes segures, canonades anònimes (`sys pipe`) i sondeig `sys poll status`
@@ -188,35 +187,35 @@ En aquest exemple pràctic explorem de manera exhaustiva com es comporta `posix`
 ```ridgun
 fn :: test posix constants descriptors and poll => ()
       test posix constants descriptors and poll =
-        _       = assert equals (poll in) 1 "POLLIN == 1"
-        _       = assert equals poll_out 4 "POLLOUT == 4"
-        _       = assert equals (poll err) 8 "POLLERR == 8"
-        _       = assert equals (sig int) 2 "SIGINT == 2"
-        _       = assert equals (sig kill) 9 "SIGKILL == 9"
-        _       = assert equals (sig term) 15 "SIGTERM == 15"
-        _       = assert equals (o rdonly) 0 "O_RDONLY == 0"
-        _       = assert equals (o wronly) 1 "O_WRONLY == 1"
-        _       = assert equals (o rdwr) 2 "O_RDWR == 2"
-        _       = assert equals (o creat) 64 "O_CREAT == 64"
-        _       = assert equals (o trunc) 512 "O_TRUNC == 512"
-        _       = assert equals (o append) 1024 "O_APPEND == 1024"
-        _       = assert equals (o nonblock) 2048 "O_NONBLOCK == 2048"
-        _       = assert equals (o cloexec) 524288 "O_CLOEXEC == 524288"
+        assert equals (poll in) 1 "POLLIN == 1"
+        assert equals poll out 4 "POLLOUT == 4"
+        assert equals (poll err) 8 "POLLERR == 8"
+        assert equals (sig int) 2 "SIGINT == 2"
+        assert equals (sig kill) 9 "SIGKILL == 9"
+        assert equals (sig term) 15 "SIGTERM == 15"
+        assert equals (o rdonly) 0 "O_RDONLY == 0"
+        assert equals (o wronly) 1 "O_WRONLY == 1"
+        assert equals (o rdwr) 2 "O_RDWR == 2"
+        assert equals (o creat) 64 "O_CREAT == 64"
+        assert equals (o trunc) 512 "O_TRUNC == 512"
+        assert equals (o append) 1024 "O_APPEND == 1024"
+        assert equals (o nonblock) 2048 "O_NONBLOCK == 2048"
+        assert equals (o cloexec) 524288 "O_CLOEXEC == 524288"
         bad_p   = wait fd (0 - 1) (poll in) 10
-        _       = assert true (is poll error bad_p) "wait fd on -1 returns PollError"
+        assert true (is poll error bad_p) "wait fd on -1 returns PollError"
         p_res   = posix pipe
-        _       = assert equals (tuple3 status p_res) 0 "posix pipe status == 0"
+        assert equals (tuple3 status p_res) 0 "posix pipe status == 0"
         rfd     = tuple3 rfd p_res
         wfd     = tuple3 wfd p_res
         p_to    = wait fd rfd (poll in) 20
-        _       = assert true (is poll timeout p_to) "wait fd on empty pipe times out"
+        assert true (is poll timeout p_to) "wait fd on empty pipe times out"
         written = posix write wfd "hello-posix"
-        _       = assert equals written 11 "posix write 11 bytes"
+        assert equals written 11 "posix write 11 bytes"
         p_rdy   = wait fd rfd (poll in) 100
-        _       = assert true (is poll ready p_rdy) "wait fd after write is PollReady"
+        assert true (is poll ready p_rdy) "wait fd after write is PollReady"
         got     = posix read rfd 64
-        _       = assert equals got "hello-posix" "posix read matches written payload"
-        _       = assert equals (posix close rfd) 0 "posix close rfd"
+        assert equals got "hello-posix" "posix read matches written payload"
+        assert equals (posix close rfd) 0 "posix close rfd"
         assert equals (posix close wfd) 0 "posix close wfd"
 ```
 
@@ -231,68 +230,68 @@ fn :: test posix filesystem clocks signals and random => ()
         f1      = "{dir_p}/a.txt"
         f2      = "{dir_p}/b.txt"
         lnk     = "{dir_p}/sym.txt"
-        _       = sys rmdir dir_p
-        _       = assert true (posix mkdir dir_p) "posix mkdir"
-        _       = write file f1 "payload"
-        _       = assert true (posix chmod f1 420) "posix chmod 0644"
-        _       = assert true (sys rename f1 f2) "sys rename a.txt -> b.txt"
-        _       = assert true (sys symlink f2 lnk) "sys symlink"
-        _       = assert equals (sys readlink lnk) f2 "sys readlink target"
-        _       = assert true (sys unlink lnk) "sys unlink symlink"
-        _       = assert true (sys unlink f2) "sys unlink b.txt"
-        _       = assert true (sys rmdir dir_p) "sys rmdir"
-        _       = assert true ((sys getpid) > 0) "sys_getpid > 0"
-        _       = assert true ((str len (sys getcwd)) > 0) "sys_getcwd non-empty"
+        sys rmdir dir_p -> ()
+        assert true (posix mkdir dir_p) "posix mkdir"
+        write file f1 "payload"
+        assert true (posix chmod f1 420) "posix chmod 0644"
+        assert true (sys rename f1 f2) "sys rename a.txt -> b.txt"
+        assert true (sys symlink f2 lnk) "sys symlink"
+        assert equals (sys readlink lnk) f2 "sys readlink target"
+        assert true (sys unlink lnk) "sys unlink symlink"
+        assert true (sys unlink f2) "sys unlink b.txt"
+        assert true (sys rmdir dir_p) "sys rmdir"
+        assert true ((sys getpid) > 0) "sys_getpid > 0"
+        assert true ((str len (sys getcwd)) > 0) "sys_getcwd non-empty"
         t1      = sys monotonic ms
         n1      = sys monotonic ns
         w1      = sys wall time ms
-        _       = sys sleep ms 25
+        sys sleep ms 25 -> ()
         t2      = sys monotonic ms
         n2      = sys monotonic ns
         w2      = sys wall time ms
-        _       = assert true ((t2 - t1) >= 20) "monotonic ms elapsed >= 20"
-        _       = assert true (n2 > n1) "monotonic ns non-decreasing"
-        _       = assert true ((n2 - n1) >= 20000000) "monotonic ns elapsed >= 20ms (20,000,000 ns)"
-        _       = assert true (w1 > 1700000000000) "wall time > 1700000000000"
+        assert true ((t2 - t1) >= 20) "monotonic ms elapsed >= 20"
+        assert true (n2 > n1) "monotonic ns non-decreasing"
+        assert true ((n2 - n1) >= 20000000) "monotonic ns elapsed >= 20ms (20,000,000 ns)"
+        assert true (w1 > 1700000000000) "wall time > 1700000000000"
         k_sec   = sys call 201 0 0 0 0 0 0
         w_sec   = w2 / 1000
-        _       = assert true (((w_sec - k_sec) <= 2) and ((k_sec - w_sec) <= 2)) "sys_wall_time_ms matches kernel time(0) within 2s"
-        _       = assert true ((w2 - w1) >= 20) "wall time ms elapsed >= 20"
+        assert true (((w_sec - k_sec) <= 2) and ((k_sec - w_sec) <= 2)) "sys_wall_time_ms matches kernel time(0) within 2s"
+        assert true ((w2 - w1) >= 20) "wall time ms elapsed >= 20"
         sw_bad  = sys signal watch [9]
-        _       = assert equals (pair fst sw_bad) (0 - 7) "SIGKILL watch rejected with -7"
+        assert equals (pair fst sw_bad) (0 - 7) "SIGKILL watch rejected with -7"
         sw_ok   = sys signal watch [sig term]
-        _       = assert equals (pair fst sw_ok) 0 "SIGTERM watch ok"
+        assert equals (pair fst sw_ok) 0 "SIGTERM watch ok"
         sh      = pair snd sw_ok
-        _       = assert true ((sys call 72 sh 1 0 0 0 0) >= 0) "signalfd handle is real kernel fd"
-        _       = assert equals (sys kill (sys getpid) (sig term)) 0 "real kernel sys_kill SIGTERM does not kill process"
+        assert true ((sys call 72 sh 1 0 0 0 0) >= 0) "signalfd handle is real kernel fd"
+        assert equals (sys kill (sys getpid) (sig term)) 0 "real kernel sys_kill SIGTERM does not kill process"
         sw_got  = sys signal wait sh 100
-        _       = assert equals (pair fst sw_got) 0 "sys_signal_wait status 0 after real sys_kill"
-        _       = assert equals (pair snd sw_got) (sig term) "sys_signal_wait got real SIGTERM (15)"
-        _       = assert equals (posix notify signal (sys getpid) (sig term)) 0 "notify signal"
+        assert equals (pair fst sw_got) 0 "sys_signal_wait status 0 after real sys_kill"
+        assert equals (pair snd sw_got) (sig term) "sys_signal_wait got real SIGTERM (15)"
+        assert equals (posix notify signal (sys getpid) (sig term)) 0 "notify signal"
         sw_got2 = sys signal wait sh 100
-        _       = assert equals (pair fst sw_got2) 0 "sys_signal_wait status 0"
-        _       = assert equals (pair snd sw_got2) (sig term) "sys_signal_wait got SIGTERM"
+        assert equals (pair fst sw_got2) 0 "sys_signal_wait status 0"
+        assert equals (pair snd sw_got2) (sig term) "sys_signal_wait got SIGTERM"
         sw_to   = sys signal wait sh 20
-        _       = assert equals (pair fst sw_to) (0 - 2) "second sys_signal_wait times out (-2)"
-        _       = assert equals (posix close sh) 0 "posix close signalfd"
-        _       = assert equals (pair fst (sys signal wait sh 10)) (0 - 7) "sys_signal_wait on closed fd -> -7"
+        assert equals (pair fst sw_to) (0 - 2) "second sys_signal_wait times out (-2)"
+        assert equals (posix close sh) 0 "posix close signalfd"
+        assert equals (pair fst (sys signal wait sh 10)) (0 - 7) "sys_signal_wait on closed fd -> -7"
         r_bad   = sys random bytes (0 - 1)
-        _       = assert equals (pair fst r_bad) (0 - 7) "negative random bytes -> -7"
+        assert equals (pair fst r_bad) (0 - 7) "negative random bytes -> -7"
         r_zero  = sys random bytes 0
-        _       = assert equals (pair fst r_zero) 0 "0 random bytes -> 0"
-        _       = assert equals (pair snd r_zero) "" "0 random bytes -> empty"
+        assert equals (pair fst r_zero) 0 "0 random bytes -> 0"
+        assert equals (pair snd r_zero) "" "0 random bytes -> empty"
         r1      = sys random bytes 32
         r2      = sys random bytes 32
         rl      = sys random bytes list 256
-        _       = assert equals (pair fst r1) 0 "random 32 status 0"
-        _       = assert equals (str len (pair snd r1)) 32 "random 32 length == 32"
-        _       = assert equals (pair fst rl) 0 "random list 256 status 0"
-        _       = assert equals (path separator Linux) "/" "path separator Linux"
-        _       = assert equals (path separator Windows) "\\" "path separator Windows"
-        _       = assert equals (null device for Linux) "/dev/null" "null device Linux"
-        _       = assert equals (null device for Windows) "NUL" "null device Windows"
-        _       = assert true (process exists (sys getpid)) "process exists self"
-        _       = assert false (process exists 99999999) "process exists non-existent pid"
+        assert equals (pair fst r1) 0 "random 32 status 0"
+        assert equals (str len (pair snd r1)) 32 "random 32 length == 32"
+        assert equals (pair fst rl) 0 "random list 256 status 0"
+        assert equals (path separator Linux) "/" "path separator Linux"
+        assert equals (path separator Windows) "\\" "path separator Windows"
+        assert equals (null device for Linux) "/dev/null" "null device Linux"
+        assert equals (null device for Windows) "NUL" "null device Windows"
+        assert true (process exists (sys getpid)) "process exists self"
+        assert false (process exists 99999999) "process exists non-existent pid"
         assert false ((pair snd r1) == (pair snd r2)) "two 32-byte random draws differ"
 ```
 
@@ -307,11 +306,11 @@ fn :: medir latencia tuberia => (Int, Int)
       medir latencia tuberia =
         t0             = sys monotonic ns
         (rc, rfd, wfd) = sys pipe
-        _              = sys write fd wfd "ping"
+        sys write fd wfd "ping" -> ()
         listo          = sys poll rfd (poll in) 50
         leido          = sys read fd rfd 4
-        _              = sys close rfd
-        _              = sys close wfd
+        sys close rfd -> ()
+        sys close wfd -> ()
         t1             = sys monotonic ns
         (rc + listo + (str len leido), t1 - t0)
 ```
@@ -327,6 +326,8 @@ Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C
 Fixa't en com `posix.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
+module :: posix
+
 type PollStatus = PollReady Int | PollTimeout | PollError Int
 
 type ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int
@@ -408,6 +409,21 @@ fn :: sys unlink String => Bool
       sys unlink path   =
         | not (is safe posix path path) = False
         | otherwise                     = (px syscall1 path 87 path) == 0
+
+fn :: sys rename String String   => Bool
+      sys rename old_p  new_path =
+        | not (is safe posix path old_p) or not (is safe posix path new_path) = False
+        | otherwise = (px syscall2 path 82 old_p new_path) == 0
+
+fn :: sys symlink String String    => Bool
+      sys symlink target link_path =
+        | not (is safe posix path target) or not (is safe posix path link_path) = False
+        | otherwise = (px syscall2 path 88 target link_path) == 0
+
+fn :: sys readlink String => String
+      sys readlink path   =
+        | not (is safe posix path path) = ""
+        | otherwise                     = lstat symlink target (file lstat path)
 ```
 
 ### 22.4.4. Implementació interna: Ridgun v0.9.5 Target OS / Arch & Process Probe Helpers

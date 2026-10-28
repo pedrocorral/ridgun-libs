@@ -90,14 +90,14 @@ fn :: ws drop [Int] Int => [Int]
 fn :: ws str to bytes loop String Int Int [Int] => [Int]
       ws str to bytes loop s pos len acc =
         | pos >= len = acc
-        | otherwise = ws str to bytes loop s (pos + 1) len (acc :: [((str_char_at s pos) % 256 + 256) % 256])
+        | otherwise = ws str to bytes loop s (pos + 1) len (acc :: [((str char at s pos) % 256 + 256) % 256])
 
 fn :: ws str to bytes String => [Int]
-      ws str to bytes s = ws str to bytes loop s 0 (str_len s) []
+      ws str to bytes s = ws str to bytes loop s 0 (str len s) []
 
 fn :: ws bytes to str [Int] => String
       ws bytes to str [] = ""
-      ws bytes to str (b:rest) = (char_from_code b) + (ws bytes to str rest)
+      ws bytes to str (b:rest) = (char from code b) + (ws bytes to str rest)
 
 -- ── Pure-Ridgun SHA-1 & Base64 for RFC 6455 Handshake ────────
 
@@ -190,38 +190,39 @@ fn :: ws b64 lut Int => String
 
 fn :: ws b64 c Int => String
       ws b64 c idx =
-        tbl = ws b64 lut 0
-        i = ((idx % 64) + 64) % 64
-        str_slice tbl i (i + 1)
+        ws b64 lut 0 -> tbl
+        ((idx % 64) + 64) % 64 -> i
+        str slice tbl i (i + 1)
 
 fn :: ws b64 enc [Int] => String
       ws b64 enc [] = ""
       ws b64 enc (b0:[]) = (ws b64 c (b0 / 4)) + (ws b64 c ((b0 % 4) * 16)) + "=="
       ws b64 enc (b0:b1:[]) =
-        n = (b0 * 256) + b1
+        (b0 * 256) + b1 -> n
         (ws b64 c (n / 1024)) + (ws b64 c ((n / 16) % 64)) + (ws b64 c ((n % 16) * 4)) + "="
       ws b64 enc (b0:b1:b2:rs) =
-        n = (b0 * 65536) + (b1 * 256) + b2
+        (b0 * 65536) + (b1 * 256) + b2 -> n
         (ws b64 c (n / 262144)) + (ws b64 c ((n / 4096) % 64)) + (ws b64 c ((n / 64) % 64)) + (ws b64 c (n % 64)) + (ws b64 enc rs)
 
 -- @implements FR-WS-001
 -- @implements API-WS-001
 fn :: ws accept key String => String
-      ws accept key client_key = ws b64 enc (ws sha1 bytes (client_key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
+      ws accept key client_key =
+        (client_key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11") -> ws sha1 bytes -> ws b64 enc
 
 -- @implements FR-WS-001
 -- @implements API-WS-001
 fn :: ws build upgrade request String String String => String
       ws build upgrade request host path client_key =
-        crlf = (char_from_code 13) + (char_from_code 10)
+        (char from code 13) + (char from code 10) -> crlf
         "GET " + path + " HTTP/1.1" + crlf + "Host: " + host + crlf + "Upgrade: websocket" + crlf + "Connection: Upgrade" + crlf + "Sec-WebSocket-Key: " + client_key + crlf + "Sec-WebSocket-Version: 13" + crlf + crlf
 
 -- @implements FR-WS-001
 -- @implements API-WS-001
 fn :: ws build upgrade response String => String
       ws build upgrade response client_key =
-        crlf = (char_from_code 13) + (char_from_code 10)
-        accept = ws accept key client_key
+        (char from code 13) + (char from code 10) -> crlf
+        client_key ws accept key -> accept
         "HTTP/1.1 101 Switching Protocols" + crlf + "Upgrade: websocket" + crlf + "Connection: Upgrade" + crlf + "Sec-WebSocket-Accept: " + accept + crlf + crlf
 
 -- ── RFC 6455 XOR Masking & Frame Encoding / Decoding ─────────

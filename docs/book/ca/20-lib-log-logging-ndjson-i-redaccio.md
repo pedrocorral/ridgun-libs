@@ -12,8 +12,8 @@ La lib **`log`** proporciona filtratge per severitat (`DEBUG`, `INFO`, `WARN`, `
 
 En un ecosistema tradicional, resoldre les tasques del domini **`LOG`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`log`** (`src/main/ridgun/lib/log.rg`) aborda el problema amb quatre principis innegociables:
 
-1. **Funcions totals i contractes explícits (`=>`)**: cap funció de `log` llança excepcions ocultes ni depèn de `null`. Tot cas límit retorna un valor sentinella documentat o un tipus algebraic suma (`Option`, `Result`).
-2. **Zero codi C i zero `libc`**: tot el codi de `log` compila directament a codi màquina natiu ELF64 verificat per `ridgunc`.
+1. **Declara `import log` (o `import log as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: log` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
+2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
 3. **Recursió de cua amb TCO (*Tail-Call Optimization*)**: tots els recorreguts interns de `log` es compilen a bucles natius en espai de pila $O(1)$.
 4. **Memòria determinista (`RMM1` / `RMM2`)**: cada estructura intermèdia s'allibera en l'instant exacte en què acaba la seva última lectura, sense *Garbage Collector*.
 
@@ -29,7 +29,7 @@ A `ridgun-libs`, **`log`** és una **lib** de primera classe situada a `src/main
 | **Fitxer compilat** | `target/log.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/liblog.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
-> Per fer servir aquesta lib en qualsevol fitxer `.rg`, n'hi ha prou de declarar `import log` a la capçalera i cridar les seves funcions amb espais o guions baixos indistintament.
+> Cada lib declara el seu propi espai de noms amb `module :: log`: n'hi ha prou d'escriure `import log` (o `import log as alias`) a la capçalera i cridar les seves funcions amb espais naturals (`la meva funcio x`) i canonades `->` (`x la meva funcio -> resultat`).
 
 ### 20.2.1. Resum de famílies funcionals de `log`
 
@@ -80,9 +80,9 @@ Observa com en Ridgun els signes `=` i els passos de transformació amb `log` qu
 ```ridgun
 import log
 
-fn :: auditar login (usuario : String) (clave : String) => String
+fn :: auditar login String String => String
       auditar login usuario clave =
-        campos = [("user", usuario), ("password", clave), ("ip", "10.0.0.1")]
+        [("user", usuario), ("password", clave), ("ip", "10.0.0.1")] -> campos
         log format json "INFO" "intento de acceso" campos
 ```
 
@@ -93,7 +93,7 @@ Tota funció de la lib `log` està dissenyada per compondre's amb guardes boolea
 ```ridgun
 import log
 
-fn :: emitir si procede (umbral : String) (nivel : String) (msg : String) => String
+fn :: emitir si procede String String String => String
       emitir si procede umbral nivel msg =
         | log should emit umbral nivel = log format text nivel msg [("service", "solstice")]
         | otherwise                    = ""
@@ -106,28 +106,28 @@ En aquest exemple pràctic explorem de manera exhaustiva com es comporta `log` e
 ```ridgun
 fn :: test log levels and filtering => ()
       test log levels and filtering =
-        _ = assert int equals (log level rank "debug") 10 "AC1: rank debug == 10"
-        _ = assert int equals (log level rank "DEBUG") 10 "AC1: rank DEBUG == 10"
-        _ = assert int equals (log level rank "info") 20 "AC1: rank info == 20"
-        _ = assert int equals (log level rank "INFO") 20 "AC1: rank INFO == 20"
-        _ = assert int equals (log level rank "warn") 30 "AC1: rank warn == 30"
-        _ = assert int equals (log level rank "warning") 30 "AC1: rank warning alias == 30"
-        _ = assert int equals (log level rank "error") 40 "AC1: rank error == 40"
-        _ = assert int equals (log level rank "ERR") 40 "AC1: rank ERR alias == 40"
-        _ = assert int equals (log level rank "unknown_level") 20 "AC1: unknown level defaults to INFO (20)"
+        assert int equals (log level rank "debug") 10 "AC1: rank debug == 10"
+        assert int equals (log level rank "DEBUG") 10 "AC1: rank DEBUG == 10"
+        assert int equals (log level rank "info") 20 "AC1: rank info == 20"
+        assert int equals (log level rank "INFO") 20 "AC1: rank INFO == 20"
+        assert int equals (log level rank "warn") 30 "AC1: rank warn == 30"
+        assert int equals (log level rank "warning") 30 "AC1: rank warning alias == 30"
+        assert int equals (log level rank "error") 40 "AC1: rank error == 40"
+        assert int equals (log level rank "ERR") 40 "AC1: rank ERR alias == 40"
+        assert int equals (log level rank "unknown_level") 20 "AC1: unknown level defaults to INFO (20)"
 
-        _ = assert str eq (log level name 10) "DEBUG" "AC1: level name 10 -> DEBUG"
-        _ = assert str eq (log level name 20) "INFO" "AC1: level name 20 -> INFO"
-        _ = assert str eq (log level name 30) "WARN" "AC1: level name 30 -> WARN"
-        _ = assert str eq (log level name 40) "ERROR" "AC1: level name 40 -> ERROR"
+        assert str eq (log level name 10) "DEBUG" "AC1: level name 10 -> DEBUG"
+        assert str eq (log level name 20) "INFO" "AC1: level name 20 -> INFO"
+        assert str eq (log level name 30) "WARN" "AC1: level name 30 -> WARN"
+        assert str eq (log level name 40) "ERROR" "AC1: level name 40 -> ERROR"
 
-        _ = assert true (log should emit "DEBUG" "DEBUG") "AC1: DEBUG emits DEBUG"
-        _ = assert true (log should emit "DEBUG" "ERROR") "AC1: DEBUG emits ERROR"
-        _ = assert true (log should emit "WARN" "ERROR") "AC1: WARN emits ERROR"
-        _ = assert true (log should emit "WARN" "warning") "AC1: WARN emits warning"
-        _ = assert false (log should emit "WARN" "INFO") "AC1: WARN suppresses INFO"
-        _ = assert false (log should emit "ERROR" "WARN") "AC1: ERROR suppresses WARN"
-        _ = assert false (log should emit "ERROR" "DEBUG") "AC1: ERROR suppresses DEBUG"
+        assert true (log should emit "DEBUG" "DEBUG") "AC1: DEBUG emits DEBUG"
+        assert true (log should emit "DEBUG" "ERROR") "AC1: DEBUG emits ERROR"
+        assert true (log should emit "WARN" "ERROR") "AC1: WARN emits ERROR"
+        assert true (log should emit "WARN" "warning") "AC1: WARN emits warning"
+        assert false (log should emit "WARN" "INFO") "AC1: WARN suppresses INFO"
+        assert false (log should emit "ERROR" "WARN") "AC1: ERROR suppresses WARN"
+        assert false (log should emit "ERROR" "DEBUG") "AC1: ERROR suppresses DEBUG"
         ()
 ```
 
@@ -138,20 +138,20 @@ En aquest exemple pràctic explorem de manera exhaustiva com es comporta `log` e
 ```ridgun
 fn :: test log sensitive key redaction => ()
       test log sensitive key redaction =
-        _ = assert true (log is sensitive key "password") "AC2: password"
-        _ = assert true (log is sensitive key "user_passwd") "AC2: user_passwd"
-        _ = assert true (log is sensitive key "CLIENT_SECRET") "AC2: CLIENT_SECRET"
-        _ = assert true (log is sensitive key "access_token") "AC2: access_token"
-        _ = assert true (log is sensitive key "X-Api-Key") "AC2: X-Api-Key"
-        _ = assert true (log is sensitive key "api_key_id") "AC2: api_key_id"
-        _ = assert true (log is sensitive key "apikey") "AC2: apikey"
-        _ = assert true (log is sensitive key "Authorization") "AC2: Authorization"
-        _ = assert true (log is sensitive key "session_cookie") "AC2: session_cookie"
-        _ = assert true (log is sensitive key "ssh_private_key") "AC2: ssh_private_key"
-        _ = assert true (log is sensitive key "private-key-pem") "AC2: private-key-pem"
-        _ = assert false (log is sensitive key "username") "AC2: username safe"
-        _ = assert false (log is sensitive key "request_id") "AC2: request_id safe"
-        _ = assert false (log is sensitive key "status_code") "AC2: status_code safe"
+        assert true (log is sensitive key "password") "AC2: password"
+        assert true (log is sensitive key "user_passwd") "AC2: user_passwd"
+        assert true (log is sensitive key "CLIENT_SECRET") "AC2: CLIENT_SECRET"
+        assert true (log is sensitive key "access_token") "AC2: access_token"
+        assert true (log is sensitive key "X-Api-Key") "AC2: X-Api-Key"
+        assert true (log is sensitive key "api_key_id") "AC2: api_key_id"
+        assert true (log is sensitive key "apikey") "AC2: apikey"
+        assert true (log is sensitive key "Authorization") "AC2: Authorization"
+        assert true (log is sensitive key "session_cookie") "AC2: session_cookie"
+        assert true (log is sensitive key "ssh_private_key") "AC2: ssh_private_key"
+        assert true (log is sensitive key "private-key-pem") "AC2: private-key-pem"
+        assert false (log is sensitive key "username") "AC2: username safe"
+        assert false (log is sensitive key "request_id") "AC2: request_id safe"
+        assert false (log is sensitive key "status_code") "AC2: status_code safe"
         ()
 ```
 
@@ -164,18 +164,18 @@ fn :: test log text and ndjson formatting => ()
       test log text and ndjson formatting =
         fields = [("user", "alice"), ("password", "s3cr3t"), ("auth_token", "jwt-123"), ("cookie", "sid=99")]
         txt = log format text "info" "user login" fields
-        _ = assert str eq txt "[INFO] user login user=alice password=[REDACTED] auth_token=[REDACTED] cookie=[REDACTED]" "AC3: log format text redacts all secret keys"
+        assert str eq txt "[INFO] user login user=alice password=[REDACTED] auth_token=[REDACTED] cookie=[REDACTED]" "AC3: log format text redacts all secret keys"
 
         txt_empty = log format text "error" "disk full" []
-        _ = assert str eq txt_empty "[ERROR] disk full" "AC3: log format text with empty fields"
+        assert str eq txt_empty "[ERROR] disk full" "AC3: log format text with empty fields"
 
         -- Log injection defense: newlines, carriage returns, tabs, quotes, and backslashes in msg or values
         inj_fields = [("path", "C:\\app\\bin"), ("note", "line1\nline2\r\t\"quoted\"")]
         jsn = log format json "warn" "auth check\nforged_line" fields
-        _ = assert str eq jsn "{\"level\":\"WARN\",\"msg\":\"auth check\\nforged_line\",\"user\":\"alice\",\"password\":\"[REDACTED]\",\"auth_token\":\"[REDACTED]\",\"cookie\":\"[REDACTED]\"}" "AC3: NDJSON escapes newline injection and redacts secrets"
+        assert str eq jsn "{\"level\":\"WARN\",\"msg\":\"auth check\\nforged_line\",\"user\":\"alice\",\"password\":\"[REDACTED]\",\"auth_token\":\"[REDACTED]\",\"cookie\":\"[REDACTED]\"}" "AC3: NDJSON escapes newline injection and redacts secrets"
 
         jsn_esc = log format json "debug" "trace" inj_fields
-        _ = assert str eq jsn_esc "{\"level\":\"DEBUG\",\"msg\":\"trace\",\"path\":\"C:\\\\app\\\\bin\",\"note\":\"line1\\nline2\\r\\t\\\"quoted\\\"\"}" "AC3: NDJSON escapes \\, \\n, \\r, \\t, and \\\""
+        assert str eq jsn_esc "{\"level\":\"DEBUG\",\"msg\":\"trace\",\"path\":\"C:\\\\app\\\\bin\",\"note\":\"line1\\nline2\\r\\t\\\"quoted\\\"\"}" "AC3: NDJSON escapes \\, \\n, \\r, \\t, and \\\""
         ()
 ```
 
@@ -190,6 +190,8 @@ Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C
 Fixa't en com `log.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
+module :: log
+
 fn :: lg rank from lower String => Int
       lg rank from lower lv     =
         | lv == "debug"                       = 10
@@ -199,7 +201,7 @@ fn :: lg rank from lower String => Int
         | otherwise                           = 20
 
 fn :: log level rank String => Int
-      log level rank level  =  lg rank from lower (lg to lower level)
+      log level rank level  =  level lg to lower -> lg rank from lower
 
 fn :: log level name Int  => String
       log level name rank =
@@ -228,7 +230,7 @@ fn :: lg check sens lower String => Bool
         | otherwise                                                    = False
 
 fn :: log is sensitive key String => Bool
-      log is sensitive key key    =  lg check sens lower (lg to lower key)
+      log is sensitive key key    =  key lg to lower -> lg check sens lower
 
 fn :: lg pair key (String String) => String
       lg pair key (k, _)          =  k
@@ -278,9 +280,9 @@ fn :: lg fmt text fields [String String] => String
 
 fn :: log format text String String [String String] => String
       log format text level msg fields =
-        norm_lv = log level name (log level rank level)
-        safe_f  = log redact fields fields
-        "[" + norm_lv + "] " + (lg esc str msg) + (lg fmt text fields safe_f)
+        level log level rank -> log level name -> norm_lv
+        fields log redact fields -> lg fmt text fields -> fmt_f
+        "[" + norm_lv + "] " + (lg esc str msg) + fmt_f
 
 fn :: lg fmt json fields [String String] => String
       lg fmt json fields []              =  ""
@@ -289,9 +291,9 @@ fn :: lg fmt json fields [String String] => String
 
 fn :: log format json String String [String String] => String
       log format json level msg fields =
-        norm_lv = log level name (log level rank level)
-        safe_f  = log redact fields fields
-        "{\"level\":" + (lg quote norm_lv) + ",\"msg\":" + (lg quote msg) + (lg fmt json fields safe_f) + "}"
+        level log level rank -> log level name -> norm_lv
+        fields log redact fields -> lg fmt json fields -> fmt_f
+        "{\"level\":" + (lg quote norm_lv) + ",\"msg\":" + (lg quote msg) + fmt_f + "}"
 ```
 
 ---

@@ -10,6 +10,8 @@
 -- Pango Markup, LaTeX Verbatim, and RTF.
 -- ============================================================
 
+module :: fmt
+
 type FmtTarget = FmtPlain | FmtTty | FmtTrueColor | FmtHtmlInline | FmtHtmlCss | FmtMarkdown | FmtPango | FmtLatex | FmtRtf
 
 type FmtTheme = FmtThemeNone | FmtThemeDark | FmtThemeLight
@@ -66,29 +68,29 @@ fn :: fmt is hspace Int => Bool
 fn :: fmt leading indent loop String Int Int => Int
       fmt leading indent loop s pos len =
         | pos >= len = len
-        | (str_char_at s pos) == 32 or (str_char_at s pos) == 9 = fmt leading indent loop s (pos + 1) len
+        | (str char at s pos) == 32 or (str char at s pos) == 9 = fmt leading indent loop s (pos + 1) len
         | otherwise = pos
 
 fn :: fmt leading indent String => Int
-      fmt leading indent s = fmt leading indent loop s 0 (str_len s)
+      fmt leading indent s = fmt leading indent loop s 0 (str len s)
 
 fn :: fmt trim left loop String Int Int => String
       fmt trim left loop s pos len =
         | pos >= len = ""
-        | fmt is hspace (str_char_at s pos) = fmt trim left loop s (pos + 1) len
-        | otherwise = str_slice s pos len
+        | fmt is hspace (str char at s pos) = fmt trim left loop s (pos + 1) len
+        | otherwise = str slice s pos len
 
 fn :: fmt trim left String => String
-      fmt trim left s = fmt trim left loop s 0 (str_len s)
+      fmt trim left s = fmt trim left loop s 0 (str len s)
 
 fn :: fmt trim right loop String Int => String
       fmt trim right loop s end_pos =
         | end_pos <= 0 = ""
-        | fmt is hspace (str_char_at s (end_pos - 1)) = fmt trim right loop s (end_pos - 1)
-        | otherwise = str_slice s 0 end_pos
+        | fmt is hspace (str char at s (end_pos - 1)) = fmt trim right loop s (end_pos - 1)
+        | otherwise = str slice s 0 end_pos
 
 fn :: fmt trim right String => String
-      fmt trim right s = fmt trim right loop s (str_len s)
+      fmt trim right s = fmt trim right loop s (str len s)
 
 fn :: fmt trim String => String
       fmt trim s = fmt trim left (fmt trim right s)
@@ -96,91 +98,91 @@ fn :: fmt trim String => String
 fn :: fmt split raw lines loop String Int Int Int Int [String] => [String]
       fmt split raw lines loop s pos len line_start quote_st acc =
         | pos >= len and line_start == len = acc
-        | pos >= len = acc :: [fmt trim right (str_slice s line_start len)]
-        | quote_st == 34 and (str_char_at s pos) == 92 = fmt split raw lines loop s (pos + 2) len line_start 34 acc
-        | quote_st == 34 and (str_char_at s pos) == 34 = fmt split raw lines loop s (pos + 1) len line_start 0 acc
+        | pos >= len = acc :: [fmt trim right (str slice s line_start len)]
+        | quote_st == 34 and (str char at s pos) == 92 = fmt split raw lines loop s (pos + 2) len line_start 34 acc
+        | quote_st == 34 and (str char at s pos) == 34 = fmt split raw lines loop s (pos + 1) len line_start 0 acc
         | quote_st == 34 = fmt split raw lines loop s (pos + 1) len line_start 34 acc
-        | quote_st == 39 and (str_char_at s pos) == 39 = fmt split raw lines loop s (pos + 1) len line_start 0 acc
+        | quote_st == 39 and (str char at s pos) == 39 = fmt split raw lines loop s (pos + 1) len line_start 0 acc
         | quote_st == 39 = fmt split raw lines loop s (pos + 1) len line_start 39 acc
-        | quote_st == 45 and (str_char_at s pos) == 10 = fmt split raw lines loop s (pos + 1) len (pos + 1) 0 (acc :: [fmt trim right (str_slice s line_start pos)])
+        | quote_st == 45 and (str char at s pos) == 10 = fmt split raw lines loop s (pos + 1) len (pos + 1) 0 (acc :: [fmt trim right (str slice s line_start pos)])
         | quote_st == 45 = fmt split raw lines loop s (pos + 1) len line_start 45 acc
-        | (str_char_at s pos) == 10 = fmt split raw lines loop s (pos + 1) len (pos + 1) 0 (acc :: [fmt trim right (str_slice s line_start pos)])
-        | (str_char_at s pos) == 45 and (pos + 1) < len and (str_char_at s (pos + 1)) == 45 = fmt split raw lines loop s (pos + 2) len line_start 45 acc
-        | (str_char_at s pos) == 34 = fmt split raw lines loop s (pos + 1) len line_start 34 acc
-        | (str_char_at s pos) == 39 = fmt split raw lines loop s (pos + 1) len line_start 39 acc
+        | (str char at s pos) == 10 = fmt split raw lines loop s (pos + 1) len (pos + 1) 0 (acc :: [fmt trim right (str slice s line_start pos)])
+        | (str char at s pos) == 45 and (pos + 1) < len and (str char at s (pos + 1)) == 45 = fmt split raw lines loop s (pos + 2) len line_start 45 acc
+        | (str char at s pos) == 34 = fmt split raw lines loop s (pos + 1) len line_start 34 acc
+        | (str char at s pos) == 39 = fmt split raw lines loop s (pos + 1) len line_start 39 acc
         | otherwise = fmt split raw lines loop s (pos + 1) len line_start 0 acc
 
 fn :: fmt split raw lines String => [String]
-      fmt split raw lines s = fmt split raw lines loop s 0 (str_len s) 0 0 []
+      fmt split raw lines s = fmt split raw lines loop s 0 (str len s) 0 0 []
 
 fn :: fmt join lines [String] => String
       fmt join lines [] = ""
-      fmt join lines (l:[]) = l + (char_from_code 10)
-      fmt join lines (l:ls) = l + (char_from_code 10) + (fmt join lines ls)
+      fmt join lines (l:[]) = l + (char from code 10)
+      fmt join lines (l:ls) = l + (char from code 10) + (fmt join lines ls)
 
 -- ── Quote-Aware Comment Splitting (`-- ...`) ─────────────────
 
 fn :: fmt skip quoted String Int Int Int => Int
       fmt skip quoted s pos len quote_ch =
         | pos >= len = len
-        | (str_char_at s pos) == 92 = fmt skip quoted s (pos + 2) len quote_ch
-        | (str_char_at s pos) == quote_ch = pos + 1
+        | (str char at s pos) == 92 = fmt skip quoted s (pos + 2) len quote_ch
+        | (str char at s pos) == quote_ch = pos + 1
         | otherwise = fmt skip quoted s (pos + 1) len quote_ch
 
 fn :: fmt find comment col String Int Int => Int
       fmt find comment col s pos len =
         | pos >= len = (0 - 1)
-        | (str_char_at s pos) == 34 = fmt find comment col s (fmt skip quoted s (pos + 1) len 34) len
-        | (str_char_at s pos) == 39 = fmt find comment col s (fmt skip quoted s (pos + 1) len 39) len
-        | (pos + 1) < len and (str_char_at s pos) == 45 and (str_char_at s (pos + 1)) == 45 = pos
+        | (str char at s pos) == 34 = fmt find comment col s (fmt skip quoted s (pos + 1) len 34) len
+        | (str char at s pos) == 39 = fmt find comment col s (fmt skip quoted s (pos + 1) len 39) len
+        | (pos + 1) < len and (str char at s pos) == 45 and (str char at s (pos + 1)) == 45 = pos
         | otherwise = fmt find comment col s (pos + 1) len
 
 fn :: fmt strip comment String => String
       fmt strip comment line =
-        c_col = fmt find comment col line 0 (str_len line)
+        c_col = fmt find comment col line 0 (str len line)
         fmt strip comment at line c_col
 
 fn :: fmt strip comment at String Int => String
       fmt strip comment at line c_col =
         | c_col == (0 - 1) = fmt trim right line
-        | otherwise = fmt trim right (str_slice line 0 c_col)
+        | otherwise = fmt trim right (str slice line 0 c_col)
 
 fn :: fmt extract comment String => String
       fmt extract comment line =
-        c_col = fmt find comment col line 0 (str_len line)
+        c_col = fmt find comment col line 0 (str len line)
         fmt extract comment at line c_col
 
 fn :: fmt extract comment at String Int => String
       fmt extract comment at line c_col =
         | c_col == (0 - 1) = ""
-        | otherwise = fmt trim right (str_slice line c_col (str_len line))
+        | otherwise = fmt trim right (str slice line c_col (str len line))
 
 -- ── Line Token Scanner (`ridgun--scan-tokens-with-cols`) ─────
 
 fn :: fmt skip hspace String Int Int => Int
       fmt skip hspace s pos len =
         | pos >= len = len
-        | fmt is hspace (str_char_at s pos) = fmt skip hspace s (pos + 1) len
+        | fmt is hspace (str char at s pos) = fmt skip hspace s (pos + 1) len
         | otherwise = pos
 
 fn :: fmt scan group end String Int Int Int => Int
       fmt scan group end s pos len depth =
         | pos >= len = len
-        | (str_char_at s pos) == 34 = fmt scan group end s (fmt skip quoted s (pos + 1) len 34) len depth
-        | (str_char_at s pos) == 39 = fmt scan group end s (fmt skip quoted s (pos + 1) len 39) len depth
-        | (str_char_at s pos) == 40 or (str_char_at s pos) == 91 = fmt scan group end s (pos + 1) len (depth + 1)
-        | ((str_char_at s pos) == 41 or (str_char_at s pos) == 93) and depth <= 1 = pos + 1
-        | (str_char_at s pos) == 41 or (str_char_at s pos) == 93 = fmt scan group end s (pos + 1) len (depth - 1)
+        | (str char at s pos) == 34 = fmt scan group end s (fmt skip quoted s (pos + 1) len 34) len depth
+        | (str char at s pos) == 39 = fmt scan group end s (fmt skip quoted s (pos + 1) len 39) len depth
+        | (str char at s pos) == 40 or (str char at s pos) == 91 = fmt scan group end s (pos + 1) len (depth + 1)
+        | ((str char at s pos) == 41 or (str char at s pos) == 93) and depth <= 1 = pos + 1
+        | (str char at s pos) == 41 or (str char at s pos) == 93 = fmt scan group end s (pos + 1) len (depth - 1)
         | otherwise = fmt scan group end s (pos + 1) len depth
 
 fn :: fmt scan word end String Int Int Int => Int
       fmt scan word end s pos len depth =
         | pos >= len = len
-        | depth == 0 and (fmt is hspace (str_char_at s pos)) = pos
-        | (str_char_at s pos) == 34 = fmt scan word end s (fmt skip quoted s (pos + 1) len 34) len depth
-        | (str_char_at s pos) == 39 = fmt scan word end s (fmt skip quoted s (pos + 1) len 39) len depth
-        | (str_char_at s pos) == 40 or (str_char_at s pos) == 91 = fmt scan word end s (pos + 1) len (depth + 1)
-        | (str_char_at s pos) == 41 or (str_char_at s pos) == 93 = fmt scan word end s (pos + 1) len (fmt max 0 (depth - 1))
+        | depth == 0 and (fmt is hspace (str char at s pos)) = pos
+        | (str char at s pos) == 34 = fmt scan word end s (fmt skip quoted s (pos + 1) len 34) len depth
+        | (str char at s pos) == 39 = fmt scan word end s (fmt skip quoted s (pos + 1) len 39) len depth
+        | (str char at s pos) == 40 or (str char at s pos) == 91 = fmt scan word end s (pos + 1) len (depth + 1)
+        | (str char at s pos) == 41 or (str char at s pos) == 93 = fmt scan word end s (pos + 1) len (fmt max 0 (depth - 1))
         | otherwise = fmt scan word end s (pos + 1) len depth
 
 fn :: fmt scan token end String Int Int Int => Int
@@ -197,15 +199,15 @@ fn :: fmt scan tokens loop String Int Int [FmtToken] => [FmtToken]
 fn :: fmt scan tokens at String Int Int [FmtToken] => [FmtToken]
       fmt scan tokens at s p len acc =
         | p >= len = acc
-        | otherwise = fmt scan tokens at step s p len acc (fmt scan token end s p len (str_char_at s p))
+        | otherwise = fmt scan tokens at step s p len acc (fmt scan token end s p len (str char at s p))
 
 fn :: fmt scan tokens at step String Int Int [FmtToken] Int => [FmtToken]
       fmt scan tokens at step s p len acc end_p =
-        tok_s = str_slice s p end_p
+        tok_s = str slice s p end_p
         fmt scan tokens loop s end_p len (acc :: [FmtTok tok_s p])
 
 fn :: fmt scan tokens String => [FmtToken]
-      fmt scan tokens line = fmt scan tokens loop line 0 (str_len line) []
+      fmt scan tokens line = fmt scan tokens loop line 0 (str len line) []
 
 -- ── Signature Parsing (`fn ::` / `op ::`) ────────────────────
 
@@ -218,7 +220,7 @@ fn :: fmt split sig arrow [FmtToken] [String] => Bool [String] String Int
 fn :: fmt is sig type tok String => Bool
       fmt is sig type tok "" = False
       fmt is sig type tok tok =
-        ch = str_char_at tok 0
+        ch = str char at tok 0
         (ch >= 65 and ch <= 90) or ch == 91 or ch == 40
 
 fn :: fmt all type toks [String] => Bool
@@ -240,9 +242,9 @@ fn :: fmt infer bare kind [String] => String
 
 fn :: fmt parse sig line String => FmtSig
       fmt parse sig line line =
-        clean = fmt strip comment line
-        cmt = fmt extract comment line
-        toks = fmt scan tokens clean
+        line fmt strip comment -> clean
+        line fmt extract comment -> cmt
+        clean fmt scan tokens -> toks
         fmt parse sig tokens (fmt leading indent line) clean cmt toks
 
 fn :: fmt parse sig tokens Int String String [FmtToken] => FmtSig
@@ -250,7 +252,7 @@ fn :: fmt parse sig tokens Int String String [FmtToken] => FmtSig
         | kind == "fn" or kind == "op" = fmt finish sig parse clean cmt kind (fmt split sig arrow rest [])
         | otherwise = NoSig
       fmt parse sig tokens 0 clean cmt ((FmtTok w col):rest) =
-        | w == "type" or w == "expand" or w == "import" or w == "global" or w == "context" or w == "shared" or w == "hardware" or (str_starts_with w "@") or (str_starts_with w "--") or (str_starts_with w "|") = NoSig
+        | w == "type" or w == "expand" or w == "import" or w == "global" or w == "context" or w == "shared" or w == "hardware" or (str starts with w "@") or (str starts with w "--") or (str starts with w "|") = NoSig
         | otherwise = fmt finish bare sig parse clean cmt (fmt split sig arrow ([FmtTok w col] :: rest) [])
       fmt parse sig tokens _ _ _ _ = NoSig
 
@@ -265,8 +267,8 @@ fn :: fmt finish sig parse String String String (Bool [String] String Int) => Fm
       fmt finish sig parse _ _ _ (False, _, _, _) = NoSig
       fmt finish sig parse _ _ _ (True, [], _, _) = NoSig
       fmt finish sig parse clean cmt kind (True, lhs_strs, arrow_s, arrow_col) =
-        ret_start = arrow_col + (str_len arrow_s)
-        ret_core = fmt trim (str_slice clean ret_start (str_len clean))
+        ret_start = arrow_col + (str len arrow_s)
+        ret_core = fmt trim (str slice clean ret_start (str len clean))
         ret_full = fmt append comment ret_core cmt
         SigInfo kind lhs_strs arrow_s ret_full [] 0 0
 
@@ -290,11 +292,11 @@ fn :: fmt is top decl line String => Bool
         fmt is top decl toks ind tr toks
 
 fn :: fmt is top decl toks Int String [FmtToken] => Bool
-      fmt is top decl toks _ tr [] = str_starts_with tr "@"
+      fmt is top decl toks _ tr [] = str starts with tr "@"
       fmt is top decl toks ind tr ((FmtTok w col):rest) =
-        | str_starts_with tr "@" = True
+        | str starts with tr "@" = True
         | w == "fn" or w == "op" or w == "type" or w == "expand" or w == "import" or w == "global" or w == "context" or w == "shared" or w == "hardware" = True
-        | ind == 0 and (not (str_starts_with w "--")) and (not (str_starts_with w "|")) = fmt has fat arrow ([FmtTok w col] :: rest)
+        | ind == 0 and (not (str starts with w "--")) and (not (str starts with w "|")) = fmt has fat arrow ([FmtTok w col] :: rest)
         | otherwise = False
 
 fn :: fmt op tokens match [String] [String] => Bool
@@ -343,18 +345,18 @@ fn :: fmt next nonblank is guard [String] => Bool
 fn :: fmt check guard line String [String] => Bool
       fmt check guard line "" ls = fmt next nonblank is guard ls
       fmt check guard line clean _ =
-        (str_starts_with clean "|") and (not (str_starts_with clean "||"))
+        (str starts with clean "|") and (not (str starts with clean "||"))
 
 fn :: fmt parse clause line FmtSig String Bool => FmtClause
       fmt parse clause line NoSig _ _ = NoClause
       fmt parse clause line (SigInfo kind sig_lhs _ _ _ _ _) line next_is_guard =
-        | str_contains line (char_from_code 10) = NoClause
+        | str contains line (char from code 10) = NoClause
         | otherwise = fmt parse clause clean kind sig_lhs line (fmt strip comment line) (fmt trim (fmt strip comment line)) next_is_guard
 
 fn :: fmt parse clause clean String [String] String String String Bool => FmtClause
       fmt parse clause clean _ _ _ _ "" _ = NoClause
       fmt parse clause clean kind sig_lhs line clean tr next_is_guard =
-        | (str_starts_with tr "|") or (str_starts_with tr "--") or (fmt is top decl line tr) = NoClause
+        | (str starts with tr "|") or (str starts with tr "--") or (fmt is top decl line tr) = NoClause
         | otherwise = fmt check clause split kind sig_lhs line next_is_guard (fmt split clause eq (fmt scan tokens clean) [])
 
 fn :: fmt check clause split String [String] String Bool ([String] Bool Int) => FmtClause
@@ -364,7 +366,7 @@ fn :: fmt check clause split String [String] String Bool ([String] Bool Int) => 
 
 fn :: fmt build clause info String [String] Bool Int => FmtClause
       fmt build clause info line clause_lhs True eq_col =
-        rhs = fmt trim (str_slice line (eq_col + 1) (str_len line))
+        rhs = fmt trim (str slice line (eq_col + 1) (str len line))
         ClauseInfo clause_lhs True rhs
       fmt build clause info _ clause_lhs False _ =
         ClauseInfo clause_lhs False ""
@@ -384,13 +386,13 @@ fn :: fmt parse whr line String Bool => FmtWhereBind
 fn :: fmt parse whr clean String String String => FmtWhereBind
       fmt parse whr clean _ _ "" = NoWhereBind
       fmt parse whr clean line clean tr =
-        | (str_starts_with tr "|") or (tr == "where") or (fmt is top decl line tr) = NoWhereBind
+        | (str starts with tr "|") or (tr == "where") or (fmt is top decl line tr) = NoWhereBind
         | otherwise = fmt build whr bind line clean (fmt find whr arrow (fmt scan tokens clean))
 
 fn :: fmt build whr bind String String Int => FmtWhereBind
       fmt build whr bind line clean arrow_col =
         | arrow_col == (0 - 1) = NoWhereBind
-        | otherwise = fmt check whr nonempty (fmt trim (str_slice clean 0 arrow_col)) (fmt trim (str_slice line (arrow_col + 2) (str_len line)))
+        | otherwise = fmt check whr nonempty (fmt trim (str slice clean 0 arrow_col)) (fmt trim (str slice line (arrow_col + 2) (str len line)))
 
 fn :: fmt check whr nonempty String String => FmtWhereBind
       fmt check whr nonempty "" _ = NoWhereBind
@@ -401,7 +403,7 @@ fn :: fmt check whr nonempty String String => FmtWhereBind
 
 fn :: fmt str lens [String] => [Int]
       fmt str lens [] = []
-      fmt str lens (s:ss) = [str_len s] :: (fmt str lens ss)
+      fmt str lens (s:ss) = [str len s] :: (fmt str lens ss)
 
 fn :: fmt slot width Int Int => Int
       fmt slot width w s_len =
@@ -411,7 +413,7 @@ fn :: fmt slot width Int Int => Int
 fn :: fmt max widths [Int] [String] => [Int]
       fmt max widths [] _ = []
       fmt max widths ws [] = ws
-      fmt max widths (w:ws) (s:ss) = [fmt slot width w (str_len s)] :: (fmt max widths ws ss)
+      fmt max widths (w:ws) (s:ss) = [fmt slot width w (str len s)] :: (fmt max widths ws ss)
 
 fn :: fmt build col starts [Int] Int => [Int]
       fmt build col starts [] _ = []
@@ -434,11 +436,11 @@ fn :: fmt scan group step FmtSig String [String] [Int] Int Bool Int FmtClause Fm
       fmt scan group step sig _ rest widths max_where _ ind_w (ClauseInfo c_lhs _ _) _ =
         fmt scan group widths sig rest (fmt max widths widths c_lhs) max_where False ind_w
       fmt scan group step sig _ rest widths max_where in_where ind_w NoClause (WhereBindInfo w_lhs _) =
-        w_end = (fmt sig base col of sig) + (2 * ind_w) + (str_len w_lhs) + 1
+        w_end = (fmt sig base col of sig) + (2 * ind_w) + (str len w_lhs) + 1
         fmt scan group widths sig rest widths (fmt max max_where w_end) in_where ind_w
       fmt scan group step sig tr_clean rest widths max_where in_where ind_w NoClause NoWhereBind =
         | tr_clean == "where" = fmt scan group widths sig rest widths max_where True ind_w
-        | str_starts_with tr_clean "|" = fmt scan group widths sig rest widths max_where False ind_w
+        | str starts with tr_clean "|" = fmt scan group widths sig rest widths max_where False ind_w
         | otherwise = fmt scan group widths sig rest widths max_where in_where ind_w
 
 fn :: fmt compute group geometry FmtSig [String] FmtConfig => FmtSig
@@ -466,8 +468,8 @@ fn :: fmt finish group geometry String [String] String String ([Int] Int) FmtCon
         sig_cols = fmt build col starts widths base_col
         end_col = fmt end col widths base_col
         arrow_col = fmt max end_col max_where
-        ret_col = arrow_col + (str_len arrow_s) + 1
-        total_sig_len = ret_col + (str_len ret_s)
+        ret_col = arrow_col + (str len arrow_s) + 1
+        total_sig_len = ret_col + (str len ret_s)
         num_params = fmt count sig params kind lhs_strs
         fmt select group geometry kind lhs_strs arrow_s ret_s sig_cols arrow_col ret_col num_params total_sig_len cfg
 
@@ -482,7 +484,7 @@ fn :: fmt pad lhs tokens [String] [Int] Int String => String
       fmt pad lhs tokens [] _ _ acc = acc
       fmt pad lhs tokens (tok:rest) sig_cols idx acc =
         target_col = fmt int at sig_cols idx
-        pad_n = fmt max 1 (target_col - (str_len acc))
+        pad_n = fmt max 1 (target_col - (str len acc))
         fmt pad lhs tokens rest sig_cols (idx + 1) (acc + (fmt spaces pad_n) + tok)
 
 fn :: fmt sig prefix String String => String
@@ -495,7 +497,7 @@ fn :: fmt format sig line FmtSig => String
       fmt format sig line (SigInfo _ [] _ _ _ _ _) = ""
       fmt format sig line (SigInfo kind (first_tok:rest_toks) arrow_s ret_s sig_cols arrow_col _) =
         lhs_out = fmt pad lhs tokens rest_toks sig_cols 1 (fmt sig prefix kind first_tok)
-        pad_arrow = fmt max 1 (arrow_col - (str_len lhs_out))
+        pad_arrow = fmt max 1 (arrow_col - (str len lhs_out))
         lhs_out + (fmt spaces pad_arrow) + arrow_s + " " + ret_s
 
 fn :: fmt format clause line FmtSig [String] Bool String => String
@@ -508,21 +510,21 @@ fn :: fmt format clause line FmtSig [String] Bool String => String
 fn :: fmt finish clause rhs String Bool String Int Int => String
       fmt finish clause rhs lhs_out False _ _ _ = lhs_out
       fmt finish clause rhs lhs_out True "" arrow_col _ =
-        pad_eq = fmt max 1 (arrow_col - (str_len lhs_out))
+        pad_eq = fmt max 1 (arrow_col - (str len lhs_out))
         lhs_out + (fmt spaces pad_eq) + "="
       fmt finish clause rhs lhs_out True rhs arrow_col ret_col =
-        pad_eq = fmt max 1 (arrow_col - (str_len lhs_out))
+        pad_eq = fmt max 1 (arrow_col - (str len lhs_out))
         with_eq = lhs_out + (fmt spaces pad_eq) + "="
-        pad_rhs = fmt max 1 (ret_col - (str_len with_eq))
+        pad_rhs = fmt max 1 (ret_col - (str len with_eq))
         with_eq + (fmt spaces pad_rhs) + rhs
 
 fn :: fmt format whr line FmtSig String String Int => String
       fmt format whr line NoSig lhs rhs ind_w = (fmt spaces (2 * ind_w)) + lhs + " -> " + rhs
       fmt format whr line (SigInfo kind _ _ _ _ arrow_col ret_col) lhs rhs ind_w =
         lhs_out = (fmt spaces ((fmt sig base col kind) + (2 * ind_w))) + lhs
-        pad_arrow = fmt max 1 (arrow_col - (str_len lhs_out))
+        pad_arrow = fmt max 1 (arrow_col - (str len lhs_out))
         with_arrow = lhs_out + (fmt spaces pad_arrow) + "->"
-        pad_rhs = fmt max 1 (ret_col - (str_len with_arrow))
+        pad_rhs = fmt max 1 (ret_col - (str len with_arrow))
         with_arrow + (fmt spaces pad_rhs) + rhs
 
 -- ── Structural Block & Group Formatting ──────────────────────
@@ -530,23 +532,23 @@ fn :: fmt format whr line FmtSig String String Int => String
 fn :: fmt line opens block String => Bool
       fmt line opens block prev_text =
         clean = fmt trim (fmt strip comment prev_text)
-        len = str_len clean
+        len = str len clean
         fmt check block opener clean len
 
 fn :: fmt check block opener String Int => Bool
       fmt check block opener clean len =
         | len == 0 = False
         | clean == "where" or clean == "do" = True
-        | (str_char_at clean (len - 1)) == 61 and (len < 2 or ((str_char_at clean (len - 2)) != 61 and (str_char_at clean (len - 2)) != 33 and (str_char_at clean (len - 2)) != 60 and (str_char_at clean (len - 2)) != 62)) = True
-        | len >= 6 and (str_slice clean (len - 6) len) == " where" = True
-        | len >= 3 and (str_slice clean (len - 3) len) == " do" = True
+        | (str char at clean (len - 1)) == 61 and (len < 2 or ((str char at clean (len - 2)) != 61 and (str char at clean (len - 2)) != 33 and (str char at clean (len - 2)) != 60 and (str char at clean (len - 2)) != 62)) = True
+        | len >= 6 and (str slice clean (len - 6) len) == " where" = True
+        | len >= 3 and (str slice clean (len - 3) len) == " do" = True
         | otherwise = False
 
 fn :: fmt line closes block String => Bool
       fmt line closes block prev_text =
         clean = fmt trim (fmt strip comment prev_text)
-        len = str_len clean
-        (len >= 2 and (str_slice clean (len - 2) len) == "|.") or (len >= 3 and (str_slice clean (len - 3) len) == "||.")
+        len = str len clean
+        (len >= 2 and (str slice clean (len - 2) len) == "|.") or (len >= 3 and (str slice clean (len - 3) len) == "||.")
 
 fn :: fmt guard indent Int Int Int String Int => Int
       fmt guard indent base_g orig_indent prev_indent prev_text ind_w =
@@ -555,11 +557,11 @@ fn :: fmt guard indent Int Int Int String Int => Int
 
 fn :: fmt guard indent clean Int Int Int String String Int => Int
       fmt guard indent clean base_g orig_indent prev_indent prev_text prev_clean ind_w =
-        | str_starts_with prev_clean "||" = base_g
+        | str starts with prev_clean "||" = base_g
         | fmt line opens block prev_text = fmt max base_g (prev_indent + ind_w)
         | fmt line closes block prev_text and orig_indent >= base_g and orig_indent < prev_indent = orig_indent
         | fmt line closes block prev_text = fmt max base_g (prev_indent - ind_w)
-        | str_starts_with prev_clean "|" = fmt max base_g prev_indent
+        | str starts with prev_clean "|" = fmt max base_g prev_indent
         | otherwise = base_g
 
 fn :: fmt format group body FmtSig [String] Int String Bool FmtConfig => [String]
@@ -584,11 +586,11 @@ fn :: fmt format group line FmtSig String String String Int [String] Int String 
         f_line = fmt format whr line geom w_lhs w_rhs ind_w
         [f_line] :: (fmt format group body geom rest ((fmt sig base col of geom) + (2 * ind_w)) f_line in_where cfg)
       fmt format group line geom _ tr tr_clean orig_indent rest prev_indent prev_text in_where cfg NoClause NoWhereBind =
-        | orig_indent == 0 and (str_starts_with tr "--") = [tr] :: (fmt format group body geom rest prev_indent prev_text in_where cfg)
+        | orig_indent == 0 and (str starts with tr "--") = [tr] :: (fmt format group body geom rest prev_indent prev_text in_where cfg)
         | tr_clean == "where" = [(fmt spaces ((fmt sig base col of geom) + (indent_width cfg))) + tr] :: (fmt format group body geom rest ((fmt sig base col of geom) + (indent_width cfg)) "where" True cfg)
-        | str_starts_with tr_clean "||" = [(fmt spaces ((fmt sig base col of geom) + (indent_width cfg))) + tr] :: (fmt format group body geom rest ((fmt sig base col of geom) + (indent_width cfg)) tr False cfg)
-        | str_starts_with tr_clean "|" = fmt format guard line geom tr orig_indent rest prev_indent prev_text cfg (indent_width cfg)
-        | str_starts_with tr "--" = [fmt indent body line prev_indent prev_text tr (indent_width cfg)] :: (fmt format group body geom rest prev_indent prev_text in_where cfg)
+        | str starts with tr_clean "||" = [(fmt spaces ((fmt sig base col of geom) + (indent_width cfg))) + tr] :: (fmt format group body geom rest ((fmt sig base col of geom) + (indent_width cfg)) tr False cfg)
+        | str starts with tr_clean "|" = fmt format guard line geom tr orig_indent rest prev_indent prev_text cfg (indent_width cfg)
+        | str starts with tr "--" = [fmt indent body line prev_indent prev_text tr (indent_width cfg)] :: (fmt format group body geom rest prev_indent prev_text in_where cfg)
         | otherwise = [fmt indent body line prev_indent prev_text tr (indent_width cfg)] :: (fmt format group body geom rest (fmt next body indent prev_indent prev_text (indent_width cfg)) tr in_where cfg)
 
 fn :: fmt format guard line FmtSig String Int [String] Int String FmtConfig Int => [String]
@@ -606,7 +608,7 @@ fn :: fmt next body indent clean Int String String Int => Int
       fmt next body indent clean prev_indent prev_text prev_clean ind_w =
         | fmt line opens block prev_text = prev_indent + ind_w
         | fmt line closes block prev_text = fmt max (6 + ind_w) (prev_indent - ind_w)
-        | (str_starts_with prev_clean "|") and (not (str_starts_with prev_clean "||")) = fmt max (6 + ind_w) (prev_indent - ind_w)
+        | (str starts with prev_clean "|") and (not (str starts with prev_clean "||")) = fmt max (6 + ind_w) (prev_indent - ind_w)
         | otherwise = prev_indent
 
 fn :: fmt indent body line Int String String Int => String
@@ -648,7 +650,7 @@ fn :: fmt format non sig top String [String] Int String FmtConfig => [String]
         [""] :: (fmt format top lines rest prev_indent prev_text cfg)
       fmt format non sig top tr rest prev_indent prev_text cfg =
         | fmt is top decl line tr = [tr] :: (fmt format top lines rest 0 tr cfg)
-        | str_starts_with tr "--" = [tr] :: (fmt format top lines rest prev_indent prev_text cfg)
+        | str starts with tr "--" = [tr] :: (fmt format top lines rest prev_indent prev_text cfg)
         | otherwise = [fmt indent body line prev_indent prev_text tr (indent_width cfg)] :: (fmt format top lines rest (fmt next body indent prev_indent prev_text (indent_width cfg)) tr cfg)
 
 -- ── Lexical Token Classification & Syntax Highlighting ───────
@@ -682,8 +684,8 @@ fn :: fmt classify word String Bool => String
         | fmt is keyword w = "keyword"
         | fmt is logic op w = "logic"
         | fmt is bool lit w = "bool"
-        | fmt is upper (str_char_at w 0) = "type"
-        | fmt is digit (str_char_at w 0) = "number"
+        | fmt is upper (str char at w 0) = "type"
+        | fmt is digit (str char at w 0) = "number"
         | in_fn = "function"
         | otherwise = "plain"
 
@@ -692,35 +694,35 @@ fn :: fmt classify word String Bool => String
 fn :: fmt escape html loop String Int Int String => String
       fmt escape html loop s pos len acc =
         | pos >= len = acc
-        | (str_char_at s pos) == 38 = fmt escape html loop s (pos + 1) len (acc + "&amp;")
-        | (str_char_at s pos) == 60 = fmt escape html loop s (pos + 1) len (acc + "&lt;")
-        | (str_char_at s pos) == 62 = fmt escape html loop s (pos + 1) len (acc + "&gt;")
-        | otherwise = fmt escape html loop s (pos + 1) len (acc + (str_slice s pos (pos + 1)))
+        | (str char at s pos) == 38 = fmt escape html loop s (pos + 1) len (acc + "&amp;")
+        | (str char at s pos) == 60 = fmt escape html loop s (pos + 1) len (acc + "&lt;")
+        | (str char at s pos) == 62 = fmt escape html loop s (pos + 1) len (acc + "&gt;")
+        | otherwise = fmt escape html loop s (pos + 1) len (acc + (str slice s pos (pos + 1)))
 
 fn :: fmt escape html String => String
-      fmt escape html s = fmt escape html loop s 0 (str_len s) ""
+      fmt escape html s = fmt escape html loop s 0 (str len s) ""
 
 fn :: fmt escape latex loop String Int Int String => String
       fmt escape latex loop s pos len acc =
         | pos >= len = acc
-        | (str_char_at s pos) == 92 = fmt escape latex loop s (pos + 1) len (acc + (char_from_code 92) + "textbackslash" + (char_from_code 123) + (char_from_code 125))
-        | (str_char_at s pos) == 123 = fmt escape latex loop s (pos + 1) len (acc + (char_from_code 92) + (char_from_code 123))
-        | (str_char_at s pos) == 125 = fmt escape latex loop s (pos + 1) len (acc + (char_from_code 92) + (char_from_code 125))
-        | otherwise = fmt escape latex loop s (pos + 1) len (acc + (str_slice s pos (pos + 1)))
+        | (str char at s pos) == 92 = fmt escape latex loop s (pos + 1) len (acc + (char from code 92) + "textbackslash" + (char from code 123) + (char from code 125))
+        | (str char at s pos) == 123 = fmt escape latex loop s (pos + 1) len (acc + (char from code 92) + (char from code 123))
+        | (str char at s pos) == 125 = fmt escape latex loop s (pos + 1) len (acc + (char from code 92) + (char from code 125))
+        | otherwise = fmt escape latex loop s (pos + 1) len (acc + (str slice s pos (pos + 1)))
 
 fn :: fmt escape latex String => String
-      fmt escape latex s = fmt escape latex loop s 0 (str_len s) ""
+      fmt escape latex s = fmt escape latex loop s 0 (str len s) ""
 
 fn :: fmt escape rtf loop String Int Int String => String
       fmt escape rtf loop s pos len acc =
         | pos >= len = acc
-        | (str_char_at s pos) == 92 = fmt escape rtf loop s (pos + 1) len (acc + (char_from_code 92) + (char_from_code 92))
-        | (str_char_at s pos) == 123 = fmt escape rtf loop s (pos + 1) len (acc + (char_from_code 92) + (char_from_code 123))
-        | (str_char_at s pos) == 125 = fmt escape rtf loop s (pos + 1) len (acc + (char_from_code 92) + (char_from_code 125))
-        | otherwise = fmt escape rtf loop s (pos + 1) len (acc + (str_slice s pos (pos + 1)))
+        | (str char at s pos) == 92 = fmt escape rtf loop s (pos + 1) len (acc + (char from code 92) + (char from code 92))
+        | (str char at s pos) == 123 = fmt escape rtf loop s (pos + 1) len (acc + (char from code 92) + (char from code 123))
+        | (str char at s pos) == 125 = fmt escape rtf loop s (pos + 1) len (acc + (char from code 92) + (char from code 125))
+        | otherwise = fmt escape rtf loop s (pos + 1) len (acc + (str slice s pos (pos + 1)))
 
 fn :: fmt escape rtf String => String
-      fmt escape rtf s = fmt escape rtf loop s 0 (str_len s) ""
+      fmt escape rtf s = fmt escape rtf loop s 0 (str len s) ""
 
 fn :: fmt escape target String FmtTarget => String
       fmt escape target s FmtHtmlInline = fmt escape html s
@@ -840,12 +842,12 @@ fn :: fmt span css String String => String
 
 fn :: fmt span tty String String => String
       fmt span tty text "" = text
-      fmt span tty text code = (char_from_code 27) + "[" + code + "m" + text + (char_from_code 27) + "[0m"
+      fmt span tty text code = (char from code 27) + "[" + code + "m" + text + (char from code 27) + "[0m"
 
 fn :: fmt span truecolor String String Bool => String
       fmt span truecolor text "" _ = text
-      fmt span truecolor text rgb True = (char_from_code 27) + "[1;38;2;" + rgb + "m" + text + (char_from_code 27) + "[0m"
-      fmt span truecolor text rgb False = (char_from_code 27) + "[38;2;" + rgb + "m" + text + (char_from_code 27) + "[0m"
+      fmt span truecolor text rgb True = (char from code 27) + "[1;38;2;" + rgb + "m" + text + (char from code 27) + "[0m"
+      fmt span truecolor text rgb False = (char from code 27) + "[38;2;" + rgb + "m" + text + (char from code 27) + "[0m"
 
 fn :: fmt span html inline String String Bool => String
       fmt span html inline esc "" _ = esc
@@ -860,22 +862,22 @@ fn :: fmt span pango String String Bool => String
 fn :: fmt span latex String String Bool => String
       fmt span latex esc "" _ = esc
       fmt span latex esc hex True =
-        bs = char_from_code 92
-        lb = char_from_code 123
-        rb = char_from_code 125
+        bs = char from code 92
+        lb = char from code 123
+        rb = char from code 125
         bs + "textbf" + lb + bs + "textcolor[HTML]" + lb + hex + rb + lb + esc + rb + rb
       fmt span latex esc hex False =
-        bs = char_from_code 92
-        lb = char_from_code 123
-        rb = char_from_code 125
+        bs = char from code 92
+        lb = char from code 123
+        rb = char from code 125
         bs + "textcolor[HTML]" + lb + hex + rb + lb + esc + rb
 
 fn :: fmt span rtf String String Bool => String
       fmt span rtf esc "" _ = esc
       fmt span rtf esc cidx True =
-        (char_from_code 123) + (char_from_code 92) + "cf" + cidx + (char_from_code 92) + "b " + esc + (char_from_code 125)
+        (char from code 123) + (char from code 92) + "cf" + cidx + (char from code 92) + "b " + esc + (char from code 125)
       fmt span rtf esc cidx False =
-        (char_from_code 123) + (char_from_code 92) + "cf" + cidx + " " + esc + (char_from_code 125)
+        (char from code 123) + (char from code 92) + "cf" + cidx + " " + esc + (char from code 125)
 
 fn :: fmt render span String String FmtTarget FmtTheme => String
       fmt render span text "plain" target _ = fmt escape target text target
@@ -895,20 +897,20 @@ fn :: fmt render span String String FmtTarget FmtTheme => String
 fn :: fmt scan ident end String Int Int => Int
       fmt scan ident end s pos len =
         | pos >= len = len
-        | fmt is ident char (str_char_at s pos) = fmt scan ident end s (pos + 1) len
+        | fmt is ident char (str char at s pos) = fmt scan ident end s (pos + 1) len
         | otherwise = pos
 
 fn :: fmt scan space end String Int Int => Int
       fmt scan space end s pos len =
         | pos >= len = len
-        | fmt is hspace (str_char_at s pos) = fmt scan space end s (pos + 1) len
+        | fmt is hspace (str char at s pos) = fmt scan space end s (pos + 1) len
         | otherwise = pos
 
 fn :: fmt find close brace String Int Int => Int
       fmt find close brace s pos len =
         | pos >= len = (0 - 1)
-        | (str_char_at s pos) == 125 = pos + 1
-        | (str_char_at s pos) == 34 or (str_char_at s pos) == 123 = (0 - 1)
+        | (str char at s pos) == 125 = pos + 1
+        | (str char at s pos) == 34 or (str char at s pos) == 123 = (0 - 1)
         | otherwise = fmt find close brace s (pos + 1) len
 
 fn :: fmt render nonempty String String FmtTarget FmtTheme => String
@@ -918,20 +920,20 @@ fn :: fmt render nonempty String String FmtTarget FmtTheme => String
 fn :: fmt highlight dquote brace String Int Int Int Int FmtTarget FmtTheme String => String
       fmt highlight dquote brace s pos end_pos seg_start close_p target theme acc =
         | close_p == (0 - 1) = fmt highlight dquote loop s (pos + 1) end_pos seg_start target theme acc
-        | otherwise = fmt highlight dquote loop s close_p end_pos close_p target theme (acc + (fmt render nonempty (str_slice s seg_start pos) "string" target theme) + (fmt render span (str_slice s pos close_p) "interp" target theme))
+        | otherwise = fmt highlight dquote loop s close_p end_pos close_p target theme (acc + (fmt render nonempty (str slice s seg_start pos) "string" target theme) + (fmt render span (str slice s pos close_p) "interp" target theme))
 
 fn :: fmt highlight dquote loop String Int Int Int FmtTarget FmtTheme String => String
       fmt highlight dquote loop s pos end_pos seg_start target theme acc =
-        | pos >= end_pos = acc + (fmt render nonempty (str_slice s seg_start end_pos) "string" target theme)
-        | (str_char_at s pos) == 92 = fmt highlight dquote loop s (pos + 2) end_pos seg_start target theme acc
-        | (str_char_at s pos) == 123 =
+        | pos >= end_pos = acc + (fmt render nonempty (str slice s seg_start end_pos) "string" target theme)
+        | (str char at s pos) == 92 = fmt highlight dquote loop s (pos + 2) end_pos seg_start target theme acc
+        | (str char at s pos) == 123 =
           fmt highlight dquote brace s pos end_pos seg_start (fmt find close brace s (pos + 1) (end_pos - 1)) target theme acc
         | otherwise = fmt highlight dquote loop s (pos + 1) end_pos seg_start target theme acc
 
 fn :: fmt multi op at String Int Int => String
       fmt multi op at s pos len =
-        | (pos + 5) <= len and (str_slice s pos (pos + 5)) == "||map" = "||map"
-        | (pos + 2) <= len and ((str_slice s pos (pos + 2)) == "::" or (str_slice s pos (pos + 2)) == "=>" or (str_slice s pos (pos + 2)) == "->" or (str_slice s pos (pos + 2)) == "||" or (str_slice s pos (pos + 2)) == "==" or (str_slice s pos (pos + 2)) == "!=" or (str_slice s pos (pos + 2)) == "<=" or (str_slice s pos (pos + 2)) == ">=") = str_slice s pos (pos + 2)
+        | (pos + 5) <= len and (str slice s pos (pos + 5)) == "||map" = "||map"
+        | (pos + 2) <= len and ((str slice s pos (pos + 2)) == "::" or (str slice s pos (pos + 2)) == "=>" or (str slice s pos (pos + 2)) == "->" or (str slice s pos (pos + 2)) == "||" or (str slice s pos (pos + 2)) == "==" or (str slice s pos (pos + 2)) == "!=" or (str slice s pos (pos + 2)) == "<=" or (str slice s pos (pos + 2)) == ">=") = str slice s pos (pos + 2)
         | otherwise = ""
 
 fn :: fmt is single op Int => Bool
@@ -940,12 +942,12 @@ fn :: fmt is single op Int => Bool
 
 fn :: fmt comment cat String => String
       fmt comment cat cmt =
-        | (str_starts_with cmt "-- @implements") or (str_starts_with cmt "-- @tests") or (str_starts_with cmt "-- @mitigates") = "pragma"
+        | (str starts with cmt "-- @implements") or (str starts with cmt "-- @tests") or (str starts with cmt "-- @mitigates") = "pragma"
         | otherwise = "comment"
 
 fn :: fmt hl space step String Int Int Bool FmtTarget FmtTheme String Int => String
       fmt hl space step s pos len in_fn target theme acc sp_end =
-        sp_s = fmt escape target (str_slice s pos sp_end) target
+        sp_s = fmt escape target (str slice s pos sp_end) target
         fmt highlight line loop s sp_end len in_fn target theme (acc + sp_s)
 
 fn :: fmt hl dquote step String Int Int FmtTarget FmtTheme String Int => String
@@ -955,22 +957,22 @@ fn :: fmt hl dquote step String Int Int FmtTarget FmtTheme String Int => String
 
 fn :: fmt hl squote step String Int Int FmtTarget FmtTheme String Int => String
       fmt hl squote step s pos len target theme acc q_end =
-        str_out = fmt render span (str_slice s pos q_end) "string" target theme
+        str_out = fmt render span (str slice s pos q_end) "string" target theme
         fmt highlight line loop s q_end len False target theme (acc + str_out)
 
 fn :: fmt hl pragma step String Int Int FmtTarget FmtTheme String Int => String
       fmt hl pragma step s pos len target theme acc w_end =
-        prag_out = fmt render span (str_slice s pos w_end) "pragma" target theme
+        prag_out = fmt render span (str slice s pos w_end) "pragma" target theme
         fmt highlight line loop s w_end len False target theme (acc + prag_out)
 
 fn :: fmt hl mop step String Int Int FmtTarget FmtTheme String String => String
       fmt hl mop step s pos len target theme acc mop =
         op_out = fmt render span mop "operator" target theme
-        fmt highlight line loop s (pos + (str_len mop)) len (mop == "::") target theme (acc + op_out)
+        fmt highlight line loop s (pos + (str len mop)) len (mop == "::") target theme (acc + op_out)
 
 fn :: fmt hl ident step String Int Int Bool FmtTarget FmtTheme String Int => String
       fmt hl ident step s pos len the_in_fn target theme acc w_end =
-        w = str_slice s pos w_end
+        w = str slice s pos w_end
         cat = fmt classify word w the_in_fn
         w_out = fmt render span w cat target theme
         fmt highlight line loop s w_end len (the_in_fn and cat == "function") target theme (acc + w_out)
@@ -978,21 +980,21 @@ fn :: fmt hl ident step String Int Int Bool FmtTarget FmtTheme String Int => Str
 fn :: fmt highlight line loop String Int Int Bool FmtTarget FmtTheme String => String
       fmt highlight line loop s pos len the_in_fn target theme acc =
         | pos >= len = acc
-        | fmt is hspace (str_char_at s pos) = fmt hl space step s pos len the_in_fn target theme acc (fmt scan space end s pos len)
-        | (pos + 1) < len and (str_char_at s pos) == 45 and (str_char_at s (pos + 1)) == 45 = acc + (fmt render span (str_slice s pos len) (fmt comment cat (str_slice s pos len)) target theme)
-        | (str_char_at s pos) == 34 = fmt hl dquote step s pos len target theme acc (fmt skip quoted s (pos + 1) len 34)
-        | (str_char_at s pos) == 39 = fmt hl squote step s pos len target theme acc (fmt skip quoted s (pos + 1) len 39)
-        | (str_char_at s pos) == 64 and (pos + 1) < len and (fmt is ident char (str_char_at s (pos + 1))) = fmt hl pragma step s pos len target theme acc (fmt scan ident end s (pos + 1) len)
+        | fmt is hspace (str char at s pos) = fmt hl space step s pos len the_in_fn target theme acc (fmt scan space end s pos len)
+        | (pos + 1) < len and (str char at s pos) == 45 and (str char at s (pos + 1)) == 45 = acc + (fmt render span (str slice s pos len) (fmt comment cat (str slice s pos len)) target theme)
+        | (str char at s pos) == 34 = fmt hl dquote step s pos len target theme acc (fmt skip quoted s (pos + 1) len 34)
+        | (str char at s pos) == 39 = fmt hl squote step s pos len target theme acc (fmt skip quoted s (pos + 1) len 39)
+        | (str char at s pos) == 64 and (pos + 1) < len and (fmt is ident char (str char at s (pos + 1))) = fmt hl pragma step s pos len target theme acc (fmt scan ident end s (pos + 1) len)
         | (fmt multi op at s pos len) != "" = fmt hl mop step s pos len target theme acc (fmt multi op at s pos len)
-        | fmt is ident char (str_char_at s pos) = fmt hl ident step s pos len the_in_fn target theme acc (fmt scan ident end s pos len)
-        | fmt is single op (str_char_at s pos) = fmt highlight line loop s (pos + 1) len False target theme (acc + (fmt render span (str_slice s pos (pos + 1)) "operator" target theme))
-        | otherwise = fmt highlight line loop s (pos + 1) len False target theme (acc + (fmt escape target (str_slice s pos (pos + 1)) target))
+        | fmt is ident char (str char at s pos) = fmt hl ident step s pos len the_in_fn target theme acc (fmt scan ident end s pos len)
+        | fmt is single op (str char at s pos) = fmt highlight line loop s (pos + 1) len False target theme (acc + (fmt render span (str slice s pos (pos + 1)) "operator" target theme))
+        | otherwise = fmt highlight line loop s (pos + 1) len False target theme (acc + (fmt escape target (str slice s pos (pos + 1)) target))
 
 fn :: fmt line starts clause String => Bool
       fmt line starts clause line =
         ind = fmt leading indent line
         tr = fmt trim line
-        ind == 6 and tr != "" and (fmt is lower (str_char_at tr 0)) and (not (fmt is keyword (fmt str head (fmt tok strs (fmt scan tokens tr)))))
+        ind == 6 and tr != "" and (fmt is lower (str char at tr 0)) and (not (fmt is keyword (fmt str head (fmt tok strs (fmt scan tokens tr)))))
 
 fn :: fmt tok strs [FmtToken] => [String]
       fmt tok strs [] = []
@@ -1002,7 +1004,7 @@ fn :: fmt highlight line String FmtTarget FmtTheme => String
       fmt highlight line line FmtPlain _ = line
       fmt highlight line line FmtMarkdown _ = line
       fmt highlight line line target theme =
-        fmt highlight line loop line 0 (str_len line) (fmt line starts clause line) target theme ""
+        fmt highlight line loop line 0 (str len line) (fmt line starts clause line) target theme ""
 
 fn :: fmt highlight lines [String] FmtTarget FmtTheme => [String]
       fmt highlight lines [] _ _ = []
@@ -1011,8 +1013,8 @@ fn :: fmt highlight lines [String] FmtTarget FmtTheme => [String]
 
 fn :: fmt join rtf lines [String] => String
       fmt join rtf lines [] = ""
-      fmt join rtf lines (l:[]) = l + "\\line" + (char_from_code 10)
-      fmt join rtf lines (l:ls) = l + "\\line" + (char_from_code 10) + (fmt join rtf lines ls)
+      fmt join rtf lines (l:[]) = l + "\\line" + (char from code 10)
+      fmt join rtf lines (l:ls) = l + "\\line" + (char from code 10) + (fmt join rtf lines ls)
 
 -- ── Document Wrappers per Target ─────────────────────────────
 
@@ -1032,35 +1034,35 @@ fn :: fmt wrap target doc [String] FmtTarget FmtTheme => String
       fmt wrap target doc lines FmtTty _ = fmt join lines lines
       fmt wrap target doc lines FmtTrueColor _ = fmt join lines lines
       fmt wrap target doc lines FmtHtmlInline theme =
-        (fmt html pre open theme) + (char_from_code 10) + (fmt join lines lines) + "</code></pre>" + (char_from_code 10)
+        (fmt html pre open theme) + (char from code 10) + (fmt join lines lines) + "</code></pre>" + (char from code 10)
       fmt wrap target doc lines FmtHtmlCss _ =
-        "<pre class=\"ridgun-code\"><code class=\"language-ridgun\">" + (char_from_code 10) + (fmt join lines lines) + "</code></pre>" + (char_from_code 10)
+        "<pre class=\"ridgun-code\"><code class=\"language-ridgun\">" + (char from code 10) + (fmt join lines lines) + "</code></pre>" + (char from code 10)
       fmt wrap target doc lines FmtMarkdown _ =
-        "```ridgun" + (char_from_code 10) + (fmt join lines lines) + "```" + (char_from_code 10)
+        "```ridgun" + (char from code 10) + (fmt join lines lines) + "```" + (char from code 10)
       fmt wrap target doc lines FmtPango _ =
-        "<tt>" + (char_from_code 10) + (fmt join lines lines) + "</tt>" + (char_from_code 10)
+        "<tt>" + (char from code 10) + (fmt join lines lines) + "</tt>" + (char from code 10)
       fmt wrap target doc lines FmtLatex _ =
-        '\begin{Verbatim}[commandchars=\\\{\}]' + (char_from_code 10) + (fmt join lines lines) + '\end{Verbatim}' + (char_from_code 10)
+        '\begin{Verbatim}[commandchars=\\\{\}]' + (char from code 10) + (fmt join lines lines) + '\end{Verbatim}' + (char from code 10)
       fmt wrap target doc lines FmtRtf theme =
-        '{\rtf1\ansi\deff0{\fonttbl{\f0 Courier New;}}' + (fmt rtf colortbl theme) + '\f0\fs20 ' + (char_from_code 10) + (fmt join rtf lines lines) + '}' + (char_from_code 10)
+        '{\rtf1\ansi\deff0{\fonttbl{\f0 Courier New;}}' + (fmt rtf colortbl theme) + '\f0\fs20 ' + (char from code 10) + (fmt join rtf lines lines) + '}' + (char from code 10)
 
 fn :: fmt html stylesheet FmtTheme => String
       fmt html stylesheet FmtThemeLight =
-        nl = char_from_code 10
+        nl = char from code 10
         '<style>' + nl + '.ridgun-code { background: #fafafa; color: #383a42; padding: 12px; border-radius: 6px; overflow-x: auto; }' + nl + '.rg-kw, .rg-logic { color: #a626a4; font-weight: bold; }' + nl + '.rg-fn { color: #4078f2; font-weight: bold; }' + nl + '.rg-type { color: #c18401; }' + nl + '.rg-str { color: #50a14f; }' + nl + '.rg-interp, .rg-op { color: #0184bc; }' + nl + '.rg-num { color: #986801; }' + nl + '.rg-bool { color: #986801; font-weight: bold; }' + nl + '.rg-pragma { color: #696c77; font-weight: bold; }' + nl + '.rg-cmt { color: #a0a1a7; font-style: italic; }' + nl + '</style>' + nl
       fmt html stylesheet _ =
-        nl = char_from_code 10
+        nl = char from code 10
         '<style>' + nl + '.ridgun-code { background: #282c34; color: #abb2bf; padding: 12px; border-radius: 6px; overflow-x: auto; }' + nl + '.rg-kw, .rg-logic { color: #c678dd; font-weight: bold; }' + nl + '.rg-fn { color: #61afef; font-weight: bold; }' + nl + '.rg-type { color: #e5c07b; }' + nl + '.rg-str { color: #98c379; }' + nl + '.rg-interp, .rg-op { color: #56b6c2; }' + nl + '.rg-num { color: #d19a66; }' + nl + '.rg-bool { color: #d19a66; font-weight: bold; }' + nl + '.rg-pragma { color: #7f848e; font-weight: bold; }' + nl + '.rg-cmt { color: #5c6370; font-style: italic; }' + nl + '</style>' + nl
 
 -- ── Public Entry Points ──────────────────────────────────────
 
 fn :: fmt source with config String FmtConfig => String
       fmt source with config src cfg =
-        raw_lines = fmt split raw lines src
-        formatted_lines = fmt format top lines raw_lines 0 "" cfg
-        target = target_format cfg
-        theme = color_theme cfg
-        highlighted = fmt highlight lines formatted_lines target theme
+        src fmt split raw lines -> raw_lines
+        fmt format top lines raw_lines 0 "" cfg -> formatted_lines
+        cfg target_format -> target
+        cfg color_theme -> theme
+        fmt highlight lines formatted_lines target theme -> highlighted
         fmt wrap target doc highlighted target theme
 
 fn :: format ridgun source String => String

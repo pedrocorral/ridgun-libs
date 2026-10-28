@@ -12,8 +12,8 @@ Lib:en **`template`** erbjuder en logikfri **Mustache**-motor med kontextuell au
 
 I ett traditionellt ekosystem innebär uppgifter inom domänen **`TMPL`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`template`** (`src/main/ridgun/lib/template.rg`) problemet genom fyra kompromisslösa principer:
 
-1. **Totala funktioner och explicita kontrakt (`=>`)**: ingen funktion i `template` kastar dolda undantag eller förlitar sig på `null`. Varje gränsfall returnerar ett dokumenterat sentinelvärde eller en algebraisk summatyp (`Option`, `Result`).
-2. **Noll C-kod och noll `libc`**: varje rad i `template` kompileras direkt till inbyggd ELF64-maskinkod verifierad av `ridgunc`.
+1. **Deklarera `import template` (eller `import template as alias`) överst i filen**: varje lib definierar sin `module :: template`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
+2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
 3. **Svansrekursion med TCO (*Tail-Call Optimization*)**: alla interna genomlöpningar i `template` kompileras till inbyggda hårdvaruloopar med $O(1)$ stackutrymme.
 4. **Deterministiskt minne (`RMM1` / `RMM2`)**: varje mellanliggande struktur frigörs i exakt det ögonblick dess sista läsning avslutas, helt utan *Garbage Collector*.
 
@@ -29,7 +29,7 @@ I `ridgun-libs` är **`template`** en förstklassig **lib** placerad i `src/main
 | **Kompilerat arkiv** | `target/template.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libtemplate.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
-> För att använda denna lib i valfri `.rg`-fil deklarerar du bara `import template` överst och anropar funktionerna med mellanslag eller understreck.
+> Varje lib deklarerar sin egen namnrymd med `module :: template`: skriv bara `import template` (eller `import template as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).
 
 ### 14.2.1. Översikt över funktionella familjer i `template`
 
@@ -100,10 +100,10 @@ Lägg märke till hur `=`-tecknen och transformationsstegen med `template` linje
 ```ridgun
 import template
 
-fn :: renderizar perfil html (usuario : String) (es_admin : String) => String
+fn :: renderizar perfil html String String => String
       renderizar perfil html usuario es_admin =
-        plantilla = "<h1>Hola {{user}}</h1>{{#admin}}<span class='badge'>Admin</span>{{/admin}}"
-        vars      = [("user", usuario), ("admin", es_admin)]
+        "<h1>Hola {{user}}</h1>{{#admin}}<span class='badge'>Admin</span>{{/admin}}" -> plantilla
+        [("user", usuario), ("admin", es_admin)] -> vars
         tmpl render html plantilla vars
 ```
 
@@ -114,7 +114,7 @@ Varje funktion i lib:en `template` är utformad för att kombineras sömlöst me
 ```ridgun
 import template
 
-fn :: generar linea latex (metrica : String) => String
+fn :: generar linea latex String => String
       generar linea latex metrica =
         -- Escapa automaticamente % _ & # para que LaTeX no falle
         tmpl render latex "Resultado: {{val}}" [("val", metrica)]
@@ -127,17 +127,17 @@ I detta praktiska exempel undersöker vi grundligt hur `template` beter sig inom
 ```ridgun
 fn :: test_tmpl_interpolation_and_comments => ()
       test_tmpl_interpolation_and_comments =
-        nl = char_from_code 10
+        nl = char from code 10
         ctx = [("name", "Ada Lovelace"), ("role", "Mathematician"), ("empty", "")]
         t1 = "Hello, " + (tag2 "name") + " (" + (tag2 "  role  ") + ")!"
         out1 = tmpl render t1 ctx
-        _ = assert str eq out1 "Hello, Ada Lovelace (Mathematician)!" "AC1: variable and whitespace-trimmed tag interpolation"
+        assert str eq out1 "Hello, Ada Lovelace (Mathematician)!" "AC1: variable and whitespace-trimmed tag interpolation"
         t_missing = "User: [" + (tag2 "unknown") + "] Empty: [" + (tag2 "empty") + "]"
         out_missing = tmpl render t_missing ctx
-        _ = assert str eq out_missing "User: [] Empty: []" "AC1: missing and empty variables render empty string"
+        assert str eq out_missing "User: [] Empty: []" "AC1: missing and empty variables render empty string"
         t_comment = "Visible" + (tag2 "! secret comment ") + "Text" + (tag2 ("! multiline" + nl + "comment" + nl + "here ")) + "End"
         out_comment = tmpl render t_comment ctx
-        _ = assert str eq out_comment "VisibleTextEnd" "AC1: single-line and multi-line comments omitted"
+        assert str eq out_comment "VisibleTextEnd" "AC1: single-line and multi-line comments omitted"
         ()
 ```
 
@@ -148,14 +148,14 @@ I detta praktiska exempel undersöker vi grundligt hur `template` beter sig inom
 ```ridgun
 fn :: test_tmpl_html_escaping_and_raw => ()
       test_tmpl_html_escaping_and_raw =
-        q = char_from_code 34
+        q = char from code 34
         ctx = [("xss", "<script>alert(" + q + "xss" + q + " & 'pwn')</script>"), ("trusted", "<b>Bold &amp; Safe</b>")]
         tmpl = "Escaped: " + (tag2 "xss") + " | Raw3: " + (tag3 "trusted") + " | RawAmp: " + (tag2 "& trusted ")
         out_html = tmpl render html tmpl ctx
         expected = "Escaped: &lt;script&gt;alert(&quot;xss&quot; &amp; &#39;pwn&#39;)&lt;/script&gt; | Raw3: <b>Bold &amp; Safe</b> | RawAmp: <b>Bold &amp; Safe</b>"
-        _ = assert str eq out_html expected "AC1: HTML escaping vs raw triple-brace and ampersand tags"
+        assert str eq out_html expected "AC1: HTML escaping vs raw triple-brace and ampersand tags"
         out_none = tmpl render ("Plain: " + (tag2 "xss")) ctx
-        _ = assert str eq out_none ("Plain: <script>alert(" + q + "xss" + q + " & 'pwn')</script>") "AC1: TmplEscapeNone leaves HTML unescaped"
+        assert str eq out_none ("Plain: <script>alert(" + q + "xss" + q + " & 'pwn')</script>") "AC1: TmplEscapeNone leaves HTML unescaped"
         ()
 ```
 
@@ -168,17 +168,17 @@ fn :: test_tmpl_sections_and_inverted => ()
       test_tmpl_sections_and_inverted =
         tmpl = (tag2 "#auth") + "Welcome, " + (tag2 "user") + "!" + (tag2 "/auth") + (tag2 "^auth") + "Please log in." + (tag2 "/auth")
         out_in = tmpl render html tmpl [("auth", "true"), ("user", "Alice & Bob")]
-        _ = assert str eq out_in "Welcome, Alice &amp; Bob!" "AC2: truthy section rendered with HTML escaping"
+        assert str eq out_in "Welcome, Alice &amp; Bob!" "AC2: truthy section rendered with HTML escaping"
         out_false = tmpl render html tmpl [("auth", "false"), ("user", "Alice")]
-        _ = assert str eq out_false "Please log in." "AC2: 'false' triggers inverted section"
+        assert str eq out_false "Please log in." "AC2: 'false' triggers inverted section"
         out_false_cap = tmpl render html tmpl [("auth", "False"), ("user", "Alice")]
-        _ = assert str eq out_false_cap "Please log in." "AC2: 'False' triggers inverted section"
+        assert str eq out_false_cap "Please log in." "AC2: 'False' triggers inverted section"
         out_zero = tmpl render html tmpl [("auth", "0"), ("user", "Alice")]
-        _ = assert str eq out_zero "Please log in." "AC2: '0' triggers inverted section"
+        assert str eq out_zero "Please log in." "AC2: '0' triggers inverted section"
         out_empty = tmpl render html tmpl [("auth", ""), ("user", "Alice")]
-        _ = assert str eq out_empty "Please log in." "AC2: empty string triggers inverted section"
+        assert str eq out_empty "Please log in." "AC2: empty string triggers inverted section"
         out_missing = tmpl render html tmpl [("user", "Alice")]
-        _ = assert str eq out_missing "Please log in." "AC2: missing key triggers inverted section"
+        assert str eq out_missing "Please log in." "AC2: missing key triggers inverted section"
         ()
 ```
 
@@ -191,14 +191,14 @@ fn :: test_tmpl_nested_sections => ()
       test_tmpl_nested_sections =
         tmpl = (tag2 "#outer") + "A-" + (tag2 "#inner") + "B-" + (tag2 "val") + (tag2 "/inner") + (tag2 "^inner") + "NO_INNER" + (tag2 "/inner") + "-C" + (tag2 "/outer")
         out1 = tmpl render tmpl [("outer", "1"), ("inner", "yes"), ("val", "42")]
-        _ = assert str eq out1 "A-B-42-C" "AC2: nested outer+inner truthy"
+        assert str eq out1 "A-B-42-C" "AC2: nested outer+inner truthy"
         out2 = tmpl render tmpl [("outer", "1"), ("inner", "0"), ("val", "42")]
-        _ = assert str eq out2 "A-NO_INNER-C" "AC2: nested outer truthy, inner falsy"
+        assert str eq out2 "A-NO_INNER-C" "AC2: nested outer truthy, inner falsy"
         out3 = tmpl render tmpl [("outer", "0"), ("inner", "yes"), ("val", "42")]
-        _ = assert str eq out3 "" "AC2: nested outer falsy skips inner"
+        assert str eq out3 "" "AC2: nested outer falsy skips inner"
         same_nested = (tag2 "#k") + "[" + (tag2 "#k") + "(" + (tag2 "v") + ")" + (tag2 "/k") + "]" + (tag2 "/k")
-        _ = assert str eq (tmpl render same_nested [("k", "1"), ("v", "ok")]) "[(ok)]" "AC2: nested same-key truthy"
-        _ = assert str eq (tmpl render same_nested [("k", ""), ("v", "ok")]) "" "AC2: nested same-key falsy"
+        assert str eq (tmpl render same_nested [("k", "1"), ("v", "ok")]) "[(ok)]" "AC2: nested same-key truthy"
+        assert str eq (tmpl render same_nested [("k", ""), ("v", "ok")]) "" "AC2: nested same-key falsy"
         ()
 ```
 
@@ -209,15 +209,15 @@ I detta praktiska exempel undersöker vi grundligt hur `template` beter sig inom
 ```ridgun
 fn :: test_tmpl_latex_escaping => ()
       test_tmpl_latex_escaping =
-        bs = char_from_code 92
-        lb = char_from_code 123
-        rb = char_from_code 125
+        bs = char from code 92
+        lb = char from code 123
+        rb = char from code 125
         braces = lb + rb
         ctx = [("formula", "100% of $50 & #1_item " + lb + "a" + bs + "b" + rb + " ~ ^"), ("raw_tex", bs + "textbf" + lb + "Title" + rb)]
         tmpl = "Text: " + (tag2 "formula") + " | Raw: " + (tag3 "raw_tex")
         out_tex = tmpl render latex tmpl ctx
         expected = "Text: 100" + bs + "% of " + bs + "$50 " + bs + "& " + bs + "#1" + bs + "_item " + bs + lb + "a" + bs + "textbackslash" + braces + "b" + bs + rb + " " + bs + "textasciitilde" + braces + " " + bs + "textasciicircum" + braces + " | Raw: " + bs + "textbf" + lb + "Title" + rb
-        _ = assert str eq out_tex expected "AC3: LaTeX special characters escaped accurately while triple-brace stays raw"
+        assert str eq out_tex expected "AC3: LaTeX special characters escaped accurately while triple-brace stays raw"
         ()
 ```
 
@@ -228,12 +228,12 @@ I detta praktiska exempel undersöker vi grundligt hur `template` beter sig inom
 ```ridgun
 fn :: test_tmpl_malformed_tags => ()
       test_tmpl_malformed_tags =
-        lb = char_from_code 123
+        lb = char from code 123
         ctx = [("x", "1")]
-        _ = assert str eq (tmpl render ("trailing " + lb + lb) ctx) ("trailing " + lb + lb) "AC1: trailing double brace"
-        _ = assert str eq (tmpl render ("unclosed " + lb + lb + "x") ctx) ("unclosed " + lb + lb + "x") "AC1: unclosed var tag"
-        _ = assert str eq (tmpl render ("unclosed raw " + lb + lb + lb + "x") ctx) ("unclosed raw " + lb + lb + lb + "x") "AC1: unclosed raw3 tag"
-        _ = assert str eq (tmpl render ("unclosed comment " + lb + lb + "! hidden") ctx) "unclosed comment " "AC1: unclosed comment tag"
+        assert str eq (tmpl render ("trailing " + lb + lb) ctx) ("trailing " + lb + lb) "AC1: trailing double brace"
+        assert str eq (tmpl render ("unclosed " + lb + lb + "x") ctx) ("unclosed " + lb + lb + "x") "AC1: unclosed var tag"
+        assert str eq (tmpl render ("unclosed raw " + lb + lb + lb + "x") ctx) ("unclosed raw " + lb + lb + lb + "x") "AC1: unclosed raw3 tag"
+        assert str eq (tmpl render ("unclosed comment " + lb + lb + "! hidden") ctx) "unclosed comment " "AC1: unclosed comment tag"
         ()
 ```
 
@@ -248,55 +248,200 @@ En av de största fördelarna med `ridgun-libs` är att **det inte finns några 
 Se hur `template.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
-fn :: tm_lbrace => String
-      tm_lbrace =  char_from_code 123
+module :: template
 
-fn :: tm_rbrace => String
-      tm_rbrace =  char_from_code 125
+fn :: tm lbrace => String
+      tm lbrace = char from code 123
 
-fn :: tm_braces => String
-      tm_braces =  (char_from_code 123) + (char_from_code 125)
+fn :: tm rbrace => String
+      tm rbrace = char from code 125
 
-fn :: tm_is_space Int => Bool
-      tm_is_space c
+fn :: tm braces => String
+      tm braces = (char from code 123) + (char from code 125)
+
+fn :: tm is space Int => Bool
+      tm is space c =
         | c == 32 = True
         | c == 9 = True
         | c == 10 = True
         | c == 13 = True
         | otherwise = False
 
-fn :: tm_trim_start String Int Int => Int
-      tm_trim_start s      idx n
+fn :: tm trim start String Int Int => Int
+      tm trim start s idx n =
         | idx >= n = n
-        | tm_is_space (str_char_at s idx) = tm_trim_start s (idx + 1) n
+        | tm is space (str char at s idx) = tm trim start s (idx + 1) n
         | otherwise = idx
 
-fn :: tm_trim_end String Int   Int => Int
-      tm_trim_end s      start idx
+fn :: tm trim end String Int Int => Int
+      tm trim end s start idx =
         | idx <= start = start
-        | tm_is_space (str_char_at s (idx - 1)) = tm_trim_end s start (idx - 1)
+        | tm is space (str char at s (idx - 1)) = tm trim end s start (idx - 1)
         | otherwise = idx
 
-fn :: tm_trim String => String
-      tm_trim s      =
-        n = str_len s
-        st = tm_trim_start s 0 n
-        en = tm_trim_end s st n
-        str_slice s st en
+fn :: tm trim String => String
+      tm trim s =
+        s str len -> n
+        tm trim start s 0 n -> st
+        tm trim end s st n -> en
+        str slice s st en
 
-fn :: tm_lookup [(String, String)] String => String
-      tm_lookup []                 _      =  ""
-      tm_lookup ((k, v):rest)      key
+fn :: tm lookup [String String] String => String
+      tm lookup [] _ = ""
+      tm lookup ((k, v):rest) key =
         | k == key = v
-        | otherwise = tm_lookup rest key
+        | otherwise = tm lookup rest key
 
-fn :: tm_val_truthy String => Bool
-      tm_val_truthy val
+fn :: tm val truthy String => Bool
+      tm val truthy val =
         | val == "" = False
         | val == "false" = False
         | val == "False" = False
         | val == "0" = False
         | otherwise = True
+
+fn :: tm is truthy [String String] String => Bool
+      tm is truthy ctx key = tm lookup ctx key -> tm val truthy
+
+fn :: tm escape html char Int => String
+      tm escape html char c =
+        | c == 38 = "&amp;"
+        | c == 60 = "&lt;"
+        | c == 62 = "&gt;"
+        | c == 34 = "&quot;"
+        | c == 39 = "&#39;"
+        | otherwise = char from code c
+
+fn :: tm escape html loop String Int Int String => String
+      tm escape html loop s idx n acc =
+        | idx >= n = acc
+        | otherwise = tm escape html loop s (idx + 1) n (acc + (tm escape html char (str char at s idx)))
+
+fn :: tm escape latex char Int => String
+      tm escape latex char c =
+        | c == 92 = (char from code 92) + "textbackslash" + (tm braces)
+        | c == 123 = (char from code 92) + (tm lbrace)
+        | c == 125 = (char from code 92) + (tm rbrace)
+        | c == 38 = (char from code 92) + "&"
+        | c == 37 = (char from code 92) + "%"
+        | c == 36 = (char from code 92) + "$"
+        | c == 35 = (char from code 92) + "#"
+        | c == 95 = (char from code 92) + "_"
+        | c == 126 = (char from code 92) + "textasciitilde" + (tm braces)
+        | c == 94 = (char from code 92) + "textasciicircum" + (tm braces)
+        | otherwise = char from code c
+
+fn :: tm escape latex loop String Int Int String => String
+      tm escape latex loop s idx n acc =
+        | idx >= n = acc
+        | otherwise = tm escape latex loop s (idx + 1) n (acc + (tm escape latex char (str char at s idx)))
+
+fn :: tm escape String TmplEscape => String
+      tm escape s TmplEscapeNone = s
+      tm escape s TmplEscapeHtml = tm escape html loop s 0 (str len s) ""
+      tm escape s TmplEscapeLatex = tm escape latex loop s 0 (str len s) ""
+
+fn :: tm find close2 String Int Int => Int
+      tm find close2 s idx n =
+        | (idx + 1) >= n = (0 - 1)
+        | (str char at s idx) == 125 and (str char at s (idx + 1)) == 125 = idx
+        | otherwise = tm find close2 s (idx + 1) n
+
+fn :: tm find close3 String Int Int => Int
+      tm find close3 s idx n =
+        | (idx + 2) >= n = (0 - 1)
+        | (str char at s idx) == 125 and (str char at s (idx + 1)) == 125 and (str char at s (idx + 2)) == 125 = idx
+        | otherwise = tm find close3 s (idx + 1) n
+
+fn :: tm find section close String Int Int String Int => Int Int
+      tm find section close s idx n sec_key depth =
+        | (idx + 3) >= n = (n, n)
+        | (str char at s idx) == 123 and (str char at s (idx + 1)) == 123 =
+          tm check section tag s idx n sec_key depth (str char at s (idx + 2))
+        | otherwise = tm find section close s (idx + 1) n sec_key depth
+
+fn :: tm check section tag String Int Int String Int Int => Int Int
+      tm check section tag s idx n sec_key depth sig =
+        | sig == 47 = tm check close tag s idx n sec_key depth (tm find close2 s (idx + 3) n)
+        | sig == 35 or sig == 94 = tm check open tag s idx n sec_key depth (tm find close2 s (idx + 3) n)
+        | otherwise = tm find section close s (idx + 2) n sec_key depth
+
+fn :: tm check close tag String Int Int String Int Int => Int Int
+      tm check close tag s idx n sec_key depth close_pos =
+        | close_pos < 0 = (n, n)
+        | (tm trim (str slice s (idx + 3) close_pos)) == sec_key =
+          tm close tag match s idx n sec_key depth close_pos
+        | otherwise = tm find section close s (close_pos + 2) n sec_key depth
+
+fn :: tm close tag match String Int Int String Int Int => Int Int
+      tm close tag match s idx n sec_key depth close_pos =
+        | depth <= 1 = (idx, close_pos + 2)
+        | otherwise = tm find section close s (close_pos + 2) n sec_key (depth - 1)
+
+fn :: tm check open tag String Int Int String Int Int => Int Int
+      tm check open tag s idx n sec_key depth close_pos =
+        | close_pos < 0 = (n, n)
+        | (tm trim (str slice s (idx + 3) close_pos)) == sec_key =
+          tm find section close s (close_pos + 2) n sec_key (depth + 1)
+        | otherwise = tm find section close s (close_pos + 2) n sec_key depth
+
+fn :: tm scan String Int Int [String String] TmplEscape String => String
+      tm scan s idx n ctx mode acc =
+        | idx >= n = acc
+        | (idx + 1) < n and (str char at s idx) == 123 and (str char at s (idx + 1)) == 123 =
+          tm dispatch tag s idx n ctx mode acc
+        | otherwise = tm scan s (idx + 1) n ctx mode (acc + (char from code (str char at s idx)))
+
+fn :: tm dispatch tag String Int Int [String String] TmplEscape String => String
+      tm dispatch tag s idx n ctx mode acc =
+        | (idx + 2) >= n = acc + (tm lbrace) + (tm lbrace)
+        | (str char at s (idx + 2)) == 123 = tm tag raw3 s idx n ctx mode acc (tm find close3 s (idx + 3) n)
+        | (str char at s (idx + 2)) == 38 = tm tag raw amp s idx n ctx mode acc (tm find close2 s (idx + 3) n)
+        | (str char at s (idx + 2)) == 33 = tm tag comment s idx n ctx mode acc (tm find close2 s (idx + 3) n)
+        | (str char at s (idx + 2)) == 35 = tm tag section s idx n ctx mode acc (tm find close2 s (idx + 3) n) False
+        | (str char at s (idx + 2)) == 94 = tm tag section s idx n ctx mode acc (tm find close2 s (idx + 3) n) True
+        | otherwise = tm tag var s idx n ctx mode acc (tm find close2 s (idx + 2) n)
+
+fn :: tm tag raw3 String Int Int [String String] TmplEscape String Int => String
+      tm tag raw3 s idx n ctx mode acc close_pos =
+        | close_pos < 0 = tm scan s (idx + 3) n ctx mode (acc + (tm lbrace) + (tm lbrace) + (tm lbrace))
+        | otherwise =
+          tm scan s (close_pos + 3) n ctx mode (acc + (tm lookup ctx (tm trim (str slice s (idx + 3) close_pos))))
+
+fn :: tm tag raw amp String Int Int [String String] TmplEscape String Int => String
+      tm tag raw amp s idx n ctx mode acc close_pos =
+        | close_pos < 0 = tm scan s (idx + 3) n ctx mode (acc + (tm lbrace) + (tm lbrace) + "&")
+        | otherwise =
+          tm scan s (close_pos + 2) n ctx mode (acc + (tm lookup ctx (tm trim (str slice s (idx + 3) close_pos))))
+
+fn :: tm tag comment String Int Int [String String] TmplEscape String Int => String
+      tm tag comment s _ n ctx mode acc close_pos =
+        | close_pos < 0 = acc
+        | otherwise = tm scan s (close_pos + 2) n ctx mode acc
+
+fn :: tm section active Bool Bool => Bool
+      tm section active True False = True
+      tm section active False True = True
+      tm section active _ _ = False
+
+fn :: tm render section body String Int (Int Int) Int [String String] TmplEscape String Bool => String
+      tm render section body s _ (_, after_close) n ctx mode acc False =
+        tm scan s after_close n ctx mode acc
+      tm render section body s body_start (body_end, after_close) n ctx mode acc True =
+        tm scan s body_start body_end ctx mode "" -> rendered_body
+        tm scan s after_close n ctx mode (acc + rendered_body)
+
+fn :: tm tag section String Int Int [String String] TmplEscape String Int Bool => String
+      tm tag section s idx n ctx mode acc open_close inverted =
+        | open_close < 0 = tm scan s (idx + 3) n ctx mode acc
+        | otherwise =
+          tm render section body s (open_close + 2) (tm find section close s (open_close + 2) n (tm trim (str slice s (idx + 3) open_close)) 1) n ctx mode acc (tm section active (tm is truthy ctx (tm trim (str slice s (idx + 3) open_close))) inverted)
+
+fn :: tm tag var String Int Int [String String] TmplEscape String Int => String
+      tm tag var s idx n ctx mode acc close_pos =
+        | close_pos < 0 = tm scan s (idx + 2) n ctx mode (acc + (tm lbrace) + (tm lbrace))
+        | otherwise =
+          tm scan s (close_pos + 2) n ctx mode (acc + (tm escape (tm lookup ctx (tm trim (str slice s (idx + 2) close_pos))) mode))
 ```
 
 ### 14.4.2. Intern implementation: Public API
@@ -304,17 +449,17 @@ fn :: tm_val_truthy String => Bool
 Se hur `template.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
-fn :: tmpl render with escape String [(String, String)] TmplEscape => String
-      tmpl render with escape tmpl ctx mode = tm_scan tmpl 0 (str_len tmpl) ctx mode ""
+fn :: tmpl render with escape String [String String] TmplEscape => String
+      tmpl render with escape tmpl ctx mode = tm scan tmpl 0 (str len tmpl) ctx mode ""
 
-fn :: tmpl render String [(String, String)] => String
-      tmpl render tmpl   ctx                =  tmpl render with escape tmpl ctx TmplEscapeNone
+fn :: tmpl render String [String String] => String
+      tmpl render tmpl ctx = tmpl render with escape tmpl ctx TmplEscapeNone
 
-fn :: tmpl render html String [(String, String)] => String
-      tmpl render html tmpl   ctx                =  tmpl render with escape tmpl ctx TmplEscapeHtml
+fn :: tmpl render html String [String String] => String
+      tmpl render html tmpl ctx = tmpl render with escape tmpl ctx TmplEscapeHtml
 
-fn :: tmpl render latex String [(String, String)] => String
-      tmpl render latex tmpl   ctx                =  tmpl render with escape tmpl ctx TmplEscapeLatex
+fn :: tmpl render latex String [String String] => String
+      tmpl render latex tmpl ctx = tmpl render with escape tmpl ctx TmplEscapeLatex
 ```
 
 ---

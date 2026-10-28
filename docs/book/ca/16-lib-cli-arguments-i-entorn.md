@@ -12,8 +12,8 @@ La lib **`cli`** resol banderes llargues (`--verbose`), curtes (`-v`), agrupades
 
 En un ecosistema tradicional, resoldre les tasques del domini **`CLI`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`cli`** (`src/main/ridgun/lib/cli.rg`) aborda el problema amb quatre principis innegociables:
 
-1. **Funcions totals i contractes explícits (`=>`)**: cap funció de `cli` llança excepcions ocultes ni depèn de `null`. Tot cas límit retorna un valor sentinella documentat o un tipus algebraic suma (`Option`, `Result`).
-2. **Zero codi C i zero `libc`**: tot el codi de `cli` compila directament a codi màquina natiu ELF64 verificat per `ridgunc`.
+1. **Declara `import cli` (o `import cli as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: cli` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
+2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
 3. **Recursió de cua amb TCO (*Tail-Call Optimization*)**: tots els recorreguts interns de `cli` es compilen a bucles natius en espai de pila $O(1)$.
 4. **Memòria determinista (`RMM1` / `RMM2`)**: cada estructura intermèdia s'allibera en l'instant exacte en què acaba la seva última lectura, sense *Garbage Collector*.
 
@@ -29,7 +29,7 @@ A `ridgun-libs`, **`cli`** és una **lib** de primera classe situada a `src/main
 | **Fitxer compilat** | `target/cli.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libcli.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
-> Per fer servir aquesta lib en qualsevol fitxer `.rg`, n'hi ha prou de declarar `import cli` a la capçalera i cridar les seves funcions amb espais o guions baixos indistintament.
+> Cada lib declara el seu propi espai de noms amb `module :: cli`: n'hi ha prou d'escriure `import cli` (o `import cli as alias`) a la capçalera i cridar les seves funcions amb espais naturals (`la meva funcio x`) i canonades `->` (`x la meva funcio -> resultat`).
 
 ### 16.2.1. Resum de famílies funcionals de `cli`
 
@@ -86,12 +86,12 @@ Observa com en Ridgun els signes `=` i els passos de transformació amb `cli` qu
 ```ridgun
 import cli
 
-fn :: analizar comando (args : [String]) => (String, Bool, Int, [String])
+fn :: analizar comando [String] => String Bool Int [String]
       analizar comando args =
-        sub   = cli subcommand args
-        all_f = cli has flag args "--all" "-a"
-        port  = cli get int opt args "--port" "-p" 8080
-        arch  = cli positionals args ["--port", "-p"]
+        args cli subcommand -> sub
+        cli has flag args "--all" "-a" -> all_f
+        cli get int opt args "--port" "-p" 8080 -> port
+        cli positionals with opts args ["--port", "-p"] -> arch
         (sub, all_f, port, arch)
 ```
 
@@ -102,10 +102,10 @@ Tota funció de la lib `cli` està dissenyada per compondre's amb guardes boolea
 ```ridgun
 import cli
 
-fn :: leer config entorno () => (Int, Bool)
+fn :: leer config entorno => Int Bool
       leer config entorno =
-        workers = env get int or "SOLSTICE_WORKERS" 4
-        debug   = env get bool or "SOLSTICE_DEBUG" False
+        env get int or "SOLSTICE_WORKERS" 4 -> workers
+        env get bool or "SOLSTICE_DEBUG" False -> debug
         (workers, debug)
 ```
 
@@ -117,25 +117,25 @@ En aquest exemple pràctic explorem de manera exhaustiva com es comporta `cli` e
 fn :: test cli flags and options => ()
       test cli flags and options =
         args = ["serve", "-la", "--verbose", "--port=9090", "-h", "127.0.0.1", "--workers", "-4", "--", "--ignored-flag", "-z", "file.rg"]
-        _ = assert true (cli has flag args "--verbose" "-v") "AC1: long flag --verbose"
-        _ = assert true (cli has flag args "--all" "-a") "AC1: bundled short flag -a in -la"
-        _ = assert true (cli has flag args "--list" "-l") "AC1: bundled short flag -l in -la"
-        _ = assert false (cli has flag args "--quiet" "-q") "AC1: missing flag returns False"
-        _ = assert false (cli has flag args "--ignored-flag" "") "AC1: long flag after -- is ignored"
-        _ = assert false (cli has flag args "" "-z") "AC1: short flag after -- is ignored"
-        _ = assert false (cli has flag [] "--verbose" "-v") "AC1: empty args returns False"
+        assert true (cli has flag args "--verbose" "-v") "AC1: long flag --verbose"
+        assert true (cli has flag args "--all" "-a") "AC1: bundled short flag -a in -la"
+        assert true (cli has flag args "--list" "-l") "AC1: bundled short flag -l in -la"
+        assert false (cli has flag args "--quiet" "-q") "AC1: missing flag returns False"
+        assert false (cli has flag args "--ignored-flag" "") "AC1: long flag after -- is ignored"
+        assert false (cli has flag args "" "-z") "AC1: short flag after -- is ignored"
+        assert false (cli has flag [] "--verbose" "-v") "AC1: empty args returns False"
 
         -- Option extraction: --key=val, --key val, -k=val, -k val, empty value --key=
-        _ = assert str eq (cli get opt args "--port" "-p" "8080") "9090" "AC2: --port=9090 inline equals"
-        _ = assert str eq (cli get opt args "--host" "-h" "0.0.0.0") "127.0.0.1" "AC2: -h 127.0.0.1 separate token"
-        _ = assert str eq (cli get opt args "--mode" "-m" "prod") "prod" "AC2: missing option returns fallback"
-        _ = assert int equals (cli get int opt args "--port" "-p" 8080) 9090 "AC2: cli_get_int_opt positive int"
-        _ = assert int equals (cli get int opt args "--workers" "-w" 1) (0 - 4) "AC2: cli_get_int_opt negative int"
-        _ = assert int equals (cli get int opt args "--host" "-h" 8080) 8080 "AC2: non-numeric option falls back to default int"
+        assert str eq (cli get opt args "--port" "-p" "8080") "9090" "AC2: --port=9090 inline equals"
+        assert str eq (cli get opt args "--host" "-h" "0.0.0.0") "127.0.0.1" "AC2: -h 127.0.0.1 separate token"
+        assert str eq (cli get opt args "--mode" "-m" "prod") "prod" "AC2: missing option returns fallback"
+        assert int equals (cli get int opt args "--port" "-p" 8080) 9090 "AC2: cli_get_int_opt positive int"
+        assert int equals (cli get int opt args "--workers" "-w" 1) (0 - 4) "AC2: cli_get_int_opt negative int"
+        assert int equals (cli get int opt args "--host" "-h" 8080) 8080 "AC2: non-numeric option falls back to default int"
 
         short_eq_args = ["-p=3000", "--empty="]
-        _ = assert int equals (cli get int opt short_eq_args "--port" "-p" 80) 3000 "AC2: short option -p=3000"
-        _ = assert str eq (cli get opt short_eq_args "--empty" "-e" "def") "" "AC2: explicit empty --empty= returns empty string"
+        assert int equals (cli get int opt short_eq_args "--port" "-p" 80) 3000 "AC2: short option -p=3000"
+        assert str eq (cli get opt short_eq_args "--empty" "-e" "def") "" "AC2: explicit empty --empty= returns empty string"
         ()
 ```
 
@@ -147,24 +147,24 @@ En aquest exemple pràctic explorem de manera exhaustiva com es comporta `cli` e
 fn :: test cli positionals subcommand and env => ()
       test cli positionals subcommand and env =
         args = ["build", "-v", "--output", "target/app", "-j", "8", "--", "-dashfile.rg", "--another-literal", "main.rg"]
-        _ = assert str eq (cli subcommand args) "build" "AC3: cli_subcommand first positional"
-        _ = assert str eq (cli subcommand ["-v", "--release", "test"]) "test" "AC3: cli_subcommand skips leading flags"
-        _ = assert str eq (cli subcommand ["--help", "-v"]) "" "AC3: cli_subcommand empty when only flags"
-        _ = assert str eq (cli subcommand []) "" "AC3: cli_subcommand empty on []"
+        assert str eq (cli subcommand args) "build" "AC3: cli_subcommand first positional"
+        assert str eq (cli subcommand ["-v", "--release", "test"]) "test" "AC3: cli_subcommand skips leading flags"
+        assert str eq (cli subcommand ["--help", "-v"]) "" "AC3: cli_subcommand empty when only flags"
+        assert str eq (cli subcommand []) "" "AC3: cli_subcommand empty on []"
 
         pos = cli positionals with opts args ["--output", "-j"]
-        _ = assert eq pos ["build", "-dashfile.rg", "--another-literal", "main.rg"]
+        assert eq pos ["build", "-dashfile.rg", "--another-literal", "main.rg"]
 
         -- Single "-" (stdin/stdout convention) is treated as a positional argument, not a flag!
         stdin_args = ["cat", "-n", "-"]
-        _ = assert eq (cli positionals stdin_args) ["cat", "-"]
+        assert eq (cli positionals stdin_args) ["cat", "-"]
 
         -- Environment variable readers
-        _ = assert true ((str len (env get or "PATH" "")) > 0) "AC4: env_get_or PATH non-empty"
-        _ = assert str eq (env get or "RIDGUN_NONEXISTENT_ENV_999" "fallback_val") "fallback_val" "AC4: env_get_or fallback"
-        _ = assert int equals (env get int or "RIDGUN_NONEXISTENT_ENV_999" 42) 42 "AC4: env_get_int_or fallback"
-        _ = assert true (env get bool or "RIDGUN_NONEXISTENT_ENV_999" True) "AC4: env_get_bool_or True fallback"
-        _ = assert false (env get bool or "RIDGUN_NONEXISTENT_ENV_999" False) "AC4: env_get_bool_or False fallback"
+        assert true ((str len (env get or "PATH" "")) > 0) "AC4: env_get_or PATH non-empty"
+        assert str eq (env get or "RIDGUN_NONEXISTENT_ENV_999" "fallback_val") "fallback_val" "AC4: env_get_or fallback"
+        assert int equals (env get int or "RIDGUN_NONEXISTENT_ENV_999" 42) 42 "AC4: env_get_int_or fallback"
+        assert true (env get bool or "RIDGUN_NONEXISTENT_ENV_999" True) "AC4: env_get_bool_or True fallback"
+        assert false (env get bool or "RIDGUN_NONEXISTENT_ENV_999" False) "AC4: env_get_bool_or False fallback"
         ()
 ```
 
@@ -196,6 +196,8 @@ Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C
 Fixa't en com `cli.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
+module :: cli
+
 fn :: cl str contains char String Int Int Int => Bool
       cl str contains char s ch idx len =
         | idx >= len                = False
@@ -241,6 +243,12 @@ fn :: cl lower char String Int Int => String
       cl lower char s idx c =
         | c >= 65 and c <= 90 = char from code (c + 32)
         | otherwise           = str slice s idx (idx + 1)
+
+fn :: cl trim lower loop String Int Int => String
+      cl trim lower loop s idx len =
+        | idx >= len                   = ""
+        | cl is ws (str char at s idx) = cl trim lower loop s (idx + 1) len
+        | otherwise                    = (cl lower char s idx (str char at s idx)) + (cl trim lower loop s (idx + 1) len)
 ```
 
 ### 16.4.2. Implementació interna: Positional Arguments & Subcommand Extraction
@@ -274,7 +282,7 @@ fn :: cl first str [String] => String
       cl first str (x:_)    =  x
 
 fn :: cli subcommand [String] => String
-      cli subcommand args     =  cl first str (cli positionals args)
+      cli subcommand args     =  args cli positionals -> cl first str
 ```
 
 ### 16.4.3. Implementació interna: Typed Environment Variable Readers
@@ -301,8 +309,9 @@ fn :: cl parse bool val String Bool => Bool
 
 fn :: env get bool or String Bool => Bool
       env get bool or key fallback =
-        raw = sys getenv key
-        cl parse bool val (cl trim lower loop raw 0 (str len raw)) fallback
+        key sys getenv -> raw
+        cl trim lower loop raw 0 (str len raw) -> norm
+        cl parse bool val norm fallback
 ```
 
 ---

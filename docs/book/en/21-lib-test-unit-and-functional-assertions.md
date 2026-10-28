@@ -12,8 +12,8 @@ The **`test`** lib (`RG-011`) provides polymorphic and type-specific assertions 
 
 In a traditional ecosystem, solving **`TST`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`test`** lib (`src/main/ridgun/lib/test.rg`) tackles the problem with four non-negotiable principles:
 
-1. **Total Functions & Explicit Contracts (`=>`)**: no function in `test` throws hidden exceptions or relies on `null`. Every edge case (empty inputs, zero divisors, truncated frames, or out-of-bounds indices) returns a documented sentinel value or an algebraic sum type (`Option`, `Result`).
-2. **Zero C Code & Zero `libc`**: every line of `test` compiles directly into native ELF64 machine code verified by `ridgunc`.
+1. **Declare `import test` (or `import test as alias`) at the top of your file**: every lib defines its `module :: test` namespace, and under `--strict` multi-word functions are always called with natural spaces.
+2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
 3. **Tail-Call Optimization (TCO)**: all internal loops in `test` are tail-recursive and compile into native hardware loops using $O(1)$ stack space.
 4. **Deterministic Memory (`RMM1` / `RMM2`)**: every intermediate allocation is reclaimed at the exact instruction where its last read finishes, with no Garbage Collector.
 
@@ -29,7 +29,7 @@ In `ridgun-libs`, **`test`** is a first-class **lib** located at `src/main/ridgu
 | **Compiled Archive** | `target/test.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libtest.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
-> To use this lib in any `.rg` file, simply add `import test` at the top and call its functions using either multi-word spaces (`my fn x`) or underscores (`my_fn x`).
+> Every lib declares its own namespace via `module :: test`: simply write `import test` (or `import test as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).
 
 ### 21.2.1. Summary of `test` Functional Families
 
@@ -73,10 +73,10 @@ Notice how in Ridgun the `=` signs and transformation steps using `test` align i
 import test
 import math
 
-fn :: suite matematicas () => ()
+fn :: suite matematicas => ()
       suite matematicas =
-        _ = assert int equals 12 (math gcd 36 60) "MCD de 36 y 60"
-        _ = assert true (math is prime 97) "97 es primo"
+        assert equals 12 (math gcd 36 60) "MCD de 36 y 60"
+        assert true (math is prime 97) "97 es primo"
         echo "[PASS] suite matematicas"
 ```
 
@@ -87,9 +87,9 @@ Every function in the `test` lib is designed to compose cleanly with boolean gua
 ```ridgun
 import test
 
-fn :: verificar codigo sistema (rc : Int) => ()
+fn :: verificar codigo sistema Int => ()
       verificar codigo sistema rc =
-        assert ok rc "operacion de descriptor exitosa"
+        assert equals rc 0 "operacion de descriptor exitosa"
 ```
 
 ### 21.3.3. Example 3: Boolean Predicates (`check eq`, `check str eq`, `check true`) and Diagnostic RG-011 Assertions (`assert equals`, `assert str eq`, `assert int equals`)
@@ -99,21 +99,21 @@ In this hands-on walkthrough we thoroughly exercise how `test` behaves across th
 ```ridgun
 fn :: test rg011 assertions => ()
       test rg011 assertions =
-        _ = assert equals 4 4 "math int equality"
-        _ = assert equals "ok" "ok" "string equality"
-        _ = assert equals True True "bool equality"
-        _ = assert true (1 < 2) "1 < 2 holds"
-        _ = assert false (1 > 2) "1 > 2 is false"
-        _ = assert str eq "ridgun" "ridgun" "str eq helper"
-        _ = assert int equals 42 42 "int eq helper"
-        _ = assert eq 10 10
-        _ = assert ok True
-        _ = assert not False
-        _ = assert true (check eq 2 2) "check eq True"
-        _ = assert false (check eq 1 2) "check eq False"
-        _ = assert true (check str eq "a" "a") "check str eq True"
-        _ = assert false (check str eq "a" "b") "check str eq False"
-        _ = assert true (check true True) "check true True"
+        assert equals 4 4 "math int equality"
+        assert equals "ok" "ok" "string equality"
+        assert equals True True "bool equality"
+        assert true (1 < 2) "1 < 2 holds"
+        assert false (1 > 2) "1 > 2 is false"
+        assert str eq "ridgun" "ridgun" "str eq helper"
+        assert int equals 42 42 "int eq helper"
+        assert eq 10 10
+        assert ok True
+        assert not False
+        assert true (check eq 2 2) "check eq True"
+        assert false (check eq 1 2) "check eq False"
+        assert true (check str eq "a" "a") "check str eq True"
+        assert false (check str eq "a" "b") "check str eq False"
+        assert true (check true True) "check true True"
         assert false (check true False) "check true False"
 ```
 
@@ -133,14 +133,14 @@ fn :: validar invariantes de dominio (x : Int) (nombre : String) => Bool
 fn :: ejecutar suite de ejemplo => ()
       ejecutar suite de ejemplo =
         -- 1. Predicados puros sin salida del proceso (`check_*`)
-        _ = assert true (validar invariantes de dominio 21 "ridgun") "predicado compuesto"
+        assert true (validar invariantes de dominio 21 "ridgun") "predicado compuesto"
         -- 2. Aserciones anotadas con mensaje diagnóstico (`assert_*`)
-        _ = assert int equals (20 + 22) 42 "suma entera exacta"
-        _ = assert str eq "rglib" "rglib" "etiqueta de artefacto"
+        assert int equals (20 + 22) 42 "suma entera exacta"
+        assert str eq "rglib" "rglib" "etiqueta de artefacto"
         -- 3. Aserciones concisas sin etiqueta (`assert ok`, `assert not`, `assert eq`)
-        _ = assert ok (10 > 5)
-        _ = assert not (10 < 5)
-        _ = assert eq [1, 2, 3] [1, 2, 3]
+        assert ok (10 > 5)
+        assert not (10 < 5)
+        assert eq [1, 2, 3] [1, 2, 3]
         ()
 ```
 
@@ -155,6 +155,8 @@ One of the biggest advantages of `ridgun-libs` is that **there are no C black bo
 Observe how `test.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
+module :: test
+
 fn :: check eq A      A        => Bool
       check eq actual expected =  actual == expected
 

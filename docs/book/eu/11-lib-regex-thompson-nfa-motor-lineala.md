@@ -12,8 +12,8 @@ Izan gaitezen zintzoak: *backtracking* bidezko adierazpen erregularren motorrek 
 
 Ekosistema tradizional batean, **`REGEX`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`regex`** lib-ak (`src/main/ridgun/lib/regex.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
-1. **Funtzio osoak eta kontratu esplizituak (`=>`)**: `regex`-eko funtzio bakar batek ere ez du ezkutuko salbuespenik jaurtitzen, ezta `null` erabiltzen ere. Muga-kasu orok dokumentatutako balio bat edo batura-mota aljebraiko bat (`Option`, `Result`) itzultzen du.
-2. **Zero C kode eta zero `libc`**: `regex`-eko kode guztia zuzenean ELF64 makina-kode natibora konpilatzen da, `ridgunc`-ek egiaztatuta.
+1. **Deklaratu `import regex` (edo `import regex as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: regex` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
+2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
 3. **Isats-errekurtsioa TCOrekin (*Tail-Call Optimization*)**: `regex`-eko barne-ibilbide guztiak $O(1)$ pila-espazioko begizta natiboetara konpilatzen dira.
 4. **Memoria determinista (`RMM1` / `RMM2`)**: tarteko egitura bakoitza bere azken irakurketa amaitzen den une zehatzean askatzen da, *Garbage Collector* gabe.
 
@@ -29,7 +29,7 @@ Ekosistema tradizional batean, **`REGEX`** domeinuko zereginak ebazteak C-ko kan
 | **Fitxategi konpilatua** | `target/regex.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libregex.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
-> Lib hau edozein `.rg` fitxategitan erabiltzeko, nahikoa da goiburuan `import regex` deklaratzea eta bere funtzioei zuriuneekin edo azpimarrarekin deitzea.
+> Lib bakoitzak bere izen-espazioa deklaratzen du `module :: regex` bidez: nahikoa da goiburuan `import regex` (edo `import regex as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 
 ### 11.2.1. `regex`-eko familia funtzionalen laburpena
 
@@ -139,9 +139,9 @@ Ikusi nola Ridgunen `=` ikurrak eta `regex` bidezko eraldaketa-urratsak taula ga
 ```ridgun
 import regex
 
-fn :: extraer codigos postales (texto : String) => [String]
+fn :: extraer codigos postales String => [String]
       extraer codigos postales texto =
-        regex find all "\\d+" texto
+        regex find all "\d+" texto
 ```
 
 ### 11.3.2. 2. adibidea: Konposizio segurua eta muga-kasuen kudeaketa
@@ -151,10 +151,10 @@ fn :: extraer codigos postales (texto : String) => [String]
 ```ridgun
 import regex
 
-fn :: censurar telefonos (comentario : String) => (Bool, String)
+fn :: censurar telefonos String => Bool String
       censurar telefonos comentario =
-        tiene = regex is match "\\d+-\\d+" comentario
-        limpio = regex replace all "\\d+-\\d+" comentario "[TELEFONO]"
+        regex is match "\d+-\d+" comentario -> tiene
+        regex replace all "\d+-\d+" comentario "[TELEFONO]" -> limpio
         (tiene, limpio)
 ```
 
@@ -165,31 +165,31 @@ Adibide praktiko honetan `regex` bloke funtzional honetan nola portatzen den sak
 ```ridgun
 fn :: test_regex_operators_and_classes => ()
       test_regex_operators_and_classes =
-        _ = assert true (regex match "" "") "AC1: empty pattern matches empty string"
-        _ = assert false (regex match "" "nonempty") "AC1: empty pattern rejects non-empty on full match"
-        _ = assert true (regex match 'a(b|c)+d?e*' "abcbdeee") "AC1: alternation group plus opt star"
-        _ = assert true (regex match 'a(b|c)+d?e*' "ac") "AC1: opt and star match zero occurrences"
-        _ = assert false (regex match 'a(b|c)+d?e*' "ade") "AC1: plus requires at least one"
-        _ = assert true (regex match '(foo|bar|baz)+' "barfoobazbar") "AC1: multi-branch alternation with plus"
-        _ = assert false (regex match '(foo|bar|baz)+' "barquxfoo") "AC1: multi-branch alternation rejects unknown"
-        _ = assert true (regex match '[a-zA-Z_][a-zA-Z0-9_]*' "_valid_Identifier_99") "AC1: identifier character class"
-        _ = assert false (regex match '[a-zA-Z_][a-zA-Z0-9_]*' "9invalid") "AC1: identifier rejects leading digit"
-        _ = assert true (regex match '[^0-9]+' "hello_world") "AC1: negated char class"
-        _ = assert false (regex match '[^0-9]+' "hello42") "AC1: negated char class rejects digits"
-        _ = assert true (regex match '\w+\s+\d+' "agent   007") "AC1: shorthand escapes \\w \\s \\d"
-        _ = assert true (regex match '\D+\S+' "abc_123") "AC1: negated shorthand escapes \\D \\S"
-        _ = assert true (regex match 'v\d+\.\d+\.\d+' "v0.9.16") "AC1: escaped dot literal"
-        _ = assert false (regex match 'v\d+\.\d+\.\d+' "v0X9Y16") "AC1: escaped dot rejects non-dot"
-        _ = assert true (regex is match '^hello' "hello world") "AC1: bol anchor matches start"
-        _ = assert false (regex is match '^world' "hello world") "AC1: bol anchor rejects middle"
-        _ = assert true (regex is match 'world$' "hello world") "AC1: eol anchor matches end"
-        _ = assert false (regex is match 'hello$' "hello world") "AC1: eol anchor rejects prefix"
-        _ = assert true (regex is match '^exact$' "exact") "AC1: anchored ^exact$ matches full string"
-        _ = assert false (regex is match '^exact$' "not exact") "AC1: anchored ^exact$ rejects extra chars"
+        assert true (regex match "" "") "AC1: empty pattern matches empty string"
+        assert false (regex match "" "nonempty") "AC1: empty pattern rejects non-empty on full match"
+        assert true (regex match 'a(b|c)+d?e*' "abcbdeee") "AC1: alternation group plus opt star"
+        assert true (regex match 'a(b|c)+d?e*' "ac") "AC1: opt and star match zero occurrences"
+        assert false (regex match 'a(b|c)+d?e*' "ade") "AC1: plus requires at least one"
+        assert true (regex match '(foo|bar|baz)+' "barfoobazbar") "AC1: multi-branch alternation with plus"
+        assert false (regex match '(foo|bar|baz)+' "barquxfoo") "AC1: multi-branch alternation rejects unknown"
+        assert true (regex match '[a-zA-Z_][a-zA-Z0-9_]*' "_valid_Identifier_99") "AC1: identifier character class"
+        assert false (regex match '[a-zA-Z_][a-zA-Z0-9_]*' "9invalid") "AC1: identifier rejects leading digit"
+        assert true (regex match '[^0-9]+' "hello_world") "AC1: negated char class"
+        assert false (regex match '[^0-9]+' "hello42") "AC1: negated char class rejects digits"
+        assert true (regex match '\w+\s+\d+' "agent   007") "AC1: shorthand escapes \\w \\s \\d"
+        assert true (regex match '\D+\S+' "abc_123") "AC1: negated shorthand escapes \\D \\S"
+        assert true (regex match 'v\d+\.\d+\.\d+' "v0.9.16") "AC1: escaped dot literal"
+        assert false (regex match 'v\d+\.\d+\.\d+' "v0X9Y16") "AC1: escaped dot rejects non-dot"
+        assert true (regex is match '^hello' "hello world") "AC1: bol anchor matches start"
+        assert false (regex is match '^world' "hello world") "AC1: bol anchor rejects middle"
+        assert true (regex is match 'world$' "hello world") "AC1: eol anchor matches end"
+        assert false (regex is match 'hello$' "hello world") "AC1: eol anchor rejects prefix"
+        assert true (regex is match '^exact$' "exact") "AC1: anchored ^exact$ matches full string"
+        assert false (regex is match '^exact$' "not exact") "AC1: anchored ^exact$ rejects extra chars"
         -- Russ Cox pathological backtracking benchmarks (exponential in backtracking engines, O(N*M) in Thompson NFA)
-        _ = assert false (regex match '(a+)+b' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac") "AC1: Thompson NFA immune to (a+)+b ReDoS"
-        _ = assert false (regex match '(a|aa)+b' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac") "AC1: Thompson NFA immune to (a|aa)+b ReDoS"
-        _ = assert true (regex match 'a?a?a?a?a?a?a?a?aaaaaaaa' "aaaaaaaa") "AC1: Russ Cox a?^n a^n vector"
+        assert false (regex match '(a+)+b' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac") "AC1: Thompson NFA immune to (a+)+b ReDoS"
+        assert false (regex match '(a|aa)+b' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac") "AC1: Thompson NFA immune to (a|aa)+b ReDoS"
+        assert true (regex match 'a?a?a?a?a?a?a?a?aaaaaaaa' "aaaaaaaa") "AC1: Russ Cox a?^n a^n vector"
         ()
 ```
 
@@ -201,33 +201,33 @@ Adibide praktiko honetan `regex` bloke funtzional honetan nola portatzen den sak
 fn :: test_regex_find_replace_split => ()
       test_regex_find_replace_split =
         m1 = regex find '\d+' "item #42 and #99"
-        _ = assert true (matched m1) "AC2: find matched"
-        _ = assert int equals (match_start m1) 6 "AC2: find start"
-        _ = assert int equals (match_end m1) 8 "AC2: find end"
-        _ = assert str eq (text m1) "42" "AC2: find text"
+        assert true (matched m1) "AC2: find matched"
+        assert int equals (match_start m1) 6 "AC2: find start"
+        assert int equals (match_end m1) 8 "AC2: find end"
+        assert str eq (text m1) "42" "AC2: find text"
 
         m_none = regex find '\d+' "no digits here"
-        _ = assert false (matched m_none) "AC2: find returns matched=False when absent"
+        assert false (matched m_none) "AC2: find returns matched=False when absent"
 
         all_m = regex find all '[a-z]+=\d+' "id=10, port=8080, ttl=60"
-        _ = assert int equals (re_match_count all_m) 3 "AC2: find all key=val count"
-        _ = assert str eq (text (re_match_at all_m 0)) "id=10" "AC2: find all first match"
-        _ = assert str eq (text (re_match_at all_m 1)) "port=8080" "AC2: find all second match"
-        _ = assert str eq (text (re_match_at all_m 2)) "ttl=60" "AC2: find all third match"
+        assert int equals (re_match_count all_m) 3 "AC2: find all key=val count"
+        assert str eq (text (re_match_at all_m 0)) "id=10" "AC2: find all first match"
+        assert str eq (text (re_match_at all_m 1)) "port=8080" "AC2: find all second match"
+        assert str eq (text (re_match_at all_m 2)) "ttl=60" "AC2: find all third match"
 
         r1 = regex replace '\d+' "X" "v1.2.3"
-        _ = assert str eq r1 "vX.2.3" "AC3: replace first"
+        assert str eq r1 "vX.2.3" "AC3: replace first"
         r_no = regex replace '\d+' "X" "abc"
-        _ = assert str eq r_no "abc" "AC3: replace with no match returns original"
+        assert str eq r_no "abc" "AC3: replace with no match returns original"
         r2 = regex replace all '\d+' "X" "v1.22.333"
-        _ = assert str eq r2 "vX.X.X" "AC3: replace all"
+        assert str eq r2 "vX.X.X" "AC3: replace all"
 
         parts = regex split '\s*[,;]\s*' "alpha, beta ;  gamma,delta"
-        _ = assert int equals (re_str_count parts) 4 "AC3: split count"
-        _ = assert str eq (re_str_at parts 0) "alpha" "AC3: split[0]"
-        _ = assert str eq (re_str_at parts 1) "beta" "AC3: split[1]"
-        _ = assert str eq (re_str_at parts 2) "gamma" "AC3: split[2]"
-        _ = assert str eq (re_str_at parts 3) "delta" "AC3: split[3]"
+        assert int equals (re_str_count parts) 4 "AC3: split count"
+        assert str eq (re_str_at parts 0) "alpha" "AC3: split[0]"
+        assert str eq (re_str_at parts 1) "beta" "AC3: split[1]"
+        assert str eq (re_str_at parts 2) "gamma" "AC3: split[2]"
+        assert str eq (re_str_at parts 3) "delta" "AC3: split[3]"
         ()
 ```
 
@@ -257,55 +257,32 @@ fn :: limpiar traza y validar id (usuario_id : String) (linea_log : String) => (
 Ikusi nola `regex.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
-fn :: re_is_digit Int => Bool
-      re_is_digit c   =  c >= 48 AND c <= 57
+module :: regex
 
-fn :: re_is_word Int => Bool
-      re_is_word c   =  (c >= 48 AND c <= 57) OR (c >= 65 AND c <= 90) OR (c >= 97 AND c <= 122) OR c == 95
+fn :: re is digit Int => Bool
+      re is digit c = c >= 48 and c <= 57
 
-fn :: re_is_space Int => Bool
-      re_is_space c   =  c == 32 OR c == 9 OR c == 10 OR c == 13 OR c == 11 OR c == 12
+fn :: re is word Int => Bool
+      re is word c = (c >= 48 and c <= 57) or (c >= 65 and c <= 90) or (c >= 97 and c <= 122) or c == 95
 
-fn :: re_match_short Int Int => Bool
-      re_match_short 100 c   =  re_is_digit c
-      re_match_short 68  c   =  NOT (re_is_digit c)
-      re_match_short 119 c   =  re_is_word c
-      re_match_short 87  c   =  NOT (re_is_word c)
-      re_match_short 115 c   =  re_is_space c
-      re_match_short 83  c   =  NOT (re_is_space c)
-      re_match_short _   _   =  False
+fn :: re is space Int => Bool
+      re is space c = c == 32 or c == 9 or c == 10 or c == 13 or c == 11 or c == 12
 
-fn :: re_in_ranges Int [Int]      => Bool
-      re_in_ranges _   []         =  False
-      re_in_ranges _   (_:[])     =  False
-      re_in_ranges c   (lo:hi:rs)
-        | c >= lo AND c <= hi = True
-        | otherwise = re_in_ranges c rs
+fn :: re match short Int Int => Bool
+      re match short 100 c = re is digit c
+      re match short 68 c = not (re is digit c)
+      re match short 119 c = re is word c
+      re match short 87 c = not (re is word c)
+      re match short 115 c = re is space c
+      re match short 83 c = not (re is space c)
+      re match short _ _ = False
 
--- ── Regex Recursive-Descent Parser (`pattern_str` -> `ReNode`) ─
-
-fn :: re_escape_char Int => ReNode
-      re_escape_char 100 =  ReShort 100
-      re_escape_char 68  =  ReShort 68
-      re_escape_char 119 =  ReShort 119
-      re_escape_char 87  =  ReShort 87
-      re_escape_char 115 =  ReShort 115
-      re_escape_char 83  =  ReShort 83
-      re_escape_char 110 =  ReChar 10
-      re_escape_char 114 =  ReChar 13
-      re_escape_char 116 =  ReChar 9
-      re_escape_char c   =  ReChar c
-
-fn :: re_class_char String Int Int => (Int Int)
-      re_class_char pat    pos len
-        | (str_char_at pat pos) == 92 AND (pos + 1) < len AND (str_char_at pat (pos + 1)) == 110 = (10, pos + 2)
-        | (str_char_at pat pos) == 92 AND (pos + 1) < len AND (str_char_at pat (pos + 1)) == 116 = (9, pos + 2)
-        | (str_char_at pat pos) == 92 AND (pos + 1) < len AND (str_char_at pat (pos + 1)) == 114 = (13, pos + 2)
-        | (str_char_at pat pos) == 92 AND (pos + 1) < len = (str_char_at pat (pos + 1), pos + 2)
-        | otherwise = (str_char_at pat pos, pos + 1)
-
-fn :: re_fst_int (Int Int) => Int
-      re_fst_int (a, _)    =  a
+fn :: re in ranges Int [Int] => Bool
+      re in ranges _ [] = False
+      re in ranges _ (_:[]) = False
+      re in ranges c (lo:hi:rs) =
+        | c >= lo and c <= hi = True
+        | otherwise = re in ranges c rs
 ```
 
 ### 11.4.2. Barne-inplementazioa: Thompson NFA Compiler (`ReNode` -> `[NfaInst]`)
@@ -313,43 +290,62 @@ fn :: re_fst_int (Int Int) => Int
 Ikusi nola `regex.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
-fn :: nfa_len [NfaInst] => Int
-      nfa_len []        =  0
-      nfa_len (_:rest)  =  1 + (nfa_len rest)
+fn :: nfa len [NfaInst] => Int
+      nfa len [] = 0
+      nfa len (_:rest) = 1 + (nfa len rest)
 
-fn :: re_compile_seq ReNode ReNode Int      => [NfaInst]
-      re_compile_seq a      b      start_id =
-        insts_a = re_compile_node a start_id
-        mid_id = start_id + (nfa_len insts_a)
-        insts_b = re_compile_node b mid_id
+fn :: re compile seq ReNode ReNode Int => [NfaInst]
+      re compile seq a b start_id =
+        insts_a = re compile node a start_id
+        mid_id = start_id + (nfa len insts_a)
+        insts_b = re compile node b mid_id
         insts_a :: insts_b
 
-fn :: re_compile_opt ReNode Int      => [NfaInst]
-      re_compile_opt a      start_id =
-        body = re_compile_node a (start_id + 1)
-        end_id = start_id + 1 + (nfa_len body)
+fn :: re compile opt ReNode Int => [NfaInst]
+      re compile opt a start_id =
+        body = re compile node a (start_id + 1)
+        end_id = start_id + 1 + (nfa len body)
         [InstSplit (start_id + 1) end_id] :: body
 
-fn :: re_compile_star ReNode Int      => [NfaInst]
-      re_compile_star a      start_id =
-        body = re_compile_node a (start_id + 1)
-        end_id = start_id + 2 + (nfa_len body)
+fn :: re compile star ReNode Int => [NfaInst]
+      re compile star a start_id =
+        body = re compile node a (start_id + 1)
+        end_id = start_id + 2 + (nfa len body)
         ([InstSplit (start_id + 1) end_id] :: body) :: [InstJump start_id]
 
-fn :: re_compile_plus ReNode Int      => [NfaInst]
-      re_compile_plus a      start_id =
-        body = re_compile_node a start_id
-        split_id = start_id + (nfa_len body)
+fn :: re compile plus ReNode Int => [NfaInst]
+      re compile plus a start_id =
+        body = re compile node a start_id
+        split_id = start_id + (nfa len body)
         body :: [InstSplit start_id (split_id + 1)]
 
-fn :: re_compile_alt ReNode ReNode Int      => [NfaInst]
-      re_compile_alt a      b      start_id =
-        body_a = re_compile_node a (start_id + 1)
-        jump_id = start_id + 1 + (nfa_len body_a)
+fn :: re compile alt ReNode ReNode Int => [NfaInst]
+      re compile alt a b start_id =
+        body_a = re compile node a (start_id + 1)
+        jump_id = start_id + 1 + (nfa len body_a)
         start_b = jump_id + 1
-        body_b = re_compile_node b start_b
-        end_id = start_b + (nfa_len body_b)
+        body_b = re compile node b start_b
+        end_id = start_b + (nfa len body_b)
         (([InstSplit (start_id + 1) start_b] :: body_a) :: [InstJump end_id]) :: body_b
+
+fn :: re compile node ReNode Int => [NfaInst]
+      re compile node ReEmpty _ = []
+      re compile node (ReChar c) start_id = [InstChar c (start_id + 1)]
+      re compile node ReAny start_id = [InstAny (start_id + 1)]
+      re compile node (ReClass neg rngs) start_id = [InstClass neg rngs (start_id + 1)]
+      re compile node (ReShort k) start_id = [InstShort k (start_id + 1)]
+      re compile node ReBol start_id = [InstBol (start_id + 1)]
+      re compile node ReEol start_id = [InstEol (start_id + 1)]
+      re compile node (ReOpt a) start_id = re compile opt a start_id
+      re compile node (ReStar a) start_id = re compile star a start_id
+      re compile node (RePlus a) start_id = re compile plus a start_id
+      re compile node (ReSeq a b) start_id = re compile seq a b start_id
+      re compile node (ReAlt a b) start_id = re compile alt a b start_id
+
+fn :: re compile String => [NfaInst]
+      re compile pat =
+        re parse alt pat 0 (str len pat) -> parsed
+        (re compile node (re res node parsed) 0) :: [InstMatch]
 ```
 
 ### 11.4.3. Barne-inplementazioa: Linear-Time Thompson NFA State-Set Simulation
@@ -357,56 +353,98 @@ fn :: re_compile_alt ReNode ReNode Int      => [NfaInst]
 Ikusi nola `regex.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
-fn :: nfa_inst_at [NfaInst] Int => NfaInst
-      nfa_inst_at []        _   =  InstMatch
-      nfa_inst_at (i:_)     0   =  i
-      nfa_inst_at (_:rest)  idx =  nfa_inst_at rest (idx - 1)
+fn :: nfa inst at [NfaInst] Int => NfaInst
+      nfa inst at [] _ = InstMatch
+      nfa inst at (i:_) 0 = i
+      nfa inst at (_:rest) idx = nfa inst at rest (idx - 1)
 
-fn :: nfa_set_has [Int]  Int => Bool
-      nfa_set_has []     _   =  False
-      nfa_set_has (x:xs) v
+fn :: nfa set has [Int] Int => Bool
+      nfa set has [] _ = False
+      nfa set has (x:xs) v =
         | x == v = True
-        | otherwise = nfa_set_has xs v
+        | otherwise = nfa set has xs v
 
-fn :: nfa_closure [NfaInst] [Int] Int Int [Int] => [Int]
-      nfa_closure _ [] _ _ visited = visited
-      nfa_closure prog (s:ss) pos len visited
-        | nfa_set_has visited s = nfa_closure prog ss pos len visited
-        | otherwise = nfa_closure_inst prog s ss pos len (visited :: [s]) (nfa_inst_at prog s)
+fn :: nfa closure [NfaInst] [Int] Int Int [Int] => [Int]
+      nfa closure _ [] _ _ visited = visited
+      nfa closure prog (s:ss) pos len visited =
+        | nfa set has visited s = nfa closure prog ss pos len visited
+        | otherwise = nfa closure inst prog s ss pos len (visited :: [s]) (nfa inst at prog s)
 
-fn :: nfa_closure_inst [NfaInst] Int [Int] Int Int [Int] NfaInst => [Int]
-      nfa_closure_inst prog _ ss pos len vis (InstJump out) = nfa_closure prog ([out] :: ss) pos len vis
-      nfa_closure_inst prog _ ss pos len vis (InstSplit o1 o2) = nfa_closure prog ([o1, o2] :: ss) pos len vis
-      nfa_closure_inst prog _ ss pos len vis (InstBol out)
-        | pos == 0 = nfa_closure prog ([out] :: ss) pos len vis
-        | otherwise = nfa_closure prog ss pos len vis
-      nfa_closure_inst prog _ ss pos len vis (InstEol out)
-        | pos == len = nfa_closure prog ([out] :: ss) pos len vis
-        | otherwise = nfa_closure prog ss pos len vis
-      nfa_closure_inst prog _ ss pos len vis _ = nfa_closure prog ss pos len vis
+fn :: nfa closure inst [NfaInst] Int [Int] Int Int [Int] NfaInst => [Int]
+      nfa closure inst prog _ ss pos len vis (InstJump out) = nfa closure prog ([out] :: ss) pos len vis
+      nfa closure inst prog _ ss pos len vis (InstSplit o1 o2) = nfa closure prog ([o1, o2] :: ss) pos len vis
+      nfa closure inst prog _ ss pos len vis (InstBol out) =
+        | pos == 0 = nfa closure prog ([out] :: ss) pos len vis
+        | otherwise = nfa closure prog ss pos len vis
+      nfa closure inst prog _ ss pos len vis (InstEol out) =
+        | pos == len = nfa closure prog ([out] :: ss) pos len vis
+        | otherwise = nfa closure prog ss pos len vis
+      nfa closure inst prog _ ss pos len vis _ = nfa closure prog ss pos len vis
 
-fn :: nfa_step_one NfaInst       Int => [Int]
-      nfa_step_one (InstChar expected out) c
+fn :: nfa step one NfaInst Int => [Int]
+      nfa step one (InstChar expected out) c =
         | c == expected = [out]
         | otherwise = []
-      nfa_step_one (InstAny out) c
+      nfa step one (InstAny out) c =
         | c != 10 = [out]
         | otherwise = []
-      nfa_step_one (InstClass neg rngs out) c
-        | (re_in_ranges c rngs) != neg = [out]
+      nfa step one (InstClass neg rngs out) c =
+        | (re in ranges c rngs) != neg = [out]
         | otherwise = []
-      nfa_step_one (InstShort kind out) c
-        | re_match_short kind c = [out]
+      nfa step one (InstShort kind out) c =
+        | re match short kind c = [out]
         | otherwise = []
-      nfa_step_one _             _   =  []
+      nfa step one _ _ = []
 
-fn :: nfa_step [NfaInst] [Int]  Int => [Int]
-      nfa_step _         []     _   =  []
-      nfa_step prog      (s:ss) c   =  (nfa_step_one (nfa_inst_at prog s) c) :: (nfa_step prog ss c)
+fn :: nfa step [NfaInst] [Int] Int => [Int]
+      nfa step _ [] _ = []
+      nfa step prog (s:ss) c = (nfa step one (nfa inst at prog s) c) :: (nfa step prog ss c)
 
-fn :: nfa_is_match_inst NfaInst   => Bool
-      nfa_is_match_inst InstMatch =  True
-      nfa_is_match_inst _         =  False
+fn :: nfa is match inst NfaInst => Bool
+      nfa is match inst InstMatch = True
+      nfa is match inst _ = False
+
+fn :: nfa has match [NfaInst] [Int] => Bool
+      nfa has match _ [] = False
+      nfa has match prog (s:ss) =
+        | nfa is match inst (nfa inst at prog s) = True
+        | otherwise = nfa has match prog ss
+
+fn :: nfa update last [NfaInst] [Int] Int Int => Int
+      nfa update last prog active cand cur =
+        | nfa has match prog active = cand
+        | otherwise = cur
+
+fn :: nfa sim loop [NfaInst] String Int Int [Int] Int => Int
+      nfa sim loop _ _ _ _ [] last_m = last_m
+      nfa sim loop prog input pos len active last_m =
+        | pos >= len = last_m
+        | otherwise = nfa sim step prog input pos len active last_m
+
+fn :: nfa sim step [NfaInst] String Int Int [Int] Int => Int
+      nfa sim step prog input pos len active last_m =
+        str char at input pos -> c
+        nfa closure prog (nfa step prog active c) (pos + 1) len [] -> next_act
+        nfa update last prog next_act (pos + 1) last_m -> next_last
+        nfa sim loop prog input (pos + 1) len next_act next_last
+
+fn :: nfa longest from [NfaInst] String Int Int => Int
+      nfa longest from prog input pos len =
+        nfa closure prog [0] pos len [] -> init_act
+        nfa update last prog init_act pos (0 - 1) -> init_last
+        nfa sim loop prog input pos len init_act init_last
+
+fn :: nfa full loop [NfaInst] String Int Int [Int] => Bool
+      nfa full loop _ _ _ _ [] = False
+      nfa full loop prog input pos len active =
+        | pos >= len = nfa has match prog active
+        | otherwise = nfa full step prog input pos len active
+
+fn :: nfa full step [NfaInst] String Int Int [Int] => Bool
+      nfa full step prog input pos len active =
+        str char at input pos -> c
+        nfa closure prog (nfa step prog active c) (pos + 1) len [] -> next_act
+        nfa full loop prog input (pos + 1) len next_act
 ```
 
 ### 11.4.4. Barne-inplementazioa: Public Regex API (`API-REGEX-001`)
@@ -415,55 +453,85 @@ Ikusi nola `regex.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen
 
 ```ridgun
 fn :: regex match String String => Bool
-      regex match pat    input  =
-        prog = re_compile pat
-        len = str_len input
-        init_act = nfa_closure prog [0] 0 len []
-        nfa_full_loop prog input 0 len init_act
+      regex match pat input =
+        pat re compile -> prog
+        input str len -> len
+        nfa closure prog [0] 0 len [] -> init_act
+        nfa full loop prog input 0 len init_act
 
-fn :: nfa_find_from [NfaInst] String Int Int => RegexMatch
-      nfa_find_from prog      input  pos len
-        | pos > len = RegexMatch False (-1) (-1) ""
-        | otherwise = nfa_find_check prog input pos len (nfa_longest_from prog input pos len)
+fn :: nfa find from [NfaInst] String Int Int => RegexMatch
+      nfa find from prog input pos len =
+        | pos > len = RegexMatch False (0 - 1) (0 - 1) ""
+        | otherwise = nfa find check prog input pos len (nfa longest from prog input pos len)
 
-fn :: nfa_find_check [NfaInst] String Int Int Int => RegexMatch
-      nfa_find_check prog input pos len end_pos
-        | end_pos >= pos = RegexMatch True pos end_pos (str_slice input pos end_pos)
-        | otherwise = nfa_find_from prog input (pos + 1) len
+fn :: nfa find check [NfaInst] String Int Int Int => RegexMatch
+      nfa find check prog input pos len end_pos =
+        | end_pos >= pos = RegexMatch True pos end_pos (str slice input pos end_pos)
+        | otherwise = nfa find from prog input (pos + 1) len
 
 fn :: regex find String String => RegexMatch
-      regex find pat    input  =
-        prog = re_compile pat
-        nfa_find_from prog input 0 (str_len input)
+      regex find pat input =
+        pat re compile -> prog
+        nfa find from prog input 0 (str len input)
 
 fn :: regex is match String String => Bool
-      regex is match pat    input  =  matched (regex find pat input)
+      regex is match pat input = regex find pat input -> matched
 
-fn :: nfa_find_all_loop [NfaInst] String Int Int [RegexMatch] => [RegexMatch]
-      nfa_find_all_loop prog input pos len acc
+fn :: nfa find all loop [NfaInst] String Int Int [RegexMatch] => [RegexMatch]
+      nfa find all loop prog input pos len acc =
         | pos > len = acc
-        | otherwise = nfa_find_all_step prog input pos len acc (nfa_longest_from prog input pos len)
+        | otherwise = nfa find all step prog input pos len acc (nfa longest from prog input pos len)
 
-fn :: nfa_find_all_step [NfaInst] String Int Int [RegexMatch] Int => [RegexMatch]
-      nfa_find_all_step prog input pos len acc end_pos
-        | end_pos > pos = nfa_find_all_loop prog input end_pos len (acc :: [RegexMatch True pos end_pos (str_slice input pos end_pos)])
-        | end_pos == pos = nfa_find_all_loop prog input (pos + 1) len (acc :: [RegexMatch True pos pos ""])
-        | otherwise = nfa_find_all_loop prog input (pos + 1) len acc
+fn :: nfa find all step [NfaInst] String Int Int [RegexMatch] Int => [RegexMatch]
+      nfa find all step prog input pos len acc end_pos =
+        | end_pos > pos = nfa find all loop prog input end_pos len (acc :: [RegexMatch True pos end_pos (str slice input pos end_pos)])
+        | end_pos == pos = nfa find all loop prog input (pos + 1) len (acc :: [RegexMatch True pos pos ""])
+        | otherwise = nfa find all loop prog input (pos + 1) len acc
 
 fn :: regex find all String String => [RegexMatch]
-      regex find all pat    input  =
-        prog = re_compile pat
-        nfa_find_all_loop prog input 0 (str_len input) []
+      regex find all pat input =
+        pat re compile -> prog
+        nfa find all loop prog input 0 (str len input) []
 
 fn :: regex replace String String String => String
-      regex replace pat    repl   input  =
-        m = regex find pat input
-        re_apply_replace m repl input
+      regex replace pat repl input =
+        regex find pat input -> m
+        re apply replace m repl input
 
-fn :: re_apply_replace RegexMatch String String => String
-      re_apply_replace m          repl   input
-        | NOT (matched m) = input
-        | otherwise = (str_slice input 0 (match_start m)) + repl + (str_slice input (match_end m) (str_len input))
+fn :: re apply replace RegexMatch String String => String
+      re apply replace m repl input =
+        | not (matched m) = input
+        | otherwise = (str slice input 0 (match_start m)) + repl + (str slice input (match_end m) (str len input))
+
+fn :: nfa replace all loop [NfaInst] String String Int Int String => String
+      nfa replace all loop prog repl input pos len acc =
+        | pos >= len = acc
+        | otherwise = nfa replace all step prog repl input pos len acc (nfa longest from prog input pos len)
+
+fn :: nfa replace all step [NfaInst] String String Int Int String Int => String
+      nfa replace all step prog repl input pos len acc end_pos =
+        | end_pos > pos = nfa replace all loop prog repl input end_pos len (acc + repl)
+        | otherwise = nfa replace all loop prog repl input (pos + 1) len (acc + (str slice input pos (pos + 1)))
+
+fn :: regex replace all String String String => String
+      regex replace all pat repl input =
+        pat re compile -> prog
+        nfa replace all loop prog repl input 0 (str len input) ""
+
+fn :: nfa split loop [NfaInst] String Int Int Int [String] => [String]
+      nfa split loop prog input pos len last_s acc =
+        | pos >= len = acc :: [str slice input last_s len]
+        | otherwise = nfa split step prog input pos len last_s acc (nfa longest from prog input pos len)
+
+fn :: nfa split step [NfaInst] String Int Int Int [String] Int => [String]
+      nfa split step prog input pos len last_s acc end_pos =
+        | end_pos > pos = nfa split loop prog input end_pos len end_pos (acc :: [str slice input last_s pos])
+        | otherwise = nfa split loop prog input (pos + 1) len last_s acc
+
+fn :: regex split String String => [String]
+      regex split pat input =
+        pat re compile -> prog
+        nfa split loop prog input 0 (str len input) 0 []
 ```
 
 ---

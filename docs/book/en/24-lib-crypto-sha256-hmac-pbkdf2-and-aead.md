@@ -12,8 +12,8 @@ The **`crypto`** lib implements in 100% pure Ridgun over pre-allocated `Tensor[I
 
 In a traditional ecosystem, solving **`CRYPTO`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`crypto`** lib (`src/main/ridgun/lib/crypto.rg`) tackles the problem with four non-negotiable principles:
 
-1. **Total Functions & Explicit Contracts (`=>`)**: no function in `crypto` throws hidden exceptions or relies on `null`. Every edge case (empty inputs, zero divisors, truncated frames, or out-of-bounds indices) returns a documented sentinel value or an algebraic sum type (`Option`, `Result`).
-2. **Zero C Code & Zero `libc`**: every line of `crypto` compiles directly into native ELF64 machine code verified by `ridgunc`.
+1. **Declare `import crypto` (or `import crypto as alias`) at the top of your file**: every lib defines its `module :: crypto` namespace, and under `--strict` multi-word functions are always called with natural spaces.
+2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
 3. **Tail-Call Optimization (TCO)**: all internal loops in `crypto` are tail-recursive and compile into native hardware loops using $O(1)$ stack space.
 4. **Deterministic Memory (`RMM1` / `RMM2`)**: every intermediate allocation is reclaimed at the exact instruction where its last read finishes, with no Garbage Collector.
 
@@ -29,7 +29,7 @@ In `ridgun-libs`, **`crypto`** is a first-class **lib** located at `src/main/rid
 | **Compiled Archive** | `target/crypto.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libcrypto.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
-> To use this lib in any `.rg` file, simply add `import crypto` at the top and call its functions using either multi-word spaces (`my fn x`) or underscores (`my_fn x`).
+> Every lib declares its own namespace via `module :: crypto`: simply write `import crypto` (or `import crypto as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).
 
 ### 24.2.1. Summary of `crypto` Functional Families
 
@@ -43,7 +43,7 @@ In `ridgun-libs`, **`crypto`** is a first-class **lib** located at `src/main/rid
 
 ### 24.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/crypto.rg`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/crypto.rg` (`3` types, `0` operators, and `161` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/crypto.rg` (`2` types, `0` operators, and `109` functions):
 
 **Algebraic Data Types & Records (`type`) in `crypto`:**
 
@@ -230,12 +230,12 @@ Notice how in Ridgun the `=` signs and transformation steps using `crypto` align
 ```ridgun
 import crypto
 
-fn :: cifrar mensaje sesion (secreto : String) (texto : String) => (Int, String)
+fn :: cifrar mensaje sesion String String => Int String
       cifrar mensaje sesion secreto texto =
-        key32   = sha256 bytes secreto
-        nonce12 = "0123456789ab"
-        aad     = "canal-autenticado"
-        sellado = aead seal key32 nonce12 aad texto
+        secreto sha256 raw -> key32
+        "0123456789ab" -> nonce12
+        "canal-autenticado" -> aad
+        aead seal key32 nonce12 aad texto -> sellado
         aead open key32 nonce12 aad sellado
 ```
 
@@ -246,9 +246,9 @@ Every function in the `crypto` lib is designed to compose cleanly with boolean g
 ```ridgun
 import crypto
 
-fn :: verificar firma webhook (clave : String) (cuerpo : String) (firma_hex : String) => Bool
+fn :: verificar firma webhook String String String => Bool
       verificar firma webhook clave cuerpo firma_hex =
-        esperada = hmac sha256 hex clave cuerpo
+        hmac sha256 clave cuerpo -> esperada
         ct equal esperada firma_hex
 ```
 
@@ -259,44 +259,44 @@ In this hands-on walkthrough we thoroughly exercise how `crypto` behaves across 
 ```ridgun
 fn :: test rgf019 bytes and bitops => ()
       test rgf019 bytes and bitops =
-        -- 1. Raw byte_str lengths, wraparound normalization, and full 0..255 round-trip
-        _    = assert int equals (str len (byte str 0)) 1 "len byte_str 0"
-        _    = assert int equals (str len (byte str 127)) 1 "len byte_str 127"
-        _    = assert int equals (str len (byte str 128)) 1 "len byte_str 128"
-        _    = assert int equals (str len (byte str 255)) 1 "len byte_str 255"
-        _    = assert str eq (byte str (0 - 1)) (byte str 255) "byte_str -1 wraps to 255"
-        _    = assert str eq (byte str 256) (byte str 0) "byte_str 256 wraps to 0"
+        -- 1. Raw byte str lengths, wraparound normalization, and full 0..255 round-trip
+        assert int equals (str len (byte str 0)) 1 "len byte_str 0"
+        assert int equals (str len (byte str 127)) 1 "len byte_str 127"
+        assert int equals (str len (byte str 128)) 1 "len byte_str 128"
+        assert int equals (str len (byte str 255)) 1 "len byte_str 255"
+        assert str eq (byte str (0 - 1)) (byte str 255) "byte_str -1 wraps to 255"
+        assert str eq (byte str 256) (byte str 0) "byte_str 256 wraps to 0"
         b5   = bytes from list [0, 1, 127, 128, 255]
-        _    = assert int equals (str len b5) 5 "len b5 == 5"
+        assert int equals (str len b5) 5 "len b5 == 5"
         rt   = bytes to list b5
-        _    = assert int equals (c nth int rt 0) 0 "rt 0"
-        _    = assert int equals (c nth int rt 1) 1 "rt 1"
-        _    = assert int equals (c nth int rt 2) 127 "rt 2"
-        _    = assert int equals (c nth int rt 3) 128 "rt 3"
-        _    = assert int equals (c nth int rt 4) 255 "rt 4"
+        assert int equals (c nth int rt 0) 0 "rt 0"
+        assert int equals (c nth int rt 1) 1 "rt 1"
+        assert int equals (c nth int rt 2) 127 "rt 2"
+        assert int equals (c nth int rt 3) 128 "rt 3"
+        assert int equals (c nth int rt 4) 255 "rt 4"
         b256 = bytes from list (range bytes 0 255)
-        _    = assert int equals (str len b256) 256 "len b256 == 256"
+        assert int equals (str len b256) 256 "len b256 == 256"
         r256 = bytes to list b256
-        _    = assert int equals (c list len r256) 256 "r256 list len == 256"
-        _    = assert int equals (c nth int r256 0) 0 "r256[0] == 0"
-        _    = assert int equals (c nth int r256 128) 128 "r256[128] == 128"
-        _    = assert int equals (c nth int r256 255) 255 "r256[255] == 255"
+        assert int equals (c list len r256) 256 "r256 list len == 256"
+        assert int equals (c nth int r256 0) 0 "r256[0] == 0"
+        assert int equals (c nth int r256 128) 128 "r256[128] == 128"
+        assert int equals (c nth int r256 255) 255 "r256[255] == 255"
 
         -- 2. RGF-019 32-bit unsigned bitwise operations and boundary shifts
-        _    = assert int equals (band 4294967295 255) 255 "band"
-        _    = assert int equals (band 305419896 0) 0 "band with 0"
-        _    = assert int equals (bor 240 15) 255 "bor"
-        _    = assert int equals (bor 305419896 0) 305419896 "bor with 0"
-        _    = assert int equals (bxor 305419896 4294967295) 3989547399 "bxor"
-        _    = assert int equals (bxor 305419896 305419896) 0 "bxor self == 0"
-        _    = assert int equals (shl 1 0) 1 "shl 0"
-        _    = assert int equals (shl 1 (0 - 1)) 0 "shl negative shift"
-        _    = assert int equals (shl 1 31) 2147483648 "shl 31"
-        _    = assert int equals (shl 1 32) 0 "shl 32"
-        _    = assert int equals (shr 2147483648 0) 2147483648 "shr 0"
-        _    = assert int equals (shr 2147483648 (0 - 1)) 0 "shr negative shift"
-        _    = assert int equals (shr 2147483648 31) 1 "shr 31"
-        _    = assert int equals (shr 2147483648 32) 0 "shr 32"
+        assert int equals (band 4294967295 255) 255 "band"
+        assert int equals (band 305419896 0) 0 "band with 0"
+        assert int equals (bor 240 15) 255 "bor"
+        assert int equals (bor 305419896 0) 305419896 "bor with 0"
+        assert int equals (bxor 305419896 4294967295) 3989547399 "bxor"
+        assert int equals (bxor 305419896 305419896) 0 "bxor self == 0"
+        assert int equals (shl 1 0) 1 "shl 0"
+        assert int equals (shl 1 (0 - 1)) 0 "shl negative shift"
+        assert int equals (shl 1 31) 2147483648 "shl 31"
+        assert int equals (shl 1 32) 0 "shl 32"
+        assert int equals (shr 2147483648 0) 2147483648 "shr 0"
+        assert int equals (shr 2147483648 (0 - 1)) 0 "shr negative shift"
+        assert int equals (shr 2147483648 31) 1 "shr 31"
+        assert int equals (shr 2147483648 32) 0 "shr 32"
         ()
 ```
 
@@ -309,42 +309,42 @@ fn :: test sha256 hmac and pbkdf2 => ()
       test sha256 hmac and pbkdf2 =
         -- 1. SHA-256 (empty string "" and "abc" -> FIPS 180-4 vectors)
         h_emp = sha256 hex ""
-        _     = assert str eq h_emp "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" "sha256_hex empty"
+        assert str eq h_emp "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" "sha256_hex empty"
         h_hex = sha256 hex "abc"
-        _     = assert str eq h_hex "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" "sha256_hex abc"
+        assert str eq h_hex "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" "sha256_hex abc"
         h_raw = sha256 bytes "abc"
-        _     = assert eq (str len h_raw) 32
-        _     = assert str eq (bytes to hex str h_raw) h_hex "sha256_bytes matches sha256_hex"
+        assert eq (str len h_raw) 32
+        assert str eq (bytes to hex str h_raw) h_hex "sha256_bytes matches sha256_hex"
 
         -- 2. HMAC-SHA-256 (RFC 4231 Test Case 2 and >64-byte key reduction)
         mac   = hmac sha256 "Jefe" "what do ya want for nothing?"
-        _     = assert eq (str len mac) 32
-        _     = assert str eq (bytes to hex str mac) "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843" "RFC 4231 Test Case 2"
+        assert eq (str len mac) 32
+        assert str eq (bytes to hex str mac) "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843" "RFC 4231 Test Case 2"
         long_k = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef_extra_key_bytes"
         mac_lk = hmac sha256 long_k "message"
-        _      = assert eq (str len mac_lk) 32
-        _      = assert true (ct equal mac_lk (hmac sha256 (sha256 bytes long_k) "message")) "HMAC >64B key hashed to 32B"
+        assert eq (str len mac_lk) 32
+        assert true (ct equal mac_lk (hmac sha256 (sha256 bytes long_k) "message")) "HMAC >64B key hashed to 32B"
 
-        -- 3. Constant-time comparison (`ct_equal`)
-        _     = assert true (ct equal "" "") "ct_equal empty strings"
-        _     = assert true (ct equal mac mac) "ct_equal identical"
-        _     = assert false (ct equal mac (sha256 bytes "abc")) "ct_equal different 32B"
-        _     = assert false (ct equal "short" "longer") "ct_equal different lengths"
+        -- 3. Constant-time comparison (`ct equal`)
+        assert true (ct equal "" "") "ct_equal empty strings"
+        assert true (ct equal mac mac) "ct_equal identical"
+        assert false (ct equal mac (sha256 bytes "abc")) "ct_equal different 32B"
+        assert false (ct equal "short" "longer") "ct_equal different lengths"
 
         -- 4. PBKDF2-HMAC-SHA-256 (RFC 6070 c=1, c=2, multi-block dk_len=64, sub-block dk_len=16, invalid args)
         dk1   = pbkdf2 hmac sha256 "password" "salt" 1 32
-        _     = assert eq (str len dk1) 32
-        _     = assert str eq (bytes to hex str dk1) "120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b" "RFC 6070 PBKDF2 c=1"
+        assert eq (str len dk1) 32
+        assert str eq (bytes to hex str dk1) "120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b" "RFC 6070 PBKDF2 c=1"
         dk2   = pbkdf2 hmac sha256 "password" "salt" 2 32
-        _     = assert str eq (bytes to hex str dk2) "ae4d0c95af6b46d32d0adff928f06dd02a303f8ef3c251dfd6e2d85a95474c43" "RFC 6070 PBKDF2 c=2"
+        assert str eq (bytes to hex str dk2) "ae4d0c95af6b46d32d0adff928f06dd02a303f8ef3c251dfd6e2d85a95474c43" "RFC 6070 PBKDF2 c=2"
         dk16  = pbkdf2 hmac sha256 "password" "salt" 1 16
-        _     = assert eq (str len dk16) 16
-        _     = assert str eq (bytes to hex str dk16) "120fb6cffcf8b32c43e7225256c4f837" "PBKDF2 16-byte prefix"
+        assert eq (str len dk16) 16
+        assert str eq (bytes to hex str dk16) "120fb6cffcf8b32c43e7225256c4f837" "PBKDF2 16-byte prefix"
         dk64  = pbkdf2 hmac sha256 "password" "salt" 1 64
-        _     = assert eq (str len dk64) 64
-        _     = assert str eq (byte slice dk64 0 32) dk1 "PBKDF2 64-byte block 1 matches dk1"
-        _     = assert str eq (pbkdf2 hmac sha256 "password" "salt" 0 32) "" "PBKDF2 iterations=0 rejected"
-        _     = assert str eq (pbkdf2 hmac sha256 "password" "salt" 1 0) "" "PBKDF2 dk_len=0 rejected"
+        assert eq (str len dk64) 64
+        assert str eq (byte slice dk64 0 32) dk1 "PBKDF2 64-byte block 1 matches dk1"
+        assert str eq (pbkdf2 hmac sha256 "password" "salt" 0 32) "" "PBKDF2 iterations=0 rejected"
+        assert str eq (pbkdf2 hmac sha256 "password" "salt" 1 0) "" "PBKDF2 dk_len=0 rejected"
         ()
 ```
 
@@ -356,16 +356,16 @@ In this hands-on walkthrough we thoroughly exercise how `crypto` behaves across 
 fn :: test argon2id five arg and perf => ()
       test argon2id five arg and perf =
         phc = argon2id hash "correct horse battery staple" "0123456789abcdef" 64 2 1
-        _   = assert true (str starts with phc "$argon2id$v=19$m=64,t=2,p=1$") "PHC header format"
-        _   = assert true (argon2id verify "correct horse battery staple" phc) "argon2id_verify matching (pwd, phc)"
-        _   = assert false (argon2id verify "wrong password" phc) "argon2id_verify wrong password"
-        _   = assert false (argon2id verify "correct horse battery staple" "$argon2id$v=19$m=64,t=2,p=1$bad$bad") "argon2id_verify bad PHC"
+        assert true (str starts with phc "$argon2id$v=19$m=64,t=2,p=1$") "PHC header format"
+        assert true (argon2id verify "correct horse battery staple" phc) "argon2id_verify matching (pwd, phc)"
+        assert false (argon2id verify "wrong password" phc) "argon2id_verify wrong password"
+        assert false (argon2id verify "correct horse battery staple" "$argon2id$v=19$m=64,t=2,p=1$bad$bad") "argon2id_verify bad PHC"
 
-        -- Negative parameter guards for 5-arg argon2id_hash
-        _   = assert str eq (argon2id hash "password" "short" 64 2 1) "" "salt < 8 bytes rejected"
-        _   = assert str eq (argon2id hash "password" "0123456789abcdef" 4 2 1) "" "m_cost < 8*p rejected"
-        _   = assert str eq (argon2id hash "password" "0123456789abcdef" 64 0 1) "" "t_cost < 1 rejected"
-        _   = assert str eq (argon2id hash "password" "0123456789abcdef" 64 2 0) "" "p_cost < 1 rejected"
+        -- Negative parameter guards for 5-arg argon2id hash
+        assert str eq (argon2id hash "password" "short" 64 2 1) "" "salt < 8 bytes rejected"
+        assert str eq (argon2id hash "password" "0123456789abcdef" 4 2 1) "" "m_cost < 8*p rejected"
+        assert str eq (argon2id hash "password" "0123456789abcdef" 64 0 1) "" "t_cost < 1 rejected"
+        assert str eq (argon2id hash "password" "0123456789abcdef" 64 2 0) "" "p_cost < 1 rejected"
 
         -- RG-050 / RG-051: Verify 100% in-process pure-Ridgun Argon2id and PBKDF2-HMAC-SHA256
         -- (OpenSSL 3.5 / RFC 9106 vectors + 4096-iteration PBKDF2 vector)
@@ -376,12 +376,12 @@ fn :: test argon2id five arg and perf => ()
         bad_empty   = argon2id verify "correct horse" "$argon2id$v=19$m=64,t=2,p=1$c2FsdHNhbHRzYWx0c2FsdA$"
         phc_ok      = str starts with phc_s "$argon2id$v=19$m=64,t=2,p=1$"
         pb4k        = bytes to hex str (pbkdf2 hmac sha256 "correct horse battery staple" "0123456789abcdef" 4096 32)
-        _           = assert true ok_s "Solstice RGF-015 argon_ok"
-        _           = assert false bad_s "Solstice RGF-015 argon_bad"
-        _           = assert false bad_empty "RG-051 reject PHC with empty tag"
-        _           = assert true phc_ok "Solstice RGF-015 phc prefix"
-        _           = assert true argon_exact "Solstice RGF-015 exact OpenSSL 3.5 / libsodium PHC"
-        _           = assert str eq pb4k "b87f4b27148d3b05ad7985e3df997f0d9afa6e768e6384555bab71ba10f0c1a5" "Solstice RGF-015 PBKDF2 4096"
+        assert true ok_s "Solstice RGF-015 argon_ok"
+        assert false bad_s "Solstice RGF-015 argon_bad"
+        assert false bad_empty "RG-051 reject PHC with empty tag"
+        assert true phc_ok "Solstice RGF-015 phc prefix"
+        assert true argon_exact "Solstice RGF-015 exact OpenSSL 3.5 / libsodium PHC"
+        assert str eq pb4k "b87f4b27148d3b05ad7985e3df997f0d9afa6e768e6384555bab71ba10f0c1a5" "Solstice RGF-015 PBKDF2 4096"
         ()
 ```
 
@@ -398,55 +398,55 @@ fn :: test rfc8439 chacha20 poly1305 aead => ()
         pt    = "Ladies and Gentlemen of the class of '99: If I could offer you only one tip for the future, sunscreen would be it."
 
         sealed = aead seal key nonce aad pt
-        _      = assert eq (str len sealed) ((str len pt) + 16)
+        assert eq (str len sealed) ((str len pt) + 16)
 
         -- Verify first 16 ciphertext bytes and 16-byte Poly1305 tag match RFC 8439 §2.8.2 bit-for-bit
         ct_prefix_hex = bytes to hex str (byte slice sealed 0 16)
         tag_hex       = bytes to hex str (byte slice sealed 114 130)
-        _             = assert str eq ct_prefix_hex "d31a8d34648e60db7b86afbc53ef7ec2" "RFC 8439 §2.8.2 ciphertext prefix"
-        _             = assert str eq tag_hex "1ae10b594f09e26a7e902ecbd0600691" "RFC 8439 §2.8.2 Poly1305 tag"
+        assert str eq ct_prefix_hex "d31a8d34648e60db7b86afbc53ef7ec2" "RFC 8439 §2.8.2 ciphertext prefix"
+        assert str eq tag_hex "1ae10b594f09e26a7e902ecbd0600691" "RFC 8439 §2.8.2 Poly1305 tag"
 
-        -- Verify aead_open succeeds with (0, pt)
+        -- Verify aead open succeeds with (0, pt)
         res_ok   = aead open key nonce aad sealed
-        _        = assert eq (aead rc res_ok) 0
-        _        = assert str eq (aead pt res_ok) pt "aead_open decrypted plaintext"
+        assert eq (aead rc res_ok) 0
+        assert str eq (aead pt res_ok) pt "aead_open decrypted plaintext"
 
         -- Verify empty plaintext and empty AAD round-trip
         sealed_empty = aead seal key nonce "" ""
-        _            = assert eq (str len sealed_empty) 16
+        assert eq (str len sealed_empty) 16
         res_empty    = aead open key nonce "" sealed_empty
-        _            = assert eq (aead rc res_empty) 0
-        _            = assert str eq (aead pt res_empty) "" "aead_open empty plaintext"
+        assert eq (aead rc res_empty) 0
+        assert str eq (aead pt res_empty) "" "aead_open empty plaintext"
 
         -- Verify tamper detection (-12 AUTH_FAILED) on modified AAD, modified nonce, modified ciphertext, or modified tag
         res_aad  = aead open key nonce "tampered-aad" sealed
-        _        = assert eq (aead rc res_aad) (0 - 12)
-        _        = assert str eq (aead pt res_aad) "" "tampered AAD returns empty plaintext"
+        assert eq (aead rc res_aad) (0 - 12)
+        assert str eq (aead pt res_aad) "" "tampered AAD returns empty plaintext"
 
         bad_nonce = bytes from list [8, 0, 0, 0, 64, 65, 66, 67, 68, 69, 70, 71]
         res_nonce = aead open key bad_nonce aad sealed
-        _         = assert eq (aead rc res_nonce) (0 - 12)
-        _         = assert str eq (aead pt res_nonce) "" "tampered nonce returns empty plaintext"
+        assert eq (aead rc res_nonce) (0 - 12)
+        assert str eq (aead pt res_nonce) "" "tampered nonce returns empty plaintext"
 
         bad_ct   = (byte str 0) + (byte slice sealed 1 130)
         res_ct   = aead open key nonce aad bad_ct
-        _        = assert eq (aead rc res_ct) (0 - 12)
-        _        = assert str eq (aead pt res_ct) "" "tampered ciphertext byte returns empty plaintext"
+        assert eq (aead rc res_ct) (0 - 12)
+        assert str eq (aead pt res_ct) "" "tampered ciphertext byte returns empty plaintext"
 
         bad_seal = (byte slice sealed 0 129) + (byte str 0)
         res_tag  = aead open key nonce aad bad_seal
-        _        = assert eq (aead rc res_tag) (0 - 12)
-        _        = assert str eq (aead pt res_tag) "" "tampered tag returns empty plaintext"
+        assert eq (aead rc res_tag) (0 - 12)
+        assert str eq (aead pt res_tag) "" "tampered tag returns empty plaintext"
 
         -- Verify invalid key/nonce/ciphertext length returns (-7, "") or ""
-        _        = assert str eq (aead seal "short-key" nonce aad pt) "" "aead_seal invalid key length"
-        _        = assert str eq (aead seal key "short-nonce" aad pt) "" "aead_seal invalid nonce length"
+        assert str eq (aead seal "short-key" nonce aad pt) "" "aead_seal invalid key length"
+        assert str eq (aead seal key "short-nonce" aad pt) "" "aead_seal invalid nonce length"
         res_inv  = aead open "short-key" nonce aad sealed
-        _        = assert eq (aead rc res_inv) (0 - 7)
+        assert eq (aead rc res_inv) (0 - 7)
         res_ninv = aead open key "short-nonce" aad sealed
-        _        = assert eq (aead rc res_ninv) (0 - 7)
+        assert eq (aead rc res_ninv) (0 - 7)
         res_tinv = aead open key nonce aad "short-tag"
-        _        = assert eq (aead rc res_tinv) (0 - 7)
+        assert eq (aead rc res_tinv) (0 - 7)
         ()
 ```
 
@@ -461,6 +461,8 @@ One of the biggest advantages of `ridgun-libs` is that **there are no C black bo
 Observe how `crypto.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
+module :: crypto
+
 fn :: norm byte mod Int => Int
       norm byte mod m   =
         | m < 0     = m + 256
@@ -472,28 +474,77 @@ fn :: norm byte Int => Int
 fn :: byte str norm Int => String
       byte str norm ub  =
         | ub >= 1 and ub <= 127 = char from code ub
+        | ub == 0 = str slice (sha256 raw "00679") 0 1
         | otherwise =
-          efd = sys call 290 (256 + ub) 526336 0 0 0 0
-          s   = sys read fd efd 8
-          _   = sys close efd
-          str slice s 0 1
+          idx = (ub - 128) * 5
+          lut = "0056400101002080010000179000010024100109003430040100361007870009100353001870030400471000870020200071002360012501171004140236900275001810016001398004440080400017005250027000314001400024700004006350015700183005940027600207007720028400601003400038000839006850084900617003060113500277000320006900483000580019200151008700008500193000100057000070002880002600326006460038800018009190028900103006000043900073011700038900628007210077300074004740006000041001410019900066003680001900383001730005700558000670024500065002030031900000008250001100128001360034900030003750039600228002380008400618005900031800062001770087900076002570009600034002200001600161"
+          str slice (sha256 raw (str slice lut idx (idx + 5))) 0 1
 
 fn :: byte str Int => String
       byte str n   =
         byte str norm (norm byte n)
 
+fn :: c sb append3 String String => String String String String
+      c sb append3 n2 c3 =
+        | (str len n2) < 65536 = ("", "", n2, c3)
+        | otherwise            = ("", "", "", c3 + n2)
+
+fn :: c sb append2 String String String => String String String String
+      c sb append2 n1 c2 c3 =
+        | (str len n1) < 8192 = ("", n1, c2, c3)
+        | otherwise           = c sb append3 (c2 + n1) c3
+
+fn :: c sb append1 String String String String => String String String String
+      c sb append1 n0 c1 c2 c3 =
+        | (str len n0) < 512 = (n0, c1, c2, c3)
+        | otherwise          = c sb append2 (c1 + n0) c2 c3
+
+fn :: c sb append String String String String String => String String String String
+      c sb append chunk c0 c1 c2 c3 =
+        c sb append1 (c0 + chunk) c1 c2 c3
+
+fn :: c sb finish String String String String => String
+      c sb finish c0 c1 c2 c3 =  ((c3 + c2) + c1) + c0
+
+fn :: c lb append2 [Int] [Int] Int => [Int] [Int] [Int] Int
+      c lb append2 n1 l2 cnt =
+        | (cnt % 1024) == 0 = ([], [], l2 :: n1, cnt)
+        | otherwise         = ([], n1, l2, cnt)
+
+fn :: c lb append1 [Int] [Int] [Int] Int => [Int] [Int] [Int] Int
+      c lb append1 n0 l1 l2 cnt =
+        | (cnt % 32) == 0 = c lb append2 (l1 :: n0) l2 cnt
+        | otherwise       = (n0, l1, l2, cnt)
+
+fn :: c lb append Int [Int] [Int] [Int] Int => [Int] [Int] [Int] Int
+      c lb append item l0 l1 l2 cnt =
+        c lb append1 (l0 :: [item]) l1 l2 (cnt + 1)
+
+fn :: c lb finish [Int] [Int] [Int] => [Int]
+      c lb finish l0 l1 l2 =  l2 :: (l1 :: l0)
+
+fn :: bytes from list loop CT16 [Int] String String String String => String
+      bytes from list loop _   []       c0 c1 c2 c3 =  c sb finish c0 c1 c2 c3
+      bytes from list loop tbl (b:rest) c0 c1 c2 c3 =
+        ub = norm byte b
+        ch = c get b256 tbl (ub / 16) (ub % 16)
+        n0, n1, n2, n3 = c sb append ch c0 c1 c2 c3
+        bytes from list loop tbl rest n0 n1 n2 n3
+
 fn :: bytes from list [Int]    => String
       bytes from list []       =  ""
-      bytes from list (b:rest) =  (byte str b) + (bytes from list rest)
+      bytes from list bs       =  bytes from list loop (c build b256) bs "" "" "" ""
 
-fn :: bytes to list loop String Int Int => [Int]
-      bytes to list loop s idx slen =
-        | idx >= slen = []
-        | otherwise   = [norm byte (str char at s idx)] :: (bytes to list loop s (idx + 1) slen)
+fn :: bytes to list loop String Int Int [Int] [Int] [Int] Int => [Int]
+      bytes to list loop s idx slen l0 l1 l2 cnt =
+        | idx >= slen = c lb finish l0 l1 l2
+        | otherwise   =
+          n0, n1, n2, ncnt = c lb append (norm byte (str char at s idx)) l0 l1 l2 cnt
+          bytes to list loop s (idx + 1) slen n0 n1 n2 ncnt
 
 fn :: bytes to list String => [Int]
       bytes to list s      =
-        bytes to list loop s 0 (str len s)
+        bytes to list loop s 0 (str len s) [] [] [] 0
 ```
 
 ### 24.4.2. Internal Implementation: Hex & List Utilities
@@ -511,13 +562,18 @@ fn :: crypto byte to hex Int => String
         lo = ub % 16
         (str slice (hextable 0) hi (hi + 1)) + (str slice (hextable 0) lo (lo + 1))
 
+fn :: bytes list to hex loop [Int] String String String String => String
+      bytes list to hex loop []       c0 c1 c2 c3 = c sb finish c0 c1 c2 c3
+      bytes list to hex loop (b:rest) c0 c1 c2 c3 =
+        n0, n1, n2, n3 = c sb append (crypto byte to hex b) c0 c1 c2 c3
+        bytes list to hex loop rest n0 n1 n2 n3
+
+fn :: bytes list to hex [Int] => String
+      bytes list to hex bs    =  bytes list to hex loop bs "" "" "" ""
+
 fn :: bytes to hex str String => String
       bytes to hex str raw    =
         bytes list to hex (bytes to list raw)
-
-fn :: bytes list to hex [Int]    => String
-      bytes list to hex []       =  ""
-      bytes list to hex (b:rest) =  (crypto byte to hex b) + (bytes list to hex rest)
 
 fn :: crypto hex val Int => Int
       crypto hex val c   =
@@ -526,27 +582,67 @@ fn :: crypto hex val Int => Int
         | c >= 65 and c <= 70  = (c - 65) + 10
         | otherwise            = 0
 
-fn :: hex str to bytes loop String Int Int => [Int]
-      hex str to bytes loop h idx hlen =
-        | (idx + 1) >= hlen = []
+fn :: hex str to bytes loop String Int Int [Int] [Int] [Int] Int => [Int]
+      hex str to bytes loop h idx hlen l0 l1 l2 cnt =
+        | (idx + 1) >= hlen = c lb finish l0 l1 l2
         | otherwise         =
           hi = crypto hex val (str char at h idx)
           lo = crypto hex val (str char at h (idx + 1))
-          [(hi * 16) + lo] :: (hex str to bytes loop h (idx + 2) hlen)
+          n0, n1, n2, ncnt = c lb append ((hi * 16) + lo) l0 l1 l2 cnt
+          hex str to bytes loop h (idx + 2) hlen n0 n1 n2 ncnt
 
 fn :: hex to byte str String => String
       hex to byte str h      =
-        bytes from list (hex str to bytes loop h 0 (str len h))
+        bytes from list (hex str to bytes loop h 0 (str len h) [] [] [] 0)
 
-fn :: c list len [Int]    => Int
-      c list len []       =  0
-      c list len (_:rest) =  1 + (c list len rest)
+fn :: c list len loop [Int] Int => Int
+      c list len loop []       acc = acc
+      c list len loop (_:rest) acc = c list len loop rest (acc + 1)
+
+fn :: c list len [Int] => Int
+      c list len xs    =  c list len loop xs 0
 
 fn :: c nth int [Int]    Int => Int
       c nth int []       _   =  0
       c nth int (x:rest) idx =
         | idx <= 0  = x
         | otherwise = c nth int rest (idx - 1)
+
+fn :: c take ints loop [Int] Int [Int] => [Int]
+      c take ints loop []       _ acc = acc
+      c take ints loop (x:rest) n acc =
+        | n <= 0    = acc
+        | otherwise = c take ints loop rest (n - 1) (acc :: [x])
+
+fn :: c take ints [Int] Int => [Int]
+      c take ints xs    n   =  c take ints loop xs n []
+
+fn :: c drop ints [Int]    Int => [Int]
+      c drop ints []       _   =  []
+      c drop ints (x:rest) n   =
+        | n <= 0    = [x] :: rest
+        | otherwise = c drop ints rest (n - 1)
+
+fn :: c byte slice loop CT16 String Int Int String String String String => String
+      c byte slice loop tbl s idx end_idx c0 c1 c2 c3 =
+        | idx >= end_idx = c sb finish c0 c1 c2 c3
+        | otherwise      =
+          ub = norm byte (str char at s idx)
+          n0, n1, n2, n3 = c sb append (c get b256 tbl (ub / 16) (ub % 16)) c0 c1 c2 c3
+          c byte slice loop tbl s (idx + 1) end_idx n0 n1 n2 n3
+
+fn :: byte slice String Int Int => String
+      byte slice s start end_idx =
+        slen = str len s
+        st   =
+          | start < 0 = 0
+          | start > slen = slen
+          | otherwise = start
+        en   =
+          | end_idx < st = st
+          | end_idx > slen = slen
+          | otherwise = end_idx
+        c byte slice loop (c build b256) s st en "" "" "" ""
 ```
 
 ### 24.4.3. Internal Implementation: RGF-015 Pure-Ridgun RFC 9106 Argon2id (`argon2id_hash`, `argon2id_verify`)
@@ -640,6 +736,166 @@ fn :: poly1305 block limbs [Int] => [Int]
         b3 = ((t2 / 16384) + ((t3 % 256) * 262144)) % 67108864
         b4 = (t3 / 256) + 16777216
         [b0, b1, b2, b3, b4]
+
+fn :: poly1305 step [Int] [Int] [Int] => [Int]
+      poly1305 step h     r     blk   =
+        b  = poly1305 block limbs blk
+        h0 = (c nth int h 0) + (c nth int b 0)
+        h1 = (c nth int h 1) + (c nth int b 1)
+        h2 = (c nth int h 2) + (c nth int b 2)
+        h3 = (c nth int h 3) + (c nth int b 3)
+        h4 = (c nth int h 4) + (c nth int b 4)
+        r0 = c nth int r 0
+        r1 = c nth int r 1
+        r2 = c nth int r 2
+        r3 = c nth int r 3
+        r4 = c nth int r 4
+        s1 = r1 * 5
+        s2 = r2 * 5
+        s3 = r3 * 5
+        s4 = r4 * 5
+        d0 = (h0 * r0) + (h1 * s4) + (h2 * s3) + (h3 * s2) + (h4 * s1)
+        d1 = (h0 * r1) + (h1 * r0) + (h2 * s4) + (h3 * s3) + (h4 * s2)
+        d2 = (h0 * r2) + (h1 * r1) + (h2 * r0) + (h3 * s4) + (h4 * s3)
+        d3 = (h0 * r3) + (h1 * r2) + (h2 * r1) + (h3 * r0) + (h4 * s4)
+        d4 = (h0 * r4) + (h1 * r3) + (h2 * r2) + (h3 * r1) + (h4 * r0)
+        c0 = d0 / 67108864
+        n0 = d0 % 67108864
+        e1 = d1 + c0
+        c1 = e1 / 67108864
+        n1 = e1 % 67108864
+        e2 = d2 + c1
+        c2 = e2 / 67108864
+        n2 = e2 % 67108864
+        e3 = d3 + c2
+        c3 = e3 / 67108864
+        n3 = e3 % 67108864
+        e4 = d4 + c3
+        c4 = e4 / 67108864
+        n4 = e4 % 67108864
+        f0 = n0 + (c4 * 5)
+        cf = f0 / 67108864
+        [f0 % 67108864, n1 + cf, n2, n3, n4]
+
+fn :: poly1305 blocks loop [Int] [Int] [Int] => [Int]
+      poly1305 blocks loop h _ [] = h
+      poly1305 blocks loop h r msg =
+        blk  = c take ints msg 16
+        rest = c drop ints msg 16
+        poly1305 blocks loop (poly1305 step h r blk) r rest
+
+fn :: select reduced limbs Int [Int] [Int] => [Int]
+      select reduced limbs g4 g_set h_set =
+        | g4 >= 0   = g_set
+        | otherwise = h_set
+
+fn :: poly1305 finalize [Int] [Int] => [Int]
+      poly1305 finalize h     otk   =
+        c1   = (c nth int h 1) / 67108864
+        h1   = (c nth int h 1) % 67108864
+        t2   = (c nth int h 2) + c1
+        c2   = t2 / 67108864
+        h2   = t2 % 67108864
+        t3   = (c nth int h 3) + c2
+        c3   = t3 / 67108864
+        h3   = t3 % 67108864
+        t4   = (c nth int h 4) + c3
+        c4   = t4 / 67108864
+        h4   = t4 % 67108864
+        t0   = (c nth int h 0) + (c4 * 5)
+        c0   = t0 / 67108864
+        h0   = t0 % 67108864
+        h1_f = h1 + c0
+
+        g0_t = h0 + 5
+        gc0  = g0_t / 67108864
+        g0   = g0_t % 67108864
+        g1_t = h1_f + gc0
+        gc1  = g1_t / 67108864
+        g1   = g1_t % 67108864
+        g2_t = h2 + gc1
+        gc2  = g2_t / 67108864
+        g2   = g2_t % 67108864
+        g3_t = h3 + gc2
+        gc3  = g3_t / 67108864
+        g3   = g3_t % 67108864
+        g4   = (h4 + gc3) - 67108864
+
+        fin  = select reduced limbs g4 [g0, g1, g2, g3, g4] [h0, h1_f, h2, h3, h4]
+        f0   = c nth int fin 0
+        f1   = c nth int fin 1
+        f2   = c nth int fin 2
+        f3   = c nth int fin 3
+        f4   = c nth int fin 4
+
+        w0   = (f0 + ((f1 % 64) * 67108864)) % 4294967296
+        w1   = ((f1 / 64) + ((f2 % 4096) * 1048576)) % 4294967296
+        w2   = ((f2 / 4096) + ((f3 % 262144) * 16384)) % 4294967296
+        w3   = ((f3 / 262144) + (f4 * 256)) % 4294967296
+
+        s0   = le32 at otk 16
+        s1   = le32 at otk 20
+        s2   = le32 at otk 24
+        s3   = le32 at otk 28
+
+        sum0 = w0 + s0
+        sum1 = w1 + s1 + (sum0 / 4294967296)
+        sum2 = w2 + s2 + (sum1 / 4294967296)
+        sum3 = w3 + s3 + (sum2 / 4294967296)
+        (u32 to le4 (sum0 % 4294967296)) :: (u32 to le4 (sum1 % 4294967296)) :: (u32 to le4 (sum2 % 4294967296)) :: (u32 to le4 (sum3 % 4294967296))
+
+fn :: pad16 zeroes Int => [Int]
+      pad16 zeroes len =
+        | (len % 16) == 0 = []
+        | otherwise       = pad zeroes (16 - (len % 16))
+
+fn :: u64 le8 Int => [Int]
+      u64 le8 n   =
+        (u32 to le4 (n % 4294967296)) :: (u32 to le4 (n / 4294967296))
+
+fn :: poly1305 aead mac [Int] [Int] [Int] => [Int]
+      poly1305 aead mac otk aad_b ct_b =
+        aad_b c list len -> alen
+        ct_b c list len -> clen
+        aad_b :: (pad16 zeroes alen) :: ct_b :: (pad16 zeroes clen) :: (u64 le8 alen) :: (u64 le8 clen) -> msg
+        otk poly1305 clamp r -> poly1305 r limbs -> r
+        poly1305 blocks loop [0, 0, 0, 0, 0] r msg -> h_fin
+        poly1305 finalize h_fin otk
+
+fn :: aead seal String String String String => String
+      aead seal key nonce aad plaintext =
+        | (str len key) != 32 or (str len nonce) != 12 = ""
+        | otherwise                                    =
+          key_bs   = bytes to list key
+          nonce_bs = bytes to list nonce
+          aad_bs   = bytes to list aad
+          pt_bs    = bytes to list plaintext
+          otk      = c take ints (chacha20 block key_bs nonce_bs 0) 32
+          ct_bs    = chacha20 bitxor loop key_bs nonce_bs 1 pt_bs [] [] [] 0
+          tag_bs   = poly1305 aead mac otk aad_bs ct_bs
+          bytes from list (ct_bs :: tag_bs)
+
+fn :: decrypt verified aead Bool [Int] [Int] [Int] => Int String
+      decrypt verified aead False _ _ _ = (0 - 12, "")
+      decrypt verified aead True key_bs nonce_bs ct_bs =
+        chacha20 bitxor loop key_bs nonce_bs 1 ct_bs [] [] [] 0 -> pt_bs
+        (0, bytes from list pt_bs)
+
+fn :: aead open String String String String => Int String
+      aead open key nonce aad ciphertext_and_tag =
+        | (str len key) != 32 or (str len nonce) != 12 or (str len ciphertext_and_tag) < 16 = (0 - 7, "")
+        | otherwise =
+          total_len = str len ciphertext_and_tag
+          ct_len    = total_len - 16
+          ct_str    = byte slice ciphertext_and_tag 0 ct_len
+          tag_str   = byte slice ciphertext_and_tag ct_len total_len
+          key_bs    = bytes to list key
+          nonce_bs  = bytes to list nonce
+          aad_bs    = bytes to list aad
+          ct_bs     = bytes to list ct_str
+          otk       = c take ints (chacha20 block key_bs nonce_bs 0) 32
+          exp_tag   = bytes from list (poly1305 aead mac otk aad_bs ct_bs)
+          decrypt verified aead (ct equal tag_str exp_tag) key_bs nonce_bs ct_bs
 ```
 
 ---

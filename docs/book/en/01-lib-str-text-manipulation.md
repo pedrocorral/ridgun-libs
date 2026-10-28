@@ -12,8 +12,8 @@ The **`str`** lib provides pure, immutable primitives for searching, trimming, s
 
 In a traditional ecosystem, solving **`STR`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`str`** lib (`src/main/ridgun/lib/str.rg`) tackles the problem with four non-negotiable principles:
 
-1. **Total Functions & Explicit Contracts (`=>`)**: no function in `str` throws hidden exceptions or relies on `null`. Every edge case (empty inputs, zero divisors, truncated frames, or out-of-bounds indices) returns a documented sentinel value or an algebraic sum type (`Option`, `Result`).
-2. **Zero C Code & Zero `libc`**: every line of `str` compiles directly into native ELF64 machine code verified by `ridgunc`.
+1. **Declare `import str` (or `import str as alias`) at the top of your file**: every lib defines its `module :: str` namespace, and under `--strict` multi-word functions are always called with natural spaces.
+2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
 3. **Tail-Call Optimization (TCO)**: all internal loops in `str` are tail-recursive and compile into native hardware loops using $O(1)$ stack space.
 4. **Deterministic Memory (`RMM1` / `RMM2`)**: every intermediate allocation is reclaimed at the exact instruction where its last read finishes, with no Garbage Collector.
 
@@ -29,7 +29,7 @@ In `ridgun-libs`, **`str`** is a first-class **lib** located at `src/main/ridgun
 | **Compiled Archive** | `target/str.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libstr.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
-> To use this lib in any `.rg` file, simply add `import str` at the top and call its functions using either multi-word spaces (`my fn x`) or underscores (`my_fn x`).
+> Every lib declares its own namespace via `module :: str`: simply write `import str` (or `import str as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).
 
 ### 01.2.1. Summary of `str` Functional Families
 
@@ -44,7 +44,7 @@ In `ridgun-libs`, **`str`** is a first-class **lib** located at `src/main/ridgun
 
 ### 01.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/str.rg`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/str.rg` (`0` types, `0` operators, and `39` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/str.rg` (`0` types, `0` operators, and `42` functions):
 
 | # | Function / Signature (`fn ::`) | Return Type |
 |---|---|---|
@@ -65,28 +65,31 @@ Below is the complete inventory of algebraic data types (`type`), mixfix operato
 | `15` | `fn :: str trim slice String Int Int` | `String` |
 | `16` | `fn :: str trim String` | `String` |
 | `17` | `fn :: str is blank String` | `Bool` |
-| `18` | `fn :: str replace loop String String String Int Int Int String` | `String` |
-| `19` | `fn :: str replace step String String String Int` | `String` |
-| `20` | `fn :: str replace String String String` | `String` |
-| `21` | `fn :: str split chars String Int Int` | `[String]` |
-| `22` | `fn :: str split loop String String Int Int Int Int` | `[String]` |
+| `18` | `fn :: str replace step String String String Int` | `String` |
+| `19` | `fn :: str replace String String String` | `String` |
+| `20` | `fn :: str split chars String Int Int [String]` | `[String]` |
+| `21` | `fn :: str split onech loop String Int Int Int Int [String]` | `[String]` |
+| `22` | `fn :: str split loop String String Int Int Int Int Int [String]` | `[String]` |
 | `23` | `fn :: str split step String String Int Int` | `[String]` |
 | `24` | `fn :: str split String String` | `[String]` |
-| `25` | `fn :: str join tail [String] String` | `String` |
-| `26` | `fn :: str join [String] String` | `String` |
-| `27` | `fn :: upper char slice String Int` | `String` |
-| `28` | `fn :: str to upper loop String Int Int String` | `String` |
-| `29` | `fn :: str to upper String` | `String` |
-| `30` | `fn :: lower char slice String Int` | `String` |
-| `31` | `fn :: str to lower loop String Int Int String` | `String` |
-| `32` | `fn :: str to lower String` | `String` |
-| `33` | `fn :: str repeat loop String Int String` | `String` |
-| `34` | `fn :: str repeat String Int` | `String` |
-| `35` | `fn :: pad fill unit String` | `String` |
-| `36` | `fn :: str pad left step String Int String Int` | `String` |
-| `37` | `fn :: str pad left String Int String` | `String` |
-| `38` | `fn :: str pad right step String Int String Int` | `String` |
-| `39` | `fn :: str pad right String Int String` | `String` |
+| `25` | `fn :: str join pair step [String] String [String]` | `[String]` |
+| `26` | `fn :: str join pairs [String] String` | `String` |
+| `27` | `fn :: str join [String] String` | `String` |
+| `28` | `fn :: upper char code String Int Int` | `String` |
+| `29` | `fn :: upper char slice String Int` | `String` |
+| `30` | `fn :: str to upper range String Int Int` | `String` |
+| `31` | `fn :: str to upper String` | `String` |
+| `32` | `fn :: lower char code String Int Int` | `String` |
+| `33` | `fn :: lower char slice String Int` | `String` |
+| `34` | `fn :: str to lower range String Int Int` | `String` |
+| `35` | `fn :: str to lower String` | `String` |
+| `36` | `fn :: str repeat loop String Int String` | `String` |
+| `37` | `fn :: str repeat String Int` | `String` |
+| `38` | `fn :: pad fill unit String` | `String` |
+| `39` | `fn :: str pad left step String Int String Int` | `String` |
+| `40` | `fn :: str pad left String Int String` | `String` |
+| `41` | `fn :: str pad right step String Int String Int` | `String` |
+| `42` | `fn :: str pad right String Int String` | `String` |
 
 ---
 
@@ -101,11 +104,11 @@ Notice how in Ridgun the `=` signs and transformation steps using `str` align in
 ```ridgun
 import str
 
-fn :: normalizar cabecera (raw : String) => String
+fn :: normalizar cabecera String => String
       normalizar cabecera raw =
-        limpia = str to lower (str trim raw)
-        partes = str words limpia
-        slug   = str join partes "-"
+        raw str trim -> str to lower -> limpia
+        limpia str split " " -> partes
+        str join partes "-" -> slug
         str pad right slug 24 "."
 ```
 
@@ -116,13 +119,13 @@ Every function in the `str` lib is designed to compose cleanly with boolean guar
 ```ridgun
 import str
 
-fn :: extraer dominio (correo : String) => String
+fn :: extraer dominio String => String
       extraer dominio correo =
-        pos = str index of correo "@"
+        str index of correo "@" -> pos
         | pos < 0   = "sin-dominio"
         | otherwise =
-          partes = str split correo "@"
-          str replace (str to lower correo) "@" " en "
+          correo str to lower -> minusc
+          str replace minusc "@" " en "
 ```
 
 ### 01.3.3. Example 3: Substring Search (`str index of`), Suffixes (`str ends with`), and Emptiness/Blank Predicates
@@ -132,26 +135,26 @@ In this hands-on walkthrough we thoroughly exercise how `str` behaves across thi
 ```ridgun
 fn :: test str search and predicates => ()
       test str search and predicates =
-        _ = assert equals (str index of "hello world" "world") 6 "AC1: index_of world"
-        _ = assert equals (str index of "hello world" "hello") 0 "AC1: index_of hello at 0"
-        _ = assert equals (str index of "ababa" "aba") 0 "AC1: index_of returns first occurrence"
-        _ = assert equals (str index of "hello" "xyz") (0 - 1) "AC1: index_of missing"
-        _ = assert equals (str index of "short" "much_longer_needle") (0 - 1) "AC1: needle longer than haystack -> -1"
-        _ = assert equals (str index of "" "a") (0 - 1) "AC1: non-empty needle in empty haystack -> -1"
-        _ = assert equals (str index of "" "") 0 "AC1: empty needle in empty haystack -> 0"
-        _ = assert equals (str index of "abc" "") 0 "AC1: empty needle -> 0"
+        assert equals (str index of "hello world" "world") 6 "AC1: index_of world"
+        assert equals (str index of "hello world" "hello") 0 "AC1: index_of hello at 0"
+        assert equals (str index of "ababa" "aba") 0 "AC1: index_of returns first occurrence"
+        assert equals (str index of "hello" "xyz") (0 - 1) "AC1: index_of missing"
+        assert equals (str index of "short" "much_longer_needle") (0 - 1) "AC1: needle longer than haystack -> -1"
+        assert equals (str index of "" "a") (0 - 1) "AC1: non-empty needle in empty haystack -> -1"
+        assert equals (str index of "" "") 0 "AC1: empty needle in empty haystack -> 0"
+        assert equals (str index of "abc" "") 0 "AC1: empty needle -> 0"
 
-        _ = assert true (str ends with "archive.rglib" ".rglib") "AC1: ends_with true"
-        _ = assert true (str ends with "exact" "exact") "AC1: ends_with full string"
-        _ = assert true (str ends with "any" "") "AC1: ends_with empty suffix true"
-        _ = assert false (str ends with "archive.rg" ".rglib") "AC1: ends_with false"
-        _ = assert false (str ends with "short" "longer_suffix") "AC1: ends_with suffix longer than string"
+        assert true (str ends with "archive.rglib" ".rglib") "AC1: ends_with true"
+        assert true (str ends with "exact" "exact") "AC1: ends_with full string"
+        assert true (str ends with "any" "") "AC1: ends_with empty suffix true"
+        assert false (str ends with "archive.rg" ".rglib") "AC1: ends_with false"
+        assert false (str ends with "short" "longer_suffix") "AC1: ends_with suffix longer than string"
 
-        _ = assert true (str is empty "") "AC1: is_empty true"
-        _ = assert false (str is empty " ") "AC1: space is not empty"
-        _ = assert true (str is blank "") "AC1: empty is blank"
-        _ = assert true (str is blank "   \t\n\r ") "AC1: whitespace-only is blank"
-        _ = assert false (str is blank "  x ") "AC1: non-whitespace is not blank"
+        assert true (str is empty "") "AC1: is_empty true"
+        assert false (str is empty " ") "AC1: space is not empty"
+        assert true (str is blank "") "AC1: empty is blank"
+        assert true (str is blank "   \t\n\r ") "AC1: whitespace-only is blank"
+        assert false (str is blank "  x ") "AC1: non-whitespace is not blank"
         ()
 ```
 
@@ -162,29 +165,29 @@ In this hands-on walkthrough we thoroughly exercise how `str` behaves across thi
 ```ridgun
 fn :: test str trim replace and split => ()
       test str trim replace and split =
-        _ = assert equals (str trim "  \thi\n\r ") "hi" "AC2: str_trim mixed ASCII whitespace"
-        _ = assert equals (str trim "   \t\r\n") "" "AC2: str_trim all whitespace -> empty"
-        _ = assert equals (str trim "") "" "AC2: str_trim empty -> empty"
-        _ = assert equals (str trim "no_ws") "no_ws" "AC2: str_trim no whitespace"
-        _ = assert equals (str trim left "  abc  ") "abc  " "AC2: str_trim_left"
-        _ = assert equals (str trim right "  abc  ") "  abc" "AC2: str_trim_right"
+        assert equals (str trim "  \thi\n\r ") "hi" "AC2: str_trim mixed ASCII whitespace"
+        assert equals (str trim "   \t\r\n") "" "AC2: str_trim all whitespace -> empty"
+        assert equals (str trim "") "" "AC2: str_trim empty -> empty"
+        assert equals (str trim "no_ws") "no_ws" "AC2: str_trim no whitespace"
+        assert equals (str trim left "  abc  ") "abc  " "AC2: str_trim_left"
+        assert equals (str trim right "  abc  ") "  abc" "AC2: str_trim_right"
 
-        _ = assert equals (str replace "a-b-c" "-" "_") "a_b_c" "AC2: str_replace single char"
-        _ = assert equals (str replace "aaaa" "aa" "b") "bb" "AC2: str_replace non-overlapping left-to-right"
-        _ = assert equals (str replace "Hello,World" "World" "") "Hello," "AC2: str_replace deletion to empty"
-        _ = assert equals (str replace "abc" "" "x") "abc" "AC2: str_replace empty old leaves string unchanged"
-        _ = assert equals (str replace "abc" "z" "y") "abc" "AC2: str_replace absent needle"
+        assert equals (str replace "a-b-c" "-" "_") "a_b_c" "AC2: str_replace single char"
+        assert equals (str replace "aaaa" "aa" "b") "bb" "AC2: str_replace non-overlapping left-to-right"
+        assert equals (str replace "Hello,World" "World" "") "Hello," "AC2: str_replace deletion to empty"
+        assert equals (str replace "abc" "" "x") "abc" "AC2: str_replace empty old leaves string unchanged"
+        assert equals (str replace "abc" "z" "y") "abc" "AC2: str_replace absent needle"
 
-        _ = assert equals (str split "a,b,c" ",") ["a", "b", "c"] "AC2: str_split comma"
-        _ = assert equals (str split "a,,b," ",") ["a", "", "b", ""] "AC2: str_split consecutive and trailing delim"
-        _ = assert equals (str split ",a" ",") ["", "a"] "AC2: str_split leading delim"
-        _ = assert equals (str split "a::b::c" "::") ["a", "b", "c"] "AC2: str_split multi-char delimiter"
-        _ = assert equals (str split "ab" "") ["a", "b"] "AC2: str_split empty delim splits chars"
-        _ = assert equals (str split "" "") [] "AC2: str_split empty string with empty delim -> []"
+        assert equals (str split "a,b,c" ",") ["a", "b", "c"] "AC2: str_split comma"
+        assert equals (str split "a,,b," ",") ["a", "", "b", ""] "AC2: str_split consecutive and trailing delim"
+        assert equals (str split ",a" ",") ["", "a"] "AC2: str_split leading delim"
+        assert equals (str split "a::b::c" "::") ["a", "b", "c"] "AC2: str_split multi-char delimiter"
+        assert equals (str split "ab" "") ["a", "b"] "AC2: str_split empty delim splits chars"
+        assert equals (str split "" "") [] "AC2: str_split empty string with empty delim -> []"
 
-        _ = assert equals (str join [] "::") "" "AC2: str_join empty list"
-        _ = assert equals (str join ["only"] "::") "only" "AC2: str_join singleton"
-        _ = assert equals (str join ["alpha", "beta", "gamma"] "::") "alpha::beta::gamma" "AC2: str_join 3 items"
+        assert equals (str join [] "::") "" "AC2: str_join empty list"
+        assert equals (str join ["only"] "::") "only" "AC2: str_join singleton"
+        assert equals (str join ["alpha", "beta", "gamma"] "::") "alpha::beta::gamma" "AC2: str_join 3 items"
         ()
 ```
 
@@ -195,32 +198,32 @@ In this hands-on walkthrough we thoroughly exercise how `str` behaves across thi
 ```ridgun
 fn :: test str case repeat and padding => ()
       test str case repeat and padding =
-        _ = assert equals (str to upper "Abc! 123 xyz") "ABC! 123 XYZ" "AC3: str_to_upper"
-        _ = assert equals (str to lower "Abc! 123 XYZ") "abc! 123 xyz" "AC3: str_to_lower"
-        _ = assert equals (str to upper "") "" "AC3: str_to_upper empty"
+        assert equals (str to upper "Abc! 123 xyz") "ABC! 123 XYZ" "AC3: str_to_upper"
+        assert equals (str to lower "Abc! 123 XYZ") "abc! 123 xyz" "AC3: str_to_lower"
+        assert equals (str to upper "") "" "AC3: str_to_upper empty"
 
-        _ = assert equals (str repeat "ab" 3) "ababab" "AC3: str_repeat 3"
-        _ = assert equals (str repeat "ab" 1) "ab" "AC3: str_repeat 1"
-        _ = assert equals (str repeat "ab" 0) "" "AC3: str_repeat 0"
-        _ = assert equals (str repeat "ab" (0 - 5)) "" "AC3: str_repeat negative -> empty"
-        _ = assert equals (str repeat "" 100) "" "AC3: str_repeat empty string -> empty"
+        assert equals (str repeat "ab" 3) "ababab" "AC3: str_repeat 3"
+        assert equals (str repeat "ab" 1) "ab" "AC3: str_repeat 1"
+        assert equals (str repeat "ab" 0) "" "AC3: str_repeat 0"
+        assert equals (str repeat "ab" (0 - 5)) "" "AC3: str_repeat negative -> empty"
+        assert equals (str repeat "" 100) "" "AC3: str_repeat empty string -> empty"
 
         t0 = sys monotonic ms
         r64k = str repeat "x" 65536
         r256k = str repeat "x" 262144
         t1 = sys monotonic ms
         r8m = str repeat "x" 8000000
-        _ = assert equals (str len r64k) 65536 "AC3: str_repeat 65536 length"
-        _ = assert equals (str len r256k) 262144 "AC3: str_repeat 262144 length"
-        _ = assert equals (str len r8m) 8000000 "AC3: RG-052 str_repeat 8000000 exact length without 1 MiB cap"
-        _ = assert true ((t1 - t0) < 200) "AC3: LIB-9 str_repeat 64k+256k in < 200 ms"
+        assert equals (str len r64k) 65536 "AC3: str_repeat 65536 length"
+        assert equals (str len r256k) 262144 "AC3: str_repeat 262144 length"
+        assert equals (str len r8m) 8000000 "AC3: RG-052 str_repeat 8000000 exact length without 1 MiB cap"
+        assert true ((t1 - t0) < 200) "AC3: LIB-9 str_repeat 64k+256k in < 200 ms"
 
-        _ = assert equals (str pad left "7" 3 "0") "007" "AC3: str_pad_left"
-        _ = assert equals (str pad right "7" 3 "0") "700" "AC3: str_pad_right"
-        _ = assert equals (str pad left "7" 4 "") "   7" "AC3: str_pad_left empty pad_ch defaults to space"
-        _ = assert equals (str pad left "7" 4 "xyz") "xxx7" "AC3: str_pad_left uses first char of pad_ch"
-        _ = assert equals (str pad left "1234" 3 "0") "1234" "AC3: str_pad_left already wider than width"
-        _ = assert equals (str pad right "1234" 3 "0") "1234" "AC3: str_pad_right already wider than width"
+        assert equals (str pad left "7" 3 "0") "007" "AC3: str_pad_left"
+        assert equals (str pad right "7" 3 "0") "700" "AC3: str_pad_right"
+        assert equals (str pad left "7" 4 "") "   7" "AC3: str_pad_left empty pad_ch defaults to space"
+        assert equals (str pad left "7" 4 "xyz") "xxx7" "AC3: str_pad_left uses first char of pad_ch"
+        assert equals (str pad left "1234" 3 "0") "1234" "AC3: str_pad_left already wider than width"
+        assert equals (str pad right "1234" 3 "0") "1234" "AC3: str_pad_right already wider than width"
         ()
 ```
 
@@ -235,6 +238,8 @@ One of the biggest advantages of `ridgun-libs` is that **there are no C black bo
 Observe how `str.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
+module :: str
+
 fn :: is ascii space Int  => Bool
       is ascii space code =
         code == 32 or code == 9 or code == 10 or code == 13
@@ -275,14 +280,14 @@ fn :: last non space end String Int => Int
 
 fn :: str trim left String => String
       str trim left s      =
-        len   = str len s
-        start = first non space idx s 0 len
+        s str len -> len
+        first non space idx s 0 len -> start
         str slice s start len
 
 fn :: str trim right String => String
       str trim right s      =
-        len = str len s
-        end = last non space end s len
+        s str len -> len
+        last non space end s len -> end
         str slice s 0 end
 
 fn :: str trim slice String Int Int => String
@@ -292,13 +297,13 @@ fn :: str trim slice String Int Int => String
 
 fn :: str trim String => String
       str trim s      =
-        len   = str len s
-        start = first non space idx s 0 len
-        end   = last non space end s len
+        s str len -> len
+        first non space idx s 0 len -> start
+        last non space end s len -> end
         str trim slice s start end
 
 fn :: str is blank String => Bool
-      str is blank s      =  (str len (str trim s)) == 0
+      str is blank s      =  s str trim -> str is empty
 ```
 
 ### 01.4.3. Internal Implementation: String Splitting & Joining
@@ -306,36 +311,54 @@ fn :: str is blank String => Bool
 Observe how `str.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
-fn :: str split chars String Int Int => [String]
-      str split chars s idx slen =
-        | idx >= slen = []
-        | otherwise   = [str slice s idx (idx + 1)] :: (str split chars s (idx + 1) slen)
+fn :: str split chars String Int Int [String] => [String]
+      str split chars s idx slen acc =
+        | idx >= slen = acc
+        | otherwise   = str split chars s (idx + 1) slen (acc :: [str slice s idx (idx + 1)])
 
-fn :: str split loop String String Int Int Int Int => [String]
-      str split loop s delim pos slen dlen seg_start =
-        | pos + dlen > slen = [str slice s seg_start slen]
-        | (str slice s pos (pos + dlen)) == delim =
+fn :: str split onech loop String Int Int Int Int [String] => [String]
+      str split onech loop s d0 pos slen seg_start acc =
+        | pos >= slen = acc :: [str slice s seg_start slen]
+        | (str char at s pos) == d0 =
           seg = str slice s seg_start pos
-          [seg] :: (str split loop s delim (pos + dlen) slen dlen (pos + dlen))
+          str split onech loop s d0 (pos + 1) slen (pos + 1) (acc :: [seg])
         | otherwise =
-          str split loop s delim (pos + 1) slen dlen seg_start
+          str split onech loop s d0 (pos + 1) slen seg_start acc
+
+fn :: str split loop String String Int Int Int Int Int [String] => [String]
+      str split loop s delim d0 pos slen dlen seg_start acc =
+        | pos + dlen > slen = acc :: [str slice s seg_start slen]
+        | (str char at s pos) == d0 and (str slice s pos (pos + dlen)) == delim =
+          seg = str slice s seg_start pos
+          str split loop s delim d0 (pos + dlen) slen dlen (pos + dlen) (acc :: [seg])
+        | otherwise =
+          str split loop s delim d0 (pos + 1) slen dlen seg_start acc
 
 fn :: str split step String String Int Int => [String]
       str split step s delim slen dlen =
-        | dlen == 0 = str split chars s 0 slen
-        | otherwise = str split loop s delim 0 slen dlen 0
+        | dlen == 0 = str split chars s 0 slen []
+        | dlen == 1 = str split onech loop s (str char at delim 0) 0 slen 0 []
+        | otherwise = str split loop s delim (str char at delim 0) 0 slen dlen 0 []
 
 fn :: str split String String => [String]
       str split s      delim  =
         str split step s delim (str len s) (str len delim)
 
-fn :: str join tail [String] String => String
-      str join tail []       _      =  ""
-      str join tail (x:xs)   sep    =  sep + x + (str join tail xs sep)
+fn :: str join pair step [String] String [String] => [String]
+      str join pair step []         _   acc =  acc
+      str join pair step (a:[])     _   acc =  acc :: [a]
+      str join pair step (a:b:rest) sep acc =
+        str join pair step rest sep (acc :: [a + sep + b])
+
+fn :: str join pairs [String] String => String
+      str join pairs []       _   =  ""
+      str join pairs (x:[])   _   =  x
+      str join pairs (x:y:[]) sep =  x + sep + y
+      str join pairs xs       sep =
+        str join pairs (str join pair step xs sep []) sep
 
 fn :: str join [String] String => String
-      str join []       _      =  ""
-      str join (x:xs)   sep    =  x + (str join tail xs sep)
+      str join xs       sep    =  str join pairs xs sep
 ```
 
 ### 01.4.4. Internal Implementation: Repetition & Padding

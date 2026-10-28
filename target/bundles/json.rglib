@@ -7,6 +7,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: json
+
 type JsonField = JsonField String JsonVal
 
 type JsonVal = JsonNull | JsonBool Bool | JsonInt Int | JsonStr String | JsonArr [JsonVal] | JsonObj [JsonField]
@@ -689,12 +691,16 @@ fn :: j walk path JsonVal [String]   => JsonVal
 -- @implements API-JSON-001
 fn :: json get path JsonVal String   => JsonVal
       json get path val     ""       =  val
-      json get path val     dot_path =  j walk path val (j split dots loop dot_path 0 (str len dot_path) 0 [])
+      json get path val     dot_path =
+        j split dots loop dot_path 0 (str len dot_path) 0 [] -> segs
+        j walk path val segs
 
 -- @implements FR-JSON-001
 -- @implements API-JSON-001
 fn :: json get str JsonVal String String => String
-      json get str val dot_path fallback = j unwrap str (json get path val dot_path) fallback
+      json get str val dot_path fallback =
+        json get path val dot_path -> target
+        j unwrap str target fallback
 
 fn :: j unwrap str JsonVal     String   => String
       j unwrap str (JsonStr s) _        =  s
@@ -703,7 +709,9 @@ fn :: j unwrap str JsonVal     String   => String
 -- @implements FR-JSON-001
 -- @implements API-JSON-001
 fn :: json get int JsonVal String Int => Int
-      json get int val dot_path fallback = j unwrap int (json get path val dot_path) fallback
+      json get int val dot_path fallback =
+        json get path val dot_path -> target
+        j unwrap int target fallback
 
 fn :: j unwrap int JsonVal     Int      => Int
       j unwrap int (JsonInt n) _        =  n
@@ -712,7 +720,9 @@ fn :: j unwrap int JsonVal     Int      => Int
 -- @implements FR-JSON-001
 -- @implements API-JSON-001
 fn :: json get bool JsonVal String Bool => Bool
-      json get bool val dot_path fallback = j unwrap bool (json get path val dot_path) fallback
+      json get bool val dot_path fallback =
+        json get path val dot_path -> target
+        j unwrap bool target fallback
 
 fn :: j unwrap bool JsonVal      Bool     => Bool
       j unwrap bool (JsonBool b) _        =  b

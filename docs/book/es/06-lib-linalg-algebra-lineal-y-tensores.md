@@ -12,8 +12,8 @@ La lib **`linalg`** construye álgebra lineal numérica sobre `Tensor[Real]` nat
 
 En un ecosistema tradicional, resolver las tareas del dominio **`LINALG`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`linalg`** (`src/main/ridgun/lib/linalg.rg`) aborda el problema con cuatro principios innegociables:
 
-1. **Funciones totales y contratos explícitos (`=>`)**: ninguna función de `linalg` lanza excepciones ocultas ni depende de `null`. Todo caso límite (entradas vacías, divisores cero, tramas truncadas o índices fuera de rango) devuelve un valor centinela documentado o un tipo algebraico suma (`Option`, `Result`).
-2. **Cero código C y cero `libc`**: todo el código de `linalg` compila directamente a código máquina nativo ELF64 verificado por `ridgunc`.
+1. **Declara `import linalg` (o `import linalg as alias`) al inicio del archivo**: cada lib define su espacio de nombres `module :: linalg` y en modo `--strict` las funciones multi-palabra se invocan siempre con espacios naturales.
+2. **Encadena tus tuberías de izquierda a derecha con `->`**: escribe `entrada paso uno -> paso dos -> resultado`, usa máscaras `(+ _ _ +)` para desestructurar secuencias y omite `_ =` en sentencias secuenciales (o descarta con `-> ()`).
 3. **Recursión de cola con TCO (*Tail-Call Optimization*)**: todos los recorridos internos de `linalg` se compilan a bucles nativos en $O(1)$ espacio de pila.
 4. **Memoria determinista (`RMM1` / `RMM2`)**: cada estructura intermedia se libera en el instante exacto en que termina su última lectura, sin *Garbage Collector*.
 
@@ -29,7 +29,7 @@ En `ridgun-libs`, **`linalg`** es una **lib** de primera clase ubicada en `src/m
 | **Archivo compilado** | `target/linalg.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Objeto compartido ELF64** | `target/liblinalg.so` | Biblioteca dinámica nativa sin dependencias de C ni `libc` |
 
-> Para usar esta lib en cualquier archivo `.rg`, basta con declarar `import linalg` en el encabezado y llamar a sus funciones con espacios (`mi funcion x`) o guiones bajos (`mi_funcion x`) indistintamente.
+> Cada lib declara su propio espacio de nombres con `module :: linalg`: basta con escribir `import linalg` (o `import linalg as alias`) en el encabezado y llamar a sus funciones con espacios naturales (`mi funcion x`) y tuberías `->` (`x mi funcion -> resultado`).
 
 ### 06.2.1. Resumen de familias funcionales de `linalg`
 
@@ -138,11 +138,9 @@ Observa cómo en Ridgun los signos `=` y los pasos de transformación con `linal
 ```ridgun
 import linalg
 
-fn :: resolver sistema lineal () => Option[Tensor[Real]]
-      resolver sistema lineal =
-        -- Resuelve 2x + y = 5, x + 3y = 10 -> x = 1.0, y = 3.0
-        a = linalg mat from lists [[2.0, 1.0], [1.0, 3.0]]
-        b = linalg vec from list [5.0, 10.0]
+fn :: resolver sistema lineal Tensor[Real * n * n] Tensor[Real * n] => Tensor[Real * n]
+      resolver sistema lineal a b =
+        -- Resuelve A * x = b mediante eliminacion exacta de Bareiss
         linalg solve a b
 ```
 
@@ -153,12 +151,10 @@ Toda función de la lib `linalg` está diseñada para componerse con guardas boo
 ```ridgun
 import linalg
 
-fn :: puntuar embeddings () => (Real, Tensor[Real])
-      puntuar embeddings =
-        q     = linalg vec from list [1.0, 2.0, 3.0]
-        d     = linalg vec from list [1.0, 2.0, 3.0]
-        sim   = linalg cosine similarity q d
-        probs = linalg softmax q
+fn :: puntuar embeddings Tensor[Real * n] Tensor[Real * n] => Int Tensor[Real * n]
+      puntuar embeddings q d =
+        linalg cosine similarity q d -> sim
+        q linalg softmax -> probs
         (sim, probs)
 ```
 
@@ -177,19 +173,19 @@ fn :: test transpose trace diag identity => ()
         m_(1, 0) = 4
         m_(1, 1) = 5
         m_(1, 2) = 6
-        _  = assert int equals (linalg mat rows m) 2 "2x3 rows == 2"
-        _  = assert int equals (linalg mat cols m) 3 "2x3 cols == 3"
+        assert int equals (linalg mat rows m) 2 "2x3 rows == 2"
+        assert int equals (linalg mat cols m) 3 "2x3 cols == 3"
         mt = linalg transpose m
-        _  = assert int equals (linalg mat rows mt) 3 "transposed rows == 3"
-        _  = assert int equals (linalg mat cols mt) 2 "transposed cols == 2"
-        _  = assert int equals mt_(0, 0) 1 "mt(0,0) == 1"
-        _  = assert int equals mt_(0, 1) 4 "mt(0,1) == 4"
-        _  = assert int equals mt_(1, 0) 2 "mt(1,0) == 2"
-        _  = assert int equals mt_(1, 1) 5 "mt(1,1) == 5"
-        _  = assert int equals mt_(2, 0) 3 "mt(2,0) == 3"
-        _  = assert int equals mt_(2, 1) 6 "mt(2,1) == 6"
+        assert int equals (linalg mat rows mt) 3 "transposed rows == 3"
+        assert int equals (linalg mat cols mt) 2 "transposed cols == 2"
+        assert int equals mt_(0, 0) 1 "mt(0,0) == 1"
+        assert int equals mt_(0, 1) 4 "mt(0,1) == 4"
+        assert int equals mt_(1, 0) 2 "mt(1,0) == 2"
+        assert int equals mt_(1, 1) 5 "mt(1,1) == 5"
+        assert int equals mt_(2, 0) 3 "mt(2,0) == 3"
+        assert int equals mt_(2, 1) 6 "mt(2,1) == 6"
         mtt = linalg transpose mt
-        _   = assert int equals mtt_(1, 2) 6 "(A^T)^T(1,2) == 6"
+        assert int equals mtt_(1, 2) 6 "(A^T)^T(1,2) == 6"
 
         -- 2. Trace and diagonal extraction on 3x3 matrix with negative entries
         sq = Tensor[Real * 3 * 3]
@@ -202,25 +198,25 @@ fn :: test transpose trace diag identity => ()
         sq_(2, 0) = 7
         sq_(2, 1) = 8
         sq_(2, 2) = 5
-        _  = assert int equals (linalg trace sq) 12 "trace(sq) == 10 - 3 + 5 == 12"
-        _  = assert int equals (linalg trace (linalg transpose sq)) 12 "trace(A^T) == trace(A)"
+        assert int equals (linalg trace sq) 12 "trace(sq) == 10 - 3 + 5 == 12"
+        assert int equals (linalg trace (linalg transpose sq)) 12 "trace(A^T) == trace(A)"
         dg = linalg diag sq
-        _  = assert int equals (linalg vec len dg) 3 "diag len == 3"
-        _  = assert int equals dg_(0) 10 "diag(0) == 10"
-        _  = assert int equals dg_(1) (0 - 3) "diag(1) == -3"
-        _  = assert int equals dg_(2) 5 "diag(2) == 5"
+        assert int equals (linalg vec len dg) 3 "diag len == 3"
+        assert int equals dg_(0) 10 "diag(0) == 10"
+        assert int equals dg_(1) (0 - 3) "diag(1) == -3"
+        assert int equals dg_(2) 5 "diag(2) == 5"
 
         -- 3. Identity matrix I_4 properties: trace(I_4) == 4, det(I_4) == 1, I_3 @ sq == sq
         id4 = linalg identity 4
-        _   = assert int equals (linalg mat rows id4) 4 "I_4 rows == 4"
-        _   = assert int equals (linalg trace id4) 4 "trace(I_4) == 4"
-        _   = assert int equals id4_(2, 2) 1 "I_4(2,2) == 1"
-        _   = assert int equals id4_(2, 3) 0 "I_4(2,3) == 0"
+        assert int equals (linalg mat rows id4) 4 "I_4 rows == 4"
+        assert int equals (linalg trace id4) 4 "trace(I_4) == 4"
+        assert int equals id4_(2, 2) 1 "I_4(2,2) == 1"
+        assert int equals id4_(2, 3) 0 "I_4(2,3) == 0"
         id3  = linalg identity 3
         prod = linalg matmul id3 sq
-        _    = assert int equals prod_(0, 0) 10 "(I_3 @ sq)(0,0) == 10"
-        _    = assert int equals prod_(1, 2) 6 "(I_3 @ sq)(1,2) == 6"
-        _    = assert int equals prod_(2, 1) 8 "(I_3 @ sq)(2,1) == 8"
+        assert int equals prod_(0, 0) 10 "(I_3 @ sq)(0,0) == 10"
+        assert int equals prod_(1, 2) 6 "(I_3 @ sq)(1,2) == 6"
+        assert int equals prod_(2, 1) 8 "(I_3 @ sq)(2,1) == 8"
         ()
 ```
 
@@ -240,8 +236,8 @@ fn :: test dot outer matvec norms => ()
         v_(0) = 4
         v_(1) = 5
         v_(2) = 6
-        _ = assert int equals (linalg dot u v) 12 "dot([1,-2,3], [4,5,6]) == 4 - 10 + 18 == 12"
-        _ = assert int equals (linalg dot v u) 12 "dot is commutative"
+        assert int equals (linalg dot u v) 12 "dot([1,-2,3], [4,5,6]) == 4 - 10 + 18 == 12"
+        assert int equals (linalg dot v u) 12 "dot is commutative"
 
         -- Orthogonal vectors: [1, 2, -1] . [2, 0, 2] == 0
         o1 = Tensor[Real * 3]
@@ -252,43 +248,43 @@ fn :: test dot outer matvec norms => ()
         o2_(0) = 2
         o2_(1) = 0
         o2_(2) = 2
-        _  = assert int equals (linalg dot o1 o2) 0 "orthogonal dot == 0"
-        _  = assert int equals (linalg cosine similarity o1 o2) 0 "orthogonal cosine similarity == 0"
+        assert int equals (linalg dot o1 o2) 0 "orthogonal dot == 0"
+        assert int equals (linalg cosine similarity o1 o2) 0 "orthogonal cosine similarity == 0"
 
         -- 2. Outer product u (3) (x) w (2) -> 3x2 rank-1 matrix (det of square outer product == 0)
         w = Tensor[Real * 2]
         w_(0) = 7
         w_(1) = 0 - 8
         out = linalg outer u w
-        _   = assert int equals (linalg mat rows out) 3 "outer rows == 3"
-        _   = assert int equals (linalg mat cols out) 2 "outer cols == 2"
-        _   = assert int equals out_(0, 0) 7 "outer(0,0) == 7"
-        _   = assert int equals out_(0, 1) (0 - 8) "outer(0,1) == -8"
-        _   = assert int equals out_(1, 0) (0 - 14) "outer(1,0) == -14"
-        _   = assert int equals out_(1, 1) 16 "outer(1,1) == 16"
-        _   = assert int equals out_(2, 0) 21 "outer(2,0) == 21"
-        _   = assert int equals out_(2, 1) (0 - 24) "outer(2,1) == -24"
+        assert int equals (linalg mat rows out) 3 "outer rows == 3"
+        assert int equals (linalg mat cols out) 2 "outer cols == 2"
+        assert int equals out_(0, 0) 7 "outer(0,0) == 7"
+        assert int equals out_(0, 1) (0 - 8) "outer(0,1) == -8"
+        assert int equals out_(1, 0) (0 - 14) "outer(1,0) == -14"
+        assert int equals out_(1, 1) 16 "outer(1,1) == 16"
+        assert int equals out_(2, 0) 21 "outer(2,0) == 21"
+        assert int equals out_(2, 1) (0 - 24) "outer(2,1) == -24"
         rk1 = linalg outer u v
-        _   = assert int equals (linalg det rk1) 0 "rank-1 outer product has det == 0"
+        assert int equals (linalg det rk1) 0 "rank-1 outer product has det == 0"
 
         -- 3. Norms (L1, L2, L_inf, Frobenius) and vector normalization on Pythagorean triple (3, -4, 0)
         p = Tensor[Real * 3]
         p_(0) = 3
         p_(1) = 0 - 4
         p_(2) = 0
-        _  = assert int equals (linalg norm l1 p) 7 "L1([3,-4,0]) == 7"
-        _  = assert int equals (linalg norm l2 sq p) 25 "L2^2([3,-4,0]) == 25"
-        _  = assert int equals (linalg norm l2 p) 5 "L2([3,-4,0]) == 5"
-        _  = assert int equals (linalg norm linf p) 4 "L_inf([3,-4,0]) == 4"
+        assert int equals (linalg norm l1 p) 7 "L1([3,-4,0]) == 7"
+        assert int equals (linalg norm l2 sq p) 25 "L2^2([3,-4,0]) == 25"
+        assert int equals (linalg norm l2 p) 5 "L2([3,-4,0]) == 5"
+        assert int equals (linalg norm linf p) 4 "L_inf([3,-4,0]) == 4"
         np = linalg normalize vec p
-        _  = assert int equals np_(0) 600 "normalized(0) == 600 permille (0.6)"
-        _  = assert int equals np_(1) (0 - 800) "normalized(1) == -800 permille (-0.8)"
-        _  = assert int equals np_(2) 0 "normalized(2) == 0"
+        assert int equals np_(0) 600 "normalized(0) == 600 permille (0.6)"
+        assert int equals np_(1) (0 - 800) "normalized(1) == -800 permille (-0.8)"
+        assert int equals np_(2) 0 "normalized(2) == 0"
 
         -- Zero vector normalization guard (VUL-INPUT-001)
         z3 = Tensor[Real * 3]
         nz = linalg normalize vec z3
-        _  = assert int equals nz_(0) 0 "normalize zero vector safe (0)"
+        assert int equals nz_(0) 0 "normalize zero vector safe (0)"
         ()
 ```
 
@@ -308,13 +304,13 @@ fn :: test det and linear solver => ()
         b2 = Tensor[Real * 2]
         b2_(0) = 13
         b2_(1) = 22
-        _  = assert int equals (linalg det a2) (0 - 7) "det([2,3;5,4]) == -7"
+        assert int equals (linalg det a2) (0 - 7) "det([2,3;5,4]) == -7"
         x2 = linalg solve a2 b2
-        _  = assert int equals x2_(0) 2 "2x2 solve x0 == 2"
-        _  = assert int equals x2_(1) 3 "2x2 solve x1 == 3"
+        assert int equals x2_(0) 2 "2x2 solve x0 == 2"
+        assert int equals x2_(1) 3 "2x2 solve x1 == 3"
         r2 = linalg matvec a2 x2
-        _  = assert int equals r2_(0) 13 "A*x(0) == 13"
-        _  = assert int equals r2_(1) 22 "A*x(1) == 22"
+        assert int equals r2_(0) 13 "A*x(0) == 13"
+        assert int equals r2_(1) 22 "A*x(1) == 22"
 
         -- 2. 3x3 system requiring partial pivoting (0 in (0,0) entry!):
         -- [0, 2, 1; 1, -2, -3; -1, 1, 2] * [x0, x1, x2] = [-8, 0, 3] => x = [-4, -5, 2]
@@ -333,13 +329,13 @@ fn :: test det and linear solver => ()
         b3_(1) = 0
         b3_(2) = 3
         x3 = linalg solve a3 b3
-        _  = assert int equals x3_(0) (0 - 4) "3x3 pivoted solve x0 == -4"
-        _  = assert int equals x3_(1) (0 - 5) "3x3 pivoted solve x1 == -5"
-        _  = assert int equals x3_(2) 2 "3x3 pivoted solve x2 == 2"
+        assert int equals x3_(0) (0 - 4) "3x3 pivoted solve x0 == -4"
+        assert int equals x3_(1) (0 - 5) "3x3 pivoted solve x1 == -5"
+        assert int equals x3_(2) 2 "3x3 pivoted solve x2 == 2"
         r3 = linalg matvec a3 x3
-        _  = assert int equals r3_(0) (0 - 8) "A3*x3(0) == -8"
-        _  = assert int equals r3_(1) 0 "A3*x3(1) == 0"
-        _  = assert int equals r3_(2) 3 "A3*x3(2) == 3"
+        assert int equals r3_(0) (0 - 8) "A3*x3(0) == -8"
+        assert int equals r3_(1) 0 "A3*x3(1) == 0"
+        assert int equals r3_(2) 3 "A3*x3(2) == 3"
         ()
 ```
 
@@ -357,10 +353,10 @@ fn :: test neural activations => ()
         v_(2) = 5
         v_(3) = 42
         rv = linalg relu v
-        _  = assert int equals rv_(0) 0 "relu(-10) == 0"
-        _  = assert int equals rv_(1) 0 "relu(0) == 0"
-        _  = assert int equals rv_(2) 5 "relu(5) == 5"
-        _  = assert int equals rv_(3) 42 "relu(42) == 42"
+        assert int equals rv_(0) 0 "relu(-10) == 0"
+        assert int equals rv_(1) 0 "relu(0) == 0"
+        assert int equals rv_(2) 5 "relu(5) == 5"
+        assert int equals rv_(3) 42 "relu(42) == 42"
 
         -- 2. Sigmoid: maps into (0, 1000), sigmoid(0) == 500, symmetry sigmoid(-x) + sigmoid(x) == 1000
         sv = Tensor[Real * 3]
@@ -368,10 +364,10 @@ fn :: test neural activations => ()
         sv_(1) = 0
         sv_(2) = 2
         sg = linalg sigmoid sv
-        _  = assert int equals sg_(1) 500 "sigmoid(0) == 500"
-        _  = assert true (sg_(0) > 0 and sg_(0) < 500) "sigmoid(-2) in (0, 500)"
-        _  = assert true (sg_(2) > 500 and sg_(2) < 1000) "sigmoid(2) in (500, 1000)"
-        _  = assert int equals (sg_(0) + sg_(2)) 1000 "sigmoid(-2) + sigmoid(2) == 1000"
+        assert int equals sg_(1) 500 "sigmoid(0) == 500"
+        assert true (sg_(0) > 0 and sg_(0) < 500) "sigmoid(-2) in (0, 500)"
+        assert true (sg_(2) > 500 and sg_(2) < 1000) "sigmoid(2) in (500, 1000)"
+        assert int equals (sg_(0) + sg_(2)) 1000 "sigmoid(-2) + sigmoid(2) == 1000"
 
         -- 3. Softmax: sums to 1000, shift-invariant (softmax(x + c) == softmax(x)), overflow-safe
         logits = Tensor[Real * 3]
@@ -379,17 +375,17 @@ fn :: test neural activations => ()
         logits_(1) = 2
         logits_(2) = 3
         sm = linalg softmax logits
-        _  = assert int equals (sm_(0) + sm_(1) + sm_(2)) 1000 "softmax sums to 1000"
-        _  = assert true (sm_(0) < sm_(1) and sm_(1) < sm_(2)) "softmax strictly monotonic"
+        assert int equals (sm_(0) + sm_(1) + sm_(2)) 1000 "softmax sums to 1000"
+        assert true (sm_(0) < sm_(1) and sm_(1) < sm_(2)) "softmax strictly monotonic"
 
         shifted = Tensor[Real * 3]
         shifted_(0) = 1000001
         shifted_(1) = 1000002
         shifted_(2) = 1000003
         sm_sh = linalg softmax shifted
-        _     = assert int equals sm_sh_(0) sm_(0) "softmax shift-invariance (0)"
-        _     = assert int equals sm_sh_(1) sm_(1) "softmax shift-invariance (1)"
-        _     = assert int equals sm_sh_(2) sm_(2) "softmax shift-invariance (2)"
+        assert int equals sm_sh_(0) sm_(0) "softmax shift-invariance (0)"
+        assert int equals sm_sh_(1) sm_(1) "softmax shift-invariance (1)"
+        assert int equals sm_sh_(2) sm_(2) "softmax shift-invariance (2)"
         ()
 ```
 
@@ -404,6 +400,8 @@ Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**
 Fíjate en cómo `linalg.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
+module :: linalg
+
 fn :: la abs Int => Int
       la abs x   =
         | x < 0     = 0 - x
@@ -429,7 +427,6 @@ fn :: la isqrt Int => Int
         | n < 4     = 1
         | otherwise = la isqrt loop n (n / 2)
 
--- Scaled exp(x) * 1000000 for integer x in [-16..0] (shift-invariant softmax & sigmoid)
 fn :: la exp neg scaled Int => Int
       la exp neg scaled x   =
         | x >= 0          = 1000000
@@ -501,6 +498,12 @@ fn :: la identity loop Tensor[Real * n * n] Int Int => Tensor[Real * n * n]
         | otherwise =
           out_(idx, idx) = 1
           la identity loop out (idx + 1) n
+
+fn :: linalg identity Int => Tensor[Real * n * n]
+      linalg identity dim =
+        la max 1 dim -> n
+        out = Tensor[Real * n * n]
+        la identity loop out 0 n
 ```
 
 ### 06.4.3. Implementación interna: Vector & Matrix Norms (`norm_l1`, `norm_l2`, `norm_linf`, `frobenius`)
@@ -556,6 +559,24 @@ fn :: la norm vec loop Tensor[Real * n] Tensor[Real * n] Int Int Int => Tensor[R
         | otherwise =
           out_(idx) = (v_(idx) * 1000) / norm_val
           la norm vec loop v out norm_val (idx + 1) n
+
+fn :: la normalize vec step Tensor[Real * n] Tensor[Real * n] Int Int => Tensor[Real * n]
+      la normalize vec step v out norm_value n =
+        | norm_value <= 0 = out
+        | otherwise       = la norm vec loop v out norm_value 0 n
+
+fn :: linalg normalize vec Tensor[Real * n] => Tensor[Real * n]
+      linalg normalize vec (Tensor[Real * n] v) =
+        la normalize vec step v (Tensor[Real * n]) (linalg norm l2 v) n
+
+fn :: la cosine step Tensor[Real * n] Tensor[Real * n] Int Int => Int
+      la cosine step a b na nb =
+        | na <= 0 or nb <= 0 = 0
+        | otherwise          = ((linalg dot a b) * 1000) / (na * nb)
+
+fn :: linalg cosine similarity Tensor[Real * n] Tensor[Real * n] => Int
+      linalg cosine similarity (Tensor[Real * n] a) (Tensor[Real * n] b) =
+        la cosine step a b (linalg norm l2 a) (linalg norm l2 b)
 ```
 
 ### 06.4.4. Implementación interna: Neural Activations (`linalg relu`, `linalg sigmoid`, `linalg softmax`)
@@ -579,7 +600,6 @@ fn :: linalg relu Tensor[Real * n] => Tensor[Real * n]
       linalg relu (Tensor[Real * n] v) =
         la relu loop v (Tensor[Real * n]) 0 n
 
--- Permille (0..1000) sigmoid: sigmoid(0) = 500, sigmoid(-x) + sigmoid(x) = 1000
 fn :: la sigmoid scalar Int => Int
       la sigmoid scalar x   =
         | x == 0 = 500
@@ -609,6 +629,45 @@ fn :: la sum vec loop Tensor[Real * n] Int Int Int => Int
       la sum vec loop v idx n acc =
         | idx >= n  = acc
         | otherwise = la sum vec loop v (idx + 1) n (acc + v_(idx))
+
+fn :: la exp shifted loop Tensor[Real * n] Tensor[Real * n] Int Int Int => Tensor[Real * n]
+      la exp shifted loop v out max_val idx n =
+        | idx >= n  = out
+        | otherwise =
+          out_(idx) = la exp neg scaled (v_(idx) - max_val)
+          la exp shifted loop v out max_val (idx + 1) n
+
+fn :: la softmax scale loop Tensor[Real * n] Tensor[Real * n] Int Int Int => Tensor[Real * n]
+      la softmax scale loop exps out tot idx n =
+        | idx >= n  = out
+        | otherwise =
+          out_(idx) = (exps_(idx) * 1000) / tot
+          la softmax scale loop exps out tot (idx + 1) n
+
+fn :: la argmax vec loop Tensor[Real * n] Int Int Int Int => Int
+      la argmax vec loop v idx n best_idx best_val =
+        | idx >= n           = best_idx
+        | v_(idx) > best_val = la argmax vec loop v (idx + 1) n idx v_(idx)
+        | otherwise          = la argmax vec loop v (idx + 1) n best_idx best_val
+
+fn :: la softmax finish Tensor[Real * n] Tensor[Real * n] Int Int => Tensor[Real * n]
+      la softmax finish v exps n tot =
+        | tot <= 0  = Tensor[Real * n]
+        | otherwise =
+          out            = la softmax scale loop exps (Tensor[Real * n]) tot 0 n
+          sum_p          = la sum vec loop out 0 n 0
+          best_idx       = la argmax vec loop v 1 n 0 v_(0)
+          out_(best_idx) = out_(best_idx) + (1000 - sum_p)
+          out
+
+fn :: linalg softmax Tensor[Real * n] => Tensor[Real * n]
+      linalg softmax (Tensor[Real * n] v) =
+        | n <= 0    = Tensor[Real * n]
+        | otherwise =
+          max_v = la max vec loop v 1 n v_(0)
+          exps  = la exp shifted loop v (Tensor[Real * n]) max_v 0 n
+          tot   = la sum vec loop exps 0 n 0
+          la softmax finish v exps n tot
 ```
 
 ---

@@ -9,6 +9,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: posix
+
 -- ── Poll & Process Status ADTs ───────────────────────────────
 
 -- @implements FR-POSIX-001
@@ -574,12 +576,12 @@ fn :: px finish getrandom Int String Int => Int String
 
 fn :: px getrandom checked Int => Int String
       px getrandom checked n   =
-        psz = ((n / 4096) + 2) * 4096
-        ptr = px alloc page psz
-        mfd = px alloc mfd
-        rc  = px getrandom loop ptr n
-        raw = px peek mfd ptr n
-        _   = px free page mfd ptr psz
+        ((n / 4096) + 2) * 4096 -> psz
+        px alloc page psz -> ptr
+        px alloc mfd -> mfd
+        px getrandom loop ptr n -> rc
+        px peek mfd ptr n -> raw
+        px free page mfd ptr psz -> ()
         px finish getrandom rc raw n
 
 -- @implements FR-POSIX-002

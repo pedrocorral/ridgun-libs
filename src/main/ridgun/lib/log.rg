@@ -35,7 +35,7 @@ fn :: lg rank from lower String => Int
 -- @implements FR-LOG-001
 -- @implements API-LOG-001
 fn :: log level rank String => Int
-      log level rank level  =  lg rank from lower (lg to lower level)
+      log level rank level  =  level lg to lower -> lg rank from lower
 
 -- @implements FR-LOG-001
 -- @implements API-LOG-001
@@ -67,7 +67,7 @@ fn :: lg check sens lower String => Bool
 -- @implements API-LOG-001
 -- @mitigates VUL-INPUT-001
 fn :: log is sensitive key String => Bool
-      log is sensitive key key    =  lg check sens lower (lg to lower key)
+      log is sensitive key key    =  key lg to lower -> lg check sens lower
 
 fn :: lg pair key (String String) => String
       lg pair key (k, _)          =  k
@@ -120,9 +120,9 @@ fn :: lg fmt text fields [String String] => String
 -- @mitigates VUL-INPUT-001
 fn :: log format text String String [String String] => String
       log format text level msg fields =
-        norm_lv = log level name (log level rank level)
-        safe_f  = log redact fields fields
-        "[" + norm_lv + "] " + (lg esc str msg) + (lg fmt text fields safe_f)
+        level log level rank -> log level name -> norm_lv
+        fields log redact fields -> lg fmt text fields -> fmt_f
+        "[" + norm_lv + "] " + (lg esc str msg) + fmt_f
 
 fn :: lg fmt json fields [String String] => String
       lg fmt json fields []              =  ""
@@ -135,6 +135,6 @@ fn :: lg fmt json fields [String String] => String
 -- @mitigates VUL-INPUT-001
 fn :: log format json String String [String String] => String
       log format json level msg fields =
-        norm_lv = log level name (log level rank level)
-        safe_f  = log redact fields fields
-        "{\"level\":" + (lg quote norm_lv) + ",\"msg\":" + (lg quote msg) + (lg fmt json fields safe_f) + "}"
+        level log level rank -> log level name -> norm_lv
+        fields log redact fields -> lg fmt json fields -> fmt_f
+        "{\"level\":" + (lg quote norm_lv) + ",\"msg\":" + (lg quote msg) + fmt_f + "}"

@@ -76,7 +76,7 @@ fn :: math mod euclid Int Int => Int
       math mod euclid a   b   =
         | b == 0 = 0
         | otherwise =
-          mb = math abs b
+          b math abs -> mb
           m fix mod (a % mb) mb
 
 -- @implements FR-MATH-001
@@ -86,7 +86,7 @@ fn :: math div euclid Int Int => Int
       math div euclid a   b   =
         | b == 0 = 0
         | otherwise =
-          r = math mod euclid a b
+          math mod euclid a b -> r
           (a - r) / b
 
 fn :: m adjust floor Int Int Int Int => Int

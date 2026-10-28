@@ -12,8 +12,8 @@ The **`json`** lib provides a full recursive-descent **RFC 8259** parser into th
 
 In a traditional ecosystem, solving **`JSON`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`json`** lib (`src/main/ridgun/lib/json.rg`) tackles the problem with four non-negotiable principles:
 
-1. **Total Functions & Explicit Contracts (`=>`)**: no function in `json` throws hidden exceptions or relies on `null`. Every edge case (empty inputs, zero divisors, truncated frames, or out-of-bounds indices) returns a documented sentinel value or an algebraic sum type (`Option`, `Result`).
-2. **Zero C Code & Zero `libc`**: every line of `json` compiles directly into native ELF64 machine code verified by `ridgunc`.
+1. **Declare `import json` (or `import json as alias`) at the top of your file**: every lib defines its `module :: json` namespace, and under `--strict` multi-word functions are always called with natural spaces.
+2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
 3. **Tail-Call Optimization (TCO)**: all internal loops in `json` are tail-recursive and compile into native hardware loops using $O(1)$ stack space.
 4. **Deterministic Memory (`RMM1` / `RMM2`)**: every intermediate allocation is reclaimed at the exact instruction where its last read finishes, with no Garbage Collector.
 
@@ -29,7 +29,7 @@ In `ridgun-libs`, **`json`** is a first-class **lib** located at `src/main/ridgu
 | **Compiled Archive** | `target/json.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libjson.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
-> To use this lib in any `.rg` file, simply add `import json` at the top and call its functions using either multi-word spaces (`my fn x`) or underscores (`my_fn x`).
+> Every lib declares its own namespace via `module :: json`: simply write `import json` (or `import json as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).
 
 ### 08.2.1. Summary of `json` Functional Families
 
@@ -42,7 +42,7 @@ In `ridgun-libs`, **`json`** is a first-class **lib** located at `src/main/ridgu
 
 ### 08.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/json.rg`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/json.rg` (`7` types, `0` operators, and `56` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/json.rg` (`7` types, `0` operators, and `118` functions):
 
 **Algebraic Data Types & Records (`type`) in `json`:**
 
@@ -128,12 +128,11 @@ Notice how in Ridgun the `=` signs and transformation steps using `json` align i
 ```ridgun
 import json
 
-fn :: leer config servidor (raw : String) => (String, Int, Bool)
-      leer config servidor raw =
-        doc  = json parse raw
-        host = json get str doc "server.host" "127.0.0.1"
-        port = json get int doc "server.port" 8080
-        tls  = json get bool doc "server.tls.enabled" False
+fn :: leer config servidor JsonVal => String Int Bool
+      leer config servidor doc =
+        json get str doc "server.host" "127.0.0.1" -> host
+        json get int doc "server.port" 8080 -> port
+        json get bool doc "server.tls.enabled" False -> tls
         (host, port, tls)
 ```
 
@@ -144,9 +143,9 @@ Every function in the `json` lib is designed to compose cleanly with boolean gua
 ```ridgun
 import json
 
-fn :: construir manifiesto () => String
+fn :: construir manifiesto => String
       construir manifiesto =
-        nodo = JnObj [("app", JnStr "solstice"), ("workers", JnInt 8), ("tags", JnArr [JnStr "elf64", JnStr "rmm2"])]
+        JsonObj [JsonField "app" (JsonStr "solstice"), JsonField "workers" (JsonInt 8)] -> nodo
         json pretty nodo 2
 ```
 
@@ -157,20 +156,20 @@ In this hands-on walkthrough we thoroughly exercise how `json` behaves across th
 ```ridgun
 fn :: test json parse stringify and pretty => ()
       test json parse stringify and pretty =
-        lb = char_from_code 123
-        rb = char_from_code 125
+        lb = char from code 123
+        rb = char from code 125
         raw = lb + "\"user\":" + lb + "\"name\":\"Ada \\\"Lovelace\\\"\",\"age\":36,\"active\":true,\"roles\":[\"admin\",\"math\"],\"meta\":null" + rb + rb
         res = json parse raw
-        _ = assert true (is_json_ok res) "AC1: json parse nested object and array"
+        assert true (is_json_ok res) "AC1: json parse nested object and array"
         val = unwrap_json res
 
         compact = json stringify val
-        _ = assert str eq compact raw "AC1: json stringify lossless round-trip"
+        assert str eq compact raw "AC1: json stringify lossless round-trip"
 
         pretty_s = json pretty val 2
         res2 = json parse pretty_s
-        _ = assert true (is_json_ok res2) "AC1: json pretty output parses back cleanly"
-        _ = assert str eq (json stringify (unwrap_json res2)) raw "AC1: json pretty round-trip equality"
+        assert true (is_json_ok res2) "AC1: json pretty output parses back cleanly"
+        assert str eq (json stringify (unwrap_json res2)) raw "AC1: json pretty round-trip equality"
         ()
 ```
 
@@ -181,24 +180,24 @@ In this hands-on walkthrough we thoroughly exercise how `json` behaves across th
 ```ridgun
 fn :: test json primitives escapes and empty containers => ()
       test json primitives escapes and empty containers =
-        lb = char_from_code 123
-        rb = char_from_code 125
-        bs = char_from_code 92
-        nl = char_from_code 10
-        tab = char_from_code 9
-        _ = assert str eq (json stringify (unwrap_json (json parse (lb + rb)))) (lb + rb) "AC1: empty object {}"
-        _ = assert str eq (json stringify (unwrap_json (json parse "[]"))) "[]" "AC1: empty array []"
-        _ = assert str eq (json stringify (unwrap_json (json parse ("  " + lb + "  " + rb + "  ")))) (lb + rb) "AC1: whitespace-padded empty object"
-        _ = assert true (is_json_null (unwrap_json (json parse "null"))) "AC1: root null literal"
-        _ = assert str eq (json stringify (unwrap_json (json parse "true"))) "true" "AC1: root true literal"
-        _ = assert str eq (json stringify (unwrap_json (json parse "false"))) "false" "AC1: root false literal"
-        _ = assert str eq (json stringify (unwrap_json (json parse "0"))) "0" "AC1: root zero integer"
-        _ = assert str eq (json stringify (unwrap_json (json parse "-42000"))) "-42000" "AC1: root negative integer"
+        lb = char from code 123
+        rb = char from code 125
+        bs = char from code 92
+        nl = char from code 10
+        tab = char from code 9
+        assert str eq (json stringify (unwrap_json (json parse (lb + rb)))) (lb + rb) "AC1: empty object {}"
+        assert str eq (json stringify (unwrap_json (json parse "[]"))) "[]" "AC1: empty array []"
+        assert str eq (json stringify (unwrap_json (json parse ("  " + lb + "  " + rb + "  ")))) (lb + rb) "AC1: whitespace-padded empty object"
+        assert true (is_json_null (unwrap_json (json parse "null"))) "AC1: root null literal"
+        assert str eq (json stringify (unwrap_json (json parse "true"))) "true" "AC1: root true literal"
+        assert str eq (json stringify (unwrap_json (json parse "false"))) "false" "AC1: root false literal"
+        assert str eq (json stringify (unwrap_json (json parse "0"))) "0" "AC1: root zero integer"
+        assert str eq (json stringify (unwrap_json (json parse "-42000"))) "-42000" "AC1: root negative integer"
 
         esc_json = lb + "\"msg\":\"line1" + bs + "nline2" + bs + "t" + bs + bs + "slash\"" + rb
         esc_val = unwrap_json (json parse esc_json)
-        _ = assert str eq (json get str esc_val "msg" "") ("line1" + nl + "line2" + tab + bs + "slash") "AC1: unescape \\n, \\t, \\\\ in JSON strings"
-        _ = assert str eq (json stringify esc_val) esc_json "AC1: re-escape \\n, \\t, \\\\ on stringify"
+        assert str eq (json get str esc_val "msg" "") ("line1" + nl + "line2" + tab + bs + "slash") "AC1: unescape \\n, \\t, \\\\ in JSON strings"
+        assert str eq (json stringify esc_val) esc_json "AC1: re-escape \\n, \\t, \\\\ on stringify"
         ()
 ```
 
@@ -209,27 +208,27 @@ In this hands-on walkthrough we thoroughly exercise how `json` behaves across th
 ```ridgun
 fn :: test json dot path queries and updates => ()
       test json dot path queries and updates =
-        lb = char_from_code 123
-        rb = char_from_code 125
+        lb = char from code 123
+        rb = char from code 125
         raw = lb + "\"user\":" + lb + "\"name\":\"Ada\",\"age\":36,\"active\":true,\"roles\":[\"admin\",\"math\"],\"matrix\":[[10,20],[30,40]]" + rb + ",\"count\":-7,\"disabled\":false" + rb
         val = unwrap_json (json parse raw)
 
-        _ = assert str eq (json get str val "user.name" "") "Ada" "AC2: json get str dot path"
-        _ = assert int equals (json get int val "user.age" 0) 36 "AC2: json get int dot path"
-        _ = assert int equals (json get int val "count" 0) (-7) "AC2: json get int negative"
-        _ = assert true (json get bool val "user.active" False) "AC2: json get bool true"
-        _ = assert false (json get bool val "disabled" True) "AC2: json get bool false"
-        _ = assert str eq (json get str val "user.roles.0" "") "admin" "AC2: json get str array index 0"
-        _ = assert str eq (json get str val "user.roles.1" "") "math" "AC2: json get str array index 1"
-        _ = assert int equals (json get int val "user.matrix.1.0" 0) 30 "AC2: nested 2D array index user.matrix.1.0"
-        _ = assert int equals (json get int val "user.matrix.1.1" 0) 40 "AC2: nested 2D array index user.matrix.1.1"
-        _ = assert str eq (json get str val "user.roles.99" "oob") "oob" "AC2: out-of-bounds array index fallback"
-        _ = assert str eq (json get str val "user.missing.deep" "fallback") "fallback" "AC2: missing deep dot-path fallback"
+        assert str eq (json get str val "user.name" "") "Ada" "AC2: json get str dot path"
+        assert int equals (json get int val "user.age" 0) 36 "AC2: json get int dot path"
+        assert int equals (json get int val "count" 0) (-7) "AC2: json get int negative"
+        assert true (json get bool val "user.active" False) "AC2: json get bool true"
+        assert false (json get bool val "disabled" True) "AC2: json get bool false"
+        assert str eq (json get str val "user.roles.0" "") "admin" "AC2: json get str array index 0"
+        assert str eq (json get str val "user.roles.1" "") "math" "AC2: json get str array index 1"
+        assert int equals (json get int val "user.matrix.1.0" 0) 30 "AC2: nested 2D array index user.matrix.1.0"
+        assert int equals (json get int val "user.matrix.1.1" 0) 40 "AC2: nested 2D array index user.matrix.1.1"
+        assert str eq (json get str val "user.roles.99" "oob") "oob" "AC2: out-of-bounds array index fallback"
+        assert str eq (json get str val "user.missing.deep" "fallback") "fallback" "AC2: missing deep dot-path fallback"
 
         updated = json set field val "version" (JsonInt 2)
-        _ = assert int equals (json get int updated "version" 0) 2 "AC2: json set field adds new key"
+        assert int equals (json get int updated "version" 0) 2 "AC2: json set field adds new key"
         overwritten = json set field updated "count" (JsonInt 99)
-        _ = assert int equals (json get int overwritten "count" 0) 99 "AC2: json set field overwrites existing key"
+        assert int equals (json get int overwritten "count" 0) 99 "AC2: json set field overwrites existing key"
         ()
 ```
 
@@ -240,18 +239,18 @@ In this hands-on walkthrough we thoroughly exercise how `json` behaves across th
 ```ridgun
 fn :: test json malformed inputs => ()
       test json malformed inputs =
-        lb = char_from_code 123
-        rb = char_from_code 125
-        _ = assert false (is_json_ok (json parse "")) "AC3: reject empty input"
-        _ = assert false (is_json_ok (json parse "   ")) "AC3: reject whitespace-only input"
-        _ = assert false (is_json_ok (json parse (lb + "\"unclosed\":1"))) "AC3: reject unclosed object"
-        _ = assert false (is_json_ok (json parse "[1, 2, 3")) "AC3: reject unclosed array"
-        _ = assert false (is_json_ok (json parse "\"unterminated string")) "AC3: reject unterminated string"
-        _ = assert false (is_json_ok (json parse (lb + "unquoted: 1" + rb))) "AC3: reject unquoted object key"
-        _ = assert false (is_json_ok (json parse (lb + "\"k\" 1" + rb))) "AC3: reject missing colon in object"
-        _ = assert false (is_json_ok (json parse "[1, 2] trailing")) "AC3: reject trailing garbage token"
-        _ = assert false (is_json_ok (json parse "tru")) "AC3: reject truncated boolean literal"
-        _ = assert false (is_json_ok (json parse "nul")) "AC3: reject truncated null literal"
+        lb = char from code 123
+        rb = char from code 125
+        assert false (is_json_ok (json parse "")) "AC3: reject empty input"
+        assert false (is_json_ok (json parse "   ")) "AC3: reject whitespace-only input"
+        assert false (is_json_ok (json parse (lb + "\"unclosed\":1"))) "AC3: reject unclosed object"
+        assert false (is_json_ok (json parse "[1, 2, 3")) "AC3: reject unclosed array"
+        assert false (is_json_ok (json parse "\"unterminated string")) "AC3: reject unterminated string"
+        assert false (is_json_ok (json parse (lb + "unquoted: 1" + rb))) "AC3: reject unquoted object key"
+        assert false (is_json_ok (json parse (lb + "\"k\" 1" + rb))) "AC3: reject missing colon in object"
+        assert false (is_json_ok (json parse "[1, 2] trailing")) "AC3: reject trailing garbage token"
+        assert false (is_json_ok (json parse "tru")) "AC3: reject truncated boolean literal"
+        assert false (is_json_ok (json parse "nul")) "AC3: reject truncated null literal"
         ()
 ```
 
@@ -266,22 +265,24 @@ One of the biggest advantages of `ridgun-libs` is that **there are no C black bo
 Observe how `json.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
-fn :: j_is_ws Int => Bool
-      j_is_ws c   =  c == 32 OR c == 9 OR c == 10 OR c == 13
+module :: json
 
-fn :: j_is_digit Int => Bool
-      j_is_digit c   =  c >= 48 AND c <= 57
+fn :: j is ws Int => Bool
+      j is ws c   =  c == 32 OR c == 9 OR c == 10 OR c == 13
 
-fn :: j_skip_ws String Int Int => Int
-      j_skip_ws s      pos len
+fn :: j is digit Int => Bool
+      j is digit c   =  c >= 48 AND c <= 57
+
+fn :: j skip ws String Int Int => Int
+      j skip ws s      pos len
         | pos >= len = len
-        | j_is_ws (str_char_at s pos) = j_skip_ws s (pos + 1) len
+        | j is ws (str char at s pos) = j skip ws s (pos + 1) len
         | otherwise = pos
 
-fn :: j_spaces Int => String
-      j_spaces n
+fn :: j spaces Int => String
+      j spaces n
         | n <= 0 = ""
-        | otherwise = " " + (j_spaces (n - 1))
+        | otherwise = " " + (j spaces (n - 1))
 ```
 
 ### 08.4.2. Internal Implementation: Integer Literal Parsing
@@ -289,26 +290,26 @@ fn :: j_spaces Int => String
 Observe how `json.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
-fn :: j_scan_digits String Int Int => Int
-      j_scan_digits s      pos len
+fn :: j scan digits String Int Int => Int
+      j scan digits s      pos len
         | pos >= len = len
-        | j_is_digit (str_char_at s pos) = j_scan_digits s (pos + 1) len
+        | j is digit (str char at s pos) = j scan digits s (pos + 1) len
         | otherwise = pos
 
-fn :: j_parse_number String Int Int => JsonStep
-      j_parse_number s      pos len
-        | (str_char_at s pos) == 45 = j_finish_neg_num s pos (j_scan_digits s (pos + 1) len)
-        | otherwise = j_finish_pos_num s pos (j_scan_digits s pos len)
+fn :: j parse number String Int Int => JsonStep
+      j parse number s      pos len
+        | (str char at s pos) == 45 = j_finish_neg_num s pos (j scan digits s (pos + 1) len)
+        | otherwise = j_finish_pos_num s pos (j scan digits s pos len)
 
 fn :: j_finish_neg_num String Int Int     => JsonStep
       j_finish_neg_num s      pos end_pos
         | end_pos <= (pos + 1) = JStepErr "invalid negative number"
-        | otherwise = JStepOk (JsonInt (str_to_int (str_slice s pos end_pos))) end_pos
+        | otherwise = JStepOk (JsonInt (str to int (str slice s pos end_pos))) end_pos
 
 fn :: j_finish_pos_num String Int Int     => JsonStep
       j_finish_pos_num s      pos end_pos
         | end_pos <= pos = JStepErr "expected number"
-        | otherwise = JStepOk (JsonInt (str_to_int (str_slice s pos end_pos))) end_pos
+        | otherwise = JStepOk (JsonInt (str to int (str slice s pos end_pos))) end_pos
 ```
 
 ### 08.4.3. Internal Implementation: Serialization & Pretty-Printing
@@ -316,50 +317,89 @@ fn :: j_finish_pos_num String Int Int     => JsonStep
 Observe how `json.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
-fn :: j_join_arr [JsonVal] => String
-      j_join_arr []        =  ""
-      j_join_arr (v:[])    =  json stringify v
-      j_join_arr (v:vs)    =  (json stringify v) + "," + (j_join_arr vs)
+fn :: j join arr loop [JsonVal] String String String String => String
+      j join arr loop []     c0 c1 c2 c3 = j sb finish c0 c1 c2 c3
+      j join arr loop (v:vs) c0 c1 c2 c3 =
+        n0, n1, n2, n3 = j sb append ("," + (json stringify v)) c0 c1 c2 c3
+        j join arr loop vs n0 n1 n2 n3
 
-fn :: j_join_obj [JsonField] => String
-      j_join_obj []          =  ""
-      j_join_obj ((JsonField k v):[]) = (j_escape_str k) + ":" + (json stringify v)
-      j_join_obj ((JsonField k v):rest) = (j_escape_str k) + ":" + (json stringify v) + "," + (j_join_obj rest)
+fn :: j join arr [JsonVal] => String
+      j join arr []        =  ""
+      j join arr (v:vs)    =  j join arr loop vs (json stringify v) "" "" ""
+
+fn :: j join obj loop [JsonField] String String String String => String
+      j join obj loop []                     c0 c1 c2 c3 = j sb finish c0 c1 c2 c3
+      j join obj loop ((JsonField k v):rest) c0 c1 c2 c3 =
+        item = "," + (j escape str k) + ":" + (json stringify v)
+        n0, n1, n2, n3 = j sb append item c0 c1 c2 c3
+        j join obj loop rest n0 n1 n2 n3
+
+fn :: j join obj [JsonField] => String
+      j join obj []                     =  ""
+      j join obj ((JsonField k v):rest) =
+        first = (j escape str k) + ":" + (json stringify v)
+        j join obj loop rest first "" "" ""
+
+fn :: j pos int to str Int String => String
+      j pos int to str n acc =
+        | n <= 0    = acc
+        | otherwise = j pos int to str (n / 10) ((char from code (48 + (n % 10))) + acc)
+
+fn :: j int to str Int => String
+      j int to str n =
+        | n == 0         = "0"
+        | n > 0          = j pos int to str n ""
+        | n > (0 - 10)   = "-" + (char from code (48 + (0 - n)))
+        | otherwise      = "-" + (j pos int to str (0 - (n / 10)) (char from code (48 + (0 - (n % 10)))))
 
 fn :: json stringify JsonVal          => String
       json stringify JsonNull         =  "null"
       json stringify (JsonBool True)  =  "true"
       json stringify (JsonBool False) =  "false"
-      json stringify (JsonInt n)      =  int_to_str n
-      json stringify (JsonStr s)      =  j_escape_str s
-      json stringify (JsonArr items)  =  "[" + (j_join_arr items) + "]"
-      json stringify (JsonObj fields) =  (char_from_code 123) + (j_join_obj fields) + (char_from_code 125)
+      json stringify (JsonInt n)      =  j int to str n
+      json stringify (JsonStr s)      =  j escape str s
+      json stringify (JsonArr items)  =  "[" + (j join arr items) + "]"
+      json stringify (JsonObj fields) =  (char from code 123) + (j join obj fields) + (char from code 125)
 
-fn :: j_pretty_arr [JsonVal] Int Int => String
-      j_pretty_arr []        _   _   =  ""
-      j_pretty_arr (v:[])    ind cur =  (j_spaces (cur + ind)) + (j_pretty_val v ind (cur + ind))
-      j_pretty_arr (v:vs)    ind cur =  (j_spaces (cur + ind)) + (j_pretty_val v ind (cur + ind)) + "," + (char_from_code 10) + (j_pretty_arr vs ind cur)
+fn :: j pretty arr loop [JsonVal] Int Int String String String String => String
+      j pretty arr loop []     _   _   c0 c1 c2 c3 = j sb finish c0 c1 c2 c3
+      j pretty arr loop (v:vs) ind cur c0 c1 c2 c3 =
+        item = "," + (char from code 10) + (j spaces (cur + ind)) + (j pretty val v ind (cur + ind))
+        n0, n1, n2, n3 = j sb append item c0 c1 c2 c3
+        j pretty arr loop vs ind cur n0 n1 n2 n3
 
-fn :: j_pretty_obj [JsonField] Int Int => String
-      j_pretty_obj []          _   _   =  ""
-      j_pretty_obj ((JsonField k v):[]) ind cur =
-        (j_spaces (cur + ind)) + (j_escape_str k) + ": " + (j_pretty_val v ind (cur + ind))
-      j_pretty_obj ((JsonField k v):rest) ind cur =
-        (j_spaces (cur + ind)) + (j_escape_str k) + ": " + (j_pretty_val v ind (cur + ind)) + "," + (char_from_code 10) + (j_pretty_obj rest ind cur)
+fn :: j pretty arr [JsonVal] Int Int => String
+      j pretty arr []     _   _   =  ""
+      j pretty arr (v:vs) ind cur =
+        first = (j spaces (cur + ind)) + (j pretty val v ind (cur + ind))
+        j pretty arr loop vs ind cur first "" "" ""
 
-fn :: j_pretty_val JsonVal          Int Int => String
-      j_pretty_val (JsonArr [])     _   _   =  "[]"
-      j_pretty_val (JsonArr items)  ind cur =
-        nl = char_from_code 10
-        "[" + nl + (j_pretty_arr items ind cur) + nl + (j_spaces cur) + "]"
-      j_pretty_val (JsonObj [])     _   _   =  (char_from_code 123) + (char_from_code 125)
-      j_pretty_val (JsonObj fields) ind cur =
-        nl = char_from_code 10
-        (char_from_code 123) + nl + (j_pretty_obj fields ind cur) + nl + (j_spaces cur) + (char_from_code 125)
-      j_pretty_val v                _   _   =  json stringify v
+fn :: j pretty obj loop [JsonField] Int Int String String String String => String
+      j pretty obj loop []                     _   _   c0 c1 c2 c3 = j sb finish c0 c1 c2 c3
+      j pretty obj loop ((JsonField k v):rest) ind cur c0 c1 c2 c3 =
+        item = "," + (char from code 10) + (j spaces (cur + ind)) + (j escape str k) + ": " + (j pretty val v ind (cur + ind))
+        n0, n1, n2, n3 = j sb append item c0 c1 c2 c3
+        j pretty obj loop rest ind cur n0 n1 n2 n3
+
+fn :: j pretty obj [JsonField] Int Int => String
+      j pretty obj []                     _   _   =  ""
+      j pretty obj ((JsonField k v):rest) ind cur =
+        first = (j spaces (cur + ind)) + (j escape str k) + ": " + (j pretty val v ind (cur + ind))
+        j pretty obj loop rest ind cur first "" "" ""
+
+fn :: j pretty val JsonVal          Int Int => String
+      j pretty val (JsonArr [])     _   _   =  "[]"
+      j pretty val (JsonArr items)  ind cur =
+        nl = char from code 10
+        "[" + nl + (j pretty arr items ind cur) + nl + (j spaces cur) + "]"
+      j pretty val (JsonObj [])     _   _   =  (char from code 123) + (char from code 125)
+      j pretty val (JsonObj fields) ind cur =
+        nl = char from code 10
+        (char from code 123) + nl + (j pretty obj fields ind cur) + nl + (j spaces cur) + (char from code 125)
+      j pretty val v                _   _   =  json stringify v
 
 fn :: json pretty JsonVal Int => String
-      json pretty val     ind =  j_pretty_val val ind 0
+      json pretty val     ind =  j pretty val val ind 0
 ```
 
 ### 08.4.4. Internal Implementation: Dot-Path Queries & Field Updates
@@ -367,55 +407,87 @@ fn :: json pretty JsonVal Int => String
 Observe how `json.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
-fn :: j_find_field [JsonField] String => JsonVal
-      j_find_field []          _      =  JsonNull
-      j_find_field ((JsonField k v):fs) key
-        | k == key = v
-        | otherwise = j_find_field fs key
+fn :: j find field [JsonField] String => JsonVal
+      j find field []                   _   =  JsonNull
+      j find field ((JsonField k v):fs) key =
+        | k == key  = v
+        | otherwise = j find field fs key
 
 fn :: json get field JsonVal          String => JsonVal
-      json get field (JsonObj fields) key    =  j_find_field fields key
+      json get field (JsonObj fields) key    =  j find field fields key
       json get field _                _      =  JsonNull
 
-fn :: j_nth_val [JsonVal] Int => JsonVal
-      j_nth_val []        _   =  JsonNull
-      j_nth_val (v:vs)    idx
-        | idx < 0 = JsonNull
-        | idx == 0 = v
-        | otherwise = j_nth_val vs (idx - 1)
+fn :: j nth val [JsonVal] Int => JsonVal
+      j nth val []     _   =  JsonNull
+      j nth val (v:vs) idx =
+        | idx < 0   = JsonNull
+        | idx == 0  = v
+        | otherwise = j nth val vs (idx - 1)
 
 fn :: json get index JsonVal         Int => JsonVal
-      json get index (JsonArr items) idx =  j_nth_val items idx
+      json get index (JsonArr items) idx =  j nth val items idx
       json get index _               _   =  JsonNull
 
-fn :: j_split_dots_loop String Int Int Int [String] => [String]
-      j_split_dots_loop s pos len start acc
-        | pos >= len = acc :: [str_slice s start len]
-        | (str_char_at s pos) == 46 = j_split_dots_loop s (pos + 1) len (pos + 1) (acc :: [str_slice s start pos])
-        | otherwise = j_split_dots_loop s (pos + 1) len start acc
+fn :: j split dots loop String Int Int Int [String] => [String]
+      j split dots loop s pos len start acc =
+        | pos >= len                = acc :: [str slice s start len]
+        | (str char at s pos) == 46 = j split dots loop s (pos + 1) len (pos + 1) (acc :: [str slice s start pos])
+        | otherwise                 = j split dots loop s (pos + 1) len start acc
 
-fn :: j_step_path JsonVal          String => JsonVal
-      j_step_path (JsonObj fields) seg    =  j_find_field fields seg
-      j_step_path (JsonArr items)  seg
-        | seg != "" AND (j_scan_digits seg 0 (str_len seg)) == (str_len seg) = j_nth_val items (str_to_int seg)
+fn :: j step path JsonVal          String => JsonVal
+      j step path (JsonObj fields) seg    =  j find field fields seg
+      j step path (JsonArr items)  seg    =
+        | seg != "" and (j scan digits seg 0 (str len seg)) == (str len seg) and (j digits fit i64 seg False) = j nth val items (str to int seg)
         | otherwise = JsonNull
-      j_step_path _                _      =  JsonNull
+      j step path _                _      =  JsonNull
 
-fn :: j_walk_path JsonVal [String]   => JsonVal
-      j_walk_path val     []         =  val
-      j_walk_path val     ("":rest)  =  j_walk_path val rest
-      j_walk_path val     (seg:rest) =  j_walk_path (j_step_path val seg) rest
+fn :: j walk path JsonVal [String]   => JsonVal
+      j walk path val     []         =  val
+      j walk path val     ("":rest)  =  j walk path val rest
+      j walk path val     (seg:rest) =  j walk path (j step path val seg) rest
 
 fn :: json get path JsonVal String   => JsonVal
       json get path val     ""       =  val
-      json get path val     dot_path =  j_walk_path val (j_split_dots_loop dot_path 0 (str_len dot_path) 0 [])
+      json get path val     dot_path =
+        j split dots loop dot_path 0 (str len dot_path) 0 [] -> segs
+        j walk path val segs
 
 fn :: json get str JsonVal String String => String
-      json get str val dot_path fallback = j_unwrap_str (json get path val dot_path) fallback
+      json get str val dot_path fallback =
+        json get path val dot_path -> target
+        j unwrap str target fallback
 
-fn :: j_unwrap_str JsonVal     String   => String
-      j_unwrap_str (JsonStr s) _        =  s
-      j_unwrap_str _           fallback =  fallback
+fn :: j unwrap str JsonVal     String   => String
+      j unwrap str (JsonStr s) _        =  s
+      j unwrap str _           fallback =  fallback
+
+fn :: json get int JsonVal String Int => Int
+      json get int val dot_path fallback =
+        json get path val dot_path -> target
+        j unwrap int target fallback
+
+fn :: j unwrap int JsonVal     Int      => Int
+      j unwrap int (JsonInt n) _        =  n
+      j unwrap int _           fallback =  fallback
+
+fn :: json get bool JsonVal String Bool => Bool
+      json get bool val dot_path fallback =
+        json get path val dot_path -> target
+        j unwrap bool target fallback
+
+fn :: j unwrap bool JsonVal      Bool     => Bool
+      j unwrap bool (JsonBool b) _        =  b
+      j unwrap bool _            fallback =  fallback
+
+fn :: j put field [JsonField] String JsonVal => [JsonField]
+      j put field []                   key new_val = [JsonField key new_val]
+      j put field ((JsonField k v):fs) key new_val =
+        | k == key  = [JsonField key new_val] :: fs
+        | otherwise = [JsonField k v] :: (j put field fs key new_val)
+
+fn :: json set field JsonVal String JsonVal => JsonVal
+      json set field (JsonObj fields) key new_val = JsonObj (j put field fields key new_val)
+      json set field _ key new_val = JsonObj [JsonField key new_val]
 ```
 
 ---

@@ -65,10 +65,10 @@ fn :: path clean String => String
       path clean p      =
         | (str len p) == 0 = "."
         | otherwise =
-          is_ab = path is abs p
-          segs  = pa split slash loop p 0 0 (str len p)
-          norm  = pa norm segs segs [] is_ab
-          pa finish clean (pa join slash norm) is_ab
+          p path is abs -> is_ab
+          pa split slash loop p 0 0 (str len p) -> segs
+          pa norm segs segs [] is_ab -> norm
+          norm pa join slash -> pa finish clean is_ab
 
 -- @implements FR-PATH-001
 -- @implements API-PATH-001

@@ -74,14 +74,14 @@ fn :: last non space end String Int => Int
 
 fn :: str trim left String => String
       str trim left s      =
-        len   = str len s
-        start = first non space idx s 0 len
+        s str len -> len
+        first non space idx s 0 len -> start
         str slice s start len
 
 fn :: str trim right String => String
       str trim right s      =
-        len = str len s
-        end = last non space end s len
+        s str len -> len
+        last non space end s len -> end
         str slice s 0 end
 
 fn :: str trim slice String Int Int => String
@@ -93,13 +93,13 @@ fn :: str trim slice String Int Int => String
 -- @implements API-STR-001
 fn :: str trim String => String
       str trim s      =
-        len   = str len s
-        start = first non space idx s 0 len
-        end   = last non space end s len
+        s str len -> len
+        first non space idx s 0 len -> start
+        last non space end s len -> end
         str trim slice s start end
 
 fn :: str is blank String => Bool
-      str is blank s      =  (str len (str trim s)) == 0
+      str is blank s      =  s str trim -> str is empty
 
 -- ── Substring Replacement ────────────────────────────────────
 

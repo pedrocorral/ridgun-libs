@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: list
+
 -- ── List Length & Emptiness ──────────────────────────────────
 
 -- @implements FR-LIST-001
@@ -128,7 +130,9 @@ fn :: l slice ints from [Int] Int Int => [Int]
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
 fn :: list slice [Int] Int   Int     => [Int]
-      list slice xs    start end_idx =  l slice ints from xs (l clamp nonneg start) end_idx
+      list slice xs    start end_idx =
+        start l clamp nonneg -> s0
+        l slice ints from xs s0 end_idx
 
 fn :: l slice strs from [String] Int Int => [String]
       l slice strs from xs s0 end_idx =
@@ -138,7 +142,9 @@ fn :: l slice strs from [String] Int Int => [String]
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
 fn :: list str slice [String] Int Int => [String]
-      list str slice xs start end_idx = l slice strs from xs (l clamp nonneg start) end_idx
+      list str slice xs start end_idx =
+        start l clamp nonneg -> s0
+        l slice strs from xs s0 end_idx
 
 fn :: l rev ints [Int]    [Int] => [Int]
       l rev ints []       acc   =  acc

@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: glob
+
 fn :: gl lower char String Int Int => String
       gl lower char s idx c =
         | c >= 65 and c <= 90 = char from code (c + 32)
@@ -100,7 +102,10 @@ fn :: glob match String String => Bool
 -- @implements FR-GLOB-001
 -- @implements API-GLOB-001
 fn :: glob match ci String String => Bool
-      glob match ci pat    txt    =  glob match (gl to lower pat) (gl to lower txt)
+      glob match ci pat    txt    =
+        pat gl to lower -> lpat
+        txt gl to lower -> ltxt
+        glob match lpat ltxt
 
 -- @implements FR-GLOB-001
 -- @implements API-GLOB-001

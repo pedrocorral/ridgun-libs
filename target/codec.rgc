@@ -6,6 +6,8 @@
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
+module :: codec
+
 -- ── Zero-Syscall Raw Byte Extraction (0..255) ────────────────
 
 fn :: cd raw byte ub Int => String
@@ -295,7 +297,7 @@ fn :: cd valid b64 raw String Int => Bool
 -- @mitigates VUL-INPUT-001
 fn :: is valid base64 String => Bool
       is valid base64 s      =
-        raw = cd strip b64 pad s (str len s)
+        cd strip b64 pad s (str len s) -> raw
         cd valid b64 raw raw (str len raw)
 
 fn :: cd b64 dec step String Int Int Int String String String String => String

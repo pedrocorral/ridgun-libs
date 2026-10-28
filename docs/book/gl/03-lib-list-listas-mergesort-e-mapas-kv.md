@@ -12,8 +12,8 @@ A lib **`list`** proporciona indexación con valor por defecto, rebandado (`take
 
 Nun ecosistema tradicional, resolver as tarefas do dominio **`LIST`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`list`** (`src/main/ridgun/lib/list.rg`) aborda o problema con catro principios innegociables:
 
-1. **Funcións totais e contratos explícitos (`=>`)**: ningunha función de `list` lanza excepcións ocultas nin depende de `null`. Todo caso límite devolve un valor sentinela documentado ou un tipo alxébrico suma (`Option`, `Result`).
-2. **Cero código C e cero `libc`**: todo o código de `list` compila directamente a código máquina nativo ELF64 verificado por `ridgunc`.
+1. **Declara `import list` (ou `import list as alias`) ao inicio do ficheiro**: cada lib define o seu espazo de nomes `module :: list` e en modo `--strict` as funcións multi-palabra invócanse sempre con espazos naturais.
+2. **Encadea as túas tubaxes de esquerda a dereita con `->`**: escribe `entrada paso un -> paso dous -> resultado`, usa máscaras `(+ _ _ +)` para desestruturar secuencias e omite `_ =` en sentenzas secuenciais (ou descarta con `-> ()`).
 3. **Recursión de cola con TCO (*Tail-Call Optimization*)**: todos os percorridos internos de `list` compílanse a bucles nativos en espazo de pila $O(1)$.
 4. **Memoria determinista (`RMM1` / `RMM2`)**: cada estrutura intermedia libérase no instante exacto en que remata a súa última lectura, sen *Garbage Collector*.
 
@@ -29,7 +29,7 @@ En `ridgun-libs`, **`list`** é unha **lib** de primeira clase situada en `src/m
 | **Ficheiro compilado** | `target/list.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/liblist.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
-> Para usar esta lib en calquera ficheiro `.rg`, abonda con declarar `import list` na cabeceira e chamar ás súas funcións con espazos ou guións baixos indistintamente.
+> Cada lib declara o seu propio espazo de nomes con `module :: list`: abonda con escribir `import list` (ou `import list as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).
 
 ### 03.2.1. Resumo de familias funcionais de `list`
 
@@ -96,16 +96,16 @@ A continuación tes o inventario completo de tipos alxébricos (`type`), operado
 | `47` | `fn :: list str sort [String]` | `[String]` |
 | `48` | `fn :: l kv key (String String)` | `String` |
 | `49` | `fn :: l kv val (String String)` | `String` |
-| `50` | `fn :: kv empty` | `[String String]` |
-| `51` | `fn :: kv len [String String]` | `Int` |
-| `52` | `fn :: kv has [String String] String` | `Bool` |
-| `53` | `fn :: kv get or [String String] String String` | `String` |
-| `54` | `fn :: kv get [String String] String` | `String` |
-| `55` | `fn :: kv put [String String] String String` | `[String String]` |
-| `56` | `fn :: kv remove [String String] String` | `[String String]` |
-| `57` | `fn :: kv keys [String String]` | `[String]` |
-| `58` | `fn :: kv values [String String]` | `[String]` |
-| `59` | `fn :: kv merge [String String] [String String]` | `[String String]` |
+| `50` | `fn :: list kv empty` | `[String String]` |
+| `51` | `fn :: list kv len [String String]` | `Int` |
+| `52` | `fn :: list kv has [String String] String` | `Bool` |
+| `53` | `fn :: list kv get or [String String] String String` | `String` |
+| `54` | `fn :: list kv get [String String] String` | `String` |
+| `55` | `fn :: list kv put [String String] String String` | `[String String]` |
+| `56` | `fn :: list kv remove [String String] String` | `[String String]` |
+| `57` | `fn :: list kv keys [String String]` | `[String]` |
+| `58` | `fn :: list kv values [String String]` | `[String]` |
+| `59` | `fn :: list kv merge [String String] [String String]` | `[String String]` |
 
 ---
 
@@ -120,10 +120,9 @@ Observa como en Ridgun os signos `=` e os pasos de transformación con `list` qu
 ```ridgun
 import list
 
-fn :: top tres unicos (puntos : [Int]) => [Int]
+fn :: top tres unicos [Int] => [Int]
       top tres unicos puntos =
-        unicos    = list dedup puntos
-        ordenados = list reverse (list sort unicos)
+        puntos list dedup -> list sort -> list reverse -> ordenados
         list take ordenados 3
 ```
 
@@ -134,12 +133,13 @@ Toda función da lib `list` está deseñada para compoñerse con gardas booleana
 ```ridgun
 import list
 
-fn :: configurar entorno (base : [String String]) => (String, [String])
+fn :: configurar entorno [String String] => String [String]
       configurar entorno base =
-        cfg1 = kv put base "host" "0.0.0.0"
-        cfg2 = kv put cfg1 "port" "8080"
-        host = kv get or cfg2 "host" "127.0.0.1"
-        (host, kv keys cfg2)
+        kv put base "host" "0.0.0.0" -> cfg1
+        kv put cfg1 "port" "8080" -> cfg2
+        kv get or cfg2 "host" "127.0.0.1" -> host
+        cfg2 kv keys -> claves
+        (host, claves)
 ```
 
 ### 03.3.3. Exemplo 3: Indexación segura (`nth or`, `head or`, `last or`), rebandado (`take`, `drop`, `slice`), rangos (`range`, `iota`, `replicate`) e deduplicación (`dedup`, `count eq`)
@@ -151,59 +151,59 @@ fn :: test list indexing slicing and ranges => ()
       test list indexing slicing and ranges =
         xs = [10, 20, 30, 40, 50]
         ss = ["aa", "bb", "cc", "dd"]
-        _ = assert int equals (list len xs) 5 "AC1: list_len 5"
-        _ = assert int equals (list str len ss) 4 "AC1: list_str_len 4"
-        _ = assert true (list is empty []) "AC1: list_is_empty []"
-        _ = assert false (list is empty xs) "AC1: list_is_empty non-empty"
-        _ = assert true (list str is empty []) "AC1: list_str_is_empty []"
-        _ = assert false (list str is empty ss) "AC1: list_str_is_empty non-empty"
+        assert int equals (list len xs) 5 "AC1: list_len 5"
+        assert int equals (list str len ss) 4 "AC1: list_str_len 4"
+        assert true (list is empty []) "AC1: list_is_empty []"
+        assert false (list is empty xs) "AC1: list_is_empty non-empty"
+        assert true (list str is empty []) "AC1: list_str_is_empty []"
+        assert false (list str is empty ss) "AC1: list_str_is_empty non-empty"
 
-        _ = assert int equals (list nth xs 0) 10 "AC1: list_nth 0"
-        _ = assert int equals (list nth xs 4) 50 "AC1: list_nth 4"
-        _ = assert int equals (list nth or xs 99 (0 - 1)) (0 - 1) "AC1: list_nth_or out of bounds"
-        _ = assert int equals (list nth or xs (0 - 1) (0 - 1)) (0 - 1) "AC1: list_nth_or negative"
-        _ = assert str eq (list str nth ss 2) "cc" "AC1: list_str_nth 2"
-        _ = assert str eq (list str nth or ss 99 "oob") "oob" "AC1: list_str_nth_or out of bounds"
-        _ = assert int equals (list head xs 0) 10 "AC1: list_head"
-        _ = assert int equals (list head [] 99) 99 "AC1: list_head empty fallback"
-        _ = assert int equals (list last xs 0) 50 "AC1: list_last"
-        _ = assert int equals (list last [] 99) 99 "AC1: list_last empty fallback"
+        assert int equals (list nth xs 0) 10 "AC1: list_nth 0"
+        assert int equals (list nth xs 4) 50 "AC1: list_nth 4"
+        assert int equals (list nth or xs 99 (0 - 1)) (0 - 1) "AC1: list_nth_or out of bounds"
+        assert int equals (list nth or xs (0 - 1) (0 - 1)) (0 - 1) "AC1: list_nth_or negative"
+        assert str eq (list str nth ss 2) "cc" "AC1: list_str_nth 2"
+        assert str eq (list str nth or ss 99 "oob") "oob" "AC1: list_str_nth_or out of bounds"
+        assert int equals (list head xs 0) 10 "AC1: list_head"
+        assert int equals (list head [] 99) 99 "AC1: list_head empty fallback"
+        assert int equals (list last xs 0) 50 "AC1: list_last"
+        assert int equals (list last [] 99) 99 "AC1: list_last empty fallback"
 
-        _ = assert eq (list take xs 3) [10, 20, 30]
-        _ = assert eq (list take xs 0) []
-        _ = assert eq (list take xs (0 - 2)) []
-        _ = assert eq (list take xs 99) [10, 20, 30, 40, 50]
-        _ = assert eq (list drop xs 3) [40, 50]
-        _ = assert eq (list drop xs 0) xs
-        _ = assert eq (list drop xs 99) []
-        _ = assert eq (list slice xs 1 4) [20, 30, 40]
-        _ = assert eq (list slice xs (0 - 3) 2) [10, 20]
-        _ = assert eq (list slice xs 4 2) []
-        _ = assert eq (list str slice ss 1 3) ["bb", "cc"]
+        assert eq (list take xs 3) [10, 20, 30]
+        assert eq (list take xs 0) []
+        assert eq (list take xs (0 - 2)) []
+        assert eq (list take xs 99) [10, 20, 30, 40, 50]
+        assert eq (list drop xs 3) [40, 50]
+        assert eq (list drop xs 0) xs
+        assert eq (list drop xs 99) []
+        assert eq (list slice xs 1 4) [20, 30, 40]
+        assert eq (list slice xs (0 - 3) 2) [10, 20]
+        assert eq (list slice xs 4 2) []
+        assert eq (list str slice ss 1 3) ["bb", "cc"]
 
-        _ = assert eq (list reverse xs) [50, 40, 30, 20, 10]
-        _ = assert eq (list str reverse ss) ["dd", "cc", "bb", "aa"]
+        assert eq (list reverse xs) [50, 40, 30, 20, 10]
+        assert eq (list str reverse ss) ["dd", "cc", "bb", "aa"]
 
-        _ = assert eq (list range 1 5) [1, 2, 3, 4, 5]
-        _ = assert eq (list range 3 3) [3]
-        _ = assert eq (list range 5 1) []
-        _ = assert eq (list range step 0 6 2) [0, 2, 4, 6]
-        _ = assert eq (list range step 6 0 (0 - 2)) [6, 4, 2, 0]
-        _ = assert eq (list range step 1 5 0) []
-        _ = assert eq (list replicate 3 7) [7, 7, 7]
-        _ = assert eq (list replicate 0 7) []
+        assert eq (list range 1 5) [1, 2, 3, 4, 5]
+        assert eq (list range 3 3) [3]
+        assert eq (list range 5 1) []
+        assert eq (list range step 0 6 2) [0, 2, 4, 6]
+        assert eq (list range step 6 0 (0 - 2)) [6, 4, 2, 0]
+        assert eq (list range step 1 5 0) []
+        assert eq (list replicate 3 7) [7, 7, 7]
+        assert eq (list replicate 0 7) []
 
-        _ = assert true (list contains xs 30) "AC1: list_contains 30"
-        _ = assert false (list contains xs 99) "AC1: list_contains 99"
-        _ = assert true (list str contains ss "cc") "AC1: list_str_contains cc"
-        _ = assert false (list str contains ss "zz") "AC1: list_str_contains zz"
-        _ = assert int equals (list index of xs 30) 2 "AC1: list_index_of 30"
-        _ = assert int equals (list index of xs 99) (0 - 1) "AC1: list_index_of missing"
-        _ = assert int equals (list str index of ss "dd") 3 "AC1: list_str_index_of dd"
-        _ = assert int equals (list count [1, 2, 1, 3, 1] 1) 3 "AC1: list_count"
-        _ = assert int equals (list str count ["a", "b", "a"] "a") 2 "AC1: list_str_count"
-        _ = assert eq (list dedup [3, 1, 3, 2, 1, 3]) [3, 1, 2]
-        _ = assert eq (list str dedup ["b", "a", "b", "c", "a"]) ["b", "a", "c"]
+        assert true (list contains xs 30) "AC1: list_contains 30"
+        assert false (list contains xs 99) "AC1: list_contains 99"
+        assert true (list str contains ss "cc") "AC1: list_str_contains cc"
+        assert false (list str contains ss "zz") "AC1: list_str_contains zz"
+        assert int equals (list index of xs 30) 2 "AC1: list_index_of 30"
+        assert int equals (list index of xs 99) (0 - 1) "AC1: list_index_of missing"
+        assert int equals (list str index of ss "dd") 3 "AC1: list_str_index_of dd"
+        assert int equals (list count [1, 2, 1, 3, 1] 1) 3 "AC1: list_count"
+        assert int equals (list str count ["a", "b", "a"] "a") 2 "AC1: list_str_count"
+        assert eq (list dedup [3, 1, 3, 2, 1, 3]) [3, 1, 2]
+        assert eq (list str dedup ["b", "a", "b", "c", "a"]) ["b", "a", "c"]
         ()
 ```
 
@@ -216,16 +216,16 @@ fn :: test list mergesort => ()
       test list mergesort =
         unsorted = [42, 7, 19, 7, 0, (0 - 5), 100, 3, (0 - 50)]
         sorted = list sort unsorted
-        _ = assert eq sorted [(0 - 50), (0 - 5), 0, 3, 7, 7, 19, 42, 100]
-        _ = assert true (list is sorted sorted) "AC2: list_is_sorted after sort"
-        _ = assert false (list is sorted unsorted) "AC2: list_is_sorted false on unsorted"
-        _ = assert true (list is sorted []) "AC2: empty list is sorted"
-        _ = assert true (list is sorted [1]) "AC2: singleton list is sorted"
-        _ = assert eq (list sort []) []
-        _ = assert eq (list sort [1]) [1]
-        _ = assert eq (list sort [5, 4, 3, 2, 1]) [1, 2, 3, 4, 5]
+        assert eq sorted [(0 - 50), (0 - 5), 0, 3, 7, 7, 19, 42, 100]
+        assert true (list is sorted sorted) "AC2: list_is_sorted after sort"
+        assert false (list is sorted unsorted) "AC2: list_is_sorted false on unsorted"
+        assert true (list is sorted []) "AC2: empty list is sorted"
+        assert true (list is sorted [1]) "AC2: singleton list is sorted"
+        assert eq (list sort []) []
+        assert eq (list sort [1]) [1]
+        assert eq (list sort [5, 4, 3, 2, 1]) [1, 2, 3, 4, 5]
         s_strs = list str sort ["delta", "alpha", "charlie", "bravo", "alpha", "al", ""]
-        _ = assert eq s_strs ["", "al", "alpha", "alpha", "bravo", "charlie", "delta"]
+        assert eq s_strs ["", "al", "alpha", "alpha", "bravo", "charlie", "delta"]
         ()
 ```
 
@@ -237,25 +237,25 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `list` n
 fn :: test kv associative map => ()
       test kv associative map =
         m0 = kv empty
-        _ = assert int equals (kv len m0) 0 "AC3: kv_empty len 0"
+        assert int equals (kv len m0) 0 "AC3: kv_empty len 0"
         m1 = kv put m0 "host" "127.0.0.1"
         m2 = kv put m1 "port" "8080"
         m3 = kv put m2 "port" "9090"
-        _ = assert int equals (kv len m3) 2 "AC3: kv_put updates in-place without duplicating key"
-        _ = assert true (kv has m3 "host") "AC3: kv_has host"
-        _ = assert false (kv has m3 "missing") "AC3: kv_has missing"
-        _ = assert str eq (kv get m3 "port") "9090" "AC3: kv_get updated port"
-        _ = assert str eq (kv get m3 "missing") "" "AC3: kv_get missing returns empty"
-        _ = assert str eq (kv get or m3 "mode" "prod") "prod" "AC3: kv_get_or default"
-        _ = assert eq (kv keys m3) ["host", "port"]
-        _ = assert eq (kv values m3) ["127.0.0.1", "9090"]
+        assert int equals (kv len m3) 2 "AC3: kv_put updates in-place without duplicating key"
+        assert true (kv has m3 "host") "AC3: kv_has host"
+        assert false (kv has m3 "missing") "AC3: kv_has missing"
+        assert str eq (kv get m3 "port") "9090" "AC3: kv_get updated port"
+        assert str eq (kv get m3 "missing") "" "AC3: kv_get missing returns empty"
+        assert str eq (kv get or m3 "mode" "prod") "prod" "AC3: kv_get_or default"
+        assert eq (kv keys m3) ["host", "port"]
+        assert eq (kv values m3) ["127.0.0.1", "9090"]
         m4 = kv merge m3 [("port", "8443"), ("tls", "true")]
-        _ = assert int equals (kv len m4) 3 "AC3: kv_merge len 3"
-        _ = assert str eq (kv get m4 "port") "8443" "AC3: kv_merge overrides port"
-        _ = assert str eq (kv get m4 "tls") "true" "AC3: kv_merge adds tls"
+        assert int equals (kv len m4) 3 "AC3: kv_merge len 3"
+        assert str eq (kv get m4 "port") "8443" "AC3: kv_merge overrides port"
+        assert str eq (kv get m4 "tls") "true" "AC3: kv_merge adds tls"
         m5 = kv remove m4 "host"
-        _ = assert false (kv has m5 "host") "AC3: kv_remove removes host"
-        _ = assert int equals (kv len m5) 2 "AC3: kv_remove len 2"
+        assert false (kv has m5 "host") "AC3: kv_remove removes host"
+        assert int equals (kv len m5) 2 "AC3: kv_remove len 2"
         ()
 ```
 
@@ -270,6 +270,8 @@ Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**
 Fíxate en como `list.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
+module :: list
+
 fn :: list len [Int]    => Int
       list len []       =  0
       list len (_:rest) =  1 + (list len rest)
@@ -327,7 +329,9 @@ fn :: l slice ints from [Int] Int Int => [Int]
         | otherwise     = list take (list drop xs s0) (end_idx - s0)
 
 fn :: list slice [Int] Int   Int     => [Int]
-      list slice xs    start end_idx =  l slice ints from xs (l clamp nonneg start) end_idx
+      list slice xs    start end_idx =
+        start l clamp nonneg -> s0
+        l slice ints from xs s0 end_idx
 
 fn :: l slice strs from [String] Int Int => [String]
       l slice strs from xs s0 end_idx =
@@ -335,11 +339,23 @@ fn :: l slice strs from [String] Int Int => [String]
         | otherwise     = list str take (list str drop xs s0) (end_idx - s0)
 
 fn :: list str slice [String] Int Int => [String]
-      list str slice xs start end_idx = l slice strs from xs (l clamp nonneg start) end_idx
+      list str slice xs start end_idx =
+        start l clamp nonneg -> s0
+        l slice strs from xs s0 end_idx
 
 fn :: l rev ints [Int]    [Int] => [Int]
       l rev ints []       acc   =  acc
       l rev ints (x:rest) acc   =  l rev ints rest ([x] :: acc)
+
+fn :: list reverse [Int] => [Int]
+      list reverse xs    =  l rev ints xs []
+
+fn :: l rev strs [String] [String] => [String]
+      l rev strs []       acc      =  acc
+      l rev strs (x:rest) acc      =  l rev strs rest ([x] :: acc)
+
+fn :: list str reverse [String] => [String]
+      list str reverse xs       =  l rev strs xs []
 ```
 
 ### 03.4.3. Implementación interna: Search, Count & Deduplication
@@ -397,6 +413,9 @@ fn :: l dedup strs [String] [String] => [String]
       l dedup strs (x:rest) seen     =
         | list str contains seen x = l dedup strs rest seen
         | otherwise                = l dedup strs rest ([x] :: seen)
+
+fn :: list str dedup [String] => [String]
+      list str dedup xs       =  l dedup strs xs []
 ```
 
 ### 03.4.4. Implementación interna: Associative Key-Value Map (`[(String, String)]`)

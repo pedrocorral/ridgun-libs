@@ -12,8 +12,8 @@ La lib **`socket`** ofrece dos capas complementarias sin una línea de C: (1) la
 
 En un ecosistema tradicional, resolver las tareas del dominio **`SOCK`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`socket`** (`src/main/ridgun/lib/socket.rg`) aborda el problema con cuatro principios innegociables:
 
-1. **Funciones totales y contratos explícitos (`=>`)**: ninguna función de `socket` lanza excepciones ocultas ni depende de `null`. Todo caso límite (entradas vacías, divisores cero, tramas truncadas o índices fuera de rango) devuelve un valor centinela documentado o un tipo algebraico suma (`Option`, `Result`).
-2. **Cero código C y cero `libc`**: todo el código de `socket` compila directamente a código máquina nativo ELF64 verificado por `ridgunc`.
+1. **Declara `import socket` (o `import socket as alias`) al inicio del archivo**: cada lib define su espacio de nombres `module :: socket` y en modo `--strict` las funciones multi-palabra se invocan siempre con espacios naturales.
+2. **Encadena tus tuberías de izquierda a derecha con `->`**: escribe `entrada paso uno -> paso dos -> resultado`, usa máscaras `(+ _ _ +)` para desestructurar secuencias y omite `_ =` en sentencias secuenciales (o descarta con `-> ()`).
 3. **Recursión de cola con TCO (*Tail-Call Optimization*)**: todos los recorridos internos de `socket` se compilan a bucles nativos en $O(1)$ espacio de pila.
 4. **Memoria determinista (`RMM1` / `RMM2`)**: cada estructura intermedia se libera en el instante exacto en que termina su última lectura, sin *Garbage Collector*.
 
@@ -29,7 +29,7 @@ En `ridgun-libs`, **`socket`** es una **lib** de primera clase ubicada en `src/m
 | **Archivo compilado** | `target/socket.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Objeto compartido ELF64** | `target/libsocket.so` | Biblioteca dinámica nativa sin dependencias de C ni `libc` |
 
-> Para usar esta lib en cualquier archivo `.rg`, basta con declarar `import socket` en el encabezado y llamar a sus funciones con espacios (`mi funcion x`) o guiones bajos (`mi_funcion x`) indistintamente.
+> Cada lib declara su propio espacio de nombres con `module :: socket`: basta con escribir `import socket` (o `import socket as alias`) en el encabezado y llamar a sus funciones con espacios naturales (`mi funcion x`) y tuberías `->` (`x mi funcion -> resultado`).
 
 ### 27.2.1. Resumen de familias funcionales de `socket`
 
@@ -43,7 +43,7 @@ En `ridgun-libs`, **`socket`** es una **lib** de primera clase ubicada en `src/m
 
 ### 27.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/socket.rg`
 
-A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/socket.rg` (`10` tipos, `0` operadores y `182` funciones):
+A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/socket.rg` (`10` tipos, `0` operadores y `183` funciones):
 
 **Tipos algebraicos y registros (`type`) de `socket`:**
 
@@ -258,21 +258,19 @@ Observa cómo en Ridgun los signos `=` y los pasos de transformación con `socke
 ```ridgun
 import socket
 
-fn :: eco tcp local () => String
+fn :: eco tcp local => String
       eco tcp local =
-        l_res = sys tcp listen "127.0.0.1" 0 16
-        lfd   = sock fd l_res
-        port  = sys local port lfd
-        c_res = sys tcp connect "127.0.0.1" port 1000
-        cfd   = sock fd c_res
-        a_res = sys accept lfd 1000
-        sfd   = sock accept fd a_res
-        _     = sys send cfd "hola-solstice" 1000
-        r_res = sys recv sfd 64 1000
-        datos = sock recv data r_res
-        _     = sys_close cfd
-        _     = sys_close sfd
-        _     = sys_close lfd
+        sys tcp listen "127.0.0.1" 0 16 -> (_ +) -> lfd
+        lfd sys local port -> port
+        sys tcp connect "127.0.0.1" port 1000 -> (_ +) -> cfd
+        sys accept lfd 1000 -> a_res
+        a_res sock accept fd -> sfd
+        sys send cfd "hola-solstice" 1000 -> ()
+        sys recv sfd 64 1000 -> r_res
+        r_res sock recv data -> datos
+        sys close cfd -> ()
+        sys close sfd -> ()
+        sys close lfd -> ()
         datos
 ```
 
@@ -283,9 +281,9 @@ Toda función de la lib `socket` está diseñada para componerse con guardas boo
 ```ridgun
 import socket
 
-fn :: verificar ip interna (ip : String) => Bool
+fn :: verificar ip interna String => Bool
       verificar ip interna ip =
-        ipv4 in cidr ip "10.0.0.0/8"
+        ip in cidr ip "10.0.0.0/8"
 ```
 
 ### 27.3.3. Ejemplo 3: Direcciones tipadas (`IPv4`, `IPv6`, `Unix`), validación de puertos y ciclo de vida completo de sockets (`tcp listen`, `accept`, `connect`, `close`)
@@ -302,57 +300,57 @@ fn :: test sock address and lifecycle => ()
         b_prt      = sock addr ipv4 "127.0.0.1" 70000
         b_ux1      = sock parse addr "../unsafe.sock"
         b_ux2      = sock parse addr "/tmp/bad;rm.sock"
-        _          = assert ok (is addr ok r_v4)
-        _          = assert ok (is addr ok r_v6)
-        _          = assert ok (is addr ok r_ux)
-        _          = assert eq (is addr ok b_ip) False
-        _          = assert eq (is addr ok b_prt) False
-        _          = assert eq (is addr ok b_ux1) False
-        _          = assert eq (is addr ok b_ux2) False
+        assert ok (is addr ok r_v4)
+        assert ok (is addr ok r_v6)
+        assert ok (is addr ok r_ux)
+        assert eq (is addr ok b_ip) False
+        assert eq (is addr ok b_prt) False
+        assert eq (is addr ok b_ux1) False
+        assert eq (is addr ok b_ux2) False
         a_v4       = unwrap addr r_v4
-        _          = assert eq (host a_v4) "127.0.0.1"
-        _          = assert eq (port a_v4) 8080
+        assert eq (host a_v4) "127.0.0.1"
+        assert eq (port a_v4) 8080
         s0         = sock tcp
         s_to       = sock set timeout s0 2500
         s_neg      = sock set timeout s0 (-5)
-        _          = assert ok (is sock ok s_to)
-        _          = assert eq (is sock ok s_neg) False
+        assert ok (is sock ok s_to)
+        assert eq (is sock ok s_neg) False
         s1         = unwrap sock s_to
-        _          = assert eq (timeout_ms (opts s1)) 2500
+        assert eq (timeout_ms (opts s1)) 2500
         srv0       = unwrap sock (sock bind s1 a_v4)
         srv1       = unwrap sock (sock listen srv0 16)
-        _          = assert ok (is_listening srv1)
+        assert ok (is_listening srv1)
         cli0       = unwrap sock (sock bind (sock tcp) (unwrap addr (sock parse addr "127.0.0.1:50000")))
         pair       = sock connect pair cli0 srv1
         cli1       = unwrap pair left pair
         peer1      = unwrap pair right pair
-        _          = assert ok (is_connected cli1)
-        _          = assert ok (is_connected peer1)
+        assert ok (is_connected cli1)
+        assert ok (is_connected peer1)
         closed_cli = unwrap sock (sock close cli1)
-        _          = assert eq (is_open closed_cli) False
-        _          = assert eq (is sock ok (sock close closed_cli)) False
+        assert eq (is_open closed_cli) False
+        assert eq (is sock ok (sock close closed_cli)) False
         -- Additional family, option, and lifecycle negative edge cases
-        _          = assert ok (is addr ok (sock parse addr "unix:/tmp/ridgun_prefixed.sock"))
-        _          = assert ok (is addr ok (sock addr ipv6 "::1" 8443))
-        _          = assert eq (is addr ok (sock addr ipv6 "invalid_v6" 8443)) False
-        _          = assert eq (is addr ok (sock parse addr "/tmp/bad|pipe.sock")) False
-        _          = assert eq (is addr ok (sock parse addr "/tmp/bad$dollar.sock")) False
-        _          = assert eq (is addr ok (sock parse addr "/tmp/bad space.sock")) False
-        _          = assert eq (family (sock tcp6)) "inet6"
-        _          = assert eq (family (sock udp6)) "inet6"
-        _          = assert eq (family (sock unix stream)) "unix"
-        _          = assert eq (sock_type (sock unix dgram)) "dgram"
+        assert ok (is addr ok (sock parse addr "unix:/tmp/ridgun_prefixed.sock"))
+        assert ok (is addr ok (sock addr ipv6 "::1" 8443))
+        assert eq (is addr ok (sock addr ipv6 "invalid_v6" 8443)) False
+        assert eq (is addr ok (sock parse addr "/tmp/bad|pipe.sock")) False
+        assert eq (is addr ok (sock parse addr "/tmp/bad$dollar.sock")) False
+        assert eq (is addr ok (sock parse addr "/tmp/bad space.sock")) False
+        assert eq (family (sock tcp6)) "inet6"
+        assert eq (family (sock udp6)) "inet6"
+        assert eq (family (sock unix stream)) "unix"
+        assert eq (sock_type (sock unix dgram)) "dgram"
         good_opts  = SockOpts True True True True False 1000 32768 32768
         bad_opts1  = SockOpts True False False False False (0 - 1) 32768 32768
         bad_opts2  = SockOpts True False False False False 1000 0 32768
-        _          = assert ok (is sock ok (sock set options (sock tcp) good_opts))
-        _          = assert eq (is sock ok (sock set options (sock tcp) bad_opts1)) False
-        _          = assert eq (is sock ok (sock set options (sock tcp) bad_opts2)) False
-        _          = assert eq (is sock ok (sock bind (sock tcp) (unwrap addr r_v6))) False
-        _          = assert eq (is sock ok (sock listen (sock tcp) 8)) False
-        _          = assert eq (is sock ok (sock listen srv0 0)) False
-        _          = assert eq (is sock ok (sock listen (sock udp) 8)) False
-        _          = assert eq (is sock ok (sock accept srv0)) False
+        assert ok (is sock ok (sock set options (sock tcp) good_opts))
+        assert eq (is sock ok (sock set options (sock tcp) bad_opts1)) False
+        assert eq (is sock ok (sock set options (sock tcp) bad_opts2)) False
+        assert eq (is sock ok (sock bind (sock tcp) (unwrap addr r_v6))) False
+        assert eq (is sock ok (sock listen (sock tcp) 8)) False
+        assert eq (is sock ok (sock listen srv0 0)) False
+        assert eq (is sock ok (sock listen (sock udp) 8)) False
+        assert eq (is sock ok (sock accept srv0)) False
         assert eq (is sock ok (sock connect (sock tcp) (unwrap addr r_ux))) False
 ```
 
@@ -374,24 +372,24 @@ fn :: test sock data transfer and framing => ()
         pair1    = sock pipe transfer c1 p0
         p1       = unwrap pair right pair1
         r_str    = sock recv str p1 64
-        _        = assert ok (is recv str ok r_str)
-        _        = assert eq (unwrap recv str r_str) "hello ridgun"
+        assert ok (is recv str ok r_str)
+        assert eq (unwrap recv str r_str) "hello ridgun"
         p2       = unwrap recv str sock r_str
         c2       = unwrap sock (sock send frame (unwrap pair left pair1) [10, 20, 30, 40])
         pair2    = sock pipe transfer c2 p2
         p3       = unwrap pair right pair2
         r_frm_sm = sock recv frame p3 2
-        _        = assert eq (is recv bytes ok r_frm_sm) False
+        assert eq (is recv bytes ok r_frm_sm) False
         r_frm_ok = sock recv frame p3 16
-        _        = assert ok (is recv bytes ok r_frm_ok)
-        _        = assert eq (unwrap recv bytes r_frm_ok) [10, 20, 30, 40]
+        assert ok (is recv bytes ok r_frm_ok)
+        assert eq (unwrap recv bytes r_frm_ok) [10, 20, 30, 40]
         p4       = unwrap recv bytes sock r_frm_ok
         c3       = unwrap sock (sock send line (unwrap pair left pair2) "PING 1")
         pair3    = sock pipe transfer c3 p4
         p5       = unwrap pair right pair3
         r_line   = sock recv line p5 32
-        _        = assert ok (is recv str ok r_line)
-        _        = assert eq (unwrap recv str r_line) "PING 1"
+        assert ok (is recv str ok r_line)
+        assert eq (unwrap recv str r_line) "PING 1"
         p6       = unwrap recv str sock r_line
         u_sender = unwrap sock (sock bind (sock udp) cli_addr)
         u_rcvr   = unwrap sock (sock bind (sock udp) srv_addr)
@@ -399,18 +397,18 @@ fn :: test sock data transfer and framing => ()
         d_pair   = sock deliver dgram u_sent u_rcvr
         u_rcvr2  = unwrap pair right d_pair
         d_res    = sock recv from u_rcvr2 16
-        _        = assert eq (unwrap dgram payload d_res) [1, 2, 3]
-        _        = assert eq (port (unwrap dgram sender d_res)) 50001
+        assert eq (unwrap dgram payload d_res) [1, 2, 3]
+        assert eq (port (unwrap dgram sender d_res)) 50001
         -- Additional framing, line, byte-range, and datagram negative edge cases
-        _        = assert eq (is sock ok (sock send bytes c0 [0, 256])) False
-        _        = assert eq (is sock ok (sock send bytes c0 [0 - 1])) False
+        assert eq (is sock ok (sock send bytes c0 [0, 256])) False
+        assert eq (is sock ok (sock send bytes c0 [0 - 1])) False
         c_short  = unwrap sock (sock send bytes (unwrap pair left pair3) [0, 1])
         p_short  = unwrap pair right (sock pipe transfer c_short p6)
-        _        = assert eq (is recv bytes ok (sock recv frame p_short 16)) False
-        _        = assert eq (is recv str ok (sock recv line p_short 16)) False
+        assert eq (is recv bytes ok (sock recv frame p_short 16)) False
+        assert eq (is recv str ok (sock recv line p_short 16)) False
         c_longl  = unwrap sock (sock send line (unwrap pair left pair3) "LINE_TOO_LONG_FOR_LIMIT")
         p_longl  = unwrap pair right (sock pipe transfer c_longl (unwrap recv bytes sock (sock recv bytes p_short 2)))
-        _        = assert eq (is recv str ok (sock recv line p_longl 4)) False
+        assert eq (is recv str ok (sock recv line p_longl 4)) False
         assert eq (is sock ok (sock send to c0 [1, 2] srv_addr)) False
 ```
 
@@ -424,57 +422,57 @@ fn :: test sock advanced ops dns cidr and polling => ()
         srv_addr  = unwrap addr (sock resolve host "localhost" 8082)
         cli_addr  = unwrap addr (sock resolve host "api.example.com" 50002)
         bad_host  = sock resolve host "-bad..host" 8082
-        _         = assert eq (host srv_addr) "127.0.0.1"
-        _         = assert eq (port srv_addr) 8082
-        _         = assert eq (is addr ok bad_host) False
-        _         = assert ok (ip in cidr "192.168.1.42" "192.168.1.0/24")
-        _         = assert eq (ip in cidr "192.168.2.42" "192.168.1.0/24") False
-        _         = assert ok (ip in cidr "10.20.30.40" "10.0.0.0/8")
-        _         = assert eq (ip in cidr "10.20.30.40" "10.0.0.0/99") False
+        assert eq (host srv_addr) "127.0.0.1"
+        assert eq (port srv_addr) 8082
+        assert eq (is addr ok bad_host) False
+        assert ok (ip in cidr "192.168.1.42" "192.168.1.0/24")
+        assert eq (ip in cidr "192.168.2.42" "192.168.1.0/24") False
+        assert ok (ip in cidr "10.20.30.40" "10.0.0.0/8")
+        assert eq (ip in cidr "10.20.30.40" "10.0.0.0/99") False
         s_nd      = sock set tcp nodelay (sock tcp) True
         s_bc      = sock set broadcast (sock udp) True
         s_buf_ok  = sock set buf sizes (sock tcp) 131072 131072
         s_buf_bad = sock set buf sizes (sock tcp) 0 1024
-        _         = assert ok (is sock ok s_nd)
-        _         = assert ok (is sock ok s_bc)
-        _         = assert ok (is sock ok s_buf_ok)
-        _         = assert eq (is sock ok s_buf_bad) False
-        _         = assert ok (tcp_nodelay (opts (unwrap sock s_nd)))
-        _         = assert ok (broadcast (opts (unwrap sock s_bc)))
-        _         = assert eq (rcvbuf (opts (unwrap sock s_buf_ok))) 131072
+        assert ok (is sock ok s_nd)
+        assert ok (is sock ok s_bc)
+        assert ok (is sock ok s_buf_ok)
+        assert eq (is sock ok s_buf_bad) False
+        assert ok (tcp_nodelay (opts (unwrap sock s_nd)))
+        assert ok (broadcast (opts (unwrap sock s_bc)))
+        assert eq (rcvbuf (opts (unwrap sock s_buf_ok))) 131072
         srv       = unwrap sock (sock listen (unwrap sock (sock bind (sock tcp) srv_addr)) 8)
         cli       = unwrap sock (sock bind (sock tcp) cli_addr)
         pair0     = sock connect pair cli srv
         c0        = unwrap pair left pair0
         p0        = unwrap pair right pair0
-        _         = assert eq (port (unwrap addr (sock local addr c0))) 50002
-        _         = assert eq (port (unwrap addr (sock peer addr c0))) 8082
+        assert eq (port (unwrap addr (sock local addr c0))) 50002
+        assert eq (port (unwrap addr (sock peer addr c0))) 8082
         poll0     = sock poll p0
-        _         = assert eq (readable poll0) False
-        _         = assert ok (writable poll0)
+        assert eq (readable poll0) False
+        assert ok (writable poll0)
         c1        = unwrap sock (sock send all c0 [5, 6, 7, 8, 9])
         pair1     = sock pipe transfer c1 p0
         p1        = unwrap pair right pair1
         poll1     = sock poll p1
-        _         = assert ok (readable poll1)
+        assert ok (readable poll1)
         ex_fail   = sock recv exact p1 10
-        _         = assert eq (is recv bytes ok ex_fail) False
+        assert eq (is recv bytes ok ex_fail) False
         ex_ok     = sock recv exact p1 5
-        _         = assert ok (is recv bytes ok ex_ok)
-        _         = assert eq (unwrap recv bytes ex_ok) [5, 6, 7, 8, 9]
+        assert ok (is recv bytes ok ex_ok)
+        assert eq (unwrap recv bytes ex_ok) [5, 6, 7, 8, 9]
         c_shut_wr = unwrap sock (sock shutdown (unwrap pair left pair1) "wr")
-        _         = assert eq (is sock ok (sock send bytes c_shut_wr [1])) False
+        assert eq (is sock ok (sock send bytes c_shut_wr [1])) False
         p_shut_rd = unwrap sock (sock shutdown p1 "rd")
-        _         = assert eq (is recv bytes ok (sock recv bytes p_shut_rd 4)) False
+        assert eq (is recv bytes ok (sock recv bytes p_shut_rd 4)) False
         c_shut_all = unwrap sock (sock shutdown p1 "rdwr")
-        _         = assert eq (can_read c_shut_all) False
-        _         = assert eq (can_write c_shut_all) False
-        _         = assert eq (is sock ok (sock shutdown p1 "bad_mode")) False
-        _         = assert ok (is addr ok (sock resolve host "ip6-localhost" 9090))
-        _         = assert ok (ip in cidr "203.0.113.5" "0.0.0.0/0")
-        _         = assert ok (ip in cidr "192.168.1.1" "192.168.1.1/32")
-        _         = assert eq (ip in cidr "192.168.1.2" "192.168.1.1/32") False
-        _         = assert eq ( is addr ok (sock local addr (sock tcp))) False
+        assert eq (can_read c_shut_all) False
+        assert eq (can_write c_shut_all) False
+        assert eq (is sock ok (sock shutdown p1 "bad_mode")) False
+        assert ok (is addr ok (sock resolve host "ip6-localhost" 9090))
+        assert ok (ip in cidr "203.0.113.5" "0.0.0.0/0")
+        assert ok (ip in cidr "192.168.1.1" "192.168.1.1/32")
+        assert eq (ip in cidr "192.168.1.2" "192.168.1.1/32") False
+        assert eq ( is addr ok (sock local addr (sock tcp))) False
         assert eq (is addr ok (sock peer addr (sock tcp))) False
 
 fn :: tup2 fst (Int Int) => Int
@@ -503,140 +501,140 @@ En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `sock
 ```ridgun
 fn :: test sock rgf001 kernel tcp and unix => ()
       test sock rgf001 kernel tcp and unix =
-        -- 1. Ephemeral TCP listen + sys_local_port + ADDR_IN_USE + invalid/permission checks
-        _      = assert int equals (tup2 fst (sys tcp listen "bad_host" 8080 16)) (0 - 7) "invalid host -> -7"
-        _      = assert int equals (tup2 fst (sys tcp listen "127.0.0.1" 70000 16)) (0 - 7) "invalid port -> -7"
-        _      = assert int equals (tup2 fst (sys tcp listen "127.0.0.1" 8080 0)) (0 - 7) "invalid backlog -> -7"
-        _      = assert int equals (tup2 fst (sys tcp listen "127.0.0.1" 80 16)) (0 - 6) "privileged port 80 -> -6"
+        -- 1. Ephemeral TCP listen + sys local port + ADDR_IN_USE + invalid/permission checks
+        assert int equals (tup2 fst (sys tcp listen "bad_host" 8080 16)) (0 - 7) "invalid host -> -7"
+        assert int equals (tup2 fst (sys tcp listen "127.0.0.1" 70000 16)) (0 - 7) "invalid port -> -7"
+        assert int equals (tup2 fst (sys tcp listen "127.0.0.1" 8080 0)) (0 - 7) "invalid backlog -> -7"
+        assert int equals (tup2 fst (sys tcp listen "127.0.0.1" 80 16)) (0 - 6) "privileged port 80 -> -6"
         l_res  = sys tcp listen "127.0.0.1" 0 16
-        _      = assert int equals (tup2 fst l_res) 0 "sys_tcp_listen status"
+        assert int equals (tup2 fst l_res) 0 "sys_tcp_listen status"
         lfd    = tup2 snd l_res
-        _      = assert true (lfd >= 0) "lfd >= 0"
-        _      = assert true ((sys call 72 lfd 1 0 0 0 0) >= 0) "lfd is real kernel fd (fcntl F_GETFD >= 0)"
+        assert true (lfd >= 0) "lfd >= 0"
+        assert true ((sys call 72 lfd 1 0 0 0 0) >= 0) "lfd is real kernel fd (fcntl F_GETFD >= 0)"
         lport  = sys local port lfd
-        _      = assert true (lport > 0) "ephemeral port > 0"
+        assert true (lport > 0) "ephemeral port > 0"
         dup_l  = sys tcp listen "127.0.0.1" lport 8
-        _      = assert int equals (tup2 fst dup_l) (0 - 5) "dup sys_tcp_listen -> -5"
+        assert int equals (tup2 fst dup_l) (0 - 5) "dup sys_tcp_listen -> -5"
 
         -- 1b. Real DNS resolution (/etc/hosts + RFC 1035 wire packet parser + localhost + literal IP + hostname connect)
         r_loc  = sys resolve ipv4 "localhost"
-        _      = assert int equals (tup2 rc r_loc) 0 "sys_resolve_ipv4 localhost ok"
-        _      = assert str eq (tup2 str r_loc) "127.0.0.1" "sys_resolve_ipv4 localhost -> 127.0.0.1"
+        assert int equals (tup2 rc r_loc) 0 "sys_resolve_ipv4 localhost ok"
+        assert str eq (tup2 str r_loc) "127.0.0.1" "sys_resolve_ipv4 localhost -> 127.0.0.1"
         r_bad  = sys resolve ipv4 "-bad..host"
-        _      = assert int equals (tup2 rc r_bad) (0 - 7) "sys_resolve_ipv4 invalid hostname -> -7"
+        assert int equals (tup2 rc r_bad) (0 - 7) "sys_resolve_ipv4 invalid hostname -> -7"
         dns_q  = sk build dns query "example.com"
-        _      = assert int equals (str len dns_q) 29 "RFC 1035 DNS query length for example.com == 29"
+        assert int equals (str len dns_q) 29 "RFC 1035 DNS query length for example.com == 29"
         -- Construct an RFC 1035 DNS response packet with 1 A record (93.184.216.34) using 0xC00C name compression
         dns_hd = (sk raw byte 18) + (sk raw byte 52) + (sk raw byte 129) + (sk raw byte 128) + (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0)
         dns_qn = sk encode qname ["example", "com"]
         dns_qt = (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 1)
         dns_an = (sk raw byte 192) + (sk raw byte 12) + (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 1) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 0) + (sk raw byte 60) + (sk raw byte 0) + (sk raw byte 4) + (sk raw byte 93) + (sk raw byte 184) + (sk raw byte 216) + (sk raw byte 34)
         dns_ip = sk extract dns ipv4 (dns_hd + dns_qn + dns_qt + dns_an)
-        _      = assert str eq dns_ip "93.184.216.34" "sk_extract_dns_ipv4 parses RFC 1035 A record (93.184.216.34)"
+        assert str eq dns_ip "93.184.216.34" "sk_extract_dns_ipv4 parses RFC 1035 A record (93.184.216.34)"
         c_host = sys tcp connect "localhost" lport 500
-        _      = assert int equals (tup2 fst c_host) 0 "sys_tcp_connect via hostname localhost ok"
+        assert int equals (tup2 fst c_host) 0 "sys_tcp_connect via hostname localhost ok"
         a_host = sys accept lfd 500
-        _      = assert int equals (tup3 rc a_host) 0 "sys_accept from hostname connect ok"
-        _      = assert int equals (sys close (tup2 snd c_host)) 0 "close c_host"
-        _      = assert int equals (sys close (tup3 fd a_host)) 0 "close a_host"
+        assert int equals (tup3 rc a_host) 0 "sys_accept from hostname connect ok"
+        assert int equals (sys close (tup2 snd c_host)) 0 "close c_host"
+        assert int equals (sys close (tup3 fd a_host)) 0 "close a_host"
 
         -- 2. Accept timeout (-2) when no client pending + connect refused (-3) on unbound port
         acc_to = sys accept lfd 30
-        _      = assert int equals (tup3 rc acc_to) (0 - 2) "sys_accept timeout -> -2"
+        assert int equals (tup3 rc acc_to) (0 - 2) "sys_accept timeout -> -2"
         ref_c  = sys tcp connect "127.0.0.1" 39999 100
-        _      = assert int equals (tup2 fst ref_c) (0 - 3) "sys_tcp_connect refused -> -3"
+        assert int equals (tup2 fst ref_c) (0 - 3) "sys_tcp_connect refused -> -3"
 
         -- 3. TCP multi-client queue, bidirectional I/O, chunked recv, recv timeout (-2), shutdown_write, send after shutdown (-4), EOF (-1)
         c_res  = sys tcp connect "127.0.0.1" lport 500
         c_res2 = sys tcp connect "127.0.0.1" lport 500
-        _      = assert int equals (tup2 fst c_res) 0 "sys_tcp_connect 1 ok"
-        _      = assert int equals (tup2 fst c_res2) 0 "sys_tcp_connect 2 ok"
+        assert int equals (tup2 fst c_res) 0 "sys_tcp_connect 1 ok"
+        assert int equals (tup2 fst c_res2) 0 "sys_tcp_connect 2 ok"
         cfd    = tup2 snd c_res
         cfd2   = tup2 snd c_res2
         a_res  = sys accept lfd 500
         a_res2 = sys accept lfd 500
-        _      = assert int equals (tup3 rc a_res) 0 "sys_accept 1 ok"
-        _      = assert int equals (tup3 rc a_res2) 0 "sys_accept 2 ok"
+        assert int equals (tup3 rc a_res) 0 "sys_accept 1 ok"
+        assert int equals (tup3 rc a_res2) 0 "sys_accept 2 ok"
         sfd    = tup3 fd a_res
         sfd2   = tup3 fd a_res2
 
         -- Empty recv with timeout=20 returns (-2, "")
         rcv_to = sys recv sfd 16 20
-        _      = assert int equals (tup2 rc rcv_to) (0 - 2) "sys_recv timeout on idle stream -> -2"
+        assert int equals (tup2 rc rcv_to) (0 - 2) "sys_recv timeout on idle stream -> -2"
 
         -- Chunked recv: send 10 bytes, read 4 + 4 + 2 bytes, plus reverse direction sfd -> cfd
         snd1   = sys send cfd "0123456789" 500
-        _      = assert int equals (tup2 fst snd1) 0 "sys_send status"
-        _      = assert int equals (tup2 snd snd1) 10 "sys_send len 10"
+        assert int equals (tup2 fst snd1) 0 "sys_send status"
+        assert int equals (tup2 snd snd1) 10 "sys_send len 10"
         ch1    = sys recv sfd 4 500
         ch2    = sys recv sfd 4 500
         ch3    = sys recv sfd 4 500
-        _      = assert str eq (tup2 str ch1) "0123" "chunk 1 (4B)"
-        _      = assert str eq (tup2 str ch2) "4567" "chunk 2 (4B)"
-        _      = assert str eq (tup2 str ch3) "89" "chunk 3 (2B)"
-        _      = assert int equals (tup2 fst (sys send sfd "pong" 500)) 0 "server->client send ok"
-        _      = assert str eq (tup2 str (sys recv cfd 16 500)) "pong" "client recv pong"
+        assert str eq (tup2 str ch1) "0123" "chunk 1 (4B)"
+        assert str eq (tup2 str ch2) "4567" "chunk 2 (4B)"
+        assert str eq (tup2 str ch3) "89" "chunk 3 (2B)"
+        assert int equals (tup2 fst (sys send sfd "pong" 500)) 0 "server->client send ok"
+        assert str eq (tup2 str (sys recv cfd 16 500)) "pong" "client recv pong"
 
-        -- Raw binary bytes (0, 1, 127, 128, 254, 255) + AEAD ciphertext over TCP sys_send/sys_recv
+        -- Raw binary bytes (0, 1, 127, 128, 254, 255) + AEAD ciphertext over TCP sys send/sys recv
         raw_bin = bytes from list [0, 1, 127, 128, 254, 255]
-        _       = assert int equals (str len raw_bin) 6 "raw_bin len == 6"
-        _       = assert int equals (tup2 fst (sys send cfd2 raw_bin 500)) 0 "sys_send raw binary ok"
+        assert int equals (str len raw_bin) 6 "raw_bin len == 6"
+        assert int equals (tup2 fst (sys send cfd2 raw_bin 500)) 0 "sys_send raw binary ok"
         r_bin   = tup2 str (sys recv sfd2 16 500)
-        _       = assert int equals (str len r_bin) 6 "raw binary recv len == 6"
-        _       = assert int equals (str char at r_bin 0) 0 "raw binary byte[0] == 0"
-        _       = assert int equals (str char at r_bin 1) 1 "raw binary byte[1] == 1"
-        _       = assert int equals (str char at r_bin 3) 128 "raw binary byte[3] == 128"
-        _       = assert int equals (str char at r_bin 5) 255 "raw binary byte[5] == 255"
+        assert int equals (str len r_bin) 6 "raw binary recv len == 6"
+        assert int equals (str char at r_bin 0) 0 "raw binary byte[0] == 0"
+        assert int equals (str char at r_bin 1) 1 "raw binary byte[1] == 1"
+        assert int equals (str char at r_bin 3) 128 "raw binary byte[3] == 128"
+        assert int equals (str char at r_bin 5) 255 "raw binary byte[5] == 255"
         k32     = sha256 bytes "socket-session-key"
         n12     = "0123456789ab"
         ct_wire = aead seal k32 n12 "tcp-aad" "confidential-payload-over-tcp"
-        _       = assert int equals (tup2 fst (sys send cfd2 ct_wire 500)) 0 "sys_send AEAD ciphertext ok"
+        assert int equals (tup2 fst (sys send cfd2 ct_wire 500)) 0 "sys_send AEAD ciphertext ok"
         rx_wire = tup2 str (sys recv sfd2 128 500)
         opened  = aead open k32 n12 "tcp-aad" rx_wire
-        _       = assert int equals (tup2 rc opened) 0 "aead_open over TCP socket ok"
-        _       = assert str eq (tup2 str opened) "confidential-payload-over-tcp" "decrypted TCP payload matches"
+        assert int equals (tup2 rc opened) 0 "aead_open over TCP socket ok"
+        assert str eq (tup2 str opened) "confidential-payload-over-tcp" "decrypted TCP payload matches"
 
         -- Shutdown write -> subsequent send returns (-4, -1) RESET, peer recv returns (-1, "") EOF
-        _      = assert int equals (sys shutdown write cfd) 0 "sys_shutdown_write"
-        _      = assert int equals (tup2 fst (sys send cfd "after-shut" 100)) (0 - 4) "send after shutdown_write -> -4"
+        assert int equals (sys shutdown write cfd) 0 "sys_shutdown_write"
+        assert int equals (tup2 fst (sys send cfd "after-shut" 100)) (0 - 4) "send after shutdown_write -> -4"
         rcv_ef = sys recv sfd 64 500
-        _      = assert int equals (tup2 rc rcv_ef) (0 - 1) "sys_recv EOF -> -1"
-        _      = assert int equals (sys close cfd) 0 "sys_close cfd"
-        _      = assert int equals (sys close sfd) 0 "sys_close sfd"
-        _      = assert int equals (sys close cfd2) 0 "sys_close cfd2"
-        _      = assert int equals (sys close sfd2) 0 "sys_close sfd2"
-        _      = assert int equals (sys close lfd) 0 "sys_close lfd"
+        assert int equals (tup2 rc rcv_ef) (0 - 1) "sys_recv EOF -> -1"
+        assert int equals (sys close cfd) 0 "sys_close cfd"
+        assert int equals (sys close sfd) 0 "sys_close sfd"
+        assert int equals (sys close cfd2) 0 "sys_close cfd2"
+        assert int equals (sys close sfd2) 0 "sys_close sfd2"
+        assert int equals (sys close lfd) 0 "sys_close lfd"
 
         -- Operations on closed fd return -7 (INVALID)
-        _      = assert int equals (sys local port lfd) (0 - 7) "sys_local_port on closed lfd -> -7"
-        _      = assert int equals (tup3 rc (sys accept lfd 10)) (0 - 7) "sys_accept on closed lfd -> -7"
-        _      = assert int equals (tup2 fst (sys send cfd "x" 10)) (0 - 7) "sys_send on closed cfd -> -7"
-        _      = assert int equals (tup2 rc (sys recv sfd 16 10)) (0 - 7) "sys_recv on closed sfd -> -7"
+        assert int equals (sys local port lfd) (0 - 7) "sys_local_port on closed lfd -> -7"
+        assert int equals (tup3 rc (sys accept lfd 10)) (0 - 7) "sys_accept on closed lfd -> -7"
+        assert int equals (tup2 fst (sys send cfd "x" 10)) (0 - 7) "sys_send on closed cfd -> -7"
+        assert int equals (tup2 rc (sys recv sfd 16 10)) (0 - 7) "sys_recv on closed sfd -> -7"
 
         -- 4. AF_UNIX listen + connect + send + recv + path traversal (-7) + missing listener (-3)
         u_bad  = sys unix listen "../traversal.sock" 8
-        _      = assert int equals (tup2 fst u_bad) (0 - 7) "sys_unix_listen traversal -> -7"
-        _      = assert int equals (tup2 fst (sys unix connect "/tmp/rg_nonexistent_99999.sock" 50)) (0 - 3) "sys_unix_connect missing -> -3"
+        assert int equals (tup2 fst u_bad) (0 - 7) "sys_unix_listen traversal -> -7"
+        assert int equals (tup2 fst (sys unix connect "/tmp/rg_nonexistent_99999.sock" 50)) (0 - 3) "sys_unix_connect missing -> -3"
         upath  = "/tmp/rg_sock_rgf001_{sys_getpid}.sock"
         ul_res = sys unix listen upath 8
-        _      = assert int equals (tup2 fst ul_res) 0 "sys_unix_listen ok"
+        assert int equals (tup2 fst ul_res) 0 "sys_unix_listen ok"
         ulfd   = tup2 snd ul_res
         uc_res = sys unix connect upath 500
-        _      = assert int equals (tup2 fst uc_res) 0 "sys_unix_connect ok"
+        assert int equals (tup2 fst uc_res) 0 "sys_unix_connect ok"
         ucfd   = tup2 snd uc_res
         ua_res = sys accept ulfd 500
-        _      = assert int equals (tup3 rc ua_res) 0 "sys_accept unix ok"
+        assert int equals (tup3 rc ua_res) 0 "sys_accept unix ok"
         usfd   = tup3 fd ua_res
-        _      = assert int equals (tup2 fst (sys send ucfd "unix-msg" 500)) 0 "sys_send unix ok"
+        assert int equals (tup2 fst (sys send ucfd "unix-msg" 500)) 0 "sys_send unix ok"
         urcv   = sys recv usfd 64 500
-        _      = assert int equals (tup2 rc urcv) 0 "sys_recv unix ok"
-        _      = assert str eq (tup2 str urcv) "unix-msg" "AF_UNIX sys_recv"
-        _      = assert int equals (sys close ucfd) 0 "sys_close ucfd"
-        _      = assert int equals (sys close usfd) 0 "sys_close usfd"
-        _      = assert int equals (sys close ulfd) 0 "sys_close ulfd"
-        _      = assert int equals (shell exec "rm -f '{upath}'") 0 "unlink AF_UNIX socket"
+        assert int equals (tup2 rc urcv) 0 "sys_recv unix ok"
+        assert str eq (tup2 str urcv) "unix-msg" "AF_UNIX sys_recv"
+        assert int equals (sys close ucfd) 0 "sys_close ucfd"
+        assert int equals (sys close usfd) 0 "sys_close usfd"
+        assert int equals (sys close ulfd) 0 "sys_close ulfd"
+        assert int equals (shell exec "rm -f '{upath}'") 0 "unlink AF_UNIX socket"
 
-        -- 5. RG-049: sys_send honours timeout_ms when peer never reads (8 MiB send with timeout_ms=1000)
+        -- 5. RG-049: sys send honours timeout_ms when peer never reads (8 MiB send with timeout_ms=1000)
         tl_res = sys tcp listen "127.0.0.1" 0 8
         tlfd   = tup2 snd tl_res
         tlport = sys local port tlfd
@@ -649,23 +647,23 @@ fn :: test sock rgf001 kernel tcp and unix => ()
         tsnd   = sys send tsfd big8m 1000
         ts1    = sys time ms
         dt_ms  = ts1 - ts0
-        _      = assert int equals (tup2 fst tsnd) (0 - 2) "RG-049: sys_send 8 MiB to non-reading peer times out -> -2"
-        _      = assert true ((tup2 snd tsnd) > 0) "RG-049: sys_send returns partial bytes sent > 0 on timeout"
-        _      = assert true (dt_ms >= 800 and dt_ms <= 2500) "RG-049: sys_send timeout elapsed ~1000 ms"
-        _      = assert int equals (sys close tcfd) 0 "sys_close tcfd"
-        _      = assert int equals (sys close tsfd) 0 "sys_close tsfd"
-        _      = assert int equals (sys close tlfd) 0 "sys_close tlfd"
+        assert int equals (tup2 fst tsnd) (0 - 2) "RG-049: sys_send 8 MiB to non-reading peer times out -> -2"
+        assert true ((tup2 snd tsnd) > 0) "RG-049: sys_send returns partial bytes sent > 0 on timeout"
+        assert true (dt_ms >= 800 and dt_ms <= 2500) "RG-049: sys_send timeout elapsed ~1000 ms"
+        assert int equals (sys close tcfd) 0 "sys_close tcfd"
+        assert int equals (sys close tsfd) 0 "sys_close tsfd"
+        assert int equals (sys close tlfd) 0 "sys_close tlfd"
 
         -- 6. Wish (multi-core): SO_REUSEPORT allows two TCP listeners on the same (ip, port)
         rp1    = sys tcp listen reuseport "127.0.0.1" 0 16
-        _      = assert int equals (tup2 fst rp1) 0 "sys_tcp_listen_reuseport 1 ok"
+        assert int equals (tup2 fst rp1) 0 "sys_tcp_listen_reuseport 1 ok"
         rp_fd1 = tup2 snd rp1
         rp_prt = sys local port rp_fd1
         rp2    = sys tcp listen reuseport "127.0.0.1" rp_prt 16
-        _      = assert int equals (tup2 fst rp2) 0 "sys_tcp_listen_reuseport 2 on same port ok"
+        assert int equals (tup2 fst rp2) 0 "sys_tcp_listen_reuseport 2 on same port ok"
         rp_fd2 = tup2 snd rp2
-        _      = assert int equals (sys close rp_fd1) 0 "sys_close rp_fd1"
-        _      = assert int equals (sys close rp_fd2) 0 "sys_close rp_fd2"
+        assert int equals (sys close rp_fd1) 0 "sys_close rp_fd1"
+        assert int equals (sys close rp_fd2) 0 "sys_close rp_fd2"
         ()
 ```
 
@@ -680,6 +678,8 @@ Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**
 Fíjate en cómo `socket.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
+module :: socket
+
 fn :: sock rc (Int Int) => Int
       sock rc (rc, _)   =  rc
 

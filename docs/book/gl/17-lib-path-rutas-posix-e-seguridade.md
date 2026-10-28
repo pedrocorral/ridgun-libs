@@ -12,8 +12,8 @@ A lib **`path`** implementa normalización léxica POSIX (`path clean` ao estilo
 
 Nun ecosistema tradicional, resolver as tarefas do dominio **`PATH`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`path`** (`src/main/ridgun/lib/path.rg`) aborda o problema con catro principios innegociables:
 
-1. **Funcións totais e contratos explícitos (`=>`)**: ningunha función de `path` lanza excepcións ocultas nin depende de `null`. Todo caso límite devolve un valor sentinela documentado ou un tipo alxébrico suma (`Option`, `Result`).
-2. **Cero código C e cero `libc`**: todo o código de `path` compila directamente a código máquina nativo ELF64 verificado por `ridgunc`.
+1. **Declara `import path` (ou `import path as alias`) ao inicio do ficheiro**: cada lib define o seu espazo de nomes `module :: path` e en modo `--strict` as funcións multi-palabra invócanse sempre con espazos naturais.
+2. **Encadea as túas tubaxes de esquerda a dereita con `->`**: escribe `entrada paso un -> paso dous -> resultado`, usa máscaras `(+ _ _ +)` para desestruturar secuencias e omite `_ =` en sentenzas secuenciais (ou descarta con `-> ()`).
 3. **Recursión de cola con TCO (*Tail-Call Optimization*)**: todos os percorridos internos de `path` compílanse a bucles nativos en espazo de pila $O(1)$.
 4. **Memoria determinista (`RMM1` / `RMM2`)**: cada estrutura intermedia libérase no instante exacto en que remata a súa última lectura, sen *Garbage Collector*.
 
@@ -29,7 +29,7 @@ En `ridgun-libs`, **`path`** é unha **lib** de primeira clase situada en `src/m
 | **Ficheiro compilado** | `target/path.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/libpath.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
-> Para usar esta lib en calquera ficheiro `.rg`, abonda con declarar `import path` na cabeceira e chamar ás súas funcións con espazos ou guións baixos indistintamente.
+> Cada lib declara o seu propio espazo de nomes con `module :: path`: abonda con escribir `import path` (ou `import path as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).
 
 ### 17.2.1. Resumo de familias funcionais de `path`
 
@@ -90,10 +90,10 @@ Observa como en Ridgun os signos `=` e os pasos de transformación con `path` qu
 ```ridgun
 import path
 
-fn :: resolver archivo estatico (raiz : String) (peticion : String) => (Bool, String)
+fn :: resolver archivo estatico String String => Bool String
       resolver archivo estatico raiz peticion =
-        seguro = path is safe subpath raiz peticion
-        ruta   = path join raiz peticion
+        path is safe subpath raiz peticion -> seguro
+        path join raiz peticion -> ruta
         (seguro, ruta)
 ```
 
@@ -104,11 +104,12 @@ Toda función da lib `path` está deseñada para compoñerse con gardas booleana
 ```ridgun
 import path
 
-fn :: cambiar salida a objeto (fuente : String) => (String, String, String)
+fn :: cambiar salida a objeto String => String String String
       cambiar salida a objeto fuente =
-        dir = path dirname fuente
-        nom = path stem fuente
-        obj = path replace ext (path clean fuente) ".rglib"
+        fuente path dirname -> dir
+        fuente path stem -> nom
+        fuente path clean -> limpio
+        path with ext limpio ".rglib" -> obj
         (dir, nom, obj)
 ```
 
@@ -120,28 +121,28 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `path` n
 fn :: test path clean and join => ()
       test path clean and join =
         -- Go path/path_test.go cleantests vectors
-        _ = assert str eq (path clean "") "." "AC1: empty -> ."
-        _ = assert str eq (path clean ".") "." "AC1: . -> ."
-        _ = assert str eq (path clean "././.") "." "AC1: ././. -> ."
-        _ = assert str eq (path clean "/") "/" "AC1: / -> /"
-        _ = assert str eq (path clean "///") "/" "AC1: /// -> /"
-        _ = assert str eq (path clean "/././") "/" "AC1: /././ -> /"
-        _ = assert str eq (path clean "/../a") "/a" "AC1: /../a clamped at root"
-        _ = assert str eq (path clean "/../../..") "/" "AC1: /../../.. clamped at root"
-        _ = assert str eq (path clean "a/b/..") "a" "AC1: a/b/.. -> a"
-        _ = assert str eq (path clean "a/../b") "b" "AC1: a/../b -> b"
-        _ = assert str eq (path clean "a/../../b") "../b" "AC1: relative .. preserved when above ."
-        _ = assert str eq (path clean "../../a/b/..") "../../a" "AC1: leading ../.. preserved"
-        _ = assert str eq (path clean "/a/b/../c/./d//") "/a/c/d" "AC1: complex absolute normalization"
+        assert str eq (path clean "") "." "AC1: empty -> ."
+        assert str eq (path clean ".") "." "AC1: . -> ."
+        assert str eq (path clean "././.") "." "AC1: ././. -> ."
+        assert str eq (path clean "/") "/" "AC1: / -> /"
+        assert str eq (path clean "///") "/" "AC1: /// -> /"
+        assert str eq (path clean "/././") "/" "AC1: /././ -> /"
+        assert str eq (path clean "/../a") "/a" "AC1: /../a clamped at root"
+        assert str eq (path clean "/../../..") "/" "AC1: /../../.. clamped at root"
+        assert str eq (path clean "a/b/..") "a" "AC1: a/b/.. -> a"
+        assert str eq (path clean "a/../b") "b" "AC1: a/../b -> b"
+        assert str eq (path clean "a/../../b") "../b" "AC1: relative .. preserved when above ."
+        assert str eq (path clean "../../a/b/..") "../../a" "AC1: leading ../.. preserved"
+        assert str eq (path clean "/a/b/../c/./d//") "/a/c/d" "AC1: complex absolute normalization"
 
-        -- path_join & path_join_list
-        _ = assert str eq (path join "" "") "." "AC1: join empty empty"
-        _ = assert str eq (path join "/var/log" "") "/var/log" "AC1: join with empty right"
-        _ = assert str eq (path join "" "app.log") "app.log" "AC1: join with empty left"
-        _ = assert str eq (path join "/var/log" "app/server.log") "/var/log/app/server.log" "AC1: join relative child"
-        _ = assert str eq (path join "/var/log" "/etc/hosts") "/etc/hosts" "AC1: join absolute child overrides base"
-        _ = assert str eq (path join list []) "." "AC1: join_list [] -> ."
-        _ = assert str eq (path join list ["src", "main", "ridgun", "lib", "path.rg"]) "src/main/ridgun/lib/path.rg" "AC1: join_list 5 segments"
+        -- path join & path join list
+        assert str eq (path join "" "") "." "AC1: join empty empty"
+        assert str eq (path join "/var/log" "") "/var/log" "AC1: join with empty right"
+        assert str eq (path join "" "app.log") "app.log" "AC1: join with empty left"
+        assert str eq (path join "/var/log" "app/server.log") "/var/log/app/server.log" "AC1: join relative child"
+        assert str eq (path join "/var/log" "/etc/hosts") "/etc/hosts" "AC1: join absolute child overrides base"
+        assert str eq (path join list []) "." "AC1: join_list [] -> ."
+        assert str eq (path join list ["src", "main", "ridgun", "lib", "path.rg"]) "src/main/ridgun/lib/path.rg" "AC1: join_list 5 segments"
         ()
 ```
 
@@ -153,43 +154,43 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `path` n
 fn :: test path components and confinement => ()
       test path components and confinement =
         p = "/home/boogie/ridgun-libs/src/socket.rg"
-        _ = assert true (path is abs p) "AC2: path_is_abs true"
-        _ = assert false (path is rel p) "AC2: path_is_rel false"
-        _ = assert false (path is abs "") "AC2: empty is not abs"
-        _ = assert true (path is rel "src/socket.rg") "AC2: relative path_is_rel"
-        _ = assert str eq (path dirname p) "/home/boogie/ridgun-libs/src" "AC2: dirname"
-        _ = assert str eq (path basename p) "socket.rg" "AC2: basename"
+        assert true (path is abs p) "AC2: path_is_abs true"
+        assert false (path is rel p) "AC2: path_is_rel false"
+        assert false (path is abs "") "AC2: empty is not abs"
+        assert true (path is rel "src/socket.rg") "AC2: relative path_is_rel"
+        assert str eq (path dirname p) "/home/boogie/ridgun-libs/src" "AC2: dirname"
+        assert str eq (path basename p) "socket.rg" "AC2: basename"
         sp = path split p
-        _ = assert str eq (pair_fst sp) "/home/boogie/ridgun-libs/src" "AC2: split dirname"
-        _ = assert str eq (pair_snd sp) "socket.rg" "AC2: split basename"
-        _ = assert str eq (path dirname "/") "/" "AC2: dirname of / is /"
-        _ = assert str eq (path basename "/") "/" "AC2: basename of / is /"
-        _ = assert str eq (path dirname "/top") "/" "AC2: dirname of /top is /"
-        _ = assert str eq (path dirname "barefile.txt") "." "AC2: dirname of bare filename is ."
+        assert str eq (pair_fst sp) "/home/boogie/ridgun-libs/src" "AC2: split dirname"
+        assert str eq (pair_snd sp) "socket.rg" "AC2: split basename"
+        assert str eq (path dirname "/") "/" "AC2: dirname of / is /"
+        assert str eq (path basename "/") "/" "AC2: basename of / is /"
+        assert str eq (path dirname "/top") "/" "AC2: dirname of /top is /"
+        assert str eq (path dirname "barefile.txt") "." "AC2: dirname of bare filename is ."
 
         -- Multi-dot filenames, dotfiles, and extension replacement
-        _ = assert str eq (path stem p) "socket" "AC2: stem"
-        _ = assert str eq (path ext p) ".rg" "AC2: ext"
-        _ = assert str eq (path stem "archive.tar.gz") "archive.tar" "AC2: multi-dot stem"
-        _ = assert str eq (path ext "archive.tar.gz") ".gz" "AC2: multi-dot ext"
-        _ = assert str eq (path stem ".gitignore") ".gitignore" "AC2: dotfile stem"
-        _ = assert str eq (path ext ".gitignore") "" "AC2: dotfile empty ext"
-        _ = assert str eq (path replace ext p "rglib") "/home/boogie/ridgun-libs/src/socket.rglib" "AC2: replace_ext without leading dot"
-        _ = assert str eq (path replace ext p ".so") "/home/boogie/ridgun-libs/src/socket.so" "AC2: replace_ext with leading dot"
-        _ = assert str eq (path replace ext "main.rg" "") "main" "AC2: replace_ext with empty removes extension"
+        assert str eq (path stem p) "socket" "AC2: stem"
+        assert str eq (path ext p) ".rg" "AC2: ext"
+        assert str eq (path stem "archive.tar.gz") "archive.tar" "AC2: multi-dot stem"
+        assert str eq (path ext "archive.tar.gz") ".gz" "AC2: multi-dot ext"
+        assert str eq (path stem ".gitignore") ".gitignore" "AC2: dotfile stem"
+        assert str eq (path ext ".gitignore") "" "AC2: dotfile empty ext"
+        assert str eq (path replace ext p "rglib") "/home/boogie/ridgun-libs/src/socket.rglib" "AC2: replace_ext without leading dot"
+        assert str eq (path replace ext p ".so") "/home/boogie/ridgun-libs/src/socket.so" "AC2: replace_ext with leading dot"
+        assert str eq (path replace ext "main.rg" "") "main" "AC2: replace_ext with empty removes extension"
 
         -- OWASP Path Traversal & Shell Injection Confinement (VUL-INJ-002)
-        _ = assert true (path is safe subpath "/srv/www" "assets/app.js") "AC3: safe child subpath"
-        _ = assert true (path is safe subpath "/srv/www" "a/b/../c_1-2.txt") "AC3: safe normalized internal .."
-        _ = assert false (path is safe subpath "/srv/www" "") "AC3: empty child rejected"
-        _ = assert false (path is safe subpath "" "assets/app.js") "AC3: empty base rejected"
-        _ = assert false (path is safe subpath "/srv/www" "../etc/passwd") "AC3: direct .. traversal rejected"
-        _ = assert false (path is safe subpath "/srv/www" "a/b/../../../etc/passwd") "AC3: deep .. traversal escaping base rejected"
-        _ = assert false (path is safe subpath "/srv/www" "/etc/passwd") "AC3: absolute child path rejected"
-        _ = assert false (path is safe subpath "/srv/www" "/srv/www/index.html") "AC3: absolute child matching base still rejected"
-        _ = assert false (path is safe subpath "/srv/www" "bad;rm -rf /") "AC3: shell semicolon metachar rejected"
-        _ = assert false (path is safe subpath "/srv/www" "bad|cat") "AC3: shell pipe metachar rejected"
-        _ = assert false (path is safe subpath "/srv/www" "bad$var") "AC3: shell dollar metachar rejected"
+        assert true (path is safe subpath "/srv/www" "assets/app.js") "AC3: safe child subpath"
+        assert true (path is safe subpath "/srv/www" "a/b/../c_1-2.txt") "AC3: safe normalized internal .."
+        assert false (path is safe subpath "/srv/www" "") "AC3: empty child rejected"
+        assert false (path is safe subpath "" "assets/app.js") "AC3: empty base rejected"
+        assert false (path is safe subpath "/srv/www" "../etc/passwd") "AC3: direct .. traversal rejected"
+        assert false (path is safe subpath "/srv/www" "a/b/../../../etc/passwd") "AC3: deep .. traversal escaping base rejected"
+        assert false (path is safe subpath "/srv/www" "/etc/passwd") "AC3: absolute child path rejected"
+        assert false (path is safe subpath "/srv/www" "/srv/www/index.html") "AC3: absolute child matching base still rejected"
+        assert false (path is safe subpath "/srv/www" "bad;rm -rf /") "AC3: shell semicolon metachar rejected"
+        assert false (path is safe subpath "/srv/www" "bad|cat") "AC3: shell pipe metachar rejected"
+        assert false (path is safe subpath "/srv/www" "bad$var") "AC3: shell dollar metachar rejected"
         ()
 ```
 
@@ -223,6 +224,8 @@ Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**
 Fíxate en como `path.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
+module :: path
+
 fn :: pa split slash loop String Int Int Int => [String]
       pa split slash loop p start idx len =
         | idx >= len                = [(str slice p start len)]
@@ -259,13 +262,7 @@ fn :: pa finish clean String Bool  => String
       pa finish clean joined False =
         | (str len joined) == 0 = "."
         | otherwise             = joined
-```
 
-### 17.4.2. Implementación interna: Core Implementation Part 2
-
-Fíxate en como `path.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
-
-```ridgun
 fn :: path is abs String => Bool
       path is abs p      =
         | (str len p) == 0        = False
@@ -279,10 +276,10 @@ fn :: path clean String => String
       path clean p      =
         | (str len p) == 0 = "."
         | otherwise =
-          is_ab = path is abs p
-          segs  = pa split slash loop p 0 0 (str len p)
-          norm  = pa norm segs segs [] is_ab
-          pa finish clean (pa join slash norm) is_ab
+          p path is abs -> is_ab
+          pa split slash loop p 0 0 (str len p) -> segs
+          pa norm segs segs [] is_ab -> norm
+          norm pa join slash -> pa finish clean is_ab
 
 fn :: path join String String => String
       path join a      b      =
@@ -301,6 +298,109 @@ fn :: pa last char idx String Int Int => Int
         | idx < 0                   = 0 - 1
         | (str char at s idx) == ch = idx
         | otherwise                 = pa last char idx s ch (idx - 1)
+
+fn :: pa dirname at String Int => String
+      pa dirname at cp     idx =
+        | idx < 0   = "."
+        | idx == 0  = "/"
+        | otherwise = str slice cp 0 idx
+
+fn :: pa dirname clean String => String
+      pa dirname clean cp     =
+        | cp == "/" = "/"
+        | otherwise = pa dirname at cp (pa last char idx cp 47 ((str len cp) - 1))
+
+fn :: path dirname String => String
+      path dirname p      =  pa dirname clean (path clean p)
+```
+
+### 17.4.2. Implementación interna: Core Implementation Part 2
+
+Fíxate en como `path.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
+
+```ridgun
+fn :: pa basename at String Int => String
+      pa basename at cp     idx =
+        | idx < 0   = cp
+        | otherwise = str slice cp (idx + 1) (str len cp)
+
+fn :: pa basename clean String => String
+      pa basename clean cp     =
+        | cp == "/" = "/"
+        | otherwise = pa basename at cp (pa last char idx cp 47 ((str len cp) - 1))
+
+fn :: path basename String => String
+      path basename p      =  pa basename clean (path clean p)
+
+fn :: path split String => String String
+      path split p      =  (path dirname p, path basename p)
+
+fn :: pa ext at String Int => String
+      pa ext at base   dot =
+        | dot <= 0  = ""
+        | otherwise = str slice base dot (str len base)
+
+fn :: path ext String => String
+      path ext p      =
+        base = path basename p
+        pa ext at base (pa last char idx base 46 ((str len base) - 1))
+
+fn :: pa stem at String Int => String
+      pa stem at base   dot =
+        | dot <= 0  = base
+        | otherwise = str slice base 0 dot
+
+fn :: path stem String => String
+      path stem p      =
+        base = path basename p
+        pa stem at base (pa last char idx base 46 ((str len base) - 1))
+
+fn :: pa norm ext String => String
+      pa norm ext ext    =
+        | (str len ext) == 0        = ""
+        | (str char at ext 0) == 46 = ext
+        | otherwise                 = "." + ext
+
+fn :: pa combine dir base String String => String
+      pa combine dir base dir base =
+        | dir == "." = base
+        | dir == "/" = "/" + base
+        | otherwise  = dir + "/" + base
+
+fn :: path replace ext String String  => String
+      path replace ext p      new_ext =
+        pa combine dir base (path dirname p) ((path stem p) + (pa norm ext new_ext))
+
+fn :: pa is safe char Int => Bool
+      pa is safe char c   =
+        | c >= 48 and c <= 57                        = True
+        | c >= 65 and c <= 90                        = True
+        | c >= 97 and c <= 122                       = True
+        | c == 47 or c == 46 or c == 95 or c == 45   = True
+        | otherwise                                  = False
+
+fn :: pa safe chars loop String Int Int => Bool
+      pa safe chars loop s idx len =
+        | idx >= len                          = True
+        | not (pa is safe char (str char at s idx)) = False
+        | otherwise                           = pa safe chars loop s (idx + 1) len
+
+fn :: pa check prefix String String => Bool
+      pa check prefix bclean full   =
+        | bclean == "/" = path is abs full
+        | full == bclean = True
+        | otherwise     = str starts with full (bclean + "/")
+
+fn :: path is safe subpath String String => Bool
+      path is safe subpath base child =
+        | (str len base) == 0 or (str len child) == 0          = False
+        | path is abs child                                    = False
+        | not (pa safe chars loop base 0 (str len base))       = False
+        | not (pa safe chars loop child 0 (str len child))     = False
+        | otherwise =
+          bclean = path clean base
+          full   = path clean (bclean + "/" + child)
+          pa check prefix bclean full
 ```
 
 ### 17.4.3. Implementación interna: Core Implementation Part 4

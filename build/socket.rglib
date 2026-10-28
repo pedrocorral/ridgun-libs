@@ -11,6 +11,8 @@
 -- @mitigates VUL-INJ-002
 -- @mitigates VUL-INPUT-001
 
+module :: socket
+
 type SockAddr = family: String, host: String, port: Int, path: String
 type SockOpts = reuse_addr: Bool, keep_alive: Bool, non_blocking: Bool, tcp_nodelay: Bool, broadcast: Bool, timeout_ms: Int, rcvbuf: Int, sndbuf: Int
 type SockPoll = readable: Bool, writable: Bool, has_error: Bool
@@ -1178,19 +1180,21 @@ fn :: sk send loop Int Int Int Int Int Int => Int Int
           prc = sys poll fd 4 rem
           sk send after poll fd ptr dlen sent timeout_ms deadline prc
 
+fn :: sk exec send step Int String Int Int => Int Int
+      sk exec send step fd data timeout_ms dlen =
+        ((dlen / 4096) + 2) * 4096 -> psz
+        sk alloc page psz -> ptr
+        sk alloc mfd -> mfd
+        sk poke mfd ptr data -> ()
+        (sys time ms) + timeout_ms -> deadline
+        sk send loop fd ptr dlen 0 timeout_ms deadline -> res
+        sk free page mfd ptr psz -> ()
+        res
+
 fn :: sk exec send Int String Int => Int Int
       sk exec send fd data timeout_ms =
         | (str len data) == 0 = (0, 0)
-        | otherwise =
-          dlen     = str len data
-          psz      = ((dlen / 4096) + 2) * 4096
-          ptr      = sk alloc page psz
-          mfd      = sk alloc mfd
-          _        = sk poke mfd ptr data
-          deadline = (sys time ms) + timeout_ms
-          res      = sk send loop fd ptr dlen 0 timeout_ms deadline
-          _        = sk free page mfd ptr psz
-          res
+        | otherwise           = sk exec send step fd data timeout_ms (str len data)
 
 -- @implements FR-SOCK-004
 -- @implements API-SOCK-001
