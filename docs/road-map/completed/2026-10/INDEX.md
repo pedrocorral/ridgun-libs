@@ -9,3 +9,4 @@ Tasks completed this month, newest last.
 | `TASK-0004` | Expand socket and argon2id libraries with full standard functionality | `FR-SOCK-003`, `FR-CRYPTO-002` |
 | `TASK-0034` | Implement FIPS 180-4 SHA-512, RFC 8032 §5.1 pure Ed25519 signatures, and Minisign support in `crypto.rg` | `FR-CRYPTO-005`, `API-CRYPTO-001`, `NFR-PERF-001` |
 | `TASK-0035` | Implement the `ai` library (`ai.rg`) for AI agents, tool calling, streaming SSE, structured outputs, ReAct loop, guardrails, mini-RAG, handoffs, and MCP JSON-RPC | `FR-AI-001`, `API-AI-001` |
+| `TASK-0036` | Signature-aware `fn` and `op` declaration and definition highlighting in `fmt` lib | `FR-FMT-001`, `API-FMT-001` |

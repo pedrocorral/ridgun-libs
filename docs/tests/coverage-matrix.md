@@ -3,6 +3,7 @@
 | Requirement | Test specs | Implemented in | Tested in | Gap |
 |---|---|---|---|---|
 | API-AGENT-001 | TS-AGENT-001 | src/main/ridgun/lib/agent.rg, src/main/ridgun/lib/net_agent.rg, src/main/ridgun/lib/pool.rg | src/test/ridgun/test agent.rg | ok |
+| API-AI-001 | — | src/main/ridgun/lib/ai.rg | — | no test spec |
 | API-BTREE-001 | TS-BTREE-001 | src/main/ridgun/lib/btree.rg | src/test/ridgun/test btree.rg | ok |
 | API-CLI-001 | TS-CLI-001 | src/main/ridgun/lib/cli.rg | src/test/ridgun/test cli.rg | ok |
 | API-CODEC-001 | TS-CODEC-001 | src/main/ridgun/lib/codec.rg | src/test/ridgun/test codec.rg | ok |
@@ -32,6 +33,7 @@
 | API-UUID-001 | TS-UUID-001 | src/main/ridgun/lib/uuid.rg | src/test/ridgun/test uuid.rg | ok |
 | API-WS-001 | TS-WS-001 | src/main/ridgun/lib/ws.rg | src/test/ridgun/test ws.rg | ok |
 | FR-AGENT-001 | TS-AGENT-001 | src/main/ridgun/lib/agent.rg, src/main/ridgun/lib/net_agent.rg, src/main/ridgun/lib/pool.rg | src/test/ridgun/test agent.rg | ok |
+| FR-AI-001 | — | src/main/ridgun/lib/ai.rg | — | no test spec |
 | FR-BTREE-001 | TS-BTREE-001 | src/main/ridgun/lib/btree.rg | src/test/ridgun/test btree.rg | ok |
 | FR-CLI-001 | TS-CLI-001 | src/main/ridgun/lib/cli.rg | src/test/ridgun/test cli.rg | ok |
 | FR-CODEC-001 | TS-CODEC-001 | src/main/ridgun/lib/codec.rg | src/test/ridgun/test codec.rg | ok |
@@ -39,6 +41,7 @@
 | FR-CRYPTO-002 | TS-CRYPTO-002 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test argon2id.rg | ok |
 | FR-CRYPTO-003 | TS-CRYPTO-003, TS-PERF-001 | src/main/ridgun/lib/crypto.rg | src/test/ridgun/test crypto.rg, src/test/ridgun/test io.rg | ok |
 | FR-CRYPTO-004 | TS-CRYPTO-004 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg | src/test/ridgun/test crypto.rg | ok |
+| FR-CRYPTO-005 | TS-CRYPTO-005 | src/main/ridgun/lib/crypto.rg | src/test/ridgun/test crypto.rg | ok |
 | FR-CSV-001 | TS-CSV-001 | src/main/ridgun/lib/csv.rg | src/test/ridgun/test csv.rg | ok |
 | FR-DIFF-001 | TS-DIFF-001 | src/main/ridgun/lib/diff.rg | src/test/ridgun/test diff.rg | ok |
 | FR-FMT-001 | TS-FMT-001 | src/main/ridgun/lib/fmt.rg, src/test/ridgun/test fmt.rg | src/test/ridgun/test fmt.rg | ok |
@@ -71,6 +74,9 @@
 | NFR-OBS-001 | TS-OBS-001 | src/main/ridgun/lib/log.rg, src/main/ridgun/lib/socket.rg, src/main/ridgun/lib/test.rg | src/test/ridgun/test socket.rg, src/test/ridgun/test test.rg | ok |
 | NFR-PERF-001 | TS-PERF-001 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg, src/main/ridgun/lib/io.rg | src/test/ridgun/test crypto.rg, src/test/ridgun/test io.rg | ok |
 | NFR-SEC-001 | TS-SEC-001 | src/main/ridgun/lib/socket.rg | src/test/ridgun/test socket.rg | ok |
+
+## Orphan test specs (no valid requirement)
+- TS-AI-001
 
 ## Vulnerability mitigations found in code
 - none
