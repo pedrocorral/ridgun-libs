@@ -21,3 +21,4 @@ Read this when: persistence, API schemas, migrations, or core library ADT defini
 | `DM-Linalg.md` | Typed `Tensor[Real]` linear algebra, norms, solver, and activations model | Working on `linalg.rg` |
 | `DM-Diff.md` | LCS line diff edit script and Unified Diff model | Working on `diff.rg` |
 | `DM-Template.md` | Safe Mustache-style text template and auto-escaping model | Working on `template.rg` |
+| `DM-Ai.md` | AI agent messages, conversations, tool schemas, SSE stream accumulators, ReAct policy, mini-RAG documents, and MCP protocol model | Working on `ai.rg` |

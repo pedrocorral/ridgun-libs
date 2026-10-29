@@ -35,3 +35,4 @@
 | `30-lib-agent-native-actor-concurrency.md` | Chapter 30: The `agent` Lib — Native Actor Concurrency (`agent`, `send`, `receive`), KV Store, and Rate Limiter | Learning and using the `agent` (`AGENT`) lib in Ridgun projects |
 | `31-lib-pool-worker-pool-and-work-stealing.md` | Chapter 31: The `pool` Lib — Bounded Worker Pool, Round-Robin Dispatch, and Work-Stealing | Learning and using the `pool` (`AGENT`) lib in Ridgun projects |
 | `32-lib-net-agent-connection-supervisor.md` | Chapter 32: The `net_agent` Lib — Socket Connection Actor Supervisor and Non-Blocking Event Bridge | Learning and using the `net_agent` (`AGENT`) lib in Ridgun projects |
+| `33-lib-ai-ai-agents-tools-streaming-rag-and-mcp.md` | Chapter 33: The `ai` lib — AI Agents, Tool Calling, SSE Streaming, Bounded ReAct, Guardrails, Mini-RAG & MCP (`AI`) | Learn and use the `ai` (`AI`) lib in Ridgun projects |

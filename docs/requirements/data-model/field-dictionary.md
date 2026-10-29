@@ -85,3 +85,10 @@ Conventions: `snake_case`; ids end in `_id`; timestamps end in `_at` (UTC ISO-86
 | old_line_no | Int | 1-based line number in the original document (`>= 0`) | DIFF | `diff.rg` |
 | new_line_no | Int | 1-based line number in the modified document (`>= 0`) | DIFF | `diff.rg` |
 | escape_mode | String | Template variable auto-escaping mode (`none`, `html`, `latex`) | TMPL | `template.rg` |
+| role_name | String | AI conversation message role (`system`, `user`, `assistant`, `tool`) | AI | `ai.rg` |
+| tool_call_id | String | Correlation identifier linking an `AiToolCall` to its `Tool` result message | AI | `ai.rg` |
+| max_steps | Int | Maximum allowed ReAct loop iterations before aborting (`>= 1`) | AI | `ai.rg` |
+| max_tokens | Int | Maximum token budget for a conversation window or agent policy (`>= 1`) | AI | `ai.rg` |
+| prompt_tokens | Int | Count of input/prompt tokens consumed by an LLM turn (`>= 0`) | AI | `ai.rg` |
+| completion_tokens | Int | Count of generated output tokens consumed by an LLM turn (`>= 0`) | AI | `ai.rg` |
+| is_tool_error | Bool | Whether a tool execution result represents a recoverable error (`is_error`) | AI | `ai.rg` |

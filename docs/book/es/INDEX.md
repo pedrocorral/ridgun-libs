@@ -2,7 +2,7 @@
 
 | Path | What | Read when |
 |---|---|---|
-| `index.html` | Libro online interactivo en HTML/CSS/JS (Español) | Abrir en el navegador para leer el libro completo de las 32 libs |
+| `index.html` | Libro online interactivo en HTML/CSS/JS (Español) | Abrir en el navegador para leer el libro completo de las 33 libs |
 | `01-lib-str-manipulacion-de-texto.md` | Capítulo 01: La lib `str` — Manipulación de Texto, Búsqueda y Formato Tabular | Aprender y usar la lib `str` (`STR`) en proyectos Ridgun |
 | `02-lib-math-aritmetica-y-teoria-de-numeros.md` | Capítulo 02: La lib `math` — Aritmética Segura, Teoría de Números y Estadística | Aprender y usar la lib `math` (`MATH`) en proyectos Ridgun |
 | `03-lib-list-listas-mergesort-y-mapas-kv.md` | Capítulo 03: La lib `list` — Listas, Mergesort $O(N \log N)$ y Mapas Clave-Valor | Aprender y usar la lib `list` (`LIST`) en proyectos Ridgun |
@@ -35,3 +35,4 @@
 | `30-lib-agent-concurrencia-de-actores.md` | Capítulo 30: La lib `agent` — Modelo Nativo de Actores (`agent`, `send`, `receive`), KV Store y Rate Limiter | Aprender y usar la lib `agent` (`AGENT`) en proyectos Ridgun |
 | `31-lib-pool-trabajadores-y-work-stealing.md` | Capítulo 31: La lib `pool` — Pool Acotado de Trabajadores, Round-Robin y Robo de Trabajo | Aprender y usar la lib `pool` (`AGENT`) en proyectos Ridgun |
 | `32-lib-net-agent-supervisor-de-conexiones.md` | Capítulo 32: La lib `net_agent` — Supervisor de Conexiones de Red y Puente de Eventos No Bloqueante | Aprender y usar la lib `net_agent` (`AGENT`) en proyectos Ridgun |
+| `33-lib-ai-agentes-ia-herramientas-streaming-rag-y-mcp.md` | Capítulo 33: La lib `ai` — Agentes de IA, Tool Calling, Streaming SSE, ReAct Acotado, Guardarraíles, Mini-RAG y MCP (`AI`) | Aprender y usar la lib `ai` (`AI`) en proyectos Ridgun |

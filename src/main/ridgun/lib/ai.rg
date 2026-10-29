@@ -1,0 +1,1023 @@
+-- ============================================================
+-- src/main/ridgun/lib/ai.rg
+-- Pure-Ridgun AI Agent, Tool Calling, Streaming SSE, Structured Output,
+-- Bounded ReAct, Security Guardrails, Mini-RAG & MCP Library (AI)
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @implements DM-Ai
+-- @mitigates VUL-INPUT-001
+-- @mitigates VUL-INJ-001
+-- @mitigates VUL-SECRET-001
+-- ============================================================
+
+module :: ai
+
+type AiMsg          = am_role: String, am_content: String, am_tool_id: String, am_is_err: Bool
+type AiUsage        = au_prompt: Int, au_completion: Int, au_total: Int
+type AiConv         = ac_system: String, ac_msgs: [AiMsg], ac_steps: Int, ac_usage: AiUsage
+type AiParam        = ap_name: String, ap_type: String, ap_desc: String, ap_req: Bool
+type AiTool         = at_name: String, at_desc: String, at_params: [AiParam]
+type AiToolCall     = atc_id: String, atc_name: String, atc_args: String
+type AiTurn         = AiReply String AiUsage | AiCallTools String [AiToolCall] AiUsage | AiStopError Int String
+type AiStreamAcc    = asa_text: String, asa_think: String, asa_tid: String, asa_tname: String, asa_targs: String, asa_done: Bool
+type AiPolicy       = apol_max_steps: Int, apol_max_tokens: Int, apol_allowed: [String]
+type AiStepDecision = AiDecisionDone String | AiDecisionRunTools [AiToolCall] | AiDecisionAbort String
+type AiDoc          = ad_id: String, ad_title: String, ad_body: String
+
+-- ── Pure String & JSON Helpers ───────────────────────────────
+
+fn :: ai is ws Int => Bool
+      ai is ws ch =  ch == 32 or ch == 9 or ch == 10 or ch == 13
+
+fn :: ai trim start String Int Int => Int
+      ai trim start s idx slen =
+        | idx >= slen                     = slen
+        | ai is ws (str char at s idx)    = ai trim start s (idx + 1) slen
+        | otherwise                       = idx
+
+fn :: ai trim end String Int Int => Int
+      ai trim end s st idx =
+        | idx <= st                           = st
+        | ai is ws (str char at s (idx - 1))  = ai trim end s st (idx - 1)
+        | otherwise                           = idx
+
+fn :: ai trim String => String
+      ai trim s =
+        s str len -> slen
+        ai trim start s 0 slen -> st
+        ai trim end s st slen -> en
+        str slice s st en
+
+fn :: ai starts with String String => Bool
+      ai starts with s pfx =
+        | (str len s) < (str len pfx) = False
+        | otherwise                   = (str slice s 0 (str len pfx)) == pfx
+
+fn :: ai find sub loop String String Int Int Int => Int
+      ai find sub loop s sub idx slen sublen =
+        | sublen == 0                             = 0
+        | (idx + sublen) > slen                   = 0 - 1
+        | (str slice s idx (idx + sublen)) == sub = idx
+        | otherwise                               = ai find sub loop s sub (idx + 1) slen sublen
+
+fn :: ai find sub String String Int => Int
+      ai find sub s sub start_idx =
+        | start_idx < 0 = ai find sub loop s sub 0 (str len s) (str len sub)
+        | otherwise     = ai find sub loop s sub start_idx (str len s) (str len sub)
+
+fn :: ai contains String String => Bool
+      ai contains s sub =  (ai find sub s sub 0) >= 0
+
+fn :: ai lower ch Int => Int
+      ai lower ch c =
+        | c >= 65 and c <= 90 = c + 32
+        | otherwise           = c
+
+fn :: ai to lower loop String Int Int String => String
+      ai to lower loop s idx slen acc =
+        | idx >= slen = acc
+        | otherwise   =
+          str char at s idx -> ai lower ch -> char from code -> ch_s
+          ai to lower loop s (idx + 1) slen (acc + ch_s)
+
+fn :: ai to lower String => String
+      ai to lower s =  ai to lower loop s 0 (str len s) ""
+
+fn :: ai json esc ch Int => String
+      ai json esc ch c =
+        | c == 34   = "\\\""
+        | c == 92   = "\\\\"
+        | c == 10   = "\\n"
+        | c == 13   = "\\r"
+        | c == 9    = "\\t"
+        | otherwise = char from code c
+
+fn :: ai json esc loop String Int Int String => String
+      ai json esc loop s idx slen acc =
+        | idx >= slen = acc
+        | otherwise   =
+          str char at s idx -> ai json esc ch -> esc
+          ai json esc loop s (idx + 1) slen (acc + esc)
+
+fn :: ai lb => String
+      ai lb =  char from code 123
+
+fn :: ai rb => String
+      ai rb =  char from code 125
+
+fn :: ai obj String => String
+      ai obj body =  (ai lb) + body + (ai rb)
+
+fn :: ai json quote String => String
+      ai json quote s =
+        "\"" + (ai json esc loop s 0 (str len s) "") + "\""
+
+fn :: ai unesc ch Int => String
+      ai unesc ch c =
+        | c == 110  = "\n"
+        | c == 114  = "\r"
+        | c == 116  = "\t"
+        | c == 34   = "\""
+        | c == 92   = "\\"
+        | otherwise = char from code c
+
+fn :: ai read json str val String Int Int String => String
+      ai read json str val s idx slen acc =
+        | idx >= slen               = acc
+        | (str char at s idx) == 34 = acc
+        | (str char at s idx) == 92 and (idx + 1) < slen =
+          str char at s (idx + 1) -> ai unesc ch -> u_ch
+          ai read json str val s (idx + 2) slen (acc + u_ch)
+        | otherwise =
+          str slice s idx (idx + 1) -> ch_s
+          ai read json str val s (idx + 1) slen (acc + ch_s)
+
+fn :: ai skip colon ws String Int Int => Int
+      ai skip colon ws s idx slen =
+        | idx >= slen = slen
+        | (str char at s idx) == 58 or (ai is ws (str char at s idx)) =
+          ai skip colon ws s (idx + 1) slen
+        | otherwise = idx
+
+fn :: ai extract json str after String Int Int => String
+      ai extract json str after s idx slen =
+        | idx >= slen               = ""
+        | (str char at s idx) != 34 = ""
+        | otherwise =
+          ai read json str val s (idx + 1) slen ""
+
+fn :: ai check key colon String String Int Int => Int
+      ai check key colon j pat hit after_ws =
+        | after_ws < (str len j) and (str char at j after_ws) == 58 = hit
+        | otherwise = ai find json key loop j pat (hit + (str len pat))
+
+fn :: ai find json key hit String String Int => Int
+      ai find json key hit j pat hit =
+        | hit < 0   = 0 - 1
+        | otherwise =
+          ai trim start j (hit + (str len pat)) (str len j) -> after_ws
+          ai check key colon j pat hit after_ws
+
+fn :: ai find json key loop String String Int => Int
+      ai find json key loop j pat pos =
+        ai find sub j pat pos -> hit
+        ai find json key hit j pat hit
+
+fn :: ai json get str at String String Int => String
+      ai json get str at j pat pos =
+        | pos < 0   = ""
+        | otherwise =
+          ai skip colon ws j (pos + (str len pat)) (str len j) -> vpos
+          ai extract json str after j vpos (str len j)
+
+fn :: ai json get str String String => String
+      ai json get str j key =
+        "\"" + key + "\"" -> pat
+        ai find json key loop j pat 0 -> pos
+        ai json get str at j pat pos
+
+fn :: ai is digit Int => Bool
+      ai is digit c =  c >= 48 and c <= 57
+
+fn :: ai read int loop String Int Int Int => Int
+      ai read int loop s idx slen acc =
+        | idx >= slen                           = acc
+        | not (ai is digit (str char at s idx)) = acc
+        | otherwise                             =
+          ai read int loop s (idx + 1) slen ((acc * 10) + ((str char at s idx) - 48))
+
+fn :: ai json get int vpos String Int Int => Int
+      ai json get int vpos j vpos def_val =
+        | vpos >= (str len j) or (not (ai is digit (str char at j vpos))) = def_val
+        | otherwise = ai read int loop j vpos (str len j) 0
+
+fn :: ai json get int at String String Int Int => Int
+      ai json get int at j pat pos def_val =
+        | pos < 0   = def_val
+        | otherwise =
+          ai skip colon ws j (pos + (str len pat)) (str len j) -> vpos
+          ai json get int vpos j vpos def_val
+
+fn :: ai json get int String String Int => Int
+      ai json get int j key def_val =
+        "\"" + key + "\"" -> pat
+        ai find json key loop j pat 0 -> pos
+        ai json get int at j pat pos def_val
+
+fn :: ai find balanced end String Int Int Int Int Int Bool => Int
+      ai find balanced end s idx slen open_c close_c depth in_str =
+        | idx >= slen = 0 - 1
+        | in_str and (str char at s idx) == 92 =
+          ai find balanced end s (idx + 2) slen open_c close_c depth True
+        | in_str and (str char at s idx) == 34 =
+          ai find balanced end s (idx + 1) slen open_c close_c depth False
+        | in_str =
+          ai find balanced end s (idx + 1) slen open_c close_c depth True
+        | (str char at s idx) == 34 =
+          ai find balanced end s (idx + 1) slen open_c close_c depth True
+        | (str char at s idx) == open_c =
+          ai find balanced end s (idx + 1) slen open_c close_c (depth + 1) False
+        | (str char at s idx) == close_c and depth <= 1 =
+          idx + 1
+        | (str char at s idx) == close_c =
+          ai find balanced end s (idx + 1) slen open_c close_c (depth - 1) False
+        | otherwise =
+          ai find balanced end s (idx + 1) slen open_c close_c depth False
+
+fn :: ai slice if valid String Int Int => String
+      ai slice if valid s st en =
+        | en < 0    = ""
+        | otherwise = str slice s st en
+
+fn :: ai json get obj vpos String Int => String
+      ai json get obj vpos j vpos =
+        | vpos >= (str len j)         = ""
+        | (str char at j vpos) == 123 =
+          ai find balanced end j vpos (str len j) 123 125 0 False -> end_pos
+          ai slice if valid j vpos end_pos
+        | (str char at j vpos) == 34  =
+          ai extract json str after j vpos (str len j)
+        | otherwise                   = ""
+
+fn :: ai json get obj at String String Int => String
+      ai json get obj at j pat pos =
+        | pos < 0   = ""
+        | otherwise =
+          ai skip colon ws j (pos + (str len pat)) (str len j) -> vpos
+          ai json get obj vpos j vpos
+
+fn :: ai json get obj String String => String
+      ai json get obj j key =
+        "\"" + key + "\"" -> pat
+        ai find json key loop j pat 0 -> pos
+        ai json get obj at j pat pos
+
+-- ── 1. Conversation, `<think>` Separation & Context Compaction ──
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @implements DM-Ai
+fn :: ai zero usage => AiUsage
+      ai zero usage =  AiUsage 0 0 0
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @implements DM-Ai
+fn :: ai add usage AiUsage AiUsage => AiUsage
+      ai add usage u1 u2 =
+        (au_prompt u1) + (au_prompt u2) -> p
+        (au_completion u1) + (au_completion u2) -> c
+        (au_total u1) + (au_total u2) -> t
+        AiUsage p c t
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @implements DM-Ai
+fn :: ai new conv String => AiConv
+      ai new conv sys_prompt =
+        AiConv sys_prompt [] 0 (ai zero usage)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai add user AiConv String => AiConv
+      ai add user conv text =
+        (ac_msgs conv) :: [AiMsg "user" text "" False] -> nmsgs
+        conv with ac_msgs = nmsgs
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai add assistant AiConv String => AiConv
+      ai add assistant conv text =
+        (ac_msgs conv) :: [AiMsg "assistant" text "" False] -> nmsgs
+        conv with ac_msgs = nmsgs
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai add tool result AiConv String String => AiConv
+      ai add tool result conv call_id output =
+        (ac_msgs conv) :: [AiMsg "tool" output call_id False] -> nmsgs
+        conv with ac_msgs = nmsgs
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai add tool error AiConv String String => AiConv
+      ai add tool error conv call_id err_msg =
+        (ac_msgs conv) :: [AiMsg "tool" err_msg call_id True] -> nmsgs
+        conv with ac_msgs = nmsgs
+
+fn :: ai split thinking bounds String Int Int => String String
+      ai split thinking bounds raw st en =
+        | st < 0 or en < 0 or en < st = ("", ai trim raw)
+        | otherwise =
+          str slice raw (st + 7) en -> ai trim -> think_part
+          (str slice raw 0 st) + (str slice raw (en + 8) (str len raw)) -> ai trim -> clean_part
+          (think_part, clean_part)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai split thinking String => String String
+      ai split thinking raw =
+        ai find sub raw "<think>" 0 -> st
+        ai find sub raw "</think>" 0 -> en
+        ai split thinking bounds raw st en
+
+fn :: ai pair snd (String String) => String
+      ai pair snd (_, b) =  b
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai strip thinking String => String
+      ai strip thinking raw =
+        ai pair snd (ai split thinking raw)
+
+fn :: ai estimate tokens len Int => Int
+      ai estimate tokens len slen =
+        | slen <= 0 = 0
+        | otherwise = ((slen + 3) / 4) + 1
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai estimate tokens String => Int
+      ai estimate tokens text =
+        ai estimate tokens len (str len text)
+
+fn :: ai msgs tokens loop [AiMsg] Int => Int
+      ai msgs tokens loop []       acc =  acc
+      ai msgs tokens loop (m:rest) acc =
+        m am_content -> ai estimate tokens -> mt
+        ai msgs tokens loop rest (acc + mt + 4)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai conv tokens AiConv => Int
+      ai conv tokens conv =
+        conv ac_system -> ai estimate tokens -> sys_t
+        ai msgs tokens loop (ac_msgs conv) (sys_t + 4)
+
+fn :: ai msg list len [AiMsg] Int => Int
+      ai msg list len []       acc =  acc
+      ai msg list len (_:rest) acc =  ai msg list len rest (acc + 1)
+
+fn :: ai drop first msg [AiMsg] => [AiMsg]
+      ai drop first msg []       =  []
+      ai drop first msg (_:rest) =  rest
+
+fn :: ai trim msgs step String [AiMsg] Int Int => [AiMsg]
+      ai trim msgs step sys msgs max_tok cur_tok =
+        | cur_tok <= max_tok or (ai msg list len msgs 0) <= 1 = msgs
+        | otherwise = ai trim msgs loop sys (ai drop first msg msgs) max_tok
+
+fn :: ai trim msgs loop String [AiMsg] Int => [AiMsg]
+      ai trim msgs loop sys msgs max_tok =
+        AiConv sys msgs 0 (ai zero usage) -> ai conv tokens -> cur_tok
+        ai trim msgs step sys msgs max_tok cur_tok
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai trim context AiConv Int => AiConv
+      ai trim context conv max_tok =
+        ai trim msgs loop (ac_system conv) (ac_msgs conv) max_tok -> trimmed
+        conv with ac_msgs = trimmed
+
+fn :: ai take last msgs [AiMsg] Int => [AiMsg]
+      ai take last msgs msgs keep_n =
+        | (ai msg list len msgs 0) <= keep_n or keep_n <= 0 = msgs
+        | otherwise = ai take last msgs (ai drop first msg msgs) keep_n
+
+fn :: ai compact msgs [AiMsg] String Int => [AiMsg]
+      ai compact msgs [] summary _ =
+        [AiMsg "user" ("<context_summary>\n" + summary + "\n</context_summary>") "" False]
+      ai compact msgs (first_m:rest) summary keep_recent =
+        AiMsg "user" ("<context_summary>\n" + summary + "\n</context_summary>") "" False -> sum_m
+        ai take last msgs rest keep_recent -> tail_msgs
+        [first_m, sum_m] :: tail_msgs
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai compact conv AiConv String Int => AiConv
+      ai compact conv conv summary keep_recent =
+        ai compact msgs (ac_msgs conv) summary keep_recent -> nmsgs
+        conv with ac_msgs = nmsgs
+
+-- ── 2. Declarative Tool Schemas & Argument Validation ────────
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @implements DM-Ai
+fn :: ai param String String String Bool => AiParam
+      ai param name ptype desc is_req =
+        AiParam name ptype desc is_req
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @implements DM-Ai
+fn :: ai tool String String [AiParam] => AiTool
+      ai tool name desc params =
+        AiTool name desc params
+
+fn :: ai join comma String String => String
+      ai join comma acc item =
+        | (str len acc) == 0 = item
+        | otherwise          = acc + "," + item
+
+fn :: ai params props loop [AiParam] String => String
+      ai params props loop []       acc =  acc
+      ai params props loop (p:rest) acc =
+        (ai json quote (ap_name p)) + ":" + (ai obj ("\"type\":" + (ai json quote (ap_type p)) + ",\"description\":" + (ai json quote (ap_desc p)))) -> prop
+        ai params props loop rest (ai join comma acc prop)
+
+fn :: ai params req loop [AiParam] String => String
+      ai params req loop []       acc =  acc
+      ai params req loop (p:rest) acc =
+        | not (ap_req p) = ai params req loop rest acc
+        | otherwise      = ai params req loop rest (ai join comma acc (ai json quote (ap_name p)))
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai tool schema json AiTool => String
+      ai tool schema json t =
+        ai params props loop (at_params t) "" -> props
+        ai params req loop (at_params t) "" -> reqs
+        ai obj ("\"type\":\"object\",\"properties\":" + (ai obj props) + ",\"required\":[" + reqs + "]")
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai tool to json AiTool => String
+      ai tool to json t =
+        ai obj ("\"name\":" + (ai json quote (at_name t)) + ",\"description\":" + (ai json quote (at_desc t)) + ",\"parameters\":" + (ai tool schema json t)) -> fn_obj
+        ai obj ("\"type\":\"function\",\"function\":" + fn_obj)
+
+fn :: ai tools json loop [AiTool] String => String
+      ai tools json loop []       acc =  "[" + acc + "]"
+      ai tools json loop (t:rest) acc =
+        t ai tool to json -> tj
+        ai tools json loop rest (ai join comma acc tj)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai tools to json [AiTool] => String
+      ai tools to json tools =  ai tools json loop tools ""
+
+fn :: ai check req params [AiParam] String => Bool String
+      ai check req params []       _    =  (True, "")
+      ai check req params (p:rest) args =
+        | not (ap_req p) = ai check req params rest args
+        | not (ai contains args ("\"" + (ap_name p) + "\"")) =
+          (False, "missing required parameter: " + (ap_name p))
+        | otherwise =
+          ai check req params rest args
+
+fn :: ai find tool by name [AiTool] String => Bool AiTool
+      ai find tool by name []       _    =  (False, AiTool "" "" [])
+      ai find tool by name (t:rest) name =
+        | (at_name t) == name = (True, t)
+        | otherwise           = ai find tool by name rest name
+
+fn :: ai validate found tool (Bool AiTool) AiToolCall => Bool String
+      ai validate found tool (False, _)   call =  (False, "unknown tool: " + (atc_name call))
+      ai validate found tool (True, tdef) call =  ai check req params (at_params tdef) (atc_args call)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @mitigates VUL-INPUT-001
+fn :: ai validate tool call [AiTool] AiToolCall => Bool String
+      ai validate tool call tools call =
+        ai validate found tool (ai find tool by name tools (atc_name call)) call
+
+-- ── 3. OpenAI, Anthropic, Ollama & XML `<tool_call>` Codecs ──
+
+fn :: ai msg to openai json AiMsg => String
+      ai msg to openai json m =
+        | (am_role m) == "tool" =
+          ai obj ("\"role\":\"tool\",\"tool_call_id\":" + (ai json quote (am_tool_id m)) + ",\"content\":" + (ai json quote (am_content m)))
+        | otherwise =
+          ai obj ("\"role\":" + (ai json quote (am_role m)) + ",\"content\":" + (ai json quote (ai strip thinking (am_content m))))
+
+fn :: ai msgs to json loop [AiMsg] String => String
+      ai msgs to json loop []       acc =  acc
+      ai msgs to json loop (m:rest) acc =
+        m ai msg to openai json -> mj
+        ai msgs to json loop rest (ai join comma acc mj)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai openai request String AiConv [AiTool] Int => String
+      ai openai request model conv tools max_tok =
+        ai obj ("\"role\":\"system\",\"content\":" + (ai json quote (ac_system conv))) -> sys_j
+        ai msgs to json loop (ac_msgs conv) sys_j -> all_msgs
+        ai tools to json tools -> tools_j
+        ai obj ("\"model\":" + (ai json quote model) + ",\"max_tokens\":" + (int to str max_tok) + ",\"messages\":[" + all_msgs + "],\"tools\":" + tools_j)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai anthropic request String AiConv [AiTool] Int => String
+      ai anthropic request model conv tools max_tok =
+        ai msgs to json loop (ac_msgs conv) "" -> user_msgs
+        ai tools to json tools -> tools_j
+        ai obj ("\"model\":" + (ai json quote model) + ",\"max_tokens\":" + (int to str max_tok) + ",\"system\":" + (ai json quote (ac_system conv)) + ",\"messages\":[" + user_msgs + "],\"tools\":" + tools_j)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai ollama request String AiConv [AiTool] => String
+      ai ollama request model conv tools =
+        ai obj ("\"role\":\"system\",\"content\":" + (ai json quote (ac_system conv))) -> sys_j
+        ai msgs to json loop (ac_msgs conv) sys_j -> all_msgs
+        ai tools to json tools -> tools_j
+        ai obj ("\"model\":" + (ai json quote model) + ",\"stream\":false,\"messages\":[" + all_msgs + "],\"tools\":" + tools_j)
+
+fn :: ai parse usage json String => AiUsage
+      ai parse usage json raw =
+        ai json get int raw "prompt_tokens" (ai json get int raw "input_tokens" (ai json get int raw "prompt_eval_count" 0)) -> p
+        ai json get int raw "completion_tokens" (ai json get int raw "output_tokens" (ai json get int raw "eval_count" 0)) -> c
+        ai json get int raw "total_tokens" (p + c) -> t
+        AiUsage p c t
+
+fn :: ai non empty or String String => String
+      ai non empty or cur_val new_val =
+        | (str len new_val) > 0 = new_val
+        | otherwise             = cur_val
+
+fn :: ai parse openai fblock String Int Int Int [AiToolCall] => [AiToolCall]
+      ai parse openai fblock raw pos fpos fend acc =
+        | fend < 0  = acc
+        | otherwise =
+          str slice raw fpos fend -> fblock
+          str slice raw pos fpos -> id_slice
+          ai json get str id_slice "id" -> raw_id
+          ai non empty or "call_0" raw_id -> cid
+          ai json get str fblock "name" -> cname
+          ai json get obj fblock "arguments" -> cargs
+          ai parse openai tool calls loop raw fend (acc :: [AiToolCall cid cname cargs])
+
+fn :: ai parse openai fpos String Int Int [AiToolCall] => [AiToolCall]
+      ai parse openai fpos raw pos fpos acc =
+        | fpos < 0  = acc
+        | otherwise =
+          ai find balanced end raw (fpos + 10) (str len raw) 123 125 0 False -> fend
+          ai parse openai fblock raw pos fpos fend acc
+
+fn :: ai parse openai tool calls loop String Int [AiToolCall] => [AiToolCall]
+      ai parse openai tool calls loop raw pos acc =
+        ai find sub raw "\"function\"" pos -> fpos
+        ai parse openai fpos raw pos fpos acc
+
+fn :: ai tool call list len [AiToolCall] Int => Int
+      ai tool call list len []       acc =  acc
+      ai tool call list len (_:rest) acc =  ai tool call list len rest (acc + 1)
+
+fn :: ai turn from calls String [AiToolCall] AiUsage => AiTurn
+      ai turn from calls content tcalls usage =
+        | (ai tool call list len tcalls 0) > 0 = AiCallTools content tcalls usage
+        | otherwise                            = AiReply content usage
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai openai parse String => AiTurn
+      ai openai parse raw =
+        | ai contains raw "\"error\"" =
+          AiStopError (0 - 1) (ai json get str raw "message")
+        | otherwise =
+          ai parse usage json raw -> usage
+          ai json get str raw "content" -> content
+          ai parse openai tool calls loop raw 0 [] -> tcalls
+          ai turn from calls content tcalls usage
+
+fn :: ai parse anthropic tend String Int Int [AiToolCall] => [AiToolCall]
+      ai parse anthropic tend raw tpos tend acc =
+        | tend < 0 =
+          str slice raw tpos (str len raw) -> blk
+          ai json get str blk "id" -> cid
+          ai json get str blk "name" -> cname
+          ai json get obj blk "input" -> cargs
+          acc :: [AiToolCall cid cname cargs]
+        | otherwise =
+          str slice raw tpos tend -> blk
+          ai json get str blk "id" -> cid
+          ai json get str blk "name" -> cname
+          ai json get obj blk "input" -> cargs
+          ai parse anthropic tool use loop raw tend (acc :: [AiToolCall cid cname cargs])
+
+fn :: ai parse anthropic tpos String Int [AiToolCall] => [AiToolCall]
+      ai parse anthropic tpos raw tpos acc =
+        | tpos < 0  = acc
+        | otherwise =
+          ai find balanced end raw tpos (str len raw) 123 125 1 False -> tend
+          ai parse anthropic tend raw tpos tend acc
+
+fn :: ai parse anthropic tool use loop String Int [AiToolCall] => [AiToolCall]
+      ai parse anthropic tool use loop raw pos acc =
+        ai find sub raw "\"tool_use\"" pos -> tpos
+        ai parse anthropic tpos raw tpos acc
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai anthropic parse String => AiTurn
+      ai anthropic parse raw =
+        | (ai json get str raw "type") == "error" =
+          AiStopError (0 - 1) (ai json get str raw "message")
+        | otherwise =
+          ai parse usage json raw -> usage
+          ai json get str raw "text" -> text_part
+          ai parse anthropic tool use loop raw 0 [] -> tcalls
+          ai turn from calls text_part tcalls usage
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai ollama parse String => AiTurn
+      ai ollama parse raw =  ai openai parse raw
+
+fn :: ai parse xml bounds String Int Int Int [AiToolCall] => [AiToolCall]
+      ai parse xml bounds raw st en idx acc =
+        | st < 0 or en < 0 or en < st = acc
+        | otherwise =
+          str slice raw (st + 11) en -> ai trim -> inner
+          ai json get str inner "name" -> tname
+          ai json get obj inner "arguments" -> targs
+          "xml_call_" + (int to str idx) -> tid
+          ai parse xml tool calls loop raw (en + 12) (idx + 1) (acc :: [AiToolCall tid tname targs])
+
+fn :: ai parse xml tool calls loop String Int Int [AiToolCall] => [AiToolCall]
+      ai parse xml tool calls loop raw pos idx acc =
+        ai find sub raw "<tool_call>" pos -> st
+        ai find sub raw "</tool_call>" pos -> en
+        ai parse xml bounds raw st en idx acc
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai parse xml tool calls String => [AiToolCall]
+      ai parse xml tool calls raw =
+        ai parse xml tool calls loop raw 0 0 []
+
+-- ── 4. SSE Streaming & Incremental Delta Reassembly ──────────
+
+fn :: ai sse data line String => [String]
+      ai sse data line line =
+        | ai starts with line "data:" = [ai trim (str slice line 5 (str len line))]
+        | otherwise                   = []
+
+fn :: ai parse sse lines loop String Int Int Int => [String]
+      ai parse sse lines loop chunk st idx clen =
+        | idx >= clen =
+          str slice chunk st clen -> ai trim -> last_l
+          ai sse data line last_l
+        | (str char at chunk idx) == 10 =
+          str slice chunk st idx -> ai trim -> line
+          ai parse sse lines loop chunk (idx + 1) (idx + 1) clen -> rest
+          (ai sse data line line) :: rest
+        | otherwise =
+          ai parse sse lines loop chunk st (idx + 1) clen
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai parse sse chunk String => [String]
+      ai parse sse chunk chunk =
+        ai parse sse lines loop chunk 0 0 (str len chunk)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @implements DM-Ai
+fn :: ai stream new => AiStreamAcc
+      ai stream new =  AiStreamAcc "" "" "" "" "" False
+
+fn :: ai stream step dp AiStreamAcc String => AiStreamAcc
+      ai stream step dp acc dp =
+        | dp == "[DONE]" = acc with asa_done = True
+        | otherwise      =
+          ai json get str dp "content" -> d_txt
+          ai json get str dp "reasoning_content" -> d_thk
+          ai json get str dp "id" -> d_id
+          ai json get str dp "name" -> d_name
+          ai json get str dp "arguments" -> d_args
+          AiStreamAcc ((asa_text acc) + d_txt) ((asa_think acc) + d_thk) (ai non empty or (asa_tid acc) d_id) (ai non empty or (asa_tname acc) d_name) ((asa_targs acc) + d_args) (asa_done acc)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai stream step AiStreamAcc String => AiStreamAcc
+      ai stream step acc data_payload =
+        ai stream step dp acc (ai trim data_payload)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai stream finish AiStreamAcc => AiTurn
+      ai stream finish acc =
+        | (str len (asa_tname acc)) > 0 =
+          (ai estimate tokens (asa_text acc)) + (ai estimate tokens (asa_targs acc)) -> c_tok
+          AiUsage 0 c_tok c_tok -> usage
+          ai non empty or "call_stream_0" (asa_tid acc) -> tid
+          AiCallTools (asa_text acc) [AiToolCall tid (asa_tname acc) (asa_targs acc)] usage
+        | otherwise =
+          ai estimate tokens (asa_text acc) -> c_tok
+          AiUsage 0 c_tok c_tok -> usage
+          AiReply (asa_text acc) usage
+
+-- ── 5. Structured Outputs, Dirty JSON Extraction & Self-Repair ──
+
+fn :: ai find first json start String Int Int => Int Int Int
+      ai find first json start s idx slen =
+        | idx >= slen                = (0 - 1, 0, 0)
+        | (str char at s idx) == 123 = (idx, 123, 125)
+        | (str char at s idx) == 91  = (idx, 91, 93)
+        | otherwise                  = ai find first json start s (idx + 1) slen
+
+fn :: ai extract json from start String (Int Int Int) => String
+      ai extract json from start clean (st, open_c, close_c) =
+        | st < 0    = ""
+        | otherwise =
+          ai find balanced end clean st (str len clean) open_c close_c 0 False -> en
+          ai slice if valid clean st en
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai extract json String => String
+      ai extract json raw =
+        ai strip thinking raw -> clean
+        ai extract json from start clean (ai find first json start clean 0 (str len clean))
+
+fn :: ai validate extracted json String [AiParam] => Bool String
+      ai validate extracted json extracted schema_params =
+        | (str len extracted) == 0 = (False, "no valid JSON object or array found in output")
+        | otherwise                = ai check req params schema_params extracted
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai validate json schema String [AiParam] => Bool String
+      ai validate json schema raw_text schema_params =
+        raw_text ai extract json -> extracted
+        ai validate extracted json extracted schema_params
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai build repair prompt String String => String
+      ai build repair prompt bad_output validation_err =
+        "Your previous JSON output was invalid (" + validation_err + "). Return ONLY a valid JSON object fixing the error. Previous output:\n" + bad_output
+
+-- ── 6. Bounded ReAct State Machine, Usage & Replay Cache ─────
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @implements DM-Ai
+fn :: ai policy Int Int [String] => AiPolicy
+      ai policy max_steps max_tokens allowed_tools =
+        AiPolicy max_steps max_tokens allowed_tools
+
+fn :: ai str in list [String] String => Bool
+      ai str in list []       _      =  False
+      ai str in list (x:rest) target =
+        | x == target = True
+        | otherwise   = ai str in list rest target
+
+fn :: ai check tools allowed [AiToolCall] [String] => Bool String
+      ai check tools allowed []       _       =  (True, "")
+      ai check tools allowed (c:rest) allowed =
+        | not (ai str in list allowed (atc_name c)) =
+          (False, "unauthorized tool call: " + (atc_name c))
+        | otherwise =
+          ai check tools allowed rest allowed
+
+fn :: ai step check tools (Bool String) AiConv [AiToolCall] => AiConv AiStepDecision
+      ai step check tools (False, reason) conv _      =  (conv, AiDecisionAbort reason)
+      ai step check tools (True, _)       conv tcalls =  (conv, AiDecisionRunTools tcalls)
+
+fn :: ai step reply decision AiConv String AiUsage AiPolicy => AiConv AiStepDecision
+      ai step reply decision conv2 text n_usage pol =
+        | (au_total n_usage) > (apol_max_tokens pol) =
+          (conv2, AiDecisionAbort "max_tokens budget exceeded")
+        | otherwise =
+          (conv2, AiDecisionDone (ai strip thinking text))
+
+fn :: ai step tools decision AiConv [AiToolCall] Int AiUsage AiPolicy => AiConv AiStepDecision
+      ai step tools decision conv2 tcalls n_steps n_usage pol =
+        | n_steps > (apol_max_steps pol) =
+          (conv2, AiDecisionAbort "max_steps limit exceeded")
+        | (au_total n_usage) > (apol_max_tokens pol) =
+          (conv2, AiDecisionAbort "max_tokens budget exceeded")
+        | otherwise =
+          ai step check tools (ai check tools allowed tcalls (apol_allowed pol)) conv2 tcalls
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @mitigates VUL-INPUT-001
+fn :: ai step AiConv AiTurn AiPolicy => AiConv AiStepDecision
+      ai step conv (AiStopError code msg) _ =
+        (conv, AiDecisionAbort ("provider error (" + (int to str code) + "): " + msg))
+      ai step conv (AiReply text usage) pol =
+        ai add usage (ac_usage conv) usage -> n_usage
+        (ac_steps conv) + 1 -> n_steps
+        (ai add assistant conv text) with ac_steps = n_steps -> conv1
+        conv1 with ac_usage = n_usage -> conv2
+        ai step reply decision conv2 text n_usage pol
+      ai step conv (AiCallTools text tcalls usage) pol =
+        ai add usage (ac_usage conv) usage -> n_usage
+        (ac_steps conv) + 1 -> n_steps
+        (ai add assistant conv text) with ac_steps = n_steps -> conv1
+        conv1 with ac_usage = n_usage -> conv2
+        ai step tools decision conv2 tcalls n_steps n_usage pol
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai request hash String => String
+      ai request hash req_json =
+        sha256 str (ai trim req_json)
+
+fn :: ai replay lookup match (String String) [String String] String String => Bool String
+      ai replay lookup match (k, v) rest req_json h =
+        | k == h or k == req_json = (True, v)
+        | otherwise               = ai replay lookup rest req_json
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai replay lookup [String String] String => Bool String
+      ai replay lookup []        _        =  (False, "")
+      ai replay lookup (kv:rest) req_json =
+        ai request hash req_json -> h
+        ai replay lookup match kv rest req_json h
+
+-- ── 7. AI Security Guardrails (Prompt Injection & Secret Scrubbing) ──
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @mitigates VUL-INJ-001
+fn :: ai wrap untrusted String String => String
+      ai wrap untrusted label untrusted_text =
+        "<untrusted_input source=" + (ai json quote label) + ">\n" + untrusted_text + "\n</untrusted_input>"
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @mitigates VUL-INJ-001
+fn :: ai has injection pattern String => Bool
+      ai has injection pattern text =
+        text ai to lower -> low
+        (ai contains low "ignore previous instructions") or (ai contains low "ignore all previous") or (ai contains low "disregard system prompt") or (ai contains low "system override:") or (ai contains low "</untrusted_input>")
+
+fn :: ai is token char Int => Bool
+      ai is token char c =
+        (c >= 48 and c <= 57) or (c >= 65 and c <= 90) or (c >= 97 and c <= 122) or c == 45 or c == 95
+
+fn :: ai skip token end String Int Int => Int
+      ai skip token end s idx slen =
+        | idx >= slen                          = slen
+        | ai is token char (str char at s idx) = ai skip token end s (idx + 1) slen
+        | otherwise                            = idx
+
+fn :: ai scrub pfx hit String String Int => String
+      ai scrub pfx hit s pfx hit =
+        | hit < 0   = s
+        | otherwise =
+          ai skip token end s (hit + (str len pfx)) (str len s) -> tok_end
+          (str slice s 0 hit) + "[REDACTED_SECRET]" + (str slice s tok_end (str len s)) -> s2
+          ai scrub pfx loop s2 pfx (hit + 17)
+
+fn :: ai scrub pfx loop String String Int => String
+      ai scrub pfx loop s pfx pos =
+        ai find sub s pfx pos -> hit
+        ai scrub pfx hit s pfx hit
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @mitigates VUL-SECRET-001
+fn :: ai scrub secrets String => String
+      ai scrub secrets text =
+        ai scrub pfx loop text "sk-" 0 -> s1
+        ai scrub pfx loop s1 "ghp_" 0 -> s2
+        ai scrub pfx loop s2 "AKIA" 0 -> s3
+        ai scrub pfx loop s3 "Bearer " 0
+
+-- ── 8. In-Memory Mini-RAG, Multi-Agent Handoff & MCP JSON-RPC ──
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+-- @implements DM-Ai
+fn :: ai doc String String String => AiDoc
+      ai doc doc_id title body =  AiDoc doc_id title body
+
+fn :: ai split words loop String Int Int Int [String] => [String]
+      ai split words loop s st idx slen acc =
+        | idx >= slen and idx > st =
+          acc :: [str slice s st slen]
+        | idx >= slen =
+          acc
+        | (not (ai is token char (str char at s idx))) and idx > st =
+          ai split words loop s (idx + 1) (idx + 1) slen (acc :: [str slice s st idx])
+        | not (ai is token char (str char at s idx)) =
+          ai split words loop s (idx + 1) (idx + 1) slen acc
+        | otherwise =
+          ai split words loop s st (idx + 1) slen acc
+
+fn :: ai words String => [String]
+      ai words text =
+        text ai to lower -> low
+        ai split words loop low 0 0 (str len low) []
+
+fn :: ai count occurrences hit String String Int Int => Int
+      ai count occurrences hit haystack needle hit acc =
+        | hit < 0   = acc
+        | otherwise = ai count occurrences haystack needle (hit + (str len needle)) (acc + 1)
+
+fn :: ai count occurrences String String Int Int => Int
+      ai count occurrences haystack needle pos acc =
+        ai find sub haystack needle pos -> hit
+        ai count occurrences hit haystack needle hit acc
+
+fn :: ai score terms loop [String] String String Int => Int
+      ai score terms loop []          _     _     acc =  acc
+      ai score terms loop (term:rest) t_low b_low acc =
+        | (str len term) < 2 = ai score terms loop rest t_low b_low acc
+        | otherwise          =
+          ai count occurrences t_low term 0 0 -> t_hits
+          ai count occurrences b_low term 0 0 -> b_hits
+          ai score terms loop rest t_low b_low (acc + (t_hits * 3) + b_hits)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai score doc String AiDoc => Int
+      ai score doc query doc =
+        query ai words -> qterms
+        doc ad_title -> ai to lower -> t_low
+        doc ad_body -> ai to lower -> b_low
+        ai score terms loop qterms t_low b_low 0
+
+fn :: ai insert doc ranked String AiDoc [AiDoc] => [AiDoc]
+      ai insert doc ranked _     d []          =  [d]
+      ai insert doc ranked query d (head:tail) =
+        | (ai score doc query d) >= (ai score doc query head) = [d, head] :: tail
+        | otherwise = [head] :: (ai insert doc ranked query d tail)
+
+fn :: ai rank docs loop String [AiDoc] [AiDoc] => [AiDoc]
+      ai rank docs loop _     []       acc =  acc
+      ai rank docs loop query (d:rest) acc =
+        | (ai score doc query d) <= 0 = ai rank docs loop query rest acc
+        | otherwise                   = ai rank docs loop query rest (ai insert doc ranked query d acc)
+
+fn :: ai take docs [AiDoc] Int => [AiDoc]
+      ai take docs []       _ =  []
+      ai take docs (d:rest) k =
+        | k <= 0    = []
+        | otherwise = [d] :: (ai take docs rest (k - 1))
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai retrieve top k String [AiDoc] Int => [AiDoc]
+      ai retrieve top k query docs k =
+        ai rank docs loop query docs [] -> ranked
+        ai take docs ranked k
+
+fn :: ai format docs loop [AiDoc] String => String
+      ai format docs loop []       acc =  acc
+      ai format docs loop (d:rest) acc =
+        "<doc id=" + (ai json quote (ad_id d)) + " title=" + (ai json quote (ad_title d)) + ">\n" + (ad_body d) + "\n</doc>\n" -> blk
+        ai format docs loop rest (acc + blk)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai inject context String [AiDoc] => String
+      ai inject context user_query docs =
+        ai format docs loop docs "" -> ctx_block
+        "<retrieved_context>\n" + ctx_block + "</retrieved_context>\n\n" + user_query
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai handoff tool String String => AiTool
+      ai handoff tool target_agent_name desc =
+        ai tool ("handoff_to_" + target_agent_name) desc [ai param "reason" "string" "Reason for handoff" True]
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai is handoff AiToolCall => Bool
+      ai is handoff call =
+        ai starts with (atc_name call) "handoff_to_"
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai apply handoff AiConv String String => AiConv
+      ai apply handoff conv new_system_prompt handoff_note =
+        conv with ac_system = new_system_prompt -> conv1
+        ai add user conv1 ("[HANDOFF] " + handoff_note)
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai mcp tools list req Int => String
+      ai mcp tools list req req_id =
+        ai obj ("\"jsonrpc\":\"2.0\",\"id\":" + (int to str req_id) + ",\"method\":\"tools/list\",\"params\":" + (ai obj ""))
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai mcp tools call req Int String String => String
+      ai mcp tools call req req_id tool_name args_json =
+        ai obj ("\"name\":" + (ai json quote tool_name) + ",\"arguments\":" + args_json) -> params_obj
+        ai obj ("\"jsonrpc\":\"2.0\",\"id\":" + (int to str req_id) + ",\"method\":\"tools/call\",\"params\":" + params_obj)
+
+fn :: ai mcp ok result String String => Bool String
+      ai mcp ok result raw txt =
+        | (str len txt) > 0 = (True, txt)
+        | otherwise         = (True, ai json get obj raw "result")
+
+-- @implements FR-AI-001
+-- @implements API-AI-001
+fn :: ai mcp parse response String => Bool String
+      ai mcp parse response raw =
+        | ai contains raw "\"error\"" =
+          (False, ai json get str raw "message")
+        | ai contains raw "\"isError\":true" or ai contains raw "\"isError\": true" =
+          (False, ai json get str raw "text")
+        | otherwise =
+          ai mcp ok result raw (ai json get str raw "text")

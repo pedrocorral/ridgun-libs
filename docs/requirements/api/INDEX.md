@@ -32,3 +32,4 @@ Read this when: implementing or consuming a lib's public interface. Skip when: i
 | `linalg/` | Public API contract for `linalg.rg` (`API-LINALG-001`) | Consuming or editing `linalg` |
 | `diff/` | Public API contract for `diff.rg` (`API-DIFF-001`) | Consuming or editing `diff` |
 | `tmpl/` | Public API contract for `template.rg` (`API-TMPL-001`) | Consuming or editing `template` |
+| `ai/` | Public API contract for `ai.rg` (`API-AI-001`) | Consuming or editing `ai` |

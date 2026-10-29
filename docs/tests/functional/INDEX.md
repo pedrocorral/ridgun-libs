@@ -32,3 +32,4 @@ Read this when: working in a domain.
 | `linalg/` | Test specifications for `LINALG` (`FR-LINALG-001`) | Testing `linalg.rg` |
 | `diff/` | Test specifications for `DIFF` (`FR-DIFF-001`) | Testing `diff.rg` |
 | `tmpl/` | Test specifications for `TMPL` (`FR-TMPL-001`) | Testing `template.rg` |
+| `ai/` | Test specifications for `AI` (`FR-AI-001`) | Testing `ai.rg` |

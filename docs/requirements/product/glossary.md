@@ -36,5 +36,6 @@ status: approved
 | Tensor Linear Algebra & Activations Library | Pure-Ridgun `Tensor[Real * r * c]` matrix transpose, trace, $L_1$/$L_2$/$L_\infty$ norms, outer product, row normalization, Gaussian elimination (`linalg solve`), and neural activations (`relu`, `sigmoid`, `softmax`) library (`linalg.rg`) | LINALG |
 | Unified Diff & Patch Library | Pure-Ridgun Longest Common Subsequence (LCS) line diff, Unified Diff (`---`, `+++`, `@@`) formatter, and patch applier library (`diff.rg`) | DIFF |
 | Safe Text Template Engine Library | Pure-Ridgun Mustache-style `{{var}}` template renderer with HTML/LaTeX auto-escaping, conditional sections `{{#key}}...{{/key}}`, and inverted sections `{{^key}}...{{/key}}` (`template.rg`) | TMPL |
+| AI Agent, Tool Calling, Streaming, RAG & MCP Library | Pure-Ridgun AI agent conversation management, context compaction, `<think>` separation, declarative tool schemas, OpenAI/Anthropic/Ollama JSON & SSE streaming codecs, structured output extraction/repair, bounded ReAct loop, security guardrails (`prompt injection` & secret scrubbing), BM25/TF mini-RAG, multi-agent handoff, and MCP JSON-RPC protocol (`ai.rg`) | AI |
 
 Domain codes are UPPERCASE, ≤ 8 chars, and name folders in `functional/`, `api/`, and `docs/tests/*/`.
