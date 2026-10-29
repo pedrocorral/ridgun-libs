@@ -515,6 +515,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .rg-com { color: var(--com); font-style: italic; }
     .rg-kw  { color: var(--kw); font-weight: 600; }
     .rg-ty  { color: var(--ty); font-weight: 600; }
+    .rg-fn  { color: var(--fn); font-weight: 600; }
     .rg-str { color: var(--str); }
     .rg-num { color: var(--num); }
     .rg-op  { color: var(--op); font-weight: 600; }
@@ -605,7 +606,60 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
+    function highlightSegment(seg) {
+      let html = escapeHtml(seg);
+      html = html.replace(/("([^"\\\\]|\\\\.)*"|'[^']*')/g, '<span class="rg-str">$1</span>');
+      html = html.replace(/\\b(fn|op|type|import|module|expand|mut|otherwise|with|region|timeout|do|global|context|shared|atomic|hardware|echo|and|or|xor|not|agent|send|to|receive|from|try|stop|in|limit|map|filter|fold)\\b/g, '<span class="rg-kw">$1</span>');
+      html = html.replace(/\\b(Int|Real|String|Char|Bool|U64|Tensor|Option|Result|Some|None|Ok|Err|OutOfMemory|Timeout|True|False|[A-Z][A-Za-z0-9_]*)\\b/g, '<span class="rg-ty">$1</span>');
+      html = html.replace(/(::|=&gt;|-&gt;|&lt;-|\\|\\|\\.|\\|\\||\\|\\.)/g, '<span class="rg-op">$1</span>');
+      html = html.replace(/\\b(0x[0-9a-fA-F_]+|[0-9][0-9_]*(_KB|_MB|_GB)?(\\.[0-9]+)?)\\b/g, '<span class="rg-num">$1</span>');
+      return html;
+    }
+
+    function scanTopTokens(s) {
+      const toks = [];
+      let i = 0, n = s.length;
+      while (i < n) {
+        while (i < n && (s[i] === " " || s[i] === "\\t" || s[i] === "\\r")) i++;
+        if (i >= n) break;
+        const start = i;
+        if (s[i] === '"' || s[i] === "'") {
+          const q = s[i++];
+          while (i < n && s[i] !== q) { if (s[i] === "\\\\") i++; i++; }
+          if (i < n) i++;
+        } else if (s[i] === "(" || s[i] === "[") {
+          let depth = 1; i++;
+          while (i < n && depth > 0) {
+            if (s[i] === '"' || s[i] === "'") {
+              const q = s[i++];
+              while (i < n && s[i] !== q) { if (s[i] === "\\\\") i++; i++; }
+            } else if (s[i] === "(" || s[i] === "[") depth++;
+            else if (s[i] === ")" || s[i] === "]") depth--;
+            i++;
+          }
+        } else {
+          let depth = 0;
+          while (i < n && (depth > 0 || (s[i] !== " " && s[i] !== "\\t" && s[i] !== "\\r"))) {
+            if (s[i] === "(" || s[i] === "[") depth++;
+            else if (s[i] === ")" || s[i] === "]") depth = Math.max(0, depth - 1);
+            i++;
+          }
+        }
+        toks.push({ text: s.slice(start, i), col: start });
+      }
+      return toks;
+    }
+
+    function isSigTypeTok(t) {
+      if (!t) return false;
+      const c = t.charCodeAt(0);
+      return (c >= 65 && c <= 90) || t[0] === "[" || t[0] === "(";
+    }
+
     function highlightRidgun(code) {
+      let curSig = null;
+      const nonSigHeads = new Set(["type", "expand", "import", "module", "global", "context", "shared", "hardware"]);
+      const kwSet = new Set(["fn","op","type","import","module","expand","mut","otherwise","with","region","timeout","do","global","context","shared","atomic","hardware","echo","and","or","xor","not","agent","send","to","receive","from","try","stop","in","limit","map","filter","fold"]);
       return code.split("\\n").map(line => {
         const comIdx = (() => {
           let inD = false, inS = false;
@@ -619,12 +673,50 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         })();
         const codePart = comIdx >= 0 ? line.slice(0, comIdx) : line;
         const comPart = comIdx >= 0 ? line.slice(comIdx) : "";
-        let html = escapeHtml(codePart);
-        html = html.replace(/("([^"\\\\]|\\\\.)*"|'[^']*')/g, '<span class="rg-str">$1</span>');
-        html = html.replace(/\\b(fn|op|type|import|mut|otherwise|with|region|timeout|do|global|context|shared|atomic|hardware|echo|and|or|xor|not|agent|send|to|receive|from|try|stop)\\b/g, '<span class="rg-kw">$1</span>');
-        html = html.replace(/\\b(Int|Real|String|Char|Bool|U64|Tensor|Option|Result|Some|None|Ok|Err|OutOfMemory|Timeout|True|False)\\b/g, '<span class="rg-ty">$1</span>');
-        html = html.replace(/(::|=&gt;|-&gt;|&lt;-|\\|\\|\\.|\\|\\||\\|\\.)/g, '<span class="rg-op">$1</span>');
-        html = html.replace(/\\b(0x[0-9a-fA-F_]+|[0-9][0-9_]*(_KB|_MB|_GB)?(\\.[0-9]+)?)\\b/g, '<span class="rg-num">$1</span>');
+        const toks = scanTopTokens(codePart);
+        let html = "";
+        const arrowIdx = toks.findIndex(t => t.text === "=>" || t.text === "->");
+        const isPrefixedSig = toks.length >= 3 && (toks[0].text === "fn" || toks[0].text === "op") && toks[1].text === "::" && arrowIdx >= 2;
+        const isBareSig = !isPrefixedSig && toks.length >= 2 && !nonSigHeads.has(toks[0].text) && !toks[0].text.startsWith("@") && !toks[0].text.startsWith("|") && arrowIdx >= 1 && toks[arrowIdx].text === "=>" && toks.slice(0, arrowIdx).every(t => isSigTypeTok(t.text) || (!["=","->","<-",":","::"].includes(t.text) && !/^[0-9"'|]/.test(t.text))) && !toks.slice(0, arrowIdx).every(t => isSigTypeTok(t.text));
+        if (isPrefixedSig || isBareSig) {
+          const startIdx = isPrefixedSig ? 2 : 0;
+          const sigLhs = toks.slice(startIdx, arrowIdx).map(t => t.text);
+          curSig = sigLhs;
+          let pos = isPrefixedSig ? toks[1].col + 2 : 0;
+          html = isPrefixedSig ? highlightSegment(codePart.slice(0, pos)) : "";
+          for (let k = startIdx; k < arrowIdx; k++) {
+            html += escapeHtml(codePart.slice(pos, toks[k].col));
+            if (isSigTypeTok(toks[k].text)) {
+              html += highlightSegment(toks[k].text);
+            } else {
+              html += '<span class="rg-fn">' + escapeHtml(toks[k].text) + '</span>';
+            }
+            pos = toks[k].col + toks[k].text.length;
+          }
+          html += highlightSegment(codePart.slice(pos));
+        } else {
+          const eqIdx = toks.findIndex(t => t.text === "=");
+          const clauseLhs = eqIdx > 0 ? toks.slice(0, eqIdx) : [];
+          const matchesSig = curSig && eqIdx === curSig.length && clauseLhs.every((t, idx) => isSigTypeTok(curSig[idx]) || t.text === curSig[idx]);
+          const isBareClause = !matchesSig && eqIdx >= 2 && /^[a-z]/.test(clauseLhs[0].text) && !kwSet.has(clauseLhs[0].text) && !(eqIdx === 3 && clauseLhs[1].text === "with");
+          if (matchesSig || isBareClause) {
+            let pos = 0;
+            for (let k = 0; k < eqIdx; k++) {
+              html += escapeHtml(codePart.slice(pos, clauseLhs[k].col));
+              const isFnSlot = matchesSig ? !isSigTypeTok(curSig[k]) : (k === 0 || kwSet.has(clauseLhs[k].text));
+              if (isFnSlot) {
+                html += '<span class="rg-fn">' + escapeHtml(clauseLhs[k].text) + '</span>';
+              } else {
+                html += escapeHtml(clauseLhs[k].text);
+              }
+              pos = clauseLhs[k].col + clauseLhs[k].text.length;
+            }
+            html += highlightSegment(codePart.slice(pos));
+          } else {
+            if (toks.length > 0 && nonSigHeads.has(toks[0].text)) curSig = null;
+            html = highlightSegment(codePart);
+          }
+        }
         if (comPart) {
           html += '<span class="rg-com">' + escapeHtml(comPart) + '</span>';
         }

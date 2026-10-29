@@ -240,6 +240,26 @@ fn :: fmt infer bare kind [String] => String
         | fmt is bare fn lhs lhs_strs = "bare_fn"
         | otherwise = "bare_op"
 
+fn :: fmt is valid sig name tok String => Bool
+      fmt is valid sig name tok "" = False
+      fmt is valid sig name tok tok =
+        ch = str char at tok 0
+        tok != "=" and tok != "->" and tok != "<-" and tok != ":" and tok != "::" and ch != 34 and ch != 39 and ch != 124 and (not (fmt is digit ch))
+
+fn :: fmt is valid sig lhs [String] => Bool
+      fmt is valid sig lhs [] = True
+      fmt is valid sig lhs (t:rest) =
+        | (fmt is sig type tok t) or (fmt is valid sig name tok t) = fmt is valid sig lhs rest
+        | otherwise = False
+
+fn :: fmt is valid bare sig lhs [String] => Bool
+      fmt is valid bare sig lhs lhs_strs =
+        lhs_strs != [] and (fmt is valid sig lhs lhs_strs) and (not (fmt all type toks lhs_strs))
+
+fn :: fmt is non sig head word String => Bool
+      fmt is non sig head word w =
+        w == "type" or w == "expand" or w == "import" or w == "module" or w == "global" or w == "context" or w == "shared" or w == "hardware" or (str starts with w "@") or (str starts with w "--") or (str starts with w "|")
+
 fn :: fmt parse sig line String => FmtSig
       fmt parse sig line line   =
         line fmt strip comment -> clean
@@ -251,8 +271,8 @@ fn :: fmt parse sig tokens Int String String [FmtToken] => FmtSig
       fmt parse sig tokens _ clean cmt ((FmtTok kind _):(FmtTok "::" _):rest) =
         | kind == "fn" or kind == "op" = fmt finish sig parse clean cmt kind (fmt split sig arrow rest [])
         | otherwise = NoSig
-      fmt parse sig tokens 0 clean cmt ((FmtTok w col):rest) =
-        | w == "type" or w == "expand" or w == "import" or w == "global" or w == "context" or w == "shared" or w == "hardware" or (str starts with w "@") or (str starts with w "--") or (str starts with w "|") = NoSig
+      fmt parse sig tokens _ clean cmt ((FmtTok w col):rest) =
+        | fmt is non sig head word w = NoSig
         | otherwise = fmt finish bare sig parse clean cmt (fmt split sig arrow ([FmtTok w col] :: rest) [])
       fmt parse sig tokens _ _ _ _ = NoSig
 
@@ -260,7 +280,7 @@ fn :: fmt finish bare sig parse String String (Bool [String] String Int) => FmtS
       fmt finish bare sig parse _ _ (False, _, _, _) = NoSig
       fmt finish bare sig parse _ _ (True, [], _, _) = NoSig
       fmt finish bare sig parse clean cmt (True, lhs_strs, arrow_s, arrow_col) =
-        | arrow_s == "=>" = fmt finish sig parse clean cmt (fmt infer bare kind lhs_strs) (True, lhs_strs, arrow_s, arrow_col)
+        | arrow_s == "=>" and (fmt is valid bare sig lhs lhs_strs) = fmt finish sig parse clean cmt (fmt infer bare kind lhs_strs) (True, lhs_strs, arrow_s, arrow_col)
         | otherwise = NoSig
 
 fn :: fmt finish sig parse String String String (Bool [String] String Int) => FmtSig
@@ -279,11 +299,6 @@ fn :: fmt append comment String String => String
 
 -- ── Clause & `where` Binding Recognition ─────────────────────
 
-fn :: fmt has fat arrow [FmtToken] => Bool
-      fmt has fat arrow []         =  False
-      fmt has fat arrow ((FmtTok "=>" _):_) = True
-      fmt has fat arrow (_:rest)   =  fmt has fat arrow rest
-
 fn :: fmt is top decl line String => Bool
       fmt is top decl line line =
         ind = fmt leading indent line
@@ -300,14 +315,22 @@ fn :: fmt first tok is upper [FmtToken] => Bool
         w != "" and (fmt is upper (str char at w 0))
       fmt first tok is upper _ = False
 
+fn :: fmt check bare sig split (Bool [String] String Int) => Bool
+      fmt check bare sig split (True, lhs_strs, "=>", _) = fmt is valid bare sig lhs lhs_strs
+      fmt check bare sig split _ = False
+
+fn :: fmt has valid bare sig [FmtToken] => Bool
+      fmt has valid bare sig toks =
+        fmt check bare sig split (fmt split sig arrow toks [])
+
 fn :: fmt is top decl toks Int String [FmtToken] => Bool
       fmt is top decl toks _ tr [] = str starts with tr "@"
-      fmt is top decl toks ind tr ((FmtTok w col):rest) =
+      fmt is top decl toks _ tr ((FmtTok w col):rest) =
         | str starts with tr "@" = True
         | (w == "fn" or w == "op" or w == "module") and (fmt first tok is dcolon rest) = True
         | w == "type" and (fmt first tok is upper rest) = True
         | w == "expand" or w == "import" or w == "global" or w == "context" or w == "shared" or w == "hardware" = True
-        | ind == 0 and (not (str starts with w "--")) and (not (str starts with w "|")) = fmt has fat arrow ([FmtTok w col] :: rest)
+        | not (fmt is non sig head word w) = fmt has valid bare sig ([FmtTok w col] :: rest)
         | otherwise = False
 
 fn :: fmt op tokens match [String] [String] => Bool
@@ -678,7 +701,7 @@ fn :: fmt is ident char Int => Bool
 
 fn :: fmt is keyword String => Bool
       fmt is keyword w      =
-        w == "fn" or w == "op" or w == "type" or w == "expand" or w == "import" or w == "module" or w == "where" or w == "otherwise" or w == "with" or w == "do" or w == "mut" or w == "in" or w == "agent" or w == "send" or w == "to" or w == "receive" or w == "from" or w == "try" or w == "stop" or w == "timeout" or w == "global" or w == "context" or w == "shared" or w == "hardware" or w == "atomic" or w == "region" or w == "limit" or w == "map" or w == "filter" or w == "fold"
+        w == "fn" or w == "op" or w == "type" or w == "expand" or w == "import" or w == "module" or w == "otherwise" or w == "with" or w == "do" or w == "mut" or w == "in" or w == "agent" or w == "send" or w == "to" or w == "receive" or w == "from" or w == "try" or w == "stop" or w == "timeout" or w == "global" or w == "context" or w == "shared" or w == "hardware" or w == "atomic" or w == "region" or w == "limit" or w == "map" or w == "filter" or w == "fold"
 
 fn :: fmt is logic op String => Bool
       fmt is logic op w      =
@@ -1085,12 +1108,74 @@ fn :: fmt tokens have eq [FmtToken]         => Bool
       fmt tokens have eq ((FmtTok "=" _):_) =  True
       fmt tokens have eq (_:rest)           =  fmt tokens have eq rest
 
-fn :: fmt line starts clause String => Bool
-      fmt line starts clause line   =
-        ind = fmt leading indent line
-        tr = fmt trim (fmt strip comment line)
-        toks = fmt scan tokens tr
-        ind == 6 and tr != "" and (fmt is lower (str char at tr 0)) and (fmt tokens have eq toks)
+fn :: fmt tok strs [FmtToken] => [String]
+      fmt tok strs []         =  []
+      fmt tok strs ((FmtTok s _):rest) = [s] :: (fmt tok strs rest)
+
+fn :: fmt is record update lhs [String] => Bool
+      fmt is record update lhs (_:"with":_:[]) = True
+      fmt is record update lhs _ = False
+
+fn :: fmt is bare clause tok String => Bool
+      fmt is bare clause tok "" = False
+      fmt is bare clause tok tok =
+        ch = str char at tok 0
+        (fmt is lower ch) or (fmt is upper ch) or (fmt is digit ch) or ch == 40 or ch == 91 or ch == 34 or ch == 39 or ch == 95
+
+fn :: fmt all bare clause toks [String] => Bool
+      fmt all bare clause toks [] = True
+      fmt all bare clause toks (t:rest) =
+        | fmt is bare clause tok t = fmt all bare clause toks rest
+        | otherwise = False
+
+fn :: fmt is bare clause lhs Int [String] Bool Bool => Bool
+      fmt is bare clause lhs _ [] _ _ = False
+      fmt is bare clause lhs ind (first_w:rest) has_eq next_is_guard =
+        n = 1 + (fmt str list len rest)
+        valid_head = (fmt is lower (str char at first_w 0)) and (not (fmt is keyword first_w)) and (not (fmt is logic op first_w))
+        valid_len = n >= 2 or (n == 1 and ind == 6)
+        valid_head and valid_len and (has_eq or next_is_guard) and (not (fmt is record update lhs ([first_w] :: rest))) and (fmt all bare clause toks rest)
+
+fn :: fmt highlight bare clause tok Int String FmtTarget FmtTheme => String
+      fmt highlight bare clause tok 0 tok_s target theme =
+        fmt render span tok_s "function" target theme
+      fmt highlight bare clause tok _ tok_s target theme =
+        | (fmt is keyword tok_s) or (fmt is logic op tok_s) = fmt render span tok_s "function" target theme
+        | otherwise = fmt highlight param loop tok_s 0 (str len tok_s) target theme ""
+
+fn :: fmt highlight bare clause lhs loop String Int Int [String] [FmtToken] FmtTarget FmtTheme String => String
+      fmt highlight bare clause lhs loop s cur_pos _ [] _ target theme acc =
+        fmt highlight line loop s cur_pos (str len s) False target theme acc
+      fmt highlight bare clause lhs loop s cur_pos _ _ [] target theme acc =
+        fmt highlight line loop s cur_pos (str len s) False target theme acc
+      fmt highlight bare clause lhs loop s cur_pos idx (_:c_rest) ((FmtTok tok_s tok_col):t_rest) target theme acc =
+        sp_out = fmt escape target (str slice s cur_pos tok_col) target
+        tok_out = fmt highlight bare clause tok idx tok_s target theme
+        next_pos = tok_col + (str len tok_s)
+        fmt highlight bare clause lhs loop s next_pos (idx + 1) c_rest t_rest target theme (acc + sp_out + tok_out)
+
+fn :: fmt highlight no sig tokens String Int [FmtToken] Bool FmtTarget FmtTheme => String
+      fmt highlight no sig tokens s _ ((FmtTok kind _):(FmtTok "::" col1):rest) _ target theme =
+        | (kind == "fn" or kind == "op") and (not (fmt tokens have eq rest)) = fmt highlight sig lhs loop s (col1 + 2) (fmt tok strs rest) rest target theme (fmt highlight line loop s 0 (col1 + 2) False target theme "")
+        | otherwise = fmt highlight line loop s 0 (str len s) False target theme ""
+      fmt highlight no sig tokens s ind toks next_is_guard target theme =
+        fmt highlight no sig clause split s ind toks (fmt split clause eq toks []) next_is_guard target theme
+
+fn :: fmt highlight no sig clause split String Int [FmtToken] ([String] Bool Int) Bool FmtTarget FmtTheme => String
+      fmt highlight no sig clause split s ind toks (clause_lhs, has_eq, _) next_is_guard target theme =
+        | fmt is bare clause lhs ind clause_lhs has_eq next_is_guard = fmt highlight bare clause lhs loop s 0 0 clause_lhs toks target theme ""
+        | otherwise = fmt highlight line loop s 0 (str len s) False target theme ""
+
+fn :: fmt highlight no sig clean String String String Bool FmtTarget FmtTheme => String
+      fmt highlight no sig clean s clean tr next_is_guard target theme =
+        | tr == "" or (str starts with tr "|") or (str starts with tr "--") or (fmt is top decl line tr) = fmt highlight line loop s 0 (str len s) False target theme ""
+        | otherwise = fmt highlight no sig tokens s (fmt leading indent s) (fmt scan tokens clean) next_is_guard target theme
+
+fn :: fmt highlight no sig line String Bool FmtTarget FmtTheme => String
+      fmt highlight no sig line s next_is_guard target theme =
+        clean = fmt strip comment s
+        tr = fmt trim clean
+        fmt highlight no sig clean s clean tr next_is_guard target theme
 
 fn :: fmt highlight line String FmtTarget FmtTheme => String
       fmt highlight line line FmtPlain _ = line
@@ -1103,17 +1188,19 @@ fn :: fmt highlight single line dispatch String FmtSig FmtTarget FmtTheme => Str
       fmt highlight single line dispatch line (SigInfo kind sig_lhs arrow_s ret_s cols a_col r_col) target theme =
         fmt highlight sig line line (SigInfo kind sig_lhs arrow_s ret_s cols a_col r_col) target theme
       fmt highlight single line dispatch line NoSig target theme =
-        fmt highlight line loop line 0 (str len line) (fmt line starts clause line) target theme ""
+        fmt highlight no sig line line False target theme
 
 fn :: fmt next active sig FmtSig String => FmtSig
       fmt next active sig sig line =
         | fmt is top decl line line = NoSig
         | otherwise = sig
 
-fn :: fmt hl group by clause String FmtSig FmtClause FmtTarget FmtTheme => String FmtSig
-      fmt hl group by clause l cur_sig (ClauseInfo _ _ _) target theme =
+fn :: fmt hl group by clause String FmtSig FmtClause Bool FmtTarget FmtTheme => String FmtSig
+      fmt hl group by clause l cur_sig (ClauseInfo _ _ _) _ target theme =
         (fmt highlight clause line l cur_sig target theme, cur_sig)
-      fmt hl group by clause l cur_sig NoClause target theme =
+      fmt hl group by clause l NoSig NoClause next_is_guard target theme =
+        (fmt highlight no sig line l next_is_guard target theme, NoSig)
+      fmt hl group by clause l cur_sig NoClause _ target theme =
         (fmt highlight line loop l 0 (str len l) False target theme "", fmt next active sig cur_sig l)
 
 fn :: fmt hl group by sig String [String] FmtSig FmtSig FmtTarget FmtTheme => String FmtSig
@@ -1123,7 +1210,7 @@ fn :: fmt hl group by sig String [String] FmtSig FmtSig FmtTarget FmtTheme => St
       fmt hl group by sig l ls cur_sig NoSig target theme =
         next_is_guard = fmt next nonblank is guard ls
         cl = fmt parse clause line cur_sig l next_is_guard
-        fmt hl group by clause l cur_sig cl target theme
+        fmt hl group by clause l cur_sig cl next_is_guard target theme
 
 fn :: fmt highlight line in group String [String] FmtSig FmtTarget FmtTheme => String FmtSig
       fmt highlight line in group l ls cur_sig target theme =

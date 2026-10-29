@@ -121,6 +121,33 @@ fn :: test fmt signature aware fn and op highlighting => ()
         _ = assert true (str contains op_css "<span class=\"rg-type\">Int</span> <span class=\"rg-fn\">unwrap</span> <span class=\"rg-fn\">or</span> <span class=\"rg-type\">Int</span> <span class=\"rg-fn\">with</span> <span class=\"rg-fn\">to</span> <span class=\"rg-type\">Int</span>") "AC2/AC3: op :: highlights mixfix op words (or, with, to) as rg-fn and parameter types as rg-type"
         _ = assert true (str contains op_css "      a   <span class=\"rg-fn\">unwrap</span> <span class=\"rg-fn\">or</span> b   <span class=\"rg-fn\">with</span> <span class=\"rg-fn\">to</span> c   <span class=\"rg-op\">=</span>") "AC2/AC3: op = clause highlights mixfix op words as rg-fn and interleaved parameter slots (a, b, c) as plain"
         _ = assert false (str contains op_css "<span class=\"rg-logic\">or</span>") "AC2/AC3: or inside op declaration/definition is not highlighted as rg-logic"
+
+        -- Bare declarations without fn :: / op :: prefix (unindented and indented)
+        bare_swap = "swap A with B => (B, A)" + nl + "swap x with y =  (y, x)" + nl
+        bare_swap_css = fmt to html css bare_swap
+        _ = assert true (str contains bare_swap_css "<span class=\"rg-fn\">swap</span> <span class=\"rg-type\">A</span> <span class=\"rg-fn\">with</span> <span class=\"rg-type\">B</span>") "AC2/AC3: bare op signature highlights swap and with as rg-fn"
+        _ = assert true (str contains bare_swap_css "<span class=\"rg-fn\">swap</span> x <span class=\"rg-fn\">with</span> y <span class=\"rg-op\">=</span>") "AC2/AC3: bare op clause highlights swap and with as rg-fn and parameters x, y as plain"
+        _ = assert false (str contains bare_swap_css "<span class=\"rg-kw\">with</span>") "AC2/AC3: with in bare op signature/clause is not highlighted as rg-kw"
+
+        ind_swap = fmt join lines (fmt highlight lines ["  swap A with B => (B, A)", "  swap x with y =  (y, x)"] FmtHtmlCss FmtThemeDark)
+        _ = assert true (str contains ind_swap "<span class=\"rg-fn\">swap</span> <span class=\"rg-type\">A</span> <span class=\"rg-fn\">with</span> <span class=\"rg-type\">B</span>") "AC2/AC3: indented bare op signature highlights swap and with as rg-fn"
+        _ = assert true (str contains ind_swap "<span class=\"rg-fn\">swap</span> x <span class=\"rg-fn\">with</span> y <span class=\"rg-op\">=</span>") "AC2/AC3: indented bare op clause highlights swap and with as rg-fn"
+
+        -- Clause parameter slots in bigger a b = ... (both with signature, without signature, and via fmt highlight line)
+        bigger_hl = fmt highlight line "      bigger a   b   =  a" FmtHtmlCss FmtThemeDark
+        _ = assert true (str contains bigger_hl "<span class=\"rg-fn\">bigger</span> a   b   <span class=\"rg-op\">=</span>") "AC2/AC3: fmt highlight line highlights bigger as rg-fn and parameters a, b as plain"
+        _ = assert false (str contains bigger_hl "<span class=\"rg-fn\">a</span>") "AC2/AC3: parameter a is not highlighted as rg-fn"
+        _ = assert false (str contains bigger_hl "<span class=\"rg-fn\">b</span>") "AC2/AC3: parameter b is not highlighted as rg-fn"
+
+        nosig_bigger = fmt to html css ("bigger a b =" + nl + "  | a > b = a" + nl + "  | otherwise = b" + nl)
+        _ = assert true (str contains nosig_bigger "<span class=\"rg-fn\">bigger</span> a b <span class=\"rg-op\">=</span>") "AC2/AC3: signature-less clause highlights bigger as rg-fn and parameters a, b as plain"
+
+        -- Record update with and agent send/to/receive/from remain keywords, and where is not a keyword
+        kw_expr = fmt to html css ("  c with tls: True" + nl + "  send msg to worker" + nl + "  receive from worker -> reply" + nl + "  where_var = where" + nl)
+        _ = assert true (str contains kw_expr "c <span class=\"rg-kw\">with</span> tls:") "AC2/AC3: with in record update remains rg-kw"
+        _ = assert true (str contains kw_expr "<span class=\"rg-kw\">send</span> msg <span class=\"rg-kw\">to</span> worker") "AC2/AC3: send and to remain rg-kw in expressions"
+        _ = assert true (str contains kw_expr "<span class=\"rg-kw\">receive</span> <span class=\"rg-kw\">from</span> worker") "AC2/AC3: receive and from remain rg-kw in expressions"
+        _ = assert false (str contains kw_expr "<span class=\"rg-kw\">where</span>") "AC2/AC3: where is not a reserved keyword in Ridgun"
         ()
 
 -- @tests TS-FMT-001
