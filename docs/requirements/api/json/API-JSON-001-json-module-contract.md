@@ -10,7 +10,7 @@ auth: none
 ## Request
 - Imported via `import json`.
 - Public Types (see `DM-Json`):
-  - `type JsonVal = JsonNull | JsonBool Bool | JsonInt Int | JsonStr String | JsonArr [JsonVal] | JsonObj [JsonField]`
+  - `type JsonVal = JsonNull | JsonBool Bool | JsonInt Int | JsonNum String | JsonStr String | JsonArr [JsonVal] | JsonObj [JsonField]`
   - `type JsonRes = JsonOk JsonVal | JsonErr String`
 - Parsing & Serialization:
   - `json parse String => JsonRes` (enforces default `max_depth = 64`, `max_bytes = 1048576`)
@@ -18,11 +18,15 @@ auth: none
   - `json stringify JsonVal => String`
   - `json pretty JsonVal Int => String`
 - Queries & Mutation:
+  - `json find field JsonVal String => Option JsonVal` (`None` when key is absent or receiver is not `JsonObj`, `Some val` when present)
+  - `json has field JsonVal String => Bool`
   - `json get field JsonVal String => JsonVal`
   - `json get index JsonVal Int => JsonVal`
   - `json get path JsonVal String => JsonVal`
+  - `json num text JsonVal => String`
   - `json get str JsonVal String String => String`
   - `json get int JsonVal String Int => Int`
+  - `json get float JsonVal String Real => Real`
   - `json get bool JsonVal String Bool => Bool`
   - `json set field JsonVal String JsonVal => JsonVal`
 

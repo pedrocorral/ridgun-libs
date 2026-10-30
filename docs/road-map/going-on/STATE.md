@@ -1,18 +1,20 @@
 ---
-updated: 2026-10-29T21:05
+updated: 2026-10-30T13:37
 active_task: none
 agent_runtime: gemini
 ---
 # Session state — read this first when resuming
 
 ## Where we are (3 lines max)
-- Completed `TASK-0037`: removed `where` from the reserved keywords in the `fmt` lib (`src/main/ridgun/lib/fmt.rg`), added full support for unprefixed (`fn ::`/`op ::`-free) signatures and clauses (`swap A with B => (B, A)` / `swap x with y = (y, x)`, `bigger a b = ...`) at any indentation and in single-line `fmt highlight line`, ensured clause parameter slots (`a`, `b`, `x`, `y`) remain plain while `with`/`to`/`from` in expressions remain `rg-kw`, synced `/home/gemini/.local/lib/ridgun/fmt.rglib`, and updated `docs/book/build_book.py`.
+- `TASK-0038` completed: added `JsonNum String` (`json num text`, `json get float`), strict RFC 3629 UTF-8 byte sequence validation in JSON strings and object keys, `json find field` (`Option JsonVal`) and `json has field`, and parser fast-paths (`O(1)` list prepend + reverse, unescaped ASCII slice, in-place integer parsing) in `src/main/ridgun/lib/json.rg`.
 ## Files to load for the active task (nothing else)
-- `docs/road-map/pending/next/INDEX.md`
+- `docs/road-map/completed/2026-10/TASK-0038-title.md`
 ## Last verified facts (tests green? migrations applied? env?)
-- `ridgunc run --strict "src/test/ridgun/test fmt.rg"`: `[PASS] test fmt: TS-FMT-001 passed`.
-- `aix docs validate`: 0 errors, 0 warnings.
+- `ridgunc run --strict "src/test/ridgun/test json.rg"` → `[PASS] test json: TS-JSON-001 (including RG-076, RG-077, RG-078) passed`
+- `ridgunc run "src/test/ridgun/test jwt.rg"` → `[PASS] test jwt: TS-JWT-001 passed`
+- Solstice repro (`2026-10-30-json-repro`) passes all cases (`1.5`, `-1.5`, `1e3`, `{"price":19.99}`, `bad-ff.json`, `bad-overlong.json`), and 100,000 small objects (900 KB) parse in `766 ms` (down from `1,836 ms`).
+- `aix docs coverage && aix docs validate` → `0 errors, 0 warnings`
 ## Immediate next action
-- Ready for the next user request.
+- Await next user instructions.
 ## Blockers / questions for the user
 - None.

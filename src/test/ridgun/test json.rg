@@ -8,69 +8,77 @@
 import test
 import json
 
-fn :: is_json_ok JsonRes     => Bool
-      is_json_ok (JsonOk _)  =  True
-      is_json_ok (JsonErr _) =  False
+fn :: is json ok JsonRes     => Bool
+      is json ok (JsonOk _)  =  True
+      is json ok (JsonErr _) =  False
 
-fn :: unwrap_json JsonRes      => JsonVal
-      unwrap_json (JsonOk val) =  val
-      unwrap_json (JsonErr _)  =  JsonNull
+fn :: unwrap json JsonRes      => JsonVal
+      unwrap json (JsonOk val) =  val
+      unwrap json (JsonErr _)  =  JsonNull
 
-fn :: is_json_null JsonVal  => Bool
-      is_json_null JsonNull =  True
-      is_json_null _        =  False
+fn :: is json null JsonVal  => Bool
+      is json null JsonNull =  True
+      is json null _        =  False
 
-fn :: repeat_str String Int => String
-      repeat_str _      0   =  ""
-      repeat_str s      n
+fn :: is opt some (Option JsonVal) => Bool
+      is opt some (Some _)         =  True
+      is opt some None             =  False
+
+fn :: is opt some null (Option JsonVal) => Bool
+      is opt some null (Some JsonNull)  =  True
+      is opt some null _                =  False
+
+fn :: repeat str String Int => String
+      repeat str _      0   =  ""
+      repeat str s      n
         | n <= 0 = ""
-        | otherwise = s + (repeat_str s (n - 1))
+        | otherwise = s + (repeat str s (n - 1))
 
-fn :: nested_brackets Int => String
-      nested_brackets n
+fn :: nested brackets Int => String
+      nested brackets n
         | n <= 0 = "0"
-        | otherwise = "[" + (nested_brackets (n - 1)) + "]"
+        | otherwise = "[" + (nested brackets (n - 1)) + "]"
 
 -- 1. Nested RFC 8259 objects, arrays, primitives, and compact/pretty round-trip
 -- @tests TS-JSON-001
 fn :: test json parse stringify and pretty => ()
       test json parse stringify and pretty =
-        lb = char_from_code 123
-        rb = char_from_code 125
+        lb = char from code 123
+        rb = char from code 125
         raw = lb + "\"user\":" + lb + "\"name\":\"Ada \\\"Lovelace\\\"\",\"age\":36,\"active\":true,\"roles\":[\"admin\",\"math\"],\"meta\":null" + rb + rb
         res = json parse raw
-        _ = assert true (is_json_ok res) "AC1: json parse nested object and array"
-        val = unwrap_json res
+        _ = assert true (is json ok res) "AC1: json parse nested object and array"
+        val = unwrap json res
 
         compact = json stringify val
         _ = assert str eq compact raw "AC1: json stringify lossless round-trip"
 
         pretty_s = json pretty val 2
         res2 = json parse pretty_s
-        _ = assert true (is_json_ok res2) "AC1: json pretty output parses back cleanly"
-        _ = assert str eq (json stringify (unwrap_json res2)) raw "AC1: json pretty round-trip equality"
+        _ = assert true (is json ok res2) "AC1: json pretty output parses back cleanly"
+        _ = assert str eq (json stringify (unwrap json res2)) raw "AC1: json pretty round-trip equality"
         ()
 
 -- 2. Empty containers, primitive roots, negative integers, and escaped characters (serde_json vectors)
 -- @tests TS-JSON-001
 fn :: test json primitives escapes and empty containers => ()
       test json primitives escapes and empty containers =
-        lb = char_from_code 123
-        rb = char_from_code 125
-        bs = char_from_code 92
-        nl = char_from_code 10
-        tab = char_from_code 9
-        _ = assert str eq (json stringify (unwrap_json (json parse (lb + rb)))) (lb + rb) "AC1: empty object {}"
-        _ = assert str eq (json stringify (unwrap_json (json parse "[]"))) "[]" "AC1: empty array []"
-        _ = assert str eq (json stringify (unwrap_json (json parse ("  " + lb + "  " + rb + "  ")))) (lb + rb) "AC1: whitespace-padded empty object"
-        _ = assert true (is_json_null (unwrap_json (json parse "null"))) "AC1: root null literal"
-        _ = assert str eq (json stringify (unwrap_json (json parse "true"))) "true" "AC1: root true literal"
-        _ = assert str eq (json stringify (unwrap_json (json parse "false"))) "false" "AC1: root false literal"
-        _ = assert str eq (json stringify (unwrap_json (json parse "0"))) "0" "AC1: root zero integer"
-        _ = assert str eq (json stringify (unwrap_json (json parse "-42000"))) "-42000" "AC1: root negative integer"
+        lb = char from code 123
+        rb = char from code 125
+        bs = char from code 92
+        nl = char from code 10
+        tab = char from code 9
+        _ = assert str eq (json stringify (unwrap json (json parse (lb + rb)))) (lb + rb) "AC1: empty object {}"
+        _ = assert str eq (json stringify (unwrap json (json parse "[]"))) "[]" "AC1: empty array []"
+        _ = assert str eq (json stringify (unwrap json (json parse ("  " + lb + "  " + rb + "  ")))) (lb + rb) "AC1: whitespace-padded empty object"
+        _ = assert true (is json null (unwrap json (json parse "null"))) "AC1: root null literal"
+        _ = assert str eq (json stringify (unwrap json (json parse "true"))) "true" "AC1: root true literal"
+        _ = assert str eq (json stringify (unwrap json (json parse "false"))) "false" "AC1: root false literal"
+        _ = assert str eq (json stringify (unwrap json (json parse "0"))) "0" "AC1: root zero integer"
+        _ = assert str eq (json stringify (unwrap json (json parse "-42000"))) "-42000" "AC1: root negative integer"
 
         esc_json = lb + "\"msg\":\"line1" + bs + "nline2" + bs + "t" + bs + bs + "slash\"" + rb
-        esc_val = unwrap_json (json parse esc_json)
+        esc_val = unwrap json (json parse esc_json)
         _ = assert str eq (json get str esc_val "msg" "") ("line1" + nl + "line2" + tab + bs + "slash") "AC1: unescape \\n, \\t, \\\\ in JSON strings"
         _ = assert str eq (json stringify esc_val) esc_json "AC1: re-escape \\n, \\t, \\\\ on stringify"
         ()
@@ -79,10 +87,10 @@ fn :: test json primitives escapes and empty containers => ()
 -- @tests TS-JSON-001
 fn :: test json dot path queries and updates => ()
       test json dot path queries and updates =
-        lb = char_from_code 123
-        rb = char_from_code 125
+        lb = char from code 123
+        rb = char from code 125
         raw = lb + "\"user\":" + lb + "\"name\":\"Ada\",\"age\":36,\"active\":true,\"roles\":[\"admin\",\"math\"],\"matrix\":[[10,20],[30,40]]" + rb + ",\"count\":-7,\"disabled\":false" + rb
-        val = unwrap_json (json parse raw)
+        val = unwrap json (json parse raw)
 
         _ = assert str eq (json get str val "user.name" "") "Ada" "AC2: json get str dot path"
         _ = assert int equals (json get int val "user.age" 0) 36 "AC2: json get int dot path"
@@ -106,50 +114,50 @@ fn :: test json dot path queries and updates => ()
 -- @tests TS-JSON-001
 fn :: test json malformed inputs => ()
       test json malformed inputs =
-        lb = char_from_code 123
-        rb = char_from_code 125
-        _ = assert false (is_json_ok (json parse "")) "AC3: reject empty input"
-        _ = assert false (is_json_ok (json parse "   ")) "AC3: reject whitespace-only input"
-        _ = assert false (is_json_ok (json parse (lb + "\"unclosed\":1"))) "AC3: reject unclosed object"
-        _ = assert false (is_json_ok (json parse "[1, 2, 3")) "AC3: reject unclosed array"
-        _ = assert false (is_json_ok (json parse "\"unterminated string")) "AC3: reject unterminated string"
-        _ = assert false (is_json_ok (json parse (lb + "unquoted: 1" + rb))) "AC3: reject unquoted object key"
-        _ = assert false (is_json_ok (json parse (lb + "\"k\" 1" + rb))) "AC3: reject missing colon in object"
-        _ = assert false (is_json_ok (json parse "[1, 2] trailing")) "AC3: reject trailing garbage token"
-        _ = assert false (is_json_ok (json parse "tru")) "AC3: reject truncated boolean literal"
-        _ = assert false (is_json_ok (json parse "nul")) "AC3: reject truncated null literal"
+        lb = char from code 123
+        rb = char from code 125
+        _ = assert false (is json ok (json parse "")) "AC3: reject empty input"
+        _ = assert false (is json ok (json parse "   ")) "AC3: reject whitespace-only input"
+        _ = assert false (is json ok (json parse (lb + "\"unclosed\":1"))) "AC3: reject unclosed object"
+        _ = assert false (is json ok (json parse "[1, 2, 3")) "AC3: reject unclosed array"
+        _ = assert false (is json ok (json parse "\"unterminated string")) "AC3: reject unterminated string"
+        _ = assert false (is json ok (json parse (lb + "unquoted: 1" + rb))) "AC3: reject unquoted object key"
+        _ = assert false (is json ok (json parse (lb + "\"k\" 1" + rb))) "AC3: reject missing colon in object"
+        _ = assert false (is json ok (json parse "[1, 2] trailing")) "AC3: reject trailing garbage token"
+        _ = assert false (is json ok (json parse "tru")) "AC3: reject truncated boolean literal"
+        _ = assert false (is json ok (json parse "nul")) "AC3: reject truncated null literal"
         ()
 
 -- 5. RG-076: RFC 8259 §7 \uXXXX Unicode escapes & UTF-16 surrogate pairs
 -- @tests TS-JSON-001
 fn :: test rg076 unicode escapes and surrogates => ()
       test rg076 unicode escapes and surrogates =
-        lb = char_from_code 123
-        rb = char_from_code 125
-        bs = char_from_code 92
-        q  = char_from_code 34
+        lb = char from code 123
+        rb = char from code 125
+        bs = char from code 92
+        q  = char from code 34
 
         -- Solstice exact repro: {"title":"a\u00e9\"b"} -> "aé\"b" (UTF-8 C3 A9)
         repro_in  = lb + q + "title" + q + ":" + q + "a" + bs + "u00e9" + bs + q + "b" + q + rb
         repro_res = json parse repro_in
-        _ = assert true (is_json_ok repro_res) "RG-076: parse \\u00e9 escape succeeds"
-        repro_str = json get str (unwrap_json repro_res) "title" "-"
+        _ = assert true (is json ok repro_res) "RG-076: parse \\u00e9 escape succeeds"
+        repro_str = json get str (unwrap json repro_res) "title" "-"
         _ = assert str eq repro_str ("aé" + q + "b") "RG-076: \\u00e9 decoded to UTF-8 é (C3 A9)"
-        _ = assert int equals (str_len repro_str) 5 "RG-076: byte length of 'aé\"b' is 5"
+        _ = assert int equals (str len repro_str) 5 "RG-076: byte length of 'aé\"b' is 5"
 
         -- 1-byte (\u0041 -> 'A'), 2-byte (\u00E9 -> 'é'), 3-byte (\u20AC -> '€') BMP escapes
         bmp_in  = lb + q + "k" + q + ":" + q + bs + "u0041-" + bs + "u00E9-" + bs + "u20AC" + q + rb
         bmp_res = json parse bmp_in
-        _ = assert true (is_json_ok bmp_res) "RG-076: BMP 1/2/3-byte \\uXXXX escapes parse"
-        _ = assert str eq (json get str (unwrap_json bmp_res) "k" "") "A-é-€" "RG-076: BMP \\u0041, \\u00E9, \\u20AC decoded"
+        _ = assert true (is json ok bmp_res) "RG-076: BMP 1/2/3-byte \\uXXXX escapes parse"
+        _ = assert str eq (json get str (unwrap json bmp_res) "k" "") "A-é-€" "RG-076: BMP \\u0041, \\u00E9, \\u20AC decoded"
 
         -- Surrogate pair (\uD83D\uDE00 -> U+1F600 '😀', 4-byte UTF-8 F0 9F 98 80)
         emo_in  = lb + q + "emoji" + q + ":" + q + bs + "uD83D" + bs + "uDE00" + q + rb
         emo_res = json parse emo_in
-        _ = assert true (is_json_ok emo_res) "RG-076: UTF-16 surrogate pair \\uD83D\\uDE00 parses"
-        emo_str = json get str (unwrap_json emo_res) "emoji" ""
+        _ = assert true (is json ok emo_res) "RG-076: UTF-16 surrogate pair \\uD83D\\uDE00 parses"
+        emo_str = json get str (unwrap json emo_res) "emoji" ""
         _ = assert str eq emo_str "😀" "RG-076: surrogate pair decoded to 😀 (U+1F600)"
-        _ = assert int equals (str_len emo_str) 4 "RG-076: 😀 is 4 UTF-8 bytes"
+        _ = assert int equals (str len emo_str) 4 "RG-076: 😀 is 4 UTF-8 bytes"
 
         -- Lone surrogates and malformed \uXXXX must return JsonErr (RFC 8259 §7)
         lone_hi   = lb + q + "bad" + q + ":" + q + bs + "uD83D" + q + rb
@@ -158,40 +166,40 @@ fn :: test rg076 unicode escapes and surrogates => ()
         hi_text   = lb + q + "bad" + q + ":" + q + bs + "uD83Dabc" + q + rb
         short_hex = lb + q + "bad" + q + ":" + q + bs + "u00e" + q + rb
         bad_hex   = lb + q + "bad" + q + ":" + q + bs + "u00g1" + q + rb
-        _ = assert false (is_json_ok (json parse lone_hi)) "RG-076: reject lone high surrogate \\uD83D"
-        _ = assert false (is_json_ok (json parse lone_lo)) "RG-076: reject lone low surrogate \\uDE00"
-        _ = assert false (is_json_ok (json parse hi_non_lo)) "RG-076: reject high surrogate followed by non-surrogate \\u0041"
-        _ = assert false (is_json_ok (json parse hi_text)) "RG-076: reject high surrogate followed by plain text"
-        _ = assert false (is_json_ok (json parse short_hex)) "RG-076: reject truncated \\u00e escape"
-        _ = assert false (is_json_ok (json parse bad_hex)) "RG-076: reject non-hex \\u00g1 escape"
+        _ = assert false (is json ok (json parse lone_hi)) "RG-076: reject lone high surrogate \\uD83D"
+        _ = assert false (is json ok (json parse lone_lo)) "RG-076: reject lone low surrogate \\uDE00"
+        _ = assert false (is json ok (json parse hi_non_lo)) "RG-076: reject high surrogate followed by non-surrogate \\u0041"
+        _ = assert false (is json ok (json parse hi_text)) "RG-076: reject high surrogate followed by plain text"
+        _ = assert false (is json ok (json parse short_hex)) "RG-076: reject truncated \\u00e escape"
+        _ = assert false (is json ok (json parse bad_hex)) "RG-076: reject non-hex \\u00g1 escape"
         ()
 
 -- 6. RG-077: Reject duplicate object keys (RFC 8259 §4)
 -- @tests TS-JSON-001
 fn :: test rg077 duplicate object keys => ()
       test rg077 duplicate object keys =
-        lb = char_from_code 123
-        rb = char_from_code 125
-        bs = char_from_code 92
-        q  = char_from_code 34
+        lb = char from code 123
+        rb = char from code 125
+        bs = char from code 92
+        q  = char from code 34
 
         -- Solstice exact repro: {"title":"a","title":"b"} -> must be JsonErr
         dup_top = lb + "\"title\":\"a\",\"title\":\"b\"" + rb
-        _ = assert false (is_json_ok (json parse dup_top)) "RG-077: reject duplicate top-level key 'title'"
+        _ = assert false (is json ok (json parse dup_top)) "RG-077: reject duplicate top-level key 'title'"
 
         -- Duplicate key inside nested object -> must be JsonErr
         dup_nested = lb + "\"meta\":" + lb + "\"k\":1,\"k\":2" + rb + rb
-        _ = assert false (is_json_ok (json parse dup_nested)) "RG-077: reject duplicate key in nested object"
+        _ = assert false (is json ok (json parse dup_nested)) "RG-077: reject duplicate key in nested object"
 
         -- Duplicate key disguised via \uXXXX escape ({"a":1,"\u0061":2}) -> must be JsonErr
         dup_escaped = lb + q + "a" + q + ":1," + q + bs + "u0061" + q + ":2" + rb
-        _ = assert false (is_json_ok (json parse dup_escaped)) "RG-077: reject duplicate key after \\u0061 unescaping"
+        _ = assert false (is json ok (json parse dup_escaped)) "RG-077: reject duplicate key after \\u0061 unescaping"
 
         -- Same key name in distinct sibling/nested objects remains valid!
         distinct_scopes = lb + "\"meta\":" + lb + "\"title\":\"x\"" + rb + ",\"title\":\"y\"" + rb
         res_ok = json parse distinct_scopes
-        _ = assert true (is_json_ok res_ok) "RG-077: allow same key name in different object scopes"
-        _ = assert str eq (json get str (unwrap_json res_ok) "title" "-") "y" "RG-077: top-level key 'title' is 'y'"
+        _ = assert true (is json ok res_ok) "RG-077: allow same key name in different object scopes"
+        _ = assert str eq (json get str (unwrap json res_ok) "title" "-") "y" "RG-077: top-level key 'title' is 'y'"
         ()
 
 -- 7. RG-078: Enforce maximum nesting depth and maximum input size
@@ -199,19 +207,64 @@ fn :: test rg077 duplicate object keys => ()
 fn :: test rg078 depth and size limits => ()
       test rg078 depth and size limits =
         -- Default depth limit (64): 32 nested arrays succeed, 80 nested arrays fail
-        ok_32   = nested_brackets 32
-        deep_80 = nested_brackets 80
-        _ = assert true (is_json_ok (json parse ok_32)) "RG-078: 32 nested arrays within default depth limit"
-        _ = assert false (is_json_ok (json parse deep_80)) "RG-078: 80 nested arrays exceed default depth limit (64)"
+        ok_32   = nested brackets 32
+        deep_80 = nested brackets 80
+        _ = assert true (is json ok (json parse ok_32)) "RG-078: 32 nested arrays within default depth limit"
+        _ = assert false (is json ok (json parse deep_80)) "RG-078: 80 nested arrays exceed default depth limit (64)"
 
         -- Custom per-endpoint limits via `json parse with limits`
-        _ = assert true (is_json_ok (json parse with limits (nested_brackets 5) 5 1024)) "RG-078: depth 5 allowed when max_depth=5"
-        _ = assert false (is_json_ok (json parse with limits (nested_brackets 6) 5 1024)) "RG-078: depth 6 rejected when max_depth=5"
+        _ = assert true (is json ok (json parse with limits (nested brackets 5) 5 1024)) "RG-078: depth 5 allowed when max_depth=5"
+        _ = assert false (is json ok (json parse with limits (nested brackets 6) 5 1024)) "RG-078: depth 6 rejected when max_depth=5"
 
         -- Input size limit via `json parse with limits`
-        big_str = "\"" + (repeat_str "abcdefghij" 20) + "\""
-        _ = assert true (is_json_ok (json parse with limits big_str 64 500)) "RG-078: 202-byte payload allowed when max_bytes=500"
-        _ = assert false (is_json_ok (json parse with limits big_str 64 100)) "RG-078: 202-byte payload rejected when max_bytes=100"
+        big_str = "\"" + (repeat str "abcdefghij" 20) + "\""
+        _ = assert true (is json ok (json parse with limits big_str 64 500)) "RG-078: 202-byte payload allowed when max_bytes=500"
+        _ = assert false (is json ok (json parse with limits big_str 64 100)) "RG-078: 202-byte payload rejected when max_bytes=100"
+        ()
+
+-- 8. Fractional/exponent numbers (JsonNum), strict UTF-8 validation (RFC 8259 §8.1), and json find field
+-- @tests TS-JSON-001
+fn :: test json numbers utf8 and find field => ()
+      test json numbers utf8 and find field =
+        lb = char from code 123
+        rb = char from code 125
+        q  = char from code 34
+
+        -- 1. Fractional and exponential numbers preserved via JsonNum
+        _ = assert str eq (json stringify (unwrap json (json parse "1.5"))) "1.5" "AC1: 1.5 preserved losslessly"
+        _ = assert str eq (json stringify (unwrap json (json parse "-1.5"))) "-1.5" "AC1: -1.5 preserved losslessly"
+        _ = assert str eq (json stringify (unwrap json (json parse "1e3"))) "1e3" "AC1: 1e3 preserved losslessly"
+        price_raw = lb + "\"price\":19.99,\"qty\":3" + rb
+        price_val = unwrap json (json parse price_raw)
+        _ = assert str eq (json stringify price_val) price_raw "AC1: {\"price\":19.99,\"qty\":3} round-trips losslessly"
+        _ = assert str eq (json num text (json get field price_val "price")) "19.99" "AC2: json num text returns 19.99"
+        _ = assert str eq (json num text (json get field price_val "qty")) "3" "AC2: json num text on JsonInt returns 3"
+        _ = assert true ((json get float price_val "price" 0.0) > 19.98 and (json get float price_val "price" 0.0) < 20.0) "AC2: json get float parses 19.99"
+        _ = assert true ((json get float (unwrap json (json parse "-1.5")) "" 0.0) == (0.0 - 1.5)) "AC2: json get float parses -1.5"
+        _ = assert true ((json get float (unwrap json (json parse "1e3")) "" 0.0) == 1000.0) "AC2: json get float parses 1e3"
+        _ = assert true ((json get float price_val "qty" 0.0) == 3.0) "AC2: json get float converts JsonInt 3 to 3.0"
+
+        -- 2. Strict UTF-8 validation in strings and keys (RFC 8259 §8.1)
+        b_ff = j raw byte 255
+        b_c0 = j raw byte 192
+        b_af = j raw byte 175
+        b_ed = j raw byte 237
+        b_a0 = j raw byte 160
+        b_80 = j raw byte 128
+        b_f4 = j raw byte 244
+        b_90 = j raw byte 144
+        _ = assert false (is json ok (json parse (q + b_ff + q))) "AC3: reject stray 0xFF byte in JSON string"
+        _ = assert false (is json ok (json parse (q + b_c0 + b_af + q))) "AC3: reject overlong 0xC0 0xAF UTF-8 in JSON string"
+        _ = assert false (is json ok (json parse (q + b_ed + b_a0 + b_80 + q))) "AC3: reject UTF-8-encoded surrogate 0xED 0xA0 0x80"
+        _ = assert false (is json ok (json parse (q + b_f4 + b_90 + b_80 + b_80 + q))) "AC3: reject > U+10FFFF 0xF4 0x90 0x80 0x80"
+        _ = assert false (is json ok (json parse (lb + q + b_c0 + b_af + q + ":1" + rb))) "AC3: reject invalid UTF-8 in object key"
+
+        -- 3. Distinguish missing field (None) from null field (Some JsonNull)
+        null_obj = unwrap json (json parse (lb + "\"a\":null" + rb))
+        _ = assert false (is opt some (json find field null_obj "b")) "AC2: json find field returns None for missing field"
+        _ = assert true (is opt some null (json find field null_obj "a")) "AC2: json find field returns Some JsonNull for null field"
+        _ = assert false (json has field null_obj "b") "AC2: json has field returns False for missing field"
+        _ = assert true (json has field null_obj "a") "AC2: json has field returns True for null field"
         ()
 
 -- @tests TS-JSON-001
@@ -224,4 +277,5 @@ fn :: main => ()
         _ = test rg076 unicode escapes and surrogates
         _ = test rg077 duplicate object keys
         _ = test rg078 depth and size limits
+        _ = test json numbers utf8 and find field
         echo "[PASS] test json: TS-JSON-001 (including RG-076, RG-077, RG-078) passed"

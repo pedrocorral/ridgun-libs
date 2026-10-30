@@ -9,7 +9,7 @@ related: [FR-JSON-001, API-JSON-001, ADR-0002]
 ## Fields
 | Field | Type | Constraints | Notes |
 |---|---|---|---|
-| json_kind | String | `null`, `bool`, `int`, `str`, `arr`, `obj` | Variant tag of a parsed `JsonVal` node |
+| json_kind | String | `null`, `bool`, `int`, `num`, `str`, `arr`, `obj` | Variant tag of a parsed `JsonVal` node |
 | dot_path | String | Non-empty dot-separated path (`a.b.0`) | Path expression for nested lookup and update |
 
 ## Relations

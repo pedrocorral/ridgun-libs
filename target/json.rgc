@@ -11,7 +11,7 @@ module :: json
 
 type JsonField = JsonField String JsonVal
 
-type JsonVal = JsonNull | JsonBool Bool | JsonInt Int | JsonStr String | JsonArr [JsonVal] | JsonObj [JsonField]
+type JsonVal = JsonNull | JsonBool Bool | JsonInt Int | JsonNum String | JsonStr String | JsonArr [JsonVal] | JsonObj [JsonField]
 
 type JsonRes = JsonOk JsonVal | JsonErr String
 
@@ -32,13 +32,13 @@ fn :: j is digit Int => Bool
       j is digit c   =  c >= 48 and c <= 57
 
 fn :: j skip ws String Int Int => Int
-      j skip ws s      pos len =
+      j skip ws s pos len =
         | pos >= len                    = len
         | j is ws (str char at s pos) = j skip ws s (pos + 1) len
         | otherwise                     = pos
 
 fn :: j spaces loop Int String => String
-      j spaces loop n acc =
+      j spaces loop n   acc    =
         | n <= 0    = acc
         | otherwise = j spaces loop (n - 1) (acc + " ")
 
@@ -58,7 +58,7 @@ fn :: j raw byte Int => String
       j raw byte b   =  j raw byte ub (((b % 256) + 256) % 256)
 
 fn :: j sb append3 String String => String String String String
-      j sb append3 n2 c3 =
+      j sb append3 n2     c3     =
         | (str len n2) < 65536 = ("", "", n2, c3)
         | otherwise            = ("", "", "", c3 + n2)
 
@@ -77,41 +77,23 @@ fn :: j sb append String String String String String => String String String Str
         j sb append1 (c0 + chunk) c1 c2 c3
 
 fn :: j sb finish String String String String => String
-      j sb finish c0 c1 c2 c3 =  ((c3 + c2) + c1) + c0
+      j sb finish c0 c1 c2 c3 = ((c3 + c2) + c1) + c0
 
-fn :: j vlb append2 [JsonVal] [JsonVal] Int => [JsonVal] [JsonVal] [JsonVal] Int
-      j vlb append2 n1 l2 cnt =
-        | (cnt % 1024) == 0 = ([], [], l2 :: n1, cnt)
-        | otherwise         = ([], n1, l2, cnt)
+fn :: j rev vals loop [JsonVal] [JsonVal] => [JsonVal]
+      j rev vals loop [] acc = acc
+      j rev vals loop (x:xs) acc = j rev vals loop xs ([x] :: acc)
 
-fn :: j vlb append1 [JsonVal] [JsonVal] [JsonVal] Int => [JsonVal] [JsonVal] [JsonVal] Int
-      j vlb append1 n0 l1 l2 cnt =
-        | (cnt % 32) == 0 = j vlb append2 (l1 :: n0) l2 cnt
-        | otherwise       = (n0, l1, l2, cnt)
+fn :: j rev vals [JsonVal] => [JsonVal]
+      j rev vals []        =  []
+      j rev vals xs        =  j rev vals loop xs []
 
-fn :: j vlb append JsonVal [JsonVal] [JsonVal] [JsonVal] Int => [JsonVal] [JsonVal] [JsonVal] Int
-      j vlb append item l0 l1 l2 cnt =
-        j vlb append1 (l0 :: [item]) l1 l2 (cnt + 1)
+fn :: j rev fields loop [JsonField] [JsonField] => [JsonField]
+      j rev fields loop [] acc = acc
+      j rev fields loop (x:xs) acc = j rev fields loop xs ([x] :: acc)
 
-fn :: j vlb finish [JsonVal] [JsonVal] [JsonVal] => [JsonVal]
-      j vlb finish l0 l1 l2 =  l2 :: (l1 :: l0)
-
-fn :: j flb append2 [JsonField] [JsonField] Int => [JsonField] [JsonField] [JsonField] Int
-      j flb append2 n1 l2 cnt =
-        | (cnt % 1024) == 0 = ([], [], l2 :: n1, cnt)
-        | otherwise         = ([], n1, l2, cnt)
-
-fn :: j flb append1 [JsonField] [JsonField] [JsonField] Int => [JsonField] [JsonField] [JsonField] Int
-      j flb append1 n0 l1 l2 cnt =
-        | (cnt % 32) == 0 = j flb append2 (l1 :: n0) l2 cnt
-        | otherwise       = (n0, l1, l2, cnt)
-
-fn :: j flb append JsonField [JsonField] [JsonField] [JsonField] Int => [JsonField] [JsonField] [JsonField] Int
-      j flb append item l0 l1 l2 cnt =
-        j flb append1 (l0 :: [item]) l1 l2 (cnt + 1)
-
-fn :: j flb finish [JsonField] [JsonField] [JsonField] => [JsonField]
-      j flb finish l0 l1 l2 =  l2 :: (l1 :: l0)
+fn :: j rev fields [JsonField] => [JsonField]
+      j rev fields []          =  []
+      j rev fields xs          =  j rev fields loop xs []
 
 -- ── RFC 8259 §7 Unicode Escape (\uXXXX + UTF-16 Surrogates) & String Escaping ──
 
@@ -128,7 +110,7 @@ fn :: j combine hex4 Int Int Int Int => Int
         | otherwise                            = (((d0 * 16) + d1) * 256) + (d2 * 16) + d3
 
 fn :: j parse hex4 String Int Int => Int
-      j parse hex4 s      pos len =
+      j parse hex4 s pos len =
         | (pos + 4) > len = 0 - 1
         | otherwise       =
           j combine hex4 (j hex digit (str char at s pos)) (j hex digit (str char at s (pos + 1))) (j hex digit (str char at s (pos + 2))) (j hex digit (str char at s (pos + 3)))
@@ -255,6 +237,48 @@ fn :: j parse escape String Int Int String String String String => JsonStrStep
       j parse escape s pos len c0 c1 c2 c3 =
         j parse escape char s pos len (str char at s pos) c0 c1 c2 c3
 
+fn :: j byte at String Int => Int
+      j byte at s      pos =  (((str char at s pos) % 256) + 256) % 256
+
+fn :: j is cont byte Int => Bool
+      j is cont byte b   =  b >= 128 and b <= 191
+
+fn :: j utf8 len2 Int Int => Int
+      j utf8 len2 b0  b1  =
+        | b0 >= 194 and b0 <= 223 and (j is cont byte b1) = 2
+        | otherwise                                       = 0
+
+fn :: j utf8 len3 Int Int Int => Int
+      j utf8 len3 b0 b1 b2 =
+        | not (j is cont byte b2)                 = 0
+        | b0 == 224 and b1 >= 160 and b1 <= 191   = 3
+        | b0 == 237 and b1 >= 128 and b1 <= 159   = 3
+        | b0 >= 225 and b0 <= 236 and (j is cont byte b1) = 3
+        | b0 >= 238 and b0 <= 239 and (j is cont byte b1) = 3
+        | otherwise                               = 0
+
+fn :: j utf8 len4 Int Int Int Int => Int
+      j utf8 len4 b0 b1 b2 b3 =
+        | (not (j is cont byte b2)) or (not (j is cont byte b3)) = 0
+        | b0 == 240 and b1 >= 144 and b1 <= 191                  = 4
+        | b0 == 244 and b1 >= 128 and b1 <= 143                  = 4
+        | b0 >= 241 and b0 <= 243 and (j is cont byte b1)        = 4
+        | otherwise                                              = 0
+
+fn :: j valid utf8 step String Int Int Int => Int
+      j valid utf8 step s pos len b0 =
+        | b0 >= 194 and b0 <= 223 and (pos + 2) <= len = j utf8 len2 b0 (j byte at s (pos + 1))
+        | b0 >= 224 and b0 <= 239 and (pos + 3) <= len = j utf8 len3 b0 (j byte at s (pos + 1)) (j byte at s (pos + 2))
+        | b0 >= 240 and b0 <= 244 and (pos + 4) <= len = j utf8 len4 b0 (j byte at s (pos + 1)) (j byte at s (pos + 2)) (j byte at s (pos + 3))
+        | otherwise                                    = 0
+
+fn :: j parse utf8 seq String Int Int Int String String String String => JsonStrStep
+      j parse utf8 seq s pos len ulen c0 c1 c2 c3 =
+        | ulen <= 0 = JStrErr "invalid UTF-8 byte sequence in JSON string"
+        | otherwise =
+          n0, n1, n2, n3 = j sb append (str slice s pos (pos + ulen)) c0 c1 c2 c3
+          j parse str loop s (pos + ulen) len n0 n1 n2 n3
+
 fn :: j scan str plain2 String Int Int Int => Int
       j scan str plain2 s pos len c =
         | c >= 32 and c <= 127 and c != 34 and c != 92 = j scan str plain s (pos + 1) len
@@ -273,8 +297,7 @@ fn :: j parse str char String Int Int Int String String String String => JsonStr
           | (pos + 1) >= len = JStrErr "unterminated escape in JSON string"
           | otherwise        = j parse escape s (pos + 1) len c0 c1 c2 c3 |.
         | otherwise =
-          n0, n1, n2, n3 = j sb append (j raw byte ub c) c0 c1 c2 c3
-          j parse str loop s (pos + 1) len n0 n1 n2 n3
+          j parse utf8 seq s pos len (j valid utf8 step s pos len c) c0 c1 c2 c3
 
 fn :: j parse str run String Int Int Int String String String String => JsonStrStep
       j parse str run s pos run_end len c0 c1 c2 c3 =
@@ -289,10 +312,15 @@ fn :: j parse str loop String Int Int String String String String => JsonStrStep
         | pos >= len = JStrErr "unterminated JSON string"
         | otherwise  = j parse str run s pos (j scan str plain s pos len) len c0 c1 c2 c3
 
+fn :: j parse string fast String Int Int Int => JsonStrStep
+      j parse string fast s start run_end len =
+        | run_end < len and (str char at s run_end) == 34 = JStrOk (str slice s start run_end) (run_end + 1)
+        | otherwise                                       = j parse str run s start run_end len "" "" "" ""
+
 fn :: j parse string String Int Int => JsonStrStep
       j parse string s pos len =
         | pos >= len or (str char at s pos) != 34 = JStrErr "expected JSON string"
-        | otherwise                               = j parse str loop s (pos + 1) len "" "" "" ""
+        | otherwise                               = j parse string fast s (pos + 1) (j scan str plain s (pos + 1) len) len
 
 -- ── RFC 8259 §6 Number Parsing (No Leading Zeroes, 64-Bit Overflow Check, Fraction & Exponent) ──
 
@@ -377,20 +405,41 @@ fn :: j scan opt frac String Int Int => Int
         | (pos + 1) >= len          = 0 - 1
         | otherwise                 = j scan opt frac2 s pos len (j scan digits s (pos + 1) len)
 
+fn :: j parse pos range String Int Int Int => Int
+      j parse pos range s idx end_p acc =
+        | idx >= end_p = acc
+        | otherwise    = j parse pos range s (idx + 1) end_p ((acc * 10) + ((str char at s idx) - 48))
+
+fn :: j parse neg range String Int Int Int => Int
+      j parse neg range s idx end_p acc =
+        | idx >= end_p = acc
+        | otherwise    = j parse neg range s (idx + 1) end_p ((acc * 10) - ((str char at s idx) - 48))
+
+fn :: j parse i64 range String Int Int Bool => Int
+      j parse i64 range s int_start int_end is_neg =
+        | is_neg    = j parse neg range s int_start int_end 0
+        | otherwise = j parse pos range s int_start int_end 0
+
 fn :: j finish int digs String Bool Int => JsonStep
       j finish int digs digs is_neg int_end =
         | not (j digits fit i64 digs is_neg) = JStepErr "JSON integer overflows 64-bit signed range"
         | otherwise                          = JStepOk (JsonInt (j parse i64 exact digs is_neg)) int_end
 
-fn :: j finish num after frac String Int Bool Int Int => JsonStep
-      j finish num after frac s int_start is_neg int_end end_pos =
+fn :: j finish int range String Int Int Bool Int => JsonStep
+      j finish int range s int_start int_end is_neg dlen =
+        | dlen < 19 = JStepOk (JsonInt (j parse i64 range s int_start int_end is_neg)) int_end
+        | dlen > 19 = JStepErr "JSON integer overflows 64-bit signed range"
+        | otherwise = j finish int digs (str slice s int_start int_end) is_neg int_end
+
+fn :: j finish num after frac String Int Int Bool Int Int => JsonStep
+      j finish num after frac s start_pos int_start is_neg int_end end_pos =
         | end_pos < 0       = JStepErr "invalid fraction or exponent in JSON number"
-        | end_pos > int_end = JStepOk (JsonInt 0) end_pos
-        | otherwise         = j finish int digs (str slice s int_start int_end) is_neg int_end
+        | end_pos > int_end = JStepOk (JsonNum (str slice s start_pos end_pos)) end_pos
+        | otherwise         = j finish int range s int_start int_end is_neg (int_end - int_start)
 
 fn :: j finish num after int String Int Int Bool Int Int => JsonStep
-      j finish num after int s _ int_start is_neg int_end len =
-        j finish num after frac s int_start is_neg int_end (j scan opt frac s int_end len)
+      j finish num after int s start_pos int_start is_neg int_end len =
+        j finish num after frac s start_pos int_start is_neg int_end (j scan opt frac s int_end len)
 
 fn :: j parse num int part2 String Int Int Bool Int Int Int => JsonStep
       j parse num int part2 s start_pos int_start is_neg len c0 int_end =
@@ -411,39 +460,39 @@ fn :: j parse number String Int Int => JsonStep
 -- ── Recursive Value, Array & Object Parser (Bounded Depth & Unique Keys) ──
 
 fn :: j has field [JsonField] String => Bool
-      j has field []                   _   =  False
+      j has field []          _      =  False
       j has field ((JsonField k _):fs) key =
         | k == key  = True
         | otherwise = j has field fs key
-
-fn :: j has field3 [JsonField] [JsonField] [JsonField] String => Bool
-      j has field3 l0 l1 l2 key =
-        (j has field l0 key) or (j has field l1 key) or (j has field l2 key)
 
 fn :: j parse val String Int Int Int => JsonStep
       j parse val s pos len rem_depth =
         p = j skip ws s pos len
         j parse val at s p len rem_depth
 
-fn :: j parse val at String Int Int Int => JsonStep
-      j parse val at s p len rem_depth =
-        | p >= len = JStepErr "unexpected end of JSON input"
-        | (str char at s p) == 34 = j wrap str step (j parse string s p len)
-        | (str char at s p) == 91 =
+fn :: j parse val char String Int Int Int Int => JsonStep
+      j parse val char s p len rem_depth c =
+        | c == 34  = j wrap str step (j parse string s p len)
+        | c == 123 =
           | rem_depth <= 0 = JStepErr "maximum JSON nesting depth exceeded"
-          | otherwise      = j parse arr open s (p + 1) len (rem_depth - 1)
-        | (str char at s p) == 123 =
+          | otherwise      = j parse obj open s (p + 1) len (rem_depth - 1) |.
+        | c == 91 =
           | rem_depth <= 0 = JStepErr "maximum JSON nesting depth exceeded"
-          | otherwise      = j parse obj open s (p + 1) len (rem_depth - 1)
-        | (p + 4) <= len and (str slice s p (p + 4)) == "true"  = JStepOk (JsonBool True) (p + 4)
-        | (p + 5) <= len and (str slice s p (p + 5)) == "false" = JStepOk (JsonBool False) (p + 5)
-        | (p + 4) <= len and (str slice s p (p + 4)) == "null"  = JStepOk JsonNull (p + 4)
-        | (str char at s p) == 45 or (j is digit (str char at s p)) = j parse number s p len
+          | otherwise      = j parse arr open s (p + 1) len (rem_depth - 1) |.
+        | c == 45 or (j is digit c) = j parse number s p len
+        | c == 116 and (p + 4) <= len and (str slice s p (p + 4)) == "true"  = JStepOk (JsonBool True) (p + 4)
+        | c == 102 and (p + 5) <= len and (str slice s p (p + 5)) == "false" = JStepOk (JsonBool False) (p + 5)
+        | c == 110 and (p + 4) <= len and (str slice s p (p + 4)) == "null"  = JStepOk JsonNull (p + 4)
         | otherwise = JStepErr "unexpected token in JSON value"
 
-fn :: j wrap str step JsonStrStep          => JsonStep
-      j wrap str step (JStrOk val next_p)  =  JStepOk (JsonStr val) next_p
-      j wrap str step (JStrErr err)        =  JStepErr err
+fn :: j parse val at String Int Int Int => JsonStep
+      j parse val at s p len rem_depth =
+        | p >= len  = JStepErr "unexpected end of JSON input"
+        | otherwise = j parse val char s p len rem_depth (str char at s p)
+
+fn :: j wrap str step JsonStrStep   => JsonStep
+      j wrap str step (JStrOk val next_p) = JStepOk (JsonStr val) next_p
+      j wrap str step (JStrErr err) =  JStepErr err
 
 fn :: j parse arr open String Int Int Int => JsonStep
       j parse arr open s pos len rem_depth =
@@ -454,28 +503,27 @@ fn :: j parse arr first String Int Int Int => JsonStep
       j parse arr first s p len rem_depth =
         | p >= len                 = JStepErr "unterminated JSON array"
         | (str char at s p) == 93  = JStepOk (JsonArr []) (p + 1)
-        | otherwise                = j finish arr step (j parse arr items s p len rem_depth [] [] [] 0)
+        | otherwise                = j finish arr step (j parse arr items s p len rem_depth [])
 
-fn :: j finish arr step JsonArrStep            => JsonStep
-      j finish arr step (JArrOk items next_p)  =  JStepOk (JsonArr items) next_p
-      j finish arr step (JArrErr err)          =  JStepErr err
+fn :: j finish arr step JsonArrStep   => JsonStep
+      j finish arr step (JArrOk items next_p) = JStepOk (JsonArr items) next_p
+      j finish arr step (JArrErr err) =  JStepErr err
 
-fn :: j parse arr items String Int Int Int [JsonVal] [JsonVal] [JsonVal] Int => JsonArrStep
-      j parse arr items s pos len rem_depth l0 l1 l2 cnt =
-        j parse arr after item s len rem_depth l0 l1 l2 cnt (j parse val s pos len rem_depth)
+fn :: j parse arr items String Int Int Int [JsonVal] => JsonArrStep
+      j parse arr items s pos len rem_depth acc =
+        j parse arr after item s len rem_depth acc (j parse val s pos len rem_depth)
 
-fn :: j parse arr after item String Int Int [JsonVal] [JsonVal] [JsonVal] Int JsonStep => JsonArrStep
-      j parse arr after item _ _ _ _ _ _ _ (JStepErr err) = JArrErr err
-      j parse arr after item s len rem_depth l0 l1 l2 cnt (JStepOk v next_p) =
+fn :: j parse arr after item String Int Int [JsonVal] JsonStep => JsonArrStep
+      j parse arr after item _ _ _ _ (JStepErr err) = JArrErr err
+      j parse arr after item s len rem_depth acc (JStepOk v next_p) =
         p = j skip ws s next_p len
-        n0, n1, n2, ncnt = j vlb append v l0 l1 l2 cnt
-        j parse arr delim s p len rem_depth n0 n1 n2 ncnt
+        j parse arr delim s p len rem_depth ([v] :: acc)
 
-fn :: j parse arr delim String Int Int Int [JsonVal] [JsonVal] [JsonVal] Int => JsonArrStep
-      j parse arr delim s p len rem_depth l0 l1 l2 cnt =
+fn :: j parse arr delim String Int Int Int [JsonVal] => JsonArrStep
+      j parse arr delim s p len rem_depth acc =
         | p >= len                 = JArrErr "unterminated JSON array"
-        | (str char at s p) == 93  = JArrOk (j vlb finish l0 l1 l2) (p + 1)
-        | (str char at s p) == 44  = j parse arr items s (p + 1) len rem_depth l0 l1 l2 cnt
+        | (str char at s p) == 93  = JArrOk (j rev vals acc) (p + 1)
+        | (str char at s p) == 44  = j parse arr items s (p + 1) len rem_depth acc
         | otherwise                = JArrErr "expected ',' or ']' in JSON array"
 
 fn :: j parse obj open String Int Int Int => JsonStep
@@ -487,52 +535,51 @@ fn :: j parse obj first String Int Int Int => JsonStep
       j parse obj first s p len rem_depth =
         | p >= len                  = JStepErr "unterminated JSON object"
         | (str char at s p) == 125  = JStepOk (JsonObj []) (p + 1)
-        | otherwise                 = j finish obj step (j parse obj fields s p len rem_depth [] [] [] 0)
+        | otherwise                 = j finish obj step (j parse obj fields s p len rem_depth [])
 
-fn :: j finish obj step JsonObjStep             => JsonStep
-      j finish obj step (JObjOk fields next_p)  =  JStepOk (JsonObj fields) next_p
-      j finish obj step (JObjErr err)           =  JStepErr err
+fn :: j finish obj step JsonObjStep   => JsonStep
+      j finish obj step (JObjOk fields next_p) = JStepOk (JsonObj fields) next_p
+      j finish obj step (JObjErr err) =  JStepErr err
 
-fn :: j parse obj fields String Int Int Int [JsonField] [JsonField] [JsonField] Int => JsonObjStep
-      j parse obj fields s pos len rem_depth l0 l1 l2 cnt =
+fn :: j parse obj fields String Int Int Int [JsonField] => JsonObjStep
+      j parse obj fields s pos len rem_depth acc =
         p = j skip ws s pos len
-        j parse obj after key s len rem_depth l0 l1 l2 cnt (j parse string s p len)
+        j parse obj after key s len rem_depth acc (j parse string s p len)
 
-fn :: j parse obj after key String Int Int [JsonField] [JsonField] [JsonField] Int JsonStrStep => JsonObjStep
-      j parse obj after key _ _ _ _ _ _ _ (JStrErr err) = JObjErr err
-      j parse obj after key s len rem_depth l0 l1 l2 cnt (JStrOk key next_p) =
-        | j has field3 l0 l1 l2 key = JObjErr ("duplicate JSON object key: " + key)
+fn :: j parse obj after key String Int Int [JsonField] JsonStrStep => JsonObjStep
+      j parse obj after key _ _ _ _ (JStrErr err) = JObjErr err
+      j parse obj after key s len rem_depth acc (JStrOk key next_p) =
+        | j has field acc key = JObjErr ("duplicate JSON object key: " + key)
         | otherwise =
           p = j skip ws s next_p len
-          j parse obj colon s p len rem_depth key l0 l1 l2 cnt
+          j parse obj colon s p len rem_depth key acc
 
-fn :: j parse obj colon String Int Int Int String [JsonField] [JsonField] [JsonField] Int => JsonObjStep
-      j parse obj colon s p len rem_depth key l0 l1 l2 cnt =
+fn :: j parse obj colon String Int Int Int String [JsonField] => JsonObjStep
+      j parse obj colon s p len rem_depth key acc =
         | p >= len or (str char at s p) != 58 = JObjErr "expected ':' after JSON object key"
-        | otherwise                           = j parse obj after val s len rem_depth key l0 l1 l2 cnt (j parse val s (p + 1) len rem_depth)
+        | otherwise                           = j parse obj after val s len rem_depth key acc (j parse val s (p + 1) len rem_depth)
 
-fn :: j parse obj after val String Int Int String [JsonField] [JsonField] [JsonField] Int JsonStep => JsonObjStep
-      j parse obj after val _ _ _ _ _ _ _ _ (JStepErr err) = JObjErr err
-      j parse obj after val s len rem_depth key l0 l1 l2 cnt (JStepOk v next_p) =
+fn :: j parse obj after val String Int Int String [JsonField] JsonStep => JsonObjStep
+      j parse obj after val _ _ _ _ _ (JStepErr err) = JObjErr err
+      j parse obj after val s len rem_depth key acc (JStepOk v next_p) =
         p = j skip ws s next_p len
-        n0, n1, n2, ncnt = j flb append (JsonField key v) l0 l1 l2 cnt
-        j parse obj delim s p len rem_depth n0 n1 n2 ncnt
+        j parse obj delim s p len rem_depth ([JsonField key v] :: acc)
 
-fn :: j parse obj delim String Int Int Int [JsonField] [JsonField] [JsonField] Int => JsonObjStep
-      j parse obj delim s p len rem_depth l0 l1 l2 cnt =
+fn :: j parse obj delim String Int Int Int [JsonField] => JsonObjStep
+      j parse obj delim s p len rem_depth acc =
         | p >= len                  = JObjErr "unterminated JSON object"
-        | (str char at s p) == 125  = JObjOk (j flb finish l0 l1 l2) (p + 1)
-        | (str char at s p) == 44   = j parse obj fields s (p + 1) len rem_depth l0 l1 l2 cnt
+        | (str char at s p) == 125  = JObjOk (j rev fields acc) (p + 1)
+        | (str char at s p) == 44   = j parse obj fields s (p + 1) len rem_depth acc
         | otherwise                 = JObjErr "expected ',' or '}' in JSON object"
 
-fn :: j check eof String Int JsonStep         => JsonRes
-      j check eof _      _   (JStepErr err)   =  JsonErr err
-      j check eof s      len (JStepOk val end_p) =
+fn :: j check eof String Int JsonStep => JsonRes
+      j check eof _ _ (JStepErr err) = JsonErr err
+      j check eof s len (JStepOk val end_p) =
         p = j skip ws s end_p len
         j check eof pos p len val
 
 fn :: j check eof pos Int Int JsonVal => JsonRes
-      j check eof pos p   len val     =
+      j check eof pos p len val =
         | p == len  = JsonOk val
         | otherwise = JsonErr "unexpected trailing characters after JSON value"
 
@@ -555,7 +602,7 @@ fn :: json parse String => JsonRes
 -- ── Serialization & Pretty-Printing ──────────────────────────
 
 fn :: j join arr loop [JsonVal] String String String String => String
-      j join arr loop []     c0 c1 c2 c3 = j sb finish c0 c1 c2 c3
+      j join arr loop [] c0 c1 c2 c3 = j sb finish c0 c1 c2 c3
       j join arr loop (v:vs) c0 c1 c2 c3 =
         n0, n1, n2, n3 = j sb append ("," + (json stringify v)) c0 c1 c2 c3
         j join arr loop vs n0 n1 n2 n3
@@ -565,14 +612,14 @@ fn :: j join arr [JsonVal] => String
       j join arr (v:vs)    =  j join arr loop vs (json stringify v) "" "" ""
 
 fn :: j join obj loop [JsonField] String String String String => String
-      j join obj loop []                     c0 c1 c2 c3 = j sb finish c0 c1 c2 c3
+      j join obj loop [] c0 c1 c2 c3 = j sb finish c0 c1 c2 c3
       j join obj loop ((JsonField k v):rest) c0 c1 c2 c3 =
         item = "," + (j escape str k) + ":" + (json stringify v)
         n0, n1, n2, n3 = j sb append item c0 c1 c2 c3
         j join obj loop rest n0 n1 n2 n3
 
 fn :: j join obj [JsonField] => String
-      j join obj []                     =  ""
+      j join obj []          =  ""
       j join obj ((JsonField k v):rest) =
         first = (j escape str k) + ":" + (json stringify v)
         j join obj loop rest first "" "" ""
@@ -583,7 +630,7 @@ fn :: j pos int to str Int String => String
         | otherwise = j pos int to str (n / 10) ((char from code (48 + (n % 10))) + acc)
 
 fn :: j int to str Int => String
-      j int to str n =
+      j int to str n   =
         | n == 0         = "0"
         | n > 0          = j pos int to str n ""
         | n > (0 - 10)   = "-" + (char from code (48 + (0 - n)))
@@ -596,46 +643,47 @@ fn :: json stringify JsonVal          => String
       json stringify (JsonBool True)  =  "true"
       json stringify (JsonBool False) =  "false"
       json stringify (JsonInt n)      =  j int to str n
+      json stringify (JsonNum raw)    =  raw
       json stringify (JsonStr s)      =  j escape str s
       json stringify (JsonArr items)  =  "[" + (j join arr items) + "]"
       json stringify (JsonObj fields) =  (char from code 123) + (j join obj fields) + (char from code 125)
 
 fn :: j pretty arr loop [JsonVal] Int Int String String String String => String
-      j pretty arr loop []     _   _   c0 c1 c2 c3 = j sb finish c0 c1 c2 c3
+      j pretty arr loop [] _ _ c0 c1 c2 c3 = j sb finish c0 c1 c2 c3
       j pretty arr loop (v:vs) ind cur c0 c1 c2 c3 =
         item = "," + (char from code 10) + (j spaces (cur + ind)) + (j pretty val v ind (cur + ind))
         n0, n1, n2, n3 = j sb append item c0 c1 c2 c3
         j pretty arr loop vs ind cur n0 n1 n2 n3
 
 fn :: j pretty arr [JsonVal] Int Int => String
-      j pretty arr []     _   _   =  ""
+      j pretty arr [] _ _ = ""
       j pretty arr (v:vs) ind cur =
         first = (j spaces (cur + ind)) + (j pretty val v ind (cur + ind))
         j pretty arr loop vs ind cur first "" "" ""
 
 fn :: j pretty obj loop [JsonField] Int Int String String String String => String
-      j pretty obj loop []                     _   _   c0 c1 c2 c3 = j sb finish c0 c1 c2 c3
+      j pretty obj loop [] _ _ c0 c1 c2 c3 = j sb finish c0 c1 c2 c3
       j pretty obj loop ((JsonField k v):rest) ind cur c0 c1 c2 c3 =
         item = "," + (char from code 10) + (j spaces (cur + ind)) + (j escape str k) + ": " + (j pretty val v ind (cur + ind))
         n0, n1, n2, n3 = j sb append item c0 c1 c2 c3
         j pretty obj loop rest ind cur n0 n1 n2 n3
 
 fn :: j pretty obj [JsonField] Int Int => String
-      j pretty obj []                     _   _   =  ""
+      j pretty obj [] _ _ = ""
       j pretty obj ((JsonField k v):rest) ind cur =
         first = (j spaces (cur + ind)) + (j escape str k) + ": " + (j pretty val v ind (cur + ind))
         j pretty obj loop rest ind cur first "" "" ""
 
-fn :: j pretty val JsonVal          Int Int => String
-      j pretty val (JsonArr [])     _   _   =  "[]"
-      j pretty val (JsonArr items)  ind cur =
+fn :: j pretty val JsonVal Int Int => String
+      j pretty val (JsonArr []) _ _ = "[]"
+      j pretty val (JsonArr items) ind cur =
         nl = char from code 10
         "[" + nl + (j pretty arr items ind cur) + nl + (j spaces cur) + "]"
-      j pretty val (JsonObj [])     _   _   =  (char from code 123) + (char from code 125)
+      j pretty val (JsonObj []) _ _ = (char from code 123) + (char from code 125)
       j pretty val (JsonObj fields) ind cur =
         nl = char from code 10
         (char from code 123) + nl + (j pretty obj fields ind cur) + nl + (j spaces cur) + (char from code 125)
-      j pretty val v                _   _   =  json stringify v
+      j pretty val v _ _ = json stringify v
 
 -- @implements FR-JSON-001
 -- @implements API-JSON-001
@@ -644,8 +692,26 @@ fn :: json pretty JsonVal Int => String
 
 -- ── Dot-Path Queries & Field Updates ─────────────────────────
 
+fn :: j lookup field opt [JsonField] String => Option JsonVal
+      j lookup field opt [] _ = None
+      j lookup field opt ((JsonField k v):fs) key =
+        | k == key  = Some v
+        | otherwise = j lookup field opt fs key
+
+-- @implements FR-JSON-001
+-- @implements API-JSON-001
+fn :: json find field JsonVal          String => Option JsonVal
+      json find field (JsonObj fields) key    =  j lookup field opt fields key
+      json find field _                _      =  None
+
+-- @implements FR-JSON-001
+-- @implements API-JSON-001
+fn :: json has field JsonVal          String => Bool
+      json has field (JsonObj fields) key    =  j has field fields key
+      json has field _                _      =  False
+
 fn :: j find field [JsonField] String => JsonVal
-      j find field []                   _   =  JsonNull
+      j find field []          _      =  JsonNull
       j find field ((JsonField k v):fs) key =
         | k == key  = v
         | otherwise = j find field fs key
@@ -657,8 +723,8 @@ fn :: json get field JsonVal          String => JsonVal
       json get field _                _      =  JsonNull
 
 fn :: j nth val [JsonVal] Int => JsonVal
-      j nth val []     _   =  JsonNull
-      j nth val (v:vs) idx =
+      j nth val []        _   =  JsonNull
+      j nth val (v:vs)    idx =
         | idx < 0   = JsonNull
         | idx == 0  = v
         | otherwise = j nth val vs (idx - 1)
@@ -697,6 +763,87 @@ fn :: json get path JsonVal String   => JsonVal
 
 -- @implements FR-JSON-001
 -- @implements API-JSON-001
+fn :: json num text JsonVal       => String
+      json num text (JsonNum raw) =  raw
+      json num text (JsonInt n)   =  j int to str n
+      json num text _             =  ""
+
+fn :: j digit real Int => Real
+      j digit real 48  =  0.0
+      j digit real 49  =  1.0
+      j digit real 50  =  2.0
+      j digit real 51  =  3.0
+      j digit real 52  =  4.0
+      j digit real 53  =  5.0
+      j digit real 54  =  6.0
+      j digit real 55  =  7.0
+      j digit real 56  =  8.0
+      j digit real 57  =  9.0
+      j digit real _   =  0.0
+
+fn :: j pow10 loop Int Real => Real
+      j pow10 loop e   acc  =
+        | e <= 0    = acc
+        | otherwise = j pow10 loop (e - 1) (acc * 10.0)
+
+fn :: j apply exp Real Bool Int => Real
+      j apply exp val exp_neg exp_n =
+        | exp_n <= 0 = val
+        | exp_neg    = val / (j pow10 loop exp_n 1.0)
+        | otherwise  = val * (j pow10 loop exp_n 1.0)
+
+fn :: j parse real exp String Int Int Real Bool => Real
+      j parse real exp s pos len base exp_neg =
+        exp_n = j parse pos range s pos len 0
+        j apply exp base exp_neg exp_n
+
+fn :: j parse real exp sign String Int Int Real => Real
+      j parse real exp sign s pos len base =
+        | pos >= len                = base
+        | (str char at s pos) == 45 = j parse real exp s (pos + 1) len base True
+        | (str char at s pos) == 43 = j parse real exp s (pos + 1) len base False
+        | otherwise                 = j parse real exp s pos len base False
+
+fn :: j parse real frac loop String Int Int Real Real Real => Real
+      j parse real frac loop s pos len int_v frac_v div_v =
+        | pos >= len = int_v + (frac_v / div_v)
+        | j is digit (str char at s pos) =
+      j parse real frac loop s (pos + 1) len int_v ((frac_v * 10.0) + (j digit real (str char at s pos))) (div_v * 10.0)
+        | (str char at s pos) == 101 or (str char at s pos) == 69 =
+          j parse real exp sign s (pos + 1) len (int_v + (frac_v / div_v))
+        | otherwise = int_v + (frac_v / div_v)
+
+fn :: j parse real int loop String Int Int Real => Real
+      j parse real int loop s pos len acc =
+        | pos >= len = acc
+        | j is digit (str char at s pos) =
+      j parse real int loop s (pos + 1) len ((acc * 10.0) + (j digit real (str char at s pos)))
+        | (str char at s pos) == 46 =
+          j parse real frac loop s (pos + 1) len acc 0.0 1.0
+        | (str char at s pos) == 101 or (str char at s pos) == 69 =
+      j parse real exp sign s (pos + 1) len acc
+        | otherwise = acc
+
+fn :: j parse real str String => Real
+      j parse real str ""     =  0.0
+      j parse real str s      =
+        | (str char at s 0) == 45 = 0.0 - (j parse real int loop s 1 (str len s) 0.0)
+        | otherwise               = j parse real int loop s 0 (str len s) 0.0
+
+fn :: j unwrap float JsonVal       Real     => Real
+      j unwrap float (JsonNum raw) _        =  j parse real str raw
+      j unwrap float (JsonInt n)   _        =  j parse real str (j int to str n)
+      j unwrap float _             fallback =  fallback
+
+-- @implements FR-JSON-001
+-- @implements API-JSON-001
+fn :: json get float JsonVal String Real => Real
+      json get float val dot_path fallback =
+        json get path val dot_path -> target
+        j unwrap float target fallback
+
+-- @implements FR-JSON-001
+-- @implements API-JSON-001
 fn :: json get str JsonVal String String => String
       json get str val dot_path fallback =
         json get path val dot_path -> target
@@ -729,7 +876,7 @@ fn :: j unwrap bool JsonVal      Bool     => Bool
       j unwrap bool _            fallback =  fallback
 
 fn :: j put field [JsonField] String JsonVal => [JsonField]
-      j put field []                   key new_val = [JsonField key new_val]
+      j put field [] key new_val = [JsonField key new_val]
       j put field ((JsonField k v):fs) key new_val =
         | k == key  = [JsonField key new_val] :: fs
         | otherwise = [JsonField k v] :: (j put field fs key new_val)
