@@ -58,61 +58,61 @@ type JsonStrStep = JStrOk String Int | JStrErr String
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
-| `1` | `fn :: j_is_ws Int` | `Bool` |
-| `2` | `fn :: j_is_digit Int` | `Bool` |
-| `3` | `fn :: j_skip_ws String Int Int` | `Int` |
-| `4` | `fn :: j_spaces Int` | `String` |
-| `5` | `fn :: j_escape_loop String Int Int String` | `String` |
-| `6` | `fn :: j_escape_str String` | `String` |
-| `7` | `fn :: j_unescape_char Int` | `String` |
-| `8` | `fn :: j_parse_str_loop String Int Int String` | `JsonStrStep` |
-| `9` | `fn :: j_parse_string String Int Int` | `JsonStrStep` |
-| `10` | `fn :: j_scan_digits String Int Int` | `Int` |
-| `11` | `fn :: j_parse_number String Int Int` | `JsonStep` |
-| `12` | `fn :: j_finish_neg_num String Int Int` | `JsonStep` |
-| `13` | `fn :: j_finish_pos_num String Int Int` | `JsonStep` |
-| `14` | `fn :: j_parse_val String Int Int` | `JsonStep` |
-| `15` | `fn :: j_parse_val_at String Int Int` | `JsonStep` |
-| `16` | `fn :: j_wrap_str_step JsonStrStep` | `JsonStep` |
-| `17` | `fn :: j_parse_arr_open String Int Int` | `JsonStep` |
-| `18` | `fn :: j_parse_arr_first String Int Int` | `JsonStep` |
-| `19` | `fn :: j_finish_arr_step JsonArrStep` | `JsonStep` |
-| `20` | `fn :: j_parse_arr_items String Int Int [JsonVal]` | `JsonArrStep` |
-| `21` | `fn :: j_parse_arr_after_item String Int [JsonVal] JsonStep` | `JsonArrStep` |
-| `22` | `fn :: j_parse_arr_delim String Int Int [JsonVal]` | `JsonArrStep` |
-| `23` | `fn :: j_parse_obj_open String Int Int` | `JsonStep` |
-| `24` | `fn :: j_parse_obj_first String Int Int` | `JsonStep` |
-| `25` | `fn :: j_finish_obj_step JsonObjStep` | `JsonStep` |
-| `26` | `fn :: j_parse_obj_fields String Int Int [JsonField]` | `JsonObjStep` |
-| `27` | `fn :: j_parse_obj_after_key String Int [JsonField] JsonStrStep` | `JsonObjStep` |
-| `28` | `fn :: j_parse_obj_colon String Int Int String [JsonField]` | `JsonObjStep` |
-| `29` | `fn :: j_parse_obj_after_val String Int String [JsonField] JsonStep` | `JsonObjStep` |
-| `30` | `fn :: j_parse_obj_delim String Int Int [JsonField]` | `JsonObjStep` |
-| `31` | `fn :: j_check_eof String Int JsonStep` | `JsonRes` |
-| `32` | `fn :: j_check_eof_pos Int Int JsonVal` | `JsonRes` |
+| `1` | `fn :: j is ws Int` | `Bool` |
+| `2` | `fn :: j is digit Int` | `Bool` |
+| `3` | `fn :: j skip ws String Int Int` | `Int` |
+| `4` | `fn :: j spaces Int` | `String` |
+| `5` | `fn :: j escape loop String Int Int String` | `String` |
+| `6` | `fn :: j escape str String` | `String` |
+| `7` | `fn :: j unescape char Int` | `String` |
+| `8` | `fn :: j parse str loop String Int Int String` | `JsonStrStep` |
+| `9` | `fn :: j parse string String Int Int` | `JsonStrStep` |
+| `10` | `fn :: j scan digits String Int Int` | `Int` |
+| `11` | `fn :: j parse number String Int Int` | `JsonStep` |
+| `12` | `fn :: j finish neg num String Int Int` | `JsonStep` |
+| `13` | `fn :: j finish pos num String Int Int` | `JsonStep` |
+| `14` | `fn :: j parse val String Int Int` | `JsonStep` |
+| `15` | `fn :: j parse val at String Int Int` | `JsonStep` |
+| `16` | `fn :: j wrap str step JsonStrStep` | `JsonStep` |
+| `17` | `fn :: j parse arr open String Int Int` | `JsonStep` |
+| `18` | `fn :: j parse arr first String Int Int` | `JsonStep` |
+| `19` | `fn :: j finish arr step JsonArrStep` | `JsonStep` |
+| `20` | `fn :: j parse arr items String Int Int [JsonVal]` | `JsonArrStep` |
+| `21` | `fn :: j parse arr after item String Int [JsonVal] JsonStep` | `JsonArrStep` |
+| `22` | `fn :: j parse arr delim String Int Int [JsonVal]` | `JsonArrStep` |
+| `23` | `fn :: j parse obj open String Int Int` | `JsonStep` |
+| `24` | `fn :: j parse obj first String Int Int` | `JsonStep` |
+| `25` | `fn :: j finish obj step JsonObjStep` | `JsonStep` |
+| `26` | `fn :: j parse obj fields String Int Int [JsonField]` | `JsonObjStep` |
+| `27` | `fn :: j parse obj after key String Int [JsonField] JsonStrStep` | `JsonObjStep` |
+| `28` | `fn :: j parse obj colon String Int Int String [JsonField]` | `JsonObjStep` |
+| `29` | `fn :: j parse obj after val String Int String [JsonField] JsonStep` | `JsonObjStep` |
+| `30` | `fn :: j parse obj delim String Int Int [JsonField]` | `JsonObjStep` |
+| `31` | `fn :: j check eof String Int JsonStep` | `JsonRes` |
+| `32` | `fn :: j check eof pos Int Int JsonVal` | `JsonRes` |
 | `33` | `fn :: json parse String` | `JsonRes` |
-| `34` | `fn :: j_join_arr [JsonVal]` | `String` |
-| `35` | `fn :: j_join_obj [JsonField]` | `String` |
+| `34` | `fn :: j join arr [JsonVal]` | `String` |
+| `35` | `fn :: j join obj [JsonField]` | `String` |
 | `36` | `fn :: json stringify JsonVal` | `String` |
-| `37` | `fn :: j_pretty_arr [JsonVal] Int Int` | `String` |
-| `38` | `fn :: j_pretty_obj [JsonField] Int Int` | `String` |
-| `39` | `fn :: j_pretty_val JsonVal Int Int` | `String` |
+| `37` | `fn :: j pretty arr [JsonVal] Int Int` | `String` |
+| `38` | `fn :: j pretty obj [JsonField] Int Int` | `String` |
+| `39` | `fn :: j pretty val JsonVal Int Int` | `String` |
 | `40` | `fn :: json pretty JsonVal Int` | `String` |
-| `41` | `fn :: j_find_field [JsonField] String` | `JsonVal` |
+| `41` | `fn :: j find field [JsonField] String` | `JsonVal` |
 | `42` | `fn :: json get field JsonVal String` | `JsonVal` |
-| `43` | `fn :: j_nth_val [JsonVal] Int` | `JsonVal` |
+| `43` | `fn :: j nth val [JsonVal] Int` | `JsonVal` |
 | `44` | `fn :: json get index JsonVal Int` | `JsonVal` |
-| `45` | `fn :: j_split_dots_loop String Int Int Int [String]` | `[String]` |
-| `46` | `fn :: j_step_path JsonVal String` | `JsonVal` |
-| `47` | `fn :: j_walk_path JsonVal [String]` | `JsonVal` |
+| `45` | `fn :: j split dots loop String Int Int Int [String]` | `[String]` |
+| `46` | `fn :: j step path JsonVal String` | `JsonVal` |
+| `47` | `fn :: j walk path JsonVal [String]` | `JsonVal` |
 | `48` | `fn :: json get path JsonVal String` | `JsonVal` |
 | `49` | `fn :: json get str JsonVal String String` | `String` |
-| `50` | `fn :: j_unwrap_str JsonVal String` | `String` |
+| `50` | `fn :: j unwrap str JsonVal String` | `String` |
 | `51` | `fn :: json get int JsonVal String Int` | `Int` |
-| `52` | `fn :: j_unwrap_int JsonVal Int` | `Int` |
+| `52` | `fn :: j unwrap int JsonVal Int` | `Int` |
 | `53` | `fn :: json get bool JsonVal String Bool` | `Bool` |
-| `54` | `fn :: j_unwrap_bool JsonVal Bool` | `Bool` |
-| `55` | `fn :: j_put_field [JsonField] String JsonVal` | `[JsonField]` |
+| `54` | `fn :: j unwrap bool JsonVal Bool` | `Bool` |
+| `55` | `fn :: j put field [JsonField] String JsonVal` | `[JsonField]` |
 | `56` | `fn :: json set field JsonVal String JsonVal` | `JsonVal` |
 
 ---
@@ -160,16 +160,16 @@ fn :: test json parse stringify and pretty => ()
         rb = char from code 125
         raw = lb + "\"user\":" + lb + "\"name\":\"Ada \\\"Lovelace\\\"\",\"age\":36,\"active\":true,\"roles\":[\"admin\",\"math\"],\"meta\":null" + rb + rb
         res = json parse raw
-        assert true (is_json_ok res) "AC1: json parse nested object and array"
-        val = unwrap_json res
+        assert true (is json ok res) "AC1: json parse nested object and array"
+        val = unwrap json res
 
         compact = json stringify val
         assert str eq compact raw "AC1: json stringify lossless round-trip"
 
         pretty_s = json pretty val 2
         res2 = json parse pretty_s
-        assert true (is_json_ok res2) "AC1: json pretty output parses back cleanly"
-        assert str eq (json stringify (unwrap_json res2)) raw "AC1: json pretty round-trip equality"
+        assert true (is json ok res2) "AC1: json pretty output parses back cleanly"
+        assert str eq (json stringify (unwrap json res2)) raw "AC1: json pretty round-trip equality"
         ()
 ```
 
@@ -185,17 +185,17 @@ fn :: test json primitives escapes and empty containers => ()
         bs = char from code 92
         nl = char from code 10
         tab = char from code 9
-        assert str eq (json stringify (unwrap_json (json parse (lb + rb)))) (lb + rb) "AC1: empty object {}"
-        assert str eq (json stringify (unwrap_json (json parse "[]"))) "[]" "AC1: empty array []"
-        assert str eq (json stringify (unwrap_json (json parse ("  " + lb + "  " + rb + "  ")))) (lb + rb) "AC1: whitespace-padded empty object"
-        assert true (is_json_null (unwrap_json (json parse "null"))) "AC1: root null literal"
-        assert str eq (json stringify (unwrap_json (json parse "true"))) "true" "AC1: root true literal"
-        assert str eq (json stringify (unwrap_json (json parse "false"))) "false" "AC1: root false literal"
-        assert str eq (json stringify (unwrap_json (json parse "0"))) "0" "AC1: root zero integer"
-        assert str eq (json stringify (unwrap_json (json parse "-42000"))) "-42000" "AC1: root negative integer"
+        assert str eq (json stringify (unwrap json (json parse (lb + rb)))) (lb + rb) "AC1: empty object {}"
+        assert str eq (json stringify (unwrap json (json parse "[]"))) "[]" "AC1: empty array []"
+        assert str eq (json stringify (unwrap json (json parse ("  " + lb + "  " + rb + "  ")))) (lb + rb) "AC1: whitespace-padded empty object"
+        assert true (is json null (unwrap json (json parse "null"))) "AC1: root null literal"
+        assert str eq (json stringify (unwrap json (json parse "true"))) "true" "AC1: root true literal"
+        assert str eq (json stringify (unwrap json (json parse "false"))) "false" "AC1: root false literal"
+        assert str eq (json stringify (unwrap json (json parse "0"))) "0" "AC1: root zero integer"
+        assert str eq (json stringify (unwrap json (json parse "-42000"))) "-42000" "AC1: root negative integer"
 
         esc_json = lb + "\"msg\":\"line1" + bs + "nline2" + bs + "t" + bs + bs + "slash\"" + rb
-        esc_val = unwrap_json (json parse esc_json)
+        esc_val = unwrap json (json parse esc_json)
         assert str eq (json get str esc_val "msg" "") ("line1" + nl + "line2" + tab + bs + "slash") "AC1: unescape \\n, \\t, \\\\ in JSON strings"
         assert str eq (json stringify esc_val) esc_json "AC1: re-escape \\n, \\t, \\\\ on stringify"
         ()
@@ -211,7 +211,7 @@ fn :: test json dot path queries and updates => ()
         lb = char from code 123
         rb = char from code 125
         raw = lb + "\"user\":" + lb + "\"name\":\"Ada\",\"age\":36,\"active\":true,\"roles\":[\"admin\",\"math\"],\"matrix\":[[10,20],[30,40]]" + rb + ",\"count\":-7,\"disabled\":false" + rb
-        val = unwrap_json (json parse raw)
+        val = unwrap json (json parse raw)
 
         assert str eq (json get str val "user.name" "") "Ada" "AC2: json get str dot path"
         assert int equals (json get int val "user.age" 0) 36 "AC2: json get int dot path"
@@ -241,16 +241,16 @@ fn :: test json malformed inputs => ()
       test json malformed inputs =
         lb = char from code 123
         rb = char from code 125
-        assert false (is_json_ok (json parse "")) "AC3: reject empty input"
-        assert false (is_json_ok (json parse "   ")) "AC3: reject whitespace-only input"
-        assert false (is_json_ok (json parse (lb + "\"unclosed\":1"))) "AC3: reject unclosed object"
-        assert false (is_json_ok (json parse "[1, 2, 3")) "AC3: reject unclosed array"
-        assert false (is_json_ok (json parse "\"unterminated string")) "AC3: reject unterminated string"
-        assert false (is_json_ok (json parse (lb + "unquoted: 1" + rb))) "AC3: reject unquoted object key"
-        assert false (is_json_ok (json parse (lb + "\"k\" 1" + rb))) "AC3: reject missing colon in object"
-        assert false (is_json_ok (json parse "[1, 2] trailing")) "AC3: reject trailing garbage token"
-        assert false (is_json_ok (json parse "tru")) "AC3: reject truncated boolean literal"
-        assert false (is_json_ok (json parse "nul")) "AC3: reject truncated null literal"
+        assert false (is json ok (json parse "")) "AC3: reject empty input"
+        assert false (is json ok (json parse "   ")) "AC3: reject whitespace-only input"
+        assert false (is json ok (json parse (lb + "\"unclosed\":1"))) "AC3: reject unclosed object"
+        assert false (is json ok (json parse "[1, 2, 3")) "AC3: reject unclosed array"
+        assert false (is json ok (json parse "\"unterminated string")) "AC3: reject unterminated string"
+        assert false (is json ok (json parse (lb + "unquoted: 1" + rb))) "AC3: reject unquoted object key"
+        assert false (is json ok (json parse (lb + "\"k\" 1" + rb))) "AC3: reject missing colon in object"
+        assert false (is json ok (json parse "[1, 2] trailing")) "AC3: reject trailing garbage token"
+        assert false (is json ok (json parse "tru")) "AC3: reject truncated boolean literal"
+        assert false (is json ok (json parse "nul")) "AC3: reject truncated null literal"
         ()
 ```
 
@@ -298,16 +298,16 @@ fn :: j scan digits String Int Int => Int
 
 fn :: j parse number String Int Int => JsonStep
       j parse number s      pos len
-        | (str char at s pos) == 45 = j_finish_neg_num s pos (j scan digits s (pos + 1) len)
-        | otherwise = j_finish_pos_num s pos (j scan digits s pos len)
+        | (str char at s pos) == 45 = j finish neg num s pos (j scan digits s (pos + 1) len)
+        | otherwise = j finish pos num s pos (j scan digits s pos len)
 
-fn :: j_finish_neg_num String Int Int     => JsonStep
-      j_finish_neg_num s      pos end_pos
+fn :: j finish neg num String Int Int     => JsonStep
+      j finish neg num s      pos end_pos
         | end_pos <= (pos + 1) = JStepErr "invalid negative number"
         | otherwise = JStepOk (JsonInt (str to int (str slice s pos end_pos))) end_pos
 
-fn :: j_finish_pos_num String Int Int     => JsonStep
-      j_finish_pos_num s      pos end_pos
+fn :: j finish pos num String Int Int     => JsonStep
+      j finish pos num s      pos end_pos
         | end_pos <= pos = JStepErr "expected number"
         | otherwise = JStepOk (JsonInt (str to int (str slice s pos end_pos))) end_pos
 ```

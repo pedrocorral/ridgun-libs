@@ -493,7 +493,7 @@ fn :: verificar sha512 ed25519 y minisign => ()
 
 Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/crypto.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
-### 24.4.1. Implementació interna: RGF-019 Raw Byte Manipulation (`byte_str`, `bytes_from_list`, `bytes_to_list`)
+### 24.4.1. Implementació interna: RGF-019 Raw Byte Manipulation (`byte str`, `bytes from list`, `bytes to list`)
 
 Fixa't en com `crypto.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
@@ -682,7 +682,7 @@ fn :: byte slice String Int Int => String
         c byte slice loop (c build b256) s st en "" "" "" ""
 ```
 
-### 24.4.3. Implementació interna: RGF-015 Pure-Ridgun RFC 9106 Argon2id (`argon2id_hash`, `argon2id_verify`)
+### 24.4.3. Implementació interna: RGF-015 Pure-Ridgun RFC 9106 Argon2id (`argon2id hash`, `argon2id verify`)
 
 Fixa't en com `crypto.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 

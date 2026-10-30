@@ -54,49 +54,49 @@ type IniDoc = sections: [IniSection]
 
 | # | Función / Sinatura (`fn ::`) | Tipo de Retorno |
 |---|---|---|
-| `1` | `fn :: ini_is_hspace Int` | `Bool` |
-| `2` | `fn :: ini_trim_left_loop String Int Int` | `String` |
-| `3` | `fn :: ini_trim_right_loop String Int` | `String` |
-| `4` | `fn :: ini_trim String` | `String` |
-| `5` | `fn :: ini_split_lines_loop String Int Int Int [String]` | `[String]` |
-| `6` | `fn :: ini_skip_quoted String Int Int Int` | `Int` |
-| `7` | `fn :: ini_strip_comment_loop String Int Int` | `String` |
-| `8` | `fn :: ini_unquote_unescape_loop String Int Int String` | `String` |
-| `9` | `fn :: ini_clean_val String` | `String` |
-| `10` | `fn :: ini_clean_val_len String Int` | `String` |
-| `11` | `fn :: ini_p_key IniEntry` | `String` |
-| `12` | `fn :: ini_p_val IniEntry` | `String` |
-| `13` | `fn :: ini_kv_get [IniEntry] String String` | `String` |
-| `14` | `fn :: ini_kv_put [IniEntry] String String` | `[IniEntry]` |
-| `15` | `fn :: ini_find_rbrace String Int Int` | `Int` |
-| `16` | `fn :: ini_expand_brace String Int Int [IniEntry] String Int` | `String` |
-| `17` | `fn :: ini_interpolate_loop String Int Int [IniEntry] String` | `String` |
-| `18` | `fn :: ini_interpolate String [IniEntry]` | `String` |
-| `19` | `fn :: ini_sec_put [IniSection] String String String` | `[IniSection]` |
-| `20` | `fn :: ini_sec_ensure [IniSection] String` | `[IniSection]` |
-| `21` | `fn :: ini_sec_get [IniSection] String String String` | `String` |
-| `22` | `fn :: ini_find_eq String Int Int` | `Int` |
-| `23` | `fn :: ini_strip_export String` | `String` |
-| `24` | `fn :: ini_parse_kv_at String [IniSection] String Int` | `[IniSection]` |
-| `25` | `fn :: ini_sec_entries [IniSection] String` | `[IniEntry]` |
-| `26` | `fn :: ini_parse_lines [String] [IniSection] String` | `[IniSection]` |
-| `27` | `fn :: ini_parse_sec_hdr String [String] [IniSection]` | `[IniSection]` |
-| `28` | `fn :: ini_parse_kv_line String [String] [IniSection] String` | `[IniSection]` |
-| `29` | `fn :: ini_parse_clean_line String [String] [IniSection] String` | `[IniSection]` |
+| `1` | `fn :: ini is hspace Int` | `Bool` |
+| `2` | `fn :: ini trim left loop String Int Int` | `String` |
+| `3` | `fn :: ini trim right loop String Int` | `String` |
+| `4` | `fn :: ini trim String` | `String` |
+| `5` | `fn :: ini split lines loop String Int Int Int [String]` | `[String]` |
+| `6` | `fn :: ini skip quoted String Int Int Int` | `Int` |
+| `7` | `fn :: ini strip comment loop String Int Int` | `String` |
+| `8` | `fn :: ini unquote unescape loop String Int Int String` | `String` |
+| `9` | `fn :: ini clean val String` | `String` |
+| `10` | `fn :: ini clean val len String Int` | `String` |
+| `11` | `fn :: ini p key IniEntry` | `String` |
+| `12` | `fn :: ini p val IniEntry` | `String` |
+| `13` | `fn :: ini kv get [IniEntry] String String` | `String` |
+| `14` | `fn :: ini kv put [IniEntry] String String` | `[IniEntry]` |
+| `15` | `fn :: ini find rbrace String Int Int` | `Int` |
+| `16` | `fn :: ini expand brace String Int Int [IniEntry] String Int` | `String` |
+| `17` | `fn :: ini interpolate loop String Int Int [IniEntry] String` | `String` |
+| `18` | `fn :: ini interpolate String [IniEntry]` | `String` |
+| `19` | `fn :: ini sec put [IniSection] String String String` | `[IniSection]` |
+| `20` | `fn :: ini sec ensure [IniSection] String` | `[IniSection]` |
+| `21` | `fn :: ini sec get [IniSection] String String String` | `String` |
+| `22` | `fn :: ini find eq String Int Int` | `Int` |
+| `23` | `fn :: ini strip export String` | `String` |
+| `24` | `fn :: ini parse kv at String [IniSection] String Int` | `[IniSection]` |
+| `25` | `fn :: ini sec entries [IniSection] String` | `[IniEntry]` |
+| `26` | `fn :: ini parse lines [String] [IniSection] String` | `[IniSection]` |
+| `27` | `fn :: ini parse sec hdr String [String] [IniSection]` | `[IniSection]` |
+| `28` | `fn :: ini parse kv line String [String] [IniSection] String` | `[IniSection]` |
+| `29` | `fn :: ini parse clean line String [String] [IniSection] String` | `[IniSection]` |
 | `30` | `fn :: ini parse String` | `IniDoc` |
 | `31` | `fn :: dotenv parse String` | `[IniEntry]` |
 | `32` | `fn :: ini get IniDoc String String String` | `String` |
 | `33` | `fn :: ini get int IniDoc String String Int` | `Int` |
-| `34` | `fn :: ini_parse_int_or String Int` | `Int` |
+| `34` | `fn :: ini parse int or String Int` | `Int` |
 | `35` | `fn :: ini get bool IniDoc String String Bool` | `Bool` |
-| `36` | `fn :: ini_parse_bool_or String Bool` | `Bool` |
+| `36` | `fn :: ini parse bool or String Bool` | `Bool` |
 | `37` | `fn :: ini set IniDoc String String String` | `IniDoc` |
-| `38` | `fn :: ini_collect_sec_names [IniSection]` | `[String]` |
+| `38` | `fn :: ini collect sec names [IniSection]` | `[String]` |
 | `39` | `fn :: ini sections IniDoc` | `[String]` |
 | `40` | `fn :: dotenv get [IniEntry] String String` | `String` |
-| `41` | `fn :: ini_format_entries [IniEntry]` | `String` |
-| `42` | `fn :: ini_format_section IniSection` | `String` |
-| `43` | `fn :: ini_format_sections [IniSection]` | `String` |
+| `41` | `fn :: ini format entries [IniEntry]` | `String` |
+| `42` | `fn :: ini format section IniSection` | `String` |
+| `43` | `fn :: ini format sections [IniSection]` | `String` |
 | `44` | `fn :: ini stringify IniDoc` | `String` |
 
 ---
@@ -139,8 +139,8 @@ fn :: actualizar puerto [String String String] String => String
 Neste exemplo práctico exploramos de forma exhaustiva como se comporta `ini` neste bloque funcional, incluíndo entradas estándar, combinacións de parámetros e valores fronteira:
 
 ```ridgun
-fn :: test_ini_sections_and_typed_getters => ()
-      test_ini_sections_and_typed_getters =
+fn :: test ini sections and typed getters => ()
+      test ini sections and typed getters =
         nl = char from code 10
         src = "# Global header comment" + nl + "; Secondary comment" + nl + "global_env = production" + nl + nl + "[database]" + nl + "host = \"127.0.0.1\"" + nl + "port = 5432 ; default pg" + nl + "timeout = -1 # infinite" + nl + "password = \"p@ss#word;123\"" + nl + "ssl = true" + nl + "pool_enabled = yes" + nl + "readonly = 0" + nl + "debug_sql = no" + nl + nl + "[server]" + nl + "workers = 4" + nl + "enabled = 1" + nl
         doc = ini parse src
@@ -158,7 +158,7 @@ fn :: test_ini_sections_and_typed_getters => ()
         assert str eq (ini get doc "server" "missing" "default_v") "default_v" "AC1: ini get fallback on missing key"
         assert str eq (ini get doc "no_such_section" "k" "fallback") "fallback" "AC1: ini get fallback on missing section"
         secs = ini sections doc
-        assert int equals (ini_sec_count secs) 3 "AC1: 3 sections (root '', database, server)"
+        assert int equals (ini sec count secs) 3 "AC1: 3 sections (root '', database, server)"
         ()
 ```
 
@@ -167,8 +167,8 @@ fn :: test_ini_sections_and_typed_getters => ()
 Neste exemplo práctico exploramos de forma exhaustiva como se comporta `ini` neste bloque funcional, incluíndo entradas estándar, combinacións de parámetros e valores fronteira:
 
 ```ridgun
-fn :: test_dotenv_interpolation_and_roundtrip => ()
-      test_dotenv_interpolation_and_roundtrip =
+fn :: test dotenv interpolation and roundtrip => ()
+      test dotenv interpolation and roundtrip =
         nl = char from code 10
         lb = char from code 123
         rb = char from code 125

@@ -54,56 +54,56 @@ type MinHeap = HeapEmpty | HeapNode Int String Int MinHeap MinHeap
 
 | # | Funktion / Signatur (`fn ::`) | Returtyp |
 |---|---|---|
-| `1` | `fn :: bt_max Int Int` | `Int` |
-| `2` | `fn :: bt_str_cmp_loop String String Int Int Int` | `Int` |
-| `3` | `fn :: bt_str_cmp String String` | `Int` |
+| `1` | `fn :: bt max Int Int` | `Int` |
+| `2` | `fn :: bt str cmp loop String String Int Int Int` | `Int` |
+| `3` | `fn :: bt str cmp String String` | `Int` |
 | `4` | `fn :: btree empty` | `BTreeMap` |
 | `5` | `fn :: btree height BTreeMap` | `Int` |
-| `6` | `fn :: bt_mk String String BTreeMap BTreeMap` | `BTreeMap` |
-| `7` | `fn :: bt_bf BTreeMap` | `Int` |
-| `8` | `fn :: bt_rot_right BTreeMap` | `BTreeMap` |
-| `9` | `fn :: bt_rot_left BTreeMap` | `BTreeMap` |
-| `10` | `fn :: bt_rebalance String String BTreeMap BTreeMap` | `BTreeMap` |
+| `6` | `fn :: bt mk String String BTreeMap BTreeMap` | `BTreeMap` |
+| `7` | `fn :: bt bf BTreeMap` | `Int` |
+| `8` | `fn :: bt rot right BTreeMap` | `BTreeMap` |
+| `9` | `fn :: bt rot left BTreeMap` | `BTreeMap` |
+| `10` | `fn :: bt rebalance String String BTreeMap BTreeMap` | `BTreeMap` |
 | `11` | `fn :: btree put BTreeMap String String` | `BTreeMap` |
 | `12` | `fn :: btree get or BTreeMap String String` | `String` |
 | `13` | `fn :: btree get BTreeMap String` | `String` |
 | `14` | `fn :: btree has BTreeMap String` | `Bool` |
-| `15` | `fn :: bt_min_pair BTreeMap` | `(String String)` |
-| `16` | `fn :: bt_pair_k (String String)` | `String` |
-| `17` | `fn :: bt_pair_v (String String)` | `String` |
-| `18` | `fn :: bt_delete_root BTreeMap BTreeMap` | `BTreeMap` |
+| `15` | `fn :: bt min pair BTreeMap` | `(String String)` |
+| `16` | `fn :: bt pair k (String String)` | `String` |
+| `17` | `fn :: bt pair v (String String)` | `String` |
+| `18` | `fn :: bt delete root BTreeMap BTreeMap` | `BTreeMap` |
 | `19` | `fn :: btree remove BTreeMap String` | `BTreeMap` |
 | `20` | `fn :: btree size BTreeMap` | `Int` |
 | `21` | `fn :: btree keys BTreeMap` | `[String]` |
 | `22` | `fn :: btree values BTreeMap` | `[String]` |
 | `23` | `fn :: btree to list BTreeMap` | `[String String]` |
-| `24` | `fn :: bt_from_pairs [String String] BTreeMap` | `BTreeMap` |
+| `24` | `fn :: bt from pairs [String String] BTreeMap` | `BTreeMap` |
 | `25` | `fn :: btree from list [String String]` | `BTreeMap` |
 | `26` | `fn :: bset empty` | `BTreeSet` |
-| `27` | `fn :: bs_height BTreeSet` | `Int` |
-| `28` | `fn :: bs_mk String BTreeSet BTreeSet` | `BTreeSet` |
-| `29` | `fn :: bs_bf BTreeSet` | `Int` |
-| `30` | `fn :: bs_rot_right BTreeSet` | `BTreeSet` |
-| `31` | `fn :: bs_rot_left BTreeSet` | `BTreeSet` |
-| `32` | `fn :: bs_rebalance String BTreeSet BTreeSet` | `BTreeSet` |
+| `27` | `fn :: bs height BTreeSet` | `Int` |
+| `28` | `fn :: bs mk String BTreeSet BTreeSet` | `BTreeSet` |
+| `29` | `fn :: bs bf BTreeSet` | `Int` |
+| `30` | `fn :: bs rot right BTreeSet` | `BTreeSet` |
+| `31` | `fn :: bs rot left BTreeSet` | `BTreeSet` |
+| `32` | `fn :: bs rebalance String BTreeSet BTreeSet` | `BTreeSet` |
 | `33` | `fn :: bset add BTreeSet String` | `BTreeSet` |
 | `34` | `fn :: bset has BTreeSet String` | `Bool` |
-| `35` | `fn :: bs_min_key BTreeSet` | `String` |
-| `36` | `fn :: bs_delete_root BTreeSet BTreeSet` | `BTreeSet` |
+| `35` | `fn :: bs min key BTreeSet` | `String` |
+| `36` | `fn :: bs delete root BTreeSet BTreeSet` | `BTreeSet` |
 | `37` | `fn :: bset remove BTreeSet String` | `BTreeSet` |
 | `38` | `fn :: bset size BTreeSet` | `Int` |
 | `39` | `fn :: bset to list BTreeSet` | `[String]` |
-| `40` | `fn :: bs_from_strs [String] BTreeSet` | `BTreeSet` |
+| `40` | `fn :: bs from strs [String] BTreeSet` | `BTreeSet` |
 | `41` | `fn :: bset from list [String]` | `BTreeSet` |
 | `42` | `fn :: bset union BTreeSet BTreeSet` | `BTreeSet` |
-| `43` | `fn :: bs_inter_loop [String] BTreeSet BTreeSet` | `BTreeSet` |
+| `43` | `fn :: bs inter loop [String] BTreeSet BTreeSet` | `BTreeSet` |
 | `44` | `fn :: bset intersect BTreeSet BTreeSet` | `BTreeSet` |
-| `45` | `fn :: bs_diff_loop [String] BTreeSet` | `BTreeSet` |
+| `45` | `fn :: bs diff loop [String] BTreeSet` | `BTreeSet` |
 | `46` | `fn :: bset diff BTreeSet BTreeSet` | `BTreeSet` |
 | `47` | `fn :: heap empty` | `MinHeap` |
-| `48` | `fn :: hp_rank MinHeap` | `Int` |
-| `49` | `fn :: hp_mk Int String MinHeap MinHeap` | `MinHeap` |
-| `50` | `fn :: hp_merge MinHeap MinHeap` | `MinHeap` |
+| `48` | `fn :: hp rank MinHeap` | `Int` |
+| `49` | `fn :: hp mk Int String MinHeap MinHeap` | `MinHeap` |
+| `50` | `fn :: hp merge MinHeap MinHeap` | `MinHeap` |
 | `51` | `fn :: heap push MinHeap Int String` | `MinHeap` |
 | `52` | `fn :: heap peek MinHeap` | `(Int String)` |
 | `53` | `fn :: heap pop MinHeap` | `(Int String MinHeap)` |
@@ -152,8 +152,8 @@ fn :: despachar urgente => Int String
 I detta praktiska exempel undersöker vi grundligt hur `btree` beter sig inom detta funktionsområde, inklusive standardindata, parameterkombinationer och gränsvärden:
 
 ```ridgun
-fn :: test_btree_map_avl_balance_and_crud => ()
-      test_btree_map_avl_balance_and_crud =
+fn :: test btree map avl balance and crud => ()
+      test btree map avl balance and crud =
         m0 = btree empty
         assert int equals (btree size m0) 0 "AC1: empty map size 0"
         assert int equals (btree height m0) 0 "AC1: empty map height 0"
@@ -183,8 +183,8 @@ fn :: test_btree_map_avl_balance_and_crud => ()
         d0 = btree from list [("z", "26"), ("x", "24"), ("v", "22"), ("t", "20"), ("r", "18"), ("u", "21"), ("y", "25")]
         assert int equals (btree size d0) 7 "AC1: descending + RL/LR size 7"
         assert true ((btree height d0) <= 4) "AC1: descending + RL/LR height <= 4"
-        assert str eq (bt_join_strs (btree keys d0)) "r,t,u,v,x,y,z" "AC1: keys in-order after RL/LR rotations"
-        assert str eq (bt_join_strs (btree values d0)) "18,20,21,22,24,25,26" "AC1: values in key order"
+        assert str eq (bt join strs (btree keys d0)) "r,t,u,v,x,y,z" "AC1: keys in-order after RL/LR rotations"
+        assert str eq (bt join strs (btree values d0)) "18,20,21,22,24,25,26" "AC1: values in key order"
 
         -- Overwrite existing key preserves size
         d_upd = btree put d0 "v" "22_new"
@@ -198,7 +198,7 @@ fn :: test_btree_map_avl_balance_and_crud => ()
         assert int equals (btree size d_rem3) 5 "AC1: size after removing 2 existing keys and 1 missing key"
         assert false (btree has d_rem3 "v") "AC1: removed two-child node 'v' absent"
         assert false (btree has d_rem3 "r") "AC1: removed leaf node 'r' absent"
-        assert str eq (bt_join_strs (btree keys d_rem3)) "t,u,x,y,z" "AC1: keys remain strictly sorted after removals"
+        assert str eq (bt join strs (btree keys d_rem3)) "t,u,x,y,z" "AC1: keys remain strictly sorted after removals"
 
         pairs = btree to list d_rem3
         m_rt = btree from list pairs
@@ -212,31 +212,31 @@ fn :: test_btree_map_avl_balance_and_crud => ()
 I detta praktiska exempel undersöker vi grundligt hur `btree` beter sig inom detta funktionsområde, inklusive standardindata, parameterkombinationer och gränsvärden:
 
 ```ridgun
-fn :: test_btree_set_operations => ()
-      test_btree_set_operations =
+fn :: test btree set operations => ()
+      test btree set operations =
         s1 = bset from list ["charlie", "alpha", "bravo", "alpha", "charlie"]
         s2 = bset from list ["bravo", "delta", "echo"]
         s_empty = bset empty
         assert int equals (bset size s1) 3 "AC2: bset deduplicates items"
         assert true (bset has s1 "bravo") "AC2: bset has bravo"
         assert false (bset has s1 "delta") "AC2: bset has delta false"
-        assert str eq (bt_join_strs (bset to list s1)) "alpha,bravo,charlie" "AC2: bset sorted order"
+        assert str eq (bt join strs (bset to list s1)) "alpha,bravo,charlie" "AC2: bset sorted order"
 
         s1_rem = bset remove s1 "bravo"
         assert int equals (bset size s1_rem) 2 "AC2: bset remove size"
         assert false (bset has s1_rem "bravo") "AC2: bset remove membership"
 
         u = bset union s1 s2
-        assert str eq (bt_join_strs (bset to list u)) "alpha,bravo,charlie,delta,echo" "AC2: bset union"
+        assert str eq (bt join strs (bset to list u)) "alpha,bravo,charlie,delta,echo" "AC2: bset union"
         assert int equals (bset size (bset union s1 s1)) 3 "AC2: union idempotence A U A = A"
         assert int equals (bset size (bset union s1 s_empty)) 3 "AC2: union identity A U empty = A"
 
         inter = bset intersect s1 s2
-        assert str eq (bt_join_strs (bset to list inter)) "bravo" "AC2: bset intersect"
+        assert str eq (bt join strs (bset to list inter)) "bravo" "AC2: bset intersect"
         assert int equals (bset size (bset intersect s1 s_empty)) 0 "AC2: intersect with empty is empty"
 
         df = bset diff s1 s2
-        assert str eq (bt_join_strs (bset to list df)) "alpha,charlie" "AC2: bset diff A \\ B"
+        assert str eq (bt join strs (bset to list df)) "alpha,charlie" "AC2: bset diff A \\ B"
         assert int equals (bset size (bset diff s1 s1)) 0 "AC2: self difference A \\ A is empty"
         ()
 ```
@@ -246,8 +246,8 @@ fn :: test_btree_set_operations => ()
 I detta praktiska exempel undersöker vi grundligt hur `btree` beter sig inom detta funktionsområde, inklusive standardindata, parameterkombinationer och gränsvärden:
 
 ```ridgun
-fn :: test_min_heap_priority_queue => ()
-      test_min_heap_priority_queue =
+fn :: test min heap priority queue => ()
+      test min heap priority queue =
         h0 = heap empty
         assert int equals (heap size h0) 0 "AC3: empty heap size 0"
         h1 = heap push h0 50 "low"
@@ -258,27 +258,27 @@ fn :: test_min_heap_priority_queue => ()
         h6 = heap push h5 (-5) "critical"
         assert int equals (heap size h6) 6 "AC3: heap size 6"
         pk = heap peek h6
-        assert int equals (hp_peek_prio pk) (-5) "AC3: heap peek negative priority (-5)"
-        assert str eq (hp_peek_val pk) "critical" "AC3: heap peek critical value"
+        assert int equals (hp peek prio pk) (-5) "AC3: heap peek negative priority (-5)"
+        assert str eq (hp peek val pk) "critical" "AC3: heap peek critical value"
 
         p0 = heap pop h6
-        assert int equals (hp_pop_prio p0) (-5) "AC3: pop 0 (-5)"
-        p1 = heap pop (hp_pop_rest p0)
-        assert int equals (hp_pop_prio p1) 10 "AC3: pop 1 (10)"
-        p2 = heap pop (hp_pop_rest p1)
-        assert int equals (hp_pop_prio p2) 10 "AC3: pop 2 duplicate priority (10)"
+        assert int equals (hp pop prio p0) (-5) "AC3: pop 0 (-5)"
+        p1 = heap pop (hp pop rest p0)
+        assert int equals (hp pop prio p1) 10 "AC3: pop 1 (10)"
+        p2 = heap pop (hp pop rest p1)
+        assert int equals (hp pop prio p2) 10 "AC3: pop 2 duplicate priority (10)"
 
         -- Interleaved push after partial pop
-        h_mid = heap push (hp_pop_rest p2) 15 "medium-high"
+        h_mid = heap push (hp pop rest p2) 15 "medium-high"
         p3 = heap pop h_mid
-        assert int equals (hp_pop_prio p3) 15 "AC3: interleaved push 15 popped before 20"
-        p4 = heap pop (hp_pop_rest p3)
-        assert int equals (hp_pop_prio p4) 20 "AC3: pop 20"
-        p5 = heap pop (hp_pop_rest p4)
-        assert int equals (hp_pop_prio p5) 30 "AC3: pop 30"
-        p6 = heap pop (hp_pop_rest p5)
-        assert int equals (hp_pop_prio p6) 50 "AC3: pop 50"
-        assert int equals (heap size (hp_pop_rest p6)) 0 "AC3: heap empty after popping all"
+        assert int equals (hp pop prio p3) 15 "AC3: interleaved push 15 popped before 20"
+        p4 = heap pop (hp pop rest p3)
+        assert int equals (hp pop prio p4) 20 "AC3: pop 20"
+        p5 = heap pop (hp pop rest p4)
+        assert int equals (hp pop prio p5) 30 "AC3: pop 30"
+        p6 = heap pop (hp pop rest p5)
+        assert int equals (hp pop prio p6) 50 "AC3: pop 50"
+        assert int equals (heap size (hp pop rest p6)) 0 "AC3: heap empty after popping all"
         ()
 ```
 

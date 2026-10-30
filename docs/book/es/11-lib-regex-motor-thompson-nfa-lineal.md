@@ -55,75 +55,75 @@ type NfaInst = InstChar Int Int | InstAny Int | InstClass Bool [Int] Int | InstS
 
 | # | Función / Firma (`fn ::`) | Tipo de Retorno |
 |---|---|---|
-| `1` | `fn :: re_is_digit Int` | `Bool` |
-| `2` | `fn :: re_is_word Int` | `Bool` |
-| `3` | `fn :: re_is_space Int` | `Bool` |
-| `4` | `fn :: re_match_short Int Int` | `Bool` |
-| `5` | `fn :: re_in_ranges Int [Int]` | `Bool` |
-| `6` | `fn :: re_escape_char Int` | `ReNode` |
-| `7` | `fn :: re_class_char String Int Int` | `(Int Int)` |
-| `8` | `fn :: re_fst_int (Int Int)` | `Int` |
-| `9` | `fn :: re_snd_int (Int Int)` | `Int` |
-| `10` | `fn :: re_parse_class_items String Int Int [Int]` | `([Int] Int)` |
-| `11` | `fn :: re_parse_class_item_step String Int Int [Int]` | `([Int] Int)` |
-| `12` | `fn :: re_parse_class_range_check String Int Int Int [Int]` | `([Int] Int)` |
-| `13` | `fn :: re_parse_class_range_hi String Int Int Int [Int]` | `([Int] Int)` |
-| `14` | `fn :: re_fst_ranges ([Int] Int)` | `[Int]` |
-| `15` | `fn :: re_snd_pos ([Int] Int)` | `Int` |
-| `16` | `fn :: re_parse_class String Int Int` | `ReParseRes` |
-| `17` | `fn :: re_finish_class Bool ([Int] Int)` | `ReParseRes` |
-| `18` | `fn :: re_res_node ReParseRes` | `ReNode` |
-| `19` | `fn :: re_res_pos ReParseRes` | `Int` |
-| `20` | `fn :: re_parse_group String Int Int` | `ReParseRes` |
-| `21` | `fn :: re_close_group ReNode String Int Int` | `ReParseRes` |
-| `22` | `fn :: re_parse_atom String Int Int` | `ReParseRes` |
-| `23` | `fn :: re_parse_postfix ReNode String Int Int` | `ReParseRes` |
-| `24` | `fn :: re_parse_factor String Int Int` | `ReParseRes` |
-| `25` | `fn :: re_is_seq_stop Int` | `Bool` |
-| `26` | `fn :: re_parse_seq_loop ReNode String Int Int` | `ReParseRes` |
-| `27` | `fn :: re_parse_seq_step ReNode String Int Int` | `ReParseRes` |
-| `28` | `fn :: re_parse_seq String Int Int` | `ReParseRes` |
-| `29` | `fn :: re_parse_seq_first String Int Int` | `ReParseRes` |
-| `30` | `fn :: re_parse_alt_loop ReNode String Int Int` | `ReParseRes` |
-| `31` | `fn :: re_parse_alt_branch ReNode String Int Int` | `ReParseRes` |
-| `32` | `fn :: re_parse_alt String Int Int` | `ReParseRes` |
-| `33` | `fn :: nfa_len [NfaInst]` | `Int` |
-| `34` | `fn :: re_compile_seq ReNode ReNode Int` | `[NfaInst]` |
-| `35` | `fn :: re_compile_opt ReNode Int` | `[NfaInst]` |
-| `36` | `fn :: re_compile_star ReNode Int` | `[NfaInst]` |
-| `37` | `fn :: re_compile_plus ReNode Int` | `[NfaInst]` |
-| `38` | `fn :: re_compile_alt ReNode ReNode Int` | `[NfaInst]` |
-| `39` | `fn :: re_compile_node ReNode Int` | `[NfaInst]` |
-| `40` | `fn :: re_compile String` | `[NfaInst]` |
-| `41` | `fn :: nfa_inst_at [NfaInst] Int` | `NfaInst` |
-| `42` | `fn :: nfa_set_has [Int] Int` | `Bool` |
-| `43` | `fn :: nfa_closure [NfaInst] [Int] Int Int [Int]` | `[Int]` |
-| `44` | `fn :: nfa_closure_inst [NfaInst] Int [Int] Int Int [Int] NfaInst` | `[Int]` |
-| `45` | `fn :: nfa_step_one NfaInst Int` | `[Int]` |
-| `46` | `fn :: nfa_step [NfaInst] [Int] Int` | `[Int]` |
-| `47` | `fn :: nfa_is_match_inst NfaInst` | `Bool` |
-| `48` | `fn :: nfa_has_match [NfaInst] [Int]` | `Bool` |
-| `49` | `fn :: nfa_update_last [NfaInst] [Int] Int Int` | `Int` |
-| `50` | `fn :: nfa_sim_loop [NfaInst] String Int Int [Int] Int` | `Int` |
-| `51` | `fn :: nfa_sim_step [NfaInst] String Int Int [Int] Int` | `Int` |
-| `52` | `fn :: nfa_longest_from [NfaInst] String Int Int` | `Int` |
-| `53` | `fn :: nfa_full_loop [NfaInst] String Int Int [Int]` | `Bool` |
-| `54` | `fn :: nfa_full_step [NfaInst] String Int Int [Int]` | `Bool` |
+| `1` | `fn :: re is digit Int` | `Bool` |
+| `2` | `fn :: re is word Int` | `Bool` |
+| `3` | `fn :: re is space Int` | `Bool` |
+| `4` | `fn :: re match short Int Int` | `Bool` |
+| `5` | `fn :: re in ranges Int [Int]` | `Bool` |
+| `6` | `fn :: re escape char Int` | `ReNode` |
+| `7` | `fn :: re class char String Int Int` | `(Int Int)` |
+| `8` | `fn :: re fst int (Int Int)` | `Int` |
+| `9` | `fn :: re snd int (Int Int)` | `Int` |
+| `10` | `fn :: re parse class items String Int Int [Int]` | `([Int] Int)` |
+| `11` | `fn :: re parse class item step String Int Int [Int]` | `([Int] Int)` |
+| `12` | `fn :: re parse class range check String Int Int Int [Int]` | `([Int] Int)` |
+| `13` | `fn :: re parse class range hi String Int Int Int [Int]` | `([Int] Int)` |
+| `14` | `fn :: re fst ranges ([Int] Int)` | `[Int]` |
+| `15` | `fn :: re snd pos ([Int] Int)` | `Int` |
+| `16` | `fn :: re parse class String Int Int` | `ReParseRes` |
+| `17` | `fn :: re finish class Bool ([Int] Int)` | `ReParseRes` |
+| `18` | `fn :: re res node ReParseRes` | `ReNode` |
+| `19` | `fn :: re res pos ReParseRes` | `Int` |
+| `20` | `fn :: re parse group String Int Int` | `ReParseRes` |
+| `21` | `fn :: re close group ReNode String Int Int` | `ReParseRes` |
+| `22` | `fn :: re parse atom String Int Int` | `ReParseRes` |
+| `23` | `fn :: re parse postfix ReNode String Int Int` | `ReParseRes` |
+| `24` | `fn :: re parse factor String Int Int` | `ReParseRes` |
+| `25` | `fn :: re is seq stop Int` | `Bool` |
+| `26` | `fn :: re parse seq loop ReNode String Int Int` | `ReParseRes` |
+| `27` | `fn :: re parse seq step ReNode String Int Int` | `ReParseRes` |
+| `28` | `fn :: re parse seq String Int Int` | `ReParseRes` |
+| `29` | `fn :: re parse seq first String Int Int` | `ReParseRes` |
+| `30` | `fn :: re parse alt loop ReNode String Int Int` | `ReParseRes` |
+| `31` | `fn :: re parse alt branch ReNode String Int Int` | `ReParseRes` |
+| `32` | `fn :: re parse alt String Int Int` | `ReParseRes` |
+| `33` | `fn :: nfa len [NfaInst]` | `Int` |
+| `34` | `fn :: re compile seq ReNode ReNode Int` | `[NfaInst]` |
+| `35` | `fn :: re compile opt ReNode Int` | `[NfaInst]` |
+| `36` | `fn :: re compile star ReNode Int` | `[NfaInst]` |
+| `37` | `fn :: re compile plus ReNode Int` | `[NfaInst]` |
+| `38` | `fn :: re compile alt ReNode ReNode Int` | `[NfaInst]` |
+| `39` | `fn :: re compile node ReNode Int` | `[NfaInst]` |
+| `40` | `fn :: re compile String` | `[NfaInst]` |
+| `41` | `fn :: nfa inst at [NfaInst] Int` | `NfaInst` |
+| `42` | `fn :: nfa set has [Int] Int` | `Bool` |
+| `43` | `fn :: nfa closure [NfaInst] [Int] Int Int [Int]` | `[Int]` |
+| `44` | `fn :: nfa closure inst [NfaInst] Int [Int] Int Int [Int] NfaInst` | `[Int]` |
+| `45` | `fn :: nfa step one NfaInst Int` | `[Int]` |
+| `46` | `fn :: nfa step [NfaInst] [Int] Int` | `[Int]` |
+| `47` | `fn :: nfa is match inst NfaInst` | `Bool` |
+| `48` | `fn :: nfa has match [NfaInst] [Int]` | `Bool` |
+| `49` | `fn :: nfa update last [NfaInst] [Int] Int Int` | `Int` |
+| `50` | `fn :: nfa sim loop [NfaInst] String Int Int [Int] Int` | `Int` |
+| `51` | `fn :: nfa sim step [NfaInst] String Int Int [Int] Int` | `Int` |
+| `52` | `fn :: nfa longest from [NfaInst] String Int Int` | `Int` |
+| `53` | `fn :: nfa full loop [NfaInst] String Int Int [Int]` | `Bool` |
+| `54` | `fn :: nfa full step [NfaInst] String Int Int [Int]` | `Bool` |
 | `55` | `fn :: regex match String String` | `Bool` |
-| `56` | `fn :: nfa_find_from [NfaInst] String Int Int` | `RegexMatch` |
-| `57` | `fn :: nfa_find_check [NfaInst] String Int Int Int` | `RegexMatch` |
+| `56` | `fn :: nfa find from [NfaInst] String Int Int` | `RegexMatch` |
+| `57` | `fn :: nfa find check [NfaInst] String Int Int Int` | `RegexMatch` |
 | `58` | `fn :: regex find String String` | `RegexMatch` |
 | `59` | `fn :: regex is match String String` | `Bool` |
-| `60` | `fn :: nfa_find_all_loop [NfaInst] String Int Int [RegexMatch]` | `[RegexMatch]` |
-| `61` | `fn :: nfa_find_all_step [NfaInst] String Int Int [RegexMatch] Int` | `[RegexMatch]` |
+| `60` | `fn :: nfa find all loop [NfaInst] String Int Int [RegexMatch]` | `[RegexMatch]` |
+| `61` | `fn :: nfa find all step [NfaInst] String Int Int [RegexMatch] Int` | `[RegexMatch]` |
 | `62` | `fn :: regex find all String String` | `[RegexMatch]` |
 | `63` | `fn :: regex replace String String String` | `String` |
-| `64` | `fn :: re_apply_replace RegexMatch String String` | `String` |
-| `65` | `fn :: nfa_replace_all_loop [NfaInst] String String Int Int String` | `String` |
-| `66` | `fn :: nfa_replace_all_step [NfaInst] String String Int Int String Int` | `String` |
+| `64` | `fn :: re apply replace RegexMatch String String` | `String` |
+| `65` | `fn :: nfa replace all loop [NfaInst] String String Int Int String` | `String` |
+| `66` | `fn :: nfa replace all step [NfaInst] String String Int Int String Int` | `String` |
 | `67` | `fn :: regex replace all String String String` | `String` |
-| `68` | `fn :: nfa_split_loop [NfaInst] String Int Int Int [String]` | `[String]` |
-| `69` | `fn :: nfa_split_step [NfaInst] String Int Int Int [String] Int` | `[String]` |
+| `68` | `fn :: nfa split loop [NfaInst] String Int Int Int [String]` | `[String]` |
+| `69` | `fn :: nfa split step [NfaInst] String Int Int Int [String] Int` | `[String]` |
 | `70` | `fn :: regex split String String` | `[String]` |
 
 ---
@@ -163,8 +163,8 @@ fn :: censurar telefonos String => Bool String
 En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `regex` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
 
 ```ridgun
-fn :: test_regex_operators_and_classes => ()
-      test_regex_operators_and_classes =
+fn :: test regex operators and classes => ()
+      test regex operators and classes =
         assert true (regex match "" "") "AC1: empty pattern matches empty string"
         assert false (regex match "" "nonempty") "AC1: empty pattern rejects non-empty on full match"
         assert true (regex match 'a(b|c)+d?e*' "abcbdeee") "AC1: alternation group plus opt star"
@@ -198,8 +198,8 @@ fn :: test_regex_operators_and_classes => ()
 En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `regex` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
 
 ```ridgun
-fn :: test_regex_find_replace_split => ()
-      test_regex_find_replace_split =
+fn :: test regex find replace split => ()
+      test regex find replace split =
         m1 = regex find '\d+' "item #42 and #99"
         assert true (matched m1) "AC2: find matched"
         assert int equals (match_start m1) 6 "AC2: find start"
@@ -210,10 +210,10 @@ fn :: test_regex_find_replace_split => ()
         assert false (matched m_none) "AC2: find returns matched=False when absent"
 
         all_m = regex find all '[a-z]+=\d+' "id=10, port=8080, ttl=60"
-        assert int equals (re_match_count all_m) 3 "AC2: find all key=val count"
-        assert str eq (text (re_match_at all_m 0)) "id=10" "AC2: find all first match"
-        assert str eq (text (re_match_at all_m 1)) "port=8080" "AC2: find all second match"
-        assert str eq (text (re_match_at all_m 2)) "ttl=60" "AC2: find all third match"
+        assert int equals (re match count all_m) 3 "AC2: find all key=val count"
+        assert str eq (text (re match at all_m 0)) "id=10" "AC2: find all first match"
+        assert str eq (text (re match at all_m 1)) "port=8080" "AC2: find all second match"
+        assert str eq (text (re match at all_m 2)) "ttl=60" "AC2: find all third match"
 
         r1 = regex replace '\d+' "X" "v1.2.3"
         assert str eq r1 "vX.2.3" "AC3: replace first"
@@ -223,11 +223,11 @@ fn :: test_regex_find_replace_split => ()
         assert str eq r2 "vX.X.X" "AC3: replace all"
 
         parts = regex split '\s*[,;]\s*' "alpha, beta ;  gamma,delta"
-        assert int equals (re_str_count parts) 4 "AC3: split count"
-        assert str eq (re_str_at parts 0) "alpha" "AC3: split[0]"
-        assert str eq (re_str_at parts 1) "beta" "AC3: split[1]"
-        assert str eq (re_str_at parts 2) "gamma" "AC3: split[2]"
-        assert str eq (re_str_at parts 3) "delta" "AC3: split[3]"
+        assert int equals (re str count parts) 4 "AC3: split count"
+        assert str eq (re str at parts 0) "alpha" "AC3: split[0]"
+        assert str eq (re str at parts 1) "beta" "AC3: split[1]"
+        assert str eq (re str at parts 2) "gamma" "AC3: split[2]"
+        assert str eq (re str at parts 3) "delta" "AC3: split[3]"
         ()
 ```
 

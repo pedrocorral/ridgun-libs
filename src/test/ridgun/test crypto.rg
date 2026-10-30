@@ -222,7 +222,7 @@ fn :: test rfc8439 chacha20 poly1305 aead => ()
         ()
 
 fn :: ten times String => String
-      ten times s =
+      ten times s      =
         s2 = s + s
         s4 = s2 + s2
         s4 + s4 + s2
@@ -244,10 +244,10 @@ fn :: t4 msg hex => String
         p0 + p1 + p2 + p3 + p4 + p5 + p6 + p7
 
 fn :: ms kid (String String) => String
-      ms kid (k, _) =  k
+      ms kid (k, _)          =  k
 
 fn :: ms pk (String String) => String
-      ms pk (_, p)  =  p
+      ms pk (_, p)          =  p
 
 -- ── TS-CRYPTO-005: FIPS 180-4 SHA-512, RFC 8032 Ed25519 & Minisign ──
 

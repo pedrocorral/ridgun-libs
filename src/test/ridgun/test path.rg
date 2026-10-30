@@ -7,11 +7,11 @@
 import test
 import path
 
-fn :: pair_fst (String String) => String
-      pair_fst (a, _)          =  a
+fn :: pair fst (String String) => String
+      pair fst (a, _)          =  a
 
-fn :: pair_snd (String String) => String
-      pair_snd (_, b)          =  b
+fn :: pair snd (String String) => String
+      pair snd (_, b)          =  b
 
 -- 1. Go path.Clean canonical test vectors & multi-segment path joining
 -- @tests TS-PATH-001
@@ -54,8 +54,8 @@ fn :: test path components and confinement => ()
         _ = assert str eq (path dirname p) "/home/boogie/ridgun-libs/src" "AC2: dirname"
         _ = assert str eq (path basename p) "socket.rg" "AC2: basename"
         sp = path split p
-        _ = assert str eq (pair_fst sp) "/home/boogie/ridgun-libs/src" "AC2: split dirname"
-        _ = assert str eq (pair_snd sp) "socket.rg" "AC2: split basename"
+        _ = assert str eq (pair fst sp) "/home/boogie/ridgun-libs/src" "AC2: split dirname"
+        _ = assert str eq (pair snd sp) "socket.rg" "AC2: split basename"
         _ = assert str eq (path dirname "/") "/" "AC2: dirname of / is /"
         _ = assert str eq (path basename "/") "/" "AC2: basename of / is /"
         _ = assert str eq (path dirname "/top") "/" "AC2: dirname of /top is /"

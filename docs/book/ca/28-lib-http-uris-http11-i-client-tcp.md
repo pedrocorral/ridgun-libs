@@ -568,7 +568,7 @@ fn :: http parse response String => Int String String
         ht parse resp parts lines body
 ```
 
-### 28.4.4. Implementació interna: Live Kernel TCP HTTP/1.1 Client (`http_request_tcp`, `http_get`, `http_post`)
+### 28.4.4. Implementació interna: Live Kernel TCP HTTP/1.1 Client (`http request tcp`, `http get`, `http post`)
 
 Fixa't en com `http.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 

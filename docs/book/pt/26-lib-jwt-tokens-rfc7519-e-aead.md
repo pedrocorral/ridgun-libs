@@ -54,61 +54,61 @@ type JwtClaimsRes = JwtClaimsOk JwtClaims | JwtClaimsErr String
 
 | # | Função / Assinatura (`fn ::`) | Tipo de Retorno |
 |---|---|---|
-| `1` | `fn :: jwt_b64url_lut Int` | `String` |
-| `2` | `fn :: jwt_b64_char Int` | `String` |
-| `3` | `fn :: jwt_b64_val Int` | `Int` |
-| `4` | `fn :: jwt_b64url_enc_bytes [Int]` | `String` |
-| `5` | `fn :: jwt_str_to_bytes_loop String Int Int [Int]` | `[Int]` |
-| `6` | `fn :: jwt_str_to_bytes String` | `[Int]` |
-| `7` | `fn :: jwt_bytes_to_str [Int]` | `String` |
-| `8` | `fn :: jwt_b64url_encode String` | `String` |
-| `9` | `fn :: jwt_b64url_valid_loop String Int Int` | `Bool` |
-| `10` | `fn :: jwt_b64url_is_valid String` | `Bool` |
-| `11` | `fn :: jwt_b64url_dec_rem String Int Int` | `[Int]` |
-| `12` | `fn :: jwt_b64url_dec_3 String Int` | `[Int]` |
-| `13` | `fn :: jwt_b64url_dec_4 String Int` | `[Int]` |
-| `14` | `fn :: jwt_b64url_decode_bytes String` | `[Int]` |
-| `15` | `fn :: jwt_b64url_decode String` | `String` |
-| `16` | `fn :: jwt_bxor_loop Int Int Int Int` | `Int` |
-| `17` | `fn :: jwt_byte_xor Int Int` | `Int` |
-| `18` | `fn :: jwt_ct_diff String String Int Int Int` | `Int` |
-| `19` | `fn :: jwt_ct_eq String String` | `Bool` |
-| `20` | `fn :: jwt_hex_nib Int` | `Int` |
-| `21` | `fn :: jwt_hex_to_bytes_loop String Int Int [Int]` | `[Int]` |
-| `22` | `fn :: jwt_hex_to_bytes String` | `[Int]` |
-| `23` | `fn :: jwt_pad_key_bytes [Int] Int` | `[Int]` |
-| `24` | `fn :: jwt_pad_key_head [Int] Int` | `[Int]` |
-| `25` | `fn :: jwt_key_block String` | `[Int]` |
-| `26` | `fn :: jwt_xor_pad_str [Int] Int` | `String` |
-| `27` | `fn :: jwt_hmac_sha256_b64url String String` | `String` |
-| `28` | `fn :: jwt_hs256_header_json Int` | `String` |
+| `1` | `fn :: jwt b64url lut Int` | `String` |
+| `2` | `fn :: jwt b64 char Int` | `String` |
+| `3` | `fn :: jwt b64 val Int` | `Int` |
+| `4` | `fn :: jwt b64url enc bytes [Int]` | `String` |
+| `5` | `fn :: jwt str to bytes loop String Int Int [Int]` | `[Int]` |
+| `6` | `fn :: jwt str to bytes String` | `[Int]` |
+| `7` | `fn :: jwt bytes to str [Int]` | `String` |
+| `8` | `fn :: jwt b64url encode String` | `String` |
+| `9` | `fn :: jwt b64url valid loop String Int Int` | `Bool` |
+| `10` | `fn :: jwt b64url is valid String` | `Bool` |
+| `11` | `fn :: jwt b64url dec rem String Int Int` | `[Int]` |
+| `12` | `fn :: jwt b64url dec 3 String Int` | `[Int]` |
+| `13` | `fn :: jwt b64url dec 4 String Int` | `[Int]` |
+| `14` | `fn :: jwt b64url decode bytes String` | `[Int]` |
+| `15` | `fn :: jwt b64url decode String` | `String` |
+| `16` | `fn :: jwt bxor loop Int Int Int Int` | `Int` |
+| `17` | `fn :: jwt byte xor Int Int` | `Int` |
+| `18` | `fn :: jwt ct diff String String Int Int Int` | `Int` |
+| `19` | `fn :: jwt ct eq String String` | `Bool` |
+| `20` | `fn :: jwt hex nib Int` | `Int` |
+| `21` | `fn :: jwt hex to bytes loop String Int Int [Int]` | `[Int]` |
+| `22` | `fn :: jwt hex to bytes String` | `[Int]` |
+| `23` | `fn :: jwt pad key bytes [Int] Int` | `[Int]` |
+| `24` | `fn :: jwt pad key head [Int] Int` | `[Int]` |
+| `25` | `fn :: jwt key block String` | `[Int]` |
+| `26` | `fn :: jwt xor pad str [Int] Int` | `String` |
+| `27` | `fn :: jwt hmac sha256 b64url String String` | `String` |
+| `28` | `fn :: jwt hs256 header json Int` | `String` |
 | `29` | `fn :: jwt sign hs256 String String` | `String` |
-| `30` | `fn :: jwt_split_dots_loop String Int Int Int [String]` | `[String]` |
-| `31` | `fn :: jwt_str_list_len [String]` | `Int` |
-| `32` | `fn :: jwt_str_at [String] Int` | `String` |
+| `30` | `fn :: jwt split dots loop String Int Int Int [String]` | `[String]` |
+| `31` | `fn :: jwt str list len [String]` | `Int` |
+| `32` | `fn :: jwt str at [String] Int` | `String` |
 | `33` | `fn :: jwt decode payload String` | `JwtRes` |
-| `34` | `fn :: jwt_decode_parts [String]` | `JwtRes` |
-| `35` | `fn :: jwt_header_is_hs256 String` | `Bool` |
-| `36` | `fn :: jwt_check_hdr_json JsonRes` | `Bool` |
+| `34` | `fn :: jwt decode parts [String]` | `JwtRes` |
+| `35` | `fn :: jwt header is hs256 String` | `Bool` |
+| `36` | `fn :: jwt check hdr json JsonRes` | `Bool` |
 | `37` | `fn :: jwt verify hs256 String String` | `JwtRes` |
-| `38` | `fn :: jwt_verify_parts [String] String` | `JwtRes` |
-| `39` | `fn :: jwt_verify_sig String String String String` | `JwtRes` |
-| `40` | `fn :: jwt_verify_sig_ct Bool String` | `JwtRes` |
+| `38` | `fn :: jwt verify parts [String] String` | `JwtRes` |
+| `39` | `fn :: jwt verify sig String String String String` | `JwtRes` |
+| `40` | `fn :: jwt verify sig ct Bool String` | `JwtRes` |
 | `41` | `fn :: jwt sign claims JwtClaims String` | `String` |
 | `42` | `fn :: jwt verify claims String String Int` | `JwtClaimsRes` |
-| `43` | `fn :: jwt_validate_verified_payload JwtRes Int` | `JwtClaimsRes` |
-| `44` | `fn :: jwt_validate_parsed_claims JsonRes Int` | `JwtClaimsRes` |
-| `45` | `fn :: jwt_check_claim_times JwtClaims Int` | `JwtClaimsRes` |
-| `46` | `fn :: jwt_keystream_bytes String String Int Int` | `[Int]` |
-| `47` | `fn :: jwt_xor_lists [Int] [Int]` | `[Int]` |
+| `43` | `fn :: jwt validate verified payload JwtRes Int` | `JwtClaimsRes` |
+| `44` | `fn :: jwt validate parsed claims JsonRes Int` | `JwtClaimsRes` |
+| `45` | `fn :: jwt check claim times JwtClaims Int` | `JwtClaimsRes` |
+| `46` | `fn :: jwt keystream bytes String String Int Int` | `[Int]` |
+| `47` | `fn :: jwt xor lists [Int] [Int]` | `[Int]` |
 | `48` | `fn :: jwt seal aead String String String` | `JwtRes` |
-| `49` | `fn :: jwt_seal_aead_ok String String String` | `JwtRes` |
+| `49` | `fn :: jwt seal aead ok String String String` | `JwtRes` |
 | `50` | `fn :: jwt open aead String String String` | `JwtRes` |
-| `51` | `fn :: jwt_open_aead_parts String String [String]` | `JwtRes` |
-| `52` | `fn :: jwt_open_aead_verify String String String String String` | `JwtRes` |
-| `53` | `fn :: jwt_open_aead_decrypt Bool String String String` | `JwtRes` |
-| `54` | `fn :: jwt_int_list_len [Int]` | `Int` |
-| `55` | `fn :: jwt_open_aead_pt String String [Int]` | `JwtRes` |
+| `51` | `fn :: jwt open aead parts String String [String]` | `JwtRes` |
+| `52` | `fn :: jwt open aead verify String String String String String` | `JwtRes` |
+| `53` | `fn :: jwt open aead decrypt Bool String String String` | `JwtRes` |
+| `54` | `fn :: jwt int list len [Int]` | `Int` |
+| `55` | `fn :: jwt open aead pt String String [Int]` | `JwtRes` |
 
 ---
 
@@ -150,35 +150,35 @@ fn :: sellar token confidencial String => Int String
 Neste exemplo prático exploramos de forma exaustiva como a `jwt` se comporta neste bloco funcional, incluindo entradas padrão, combinações de parâmetros e valores limite:
 
 ```ridgun
-fn :: test_jwt_hs256_sign_verify_and_tamper => ()
-      test_jwt_hs256_sign_verify_and_tamper =
+fn :: test jwt hs256 sign verify and tamper => ()
+      test jwt hs256 sign verify and tamper =
         payload = '{"sub":"user-42","role":"admin"}'
         secret = "super-secret-hmac-key-2026"
         tok = jwt sign hs256 payload secret
 
         dec = jwt decode payload tok
-        assert true (is_jwt_ok dec) "AC1: jwt decode payload succeeds"
-        assert str eq (unwrap_jwt dec) payload "AC1: decoded payload matches input"
+        assert true (is jwt ok dec) "AC1: jwt decode payload succeeds"
+        assert str eq (unwrap jwt dec) payload "AC1: decoded payload matches input"
 
         ver = jwt verify hs256 tok secret
-        assert true (is_jwt_ok ver) "AC2: jwt verify hs256 accepts valid signature"
-        assert str eq (unwrap_jwt ver) payload "AC2: verified payload matches input"
+        assert true (is jwt ok ver) "AC2: jwt verify hs256 accepts valid signature"
+        assert str eq (unwrap jwt ver) payload "AC2: verified payload matches input"
 
         wrong_sec = jwt verify hs256 tok "wrong-secret"
-        assert false (is_jwt_ok wrong_sec) "AC2: jwt verify hs256 rejects wrong secret"
-        assert false (is_jwt_ok (jwt verify hs256 tok "")) "AC2: jwt verify hs256 rejects empty secret"
+        assert false (is jwt ok wrong_sec) "AC2: jwt verify hs256 rejects wrong secret"
+        assert false (is jwt ok (jwt verify hs256 tok "")) "AC2: jwt verify hs256 rejects empty secret"
 
         tampered = tok + "x"
-        assert false (is_jwt_ok (jwt verify hs256 tampered secret)) "AC2: jwt verify hs256 rejects tampered signature"
+        assert false (is jwt ok (jwt verify hs256 tampered secret)) "AC2: jwt verify hs256 rejects tampered signature"
 
         -- CVE/RFC 8725 attacks: alg:none, empty signature segment, malformed segment counts
         alg_none_tok = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1c2VyLTQyIn0.c2ln"
-        assert false (is_jwt_ok (jwt verify hs256 alg_none_tok secret)) "AC2: jwt verify hs256 rejects alg:none"
+        assert false (is jwt ok (jwt verify hs256 alg_none_tok secret)) "AC2: jwt verify hs256 rejects alg:none"
         alg_none_empty_sig = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1c2VyLTQyIn0."
-        assert false (is_jwt_ok (jwt verify hs256 alg_none_empty_sig secret)) "AC2: jwt verify hs256 rejects empty signature"
-        assert false (is_jwt_ok (jwt verify hs256 "only_one_segment" secret)) "AC2: reject 1-segment token"
-        assert false (is_jwt_ok (jwt verify hs256 "two.segments" secret)) "AC2: reject 2-segment token"
-        assert false (is_jwt_ok (jwt decode payload "bad_token_without_dots")) "AC1: decode rejects token without 3 segments"
+        assert false (is jwt ok (jwt verify hs256 alg_none_empty_sig secret)) "AC2: jwt verify hs256 rejects empty signature"
+        assert false (is jwt ok (jwt verify hs256 "only_one_segment" secret)) "AC2: reject 1-segment token"
+        assert false (is jwt ok (jwt verify hs256 "two.segments" secret)) "AC2: reject 2-segment token"
+        assert false (is jwt ok (jwt decode payload "bad_token_without_dots")) "AC1: decode rejects token without 3 segments"
         ()
 ```
 
@@ -187,19 +187,19 @@ fn :: test_jwt_hs256_sign_verify_and_tamper => ()
 Neste exemplo prático exploramos de forma exaustiva como a `jwt` se comporta neste bloco funcional, incluindo entradas padrão, combinações de parâmetros e valores limite:
 
 ```ridgun
-fn :: test_jwt_claims_temporal_validation => ()
-      test_jwt_claims_temporal_validation =
+fn :: test jwt claims temporal validation => ()
+      test jwt claims temporal validation =
         claims = JwtClaims "ridgun-auth" "agent-007" 2000 1000 "tier=gold"
         secret = "claims-signing-secret"
         tok = jwt sign claims claims secret
 
         -- Exact nbf boundary: now == 1000 is valid (now >= nbf)
         at_nbf_res = jwt verify claims tok secret 1000
-        assert true (is_claims_ok at_nbf_res) "AC2: claims valid at exact nbf boundary (now == 1000)"
+        assert true (is claims ok at_nbf_res) "AC2: claims valid at exact nbf boundary (now == 1000)"
 
         ok_res = jwt verify claims tok secret 1500
-        assert true (is_claims_ok ok_res) "AC2: claims valid at now=1500"
-        c_out = unwrap_claims ok_res
+        assert true (is claims ok ok_res) "AC2: claims valid at now=1500"
+        c_out = unwrap claims ok_res
         assert str eq (issuer c_out) "ridgun-auth" "AC2: issuer preserved"
         assert str eq (subject c_out) "agent-007" "AC2: subject preserved"
         assert int equals (expires_at c_out) 2000 "AC2: expires_at preserved"
@@ -208,18 +208,18 @@ fn :: test_jwt_claims_temporal_validation => ()
 
         -- 1 second before exp: now == 1999 is valid
         before_exp_res = jwt verify claims tok secret 1999
-        assert true (is_claims_ok before_exp_res) "AC2: claims valid 1s before exp (1999 < 2000)"
+        assert true (is claims ok before_exp_res) "AC2: claims valid 1s before exp (1999 < 2000)"
 
         -- 1 second before nbf: now == 999 is rejected
         early_res = jwt verify claims tok secret 999
-        assert false (is_claims_ok early_res) "AC2: claims rejected before nbf (999 < 1000)"
+        assert false (is claims ok early_res) "AC2: claims rejected before nbf (999 < 1000)"
 
         -- Exact exp boundary and after: now == 2000 and now == 5000 rejected
         exp_res = jwt verify claims tok secret 2000
-        assert false (is_claims_ok exp_res) "AC2: claims rejected at exact exp (2000 >= 2000)"
+        assert false (is claims ok exp_res) "AC2: claims rejected at exact exp (2000 >= 2000)"
         late_res = jwt verify claims tok secret 5000
-        assert false (is_claims_ok late_res) "AC2: claims rejected after exp (5000 >= 2000)"
-        assert false (is_claims_ok (jwt verify claims tok "wrong-secret" 1500)) "AC2: claims rejected with wrong secret"
+        assert false (is claims ok late_res) "AC2: claims rejected after exp (5000 >= 2000)"
+        assert false (is claims ok (jwt verify claims tok "wrong-secret" 1500)) "AC2: claims rejected with wrong secret"
         ()
 ```
 
@@ -228,8 +228,8 @@ fn :: test_jwt_claims_temporal_validation => ()
 Neste exemplo prático exploramos de forma exaustiva como a `jwt` se comporta neste bloco funcional, incluindo entradas padrão, combinações de parâmetros e valores limite:
 
 ```ridgun
-fn :: test_jwt_aead_seal_and_open => ()
-      test_jwt_aead_seal_and_open =
+fn :: test jwt aead seal and open => ()
+      test jwt aead seal and open =
         key32 = "0123456789abcdef0123456789abcdef"
         other_key32 = "fedcba9876543210fedcba9876543210"
         nonce12 = "uniqueNonce1"
@@ -237,18 +237,18 @@ fn :: test_jwt_aead_seal_and_open => ()
         secret_msg = '{"api_key":"rk_live_998877","scope":"full"}'
 
         sealed = jwt seal aead key32 nonce12 secret_msg
-        assert true (is_jwt_ok sealed) "AC3: jwt seal aead succeeds with 32B key and 12B nonce"
-        tok = unwrap_jwt sealed
+        assert true (is jwt ok sealed) "AC3: jwt seal aead succeeds with 32B key and 12B nonce"
+        tok = unwrap jwt sealed
 
         opened = jwt open aead key32 nonce12 tok
-        assert true (is_jwt_ok opened) "AC3: jwt open aead succeeds"
-        assert str eq (unwrap_jwt opened) secret_msg "AC3: jwt open aead round-trips plaintext"
+        assert true (is jwt ok opened) "AC3: jwt open aead succeeds"
+        assert str eq (unwrap jwt opened) secret_msg "AC3: jwt open aead round-trips plaintext"
 
-        assert false (is_jwt_ok (jwt open aead other_key32 nonce12 tok)) "AC3: jwt open aead rejects wrong 32B key"
-        assert false (is_jwt_ok (jwt open aead key32 other_nonce12 tok)) "AC3: jwt open aead rejects wrong 12B nonce"
-        assert false (is_jwt_ok (jwt open aead key32 nonce12 (tok + "A"))) "AC3: jwt open aead rejects tampered ciphertext/tag"
-        assert false (is_jwt_ok (jwt seal aead "short" nonce12 secret_msg)) "AC3: jwt seal aead rejects non-32B key"
-        assert false (is_jwt_ok (jwt seal aead key32 "short" secret_msg)) "AC3: jwt seal aead rejects non-12B nonce"
+        assert false (is jwt ok (jwt open aead other_key32 nonce12 tok)) "AC3: jwt open aead rejects wrong 32B key"
+        assert false (is jwt ok (jwt open aead key32 other_nonce12 tok)) "AC3: jwt open aead rejects wrong 12B nonce"
+        assert false (is jwt ok (jwt open aead key32 nonce12 (tok + "A"))) "AC3: jwt open aead rejects tampered ciphertext/tag"
+        assert false (is jwt ok (jwt seal aead "short" nonce12 secret_msg)) "AC3: jwt seal aead rejects non-32B key"
+        assert false (is jwt ok (jwt seal aead key32 "short" secret_msg)) "AC3: jwt seal aead rejects non-12B nonce"
         ()
 ```
 

@@ -7,15 +7,15 @@
 import test
 import ini
 
-fn :: ini_sec_count [String] => Int
-      ini_sec_count []       =  0
-      ini_sec_count (_:xs)   =  1 + (ini_sec_count xs)
+fn :: ini sec count [String] => Int
+      ini sec count []       =  0
+      ini sec count (_:xs)   =  1 + (ini sec count xs)
 
 -- 1. Global keys, multiple sections, inline comments (; and #), quoted '#' preservation, and typed getters
 -- @tests TS-INI-001
-fn :: test_ini_sections_and_typed_getters => ()
-      test_ini_sections_and_typed_getters =
-        nl = char_from_code 10
+fn :: test ini sections and typed getters => ()
+      test ini sections and typed getters =
+        nl = char from code 10
         src = "# Global header comment" + nl + "; Secondary comment" + nl + "global_env = production" + nl + nl + "[database]" + nl + "host = \"127.0.0.1\"" + nl + "port = 5432 ; default pg" + nl + "timeout = -1 # infinite" + nl + "password = \"p@ss#word;123\"" + nl + "ssl = true" + nl + "pool_enabled = yes" + nl + "readonly = 0" + nl + "debug_sql = no" + nl + nl + "[server]" + nl + "workers = 4" + nl + "enabled = 1" + nl
         doc = ini parse src
         _ = assert str eq (ini get doc "" "global_env" "") "production" "AC1: global sectionless key in root '' section"
@@ -32,16 +32,16 @@ fn :: test_ini_sections_and_typed_getters => ()
         _ = assert str eq (ini get doc "server" "missing" "default_v") "default_v" "AC1: ini get fallback on missing key"
         _ = assert str eq (ini get doc "no_such_section" "k" "fallback") "fallback" "AC1: ini get fallback on missing section"
         secs = ini sections doc
-        _ = assert int equals (ini_sec_count secs) 3 "AC1: 3 sections (root '', database, server)"
+        _ = assert int equals (ini sec count secs) 3 "AC1: 3 sections (root '', database, server)"
         ()
 
 -- 2. Dotenv export, single/double quotes, chained ${VAR} interpolation, and ini set/stringify round-trip
 -- @tests TS-INI-001
-fn :: test_dotenv_interpolation_and_roundtrip => ()
-      test_dotenv_interpolation_and_roundtrip =
-        nl = char_from_code 10
-        lb = char_from_code 123
-        rb = char_from_code 125
+fn :: test dotenv interpolation and roundtrip => ()
+      test dotenv interpolation and roundtrip =
+        nl = char from code 10
+        lb = char from code 123
+        rb = char from code 125
         env_src = "# .env test" + nl + "export BASE_DIR=/srv/app" + nl + "APP_NAME='solstice'" + nl + "LOG_DIR=\"$" + lb + "BASE_DIR" + rb + "/$" + lb + "APP_NAME" + rb + "/logs\"" + nl + "WITH_UNKNOWN=\"prefix_$" + lb + "UNDEFINED_VAR" + rb + "_suffix\"" + nl + "PORT=8080 # inline comment" + nl
         env = dotenv parse env_src
         _ = assert str eq (dotenv get env "BASE_DIR" "") "/srv/app" "AC2: dotenv export key"
@@ -66,6 +66,6 @@ fn :: test_dotenv_interpolation_and_roundtrip => ()
 -- @tests TS-INI-001
 fn :: main => ()
       main =
-        _ = test_ini_sections_and_typed_getters
-        _ = test_dotenv_interpolation_and_roundtrip
+        _ = test ini sections and typed getters
+        _ = test dotenv interpolation and roundtrip
         echo "[PASS] test ini: TS-INI-001 passed"

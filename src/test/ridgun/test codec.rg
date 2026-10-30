@@ -12,7 +12,7 @@ fn :: rnd snd (Int String) => String
       rnd snd (_, s)       =  s
 
 fn :: check all bytes Int => ()
-      check all bytes b =
+      check all bytes b   =
         | b >= 256  = ()
         | otherwise =
           s = cd raw byte ub b

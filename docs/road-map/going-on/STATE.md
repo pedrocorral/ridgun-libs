@@ -1,18 +1,18 @@
 ---
-updated: 2026-10-30T13:37
+updated: 2026-10-30T20:30
 active_task: none
 agent_runtime: gemini
 ---
 # Session state — read this first when resuming
 
 ## Where we are (3 lines max)
-- `TASK-0038` completed: added `JsonNum String` (`json num text`, `json get float`), strict RFC 3629 UTF-8 byte sequence validation in JSON strings and object keys, `json find field` (`Option JsonVal`) and `json has field`, and parser fast-paths (`O(1)` list prepend + reverse, unescaped ASCII slice, in-place integer parsing) in `src/main/ridgun/lib/json.rg`.
+- `TASK-0039` completed: replaced all underscore-separated `fn` and `op` names (in signature tables, inline code spans, and Ridgun code blocks) with space-separated names across all 7 editions of `docs/book/` (91 chapters) and 11 remaining test files in `src/test/ridgun/`, while preserving `_` in variable names and record field names, and regenerated all HTML books.
 ## Files to load for the active task (nothing else)
-- `docs/road-map/completed/2026-10/TASK-0038-title.md`
+- `docs/road-map/completed/2026-10/TASK-0039-task-0039.md`
 ## Last verified facts (tests green? migrations applied? env?)
-- `ridgunc run --strict "src/test/ridgun/test json.rg"` → `[PASS] test json: TS-JSON-001 (including RG-076, RG-077, RG-078) passed`
-- `ridgunc run "src/test/ridgun/test jwt.rg"` → `[PASS] test jwt: TS-JWT-001 passed`
-- Solstice repro (`2026-10-30-json-repro`) passes all cases (`1.5`, `-1.5`, `1e3`, `{"price":19.99}`, `bad-ff.json`, `bad-overlong.json`), and 100,000 small objects (900 KB) parse in `766 ms` (down from `1,836 ms`).
+- `ridgunc run --strict "src/test/ridgun/test jwt.rg"` → `[PASS] test jwt: TS-JWT-001 passed`
+- `ridgunc run --strict "src/test/ridgun/test btree.rg"` → `[PASS] test btree: TS-BTREE-001 passed`
+- `python3 docs/book/build_book.py` → regenerated all 8 interactive HTML books (`es`, `ca`, `gl`, `eu`, `en`, `pt`, `sv`, and root `index.html`).
 - `aix docs coverage && aix docs validate` → `0 errors, 0 warnings`
 ## Immediate next action
 - Await next user instructions.

@@ -493,7 +493,7 @@ fn :: verificar sha512 ed25519 y minisign => ()
 
 En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/crypto.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
-### 24.4.1. Intern implementation: RGF-019 Raw Byte Manipulation (`byte_str`, `bytes_from_list`, `bytes_to_list`)
+### 24.4.1. Intern implementation: RGF-019 Raw Byte Manipulation (`byte str`, `bytes from list`, `bytes to list`)
 
 Se hur `crypto.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
@@ -682,7 +682,7 @@ fn :: byte slice String Int Int => String
         c byte slice loop (c build b256) s st en "" "" "" ""
 ```
 
-### 24.4.3. Intern implementation: RGF-015 Pure-Ridgun RFC 9106 Argon2id (`argon2id_hash`, `argon2id_verify`)
+### 24.4.3. Intern implementation: RGF-015 Pure-Ridgun RFC 9106 Argon2id (`argon2id hash`, `argon2id verify`)
 
 Se hur `crypto.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 

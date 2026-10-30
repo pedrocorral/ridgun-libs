@@ -54,38 +54,38 @@ type DiffStats = equal_count: Int, insert_count: Int, delete_count: Int
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
-| `1` | `fn :: df_max Int Int` | `Int` |
-| `2` | `fn :: df_int_to_str_pos Int` | `String` |
-| `3` | `fn :: df_int_to_str Int` | `String` |
-| `4` | `fn :: df_rev [String] [String]` | `[String]` |
-| `5` | `fn :: df_rev_ints [Int] [Int]` | `[Int]` |
-| `6` | `fn :: df_split_lines_loop String Int Int Int [String]` | `[String]` |
-| `7` | `fn :: df_split_lines String` | `[String]` |
-| `8` | `fn :: df_zeros Int [Int]` | `[Int]` |
-| `9` | `fn :: df_nth_int [Int] Int` | `Int` |
-| `10` | `fn :: df_head_int [Int]` | `Int` |
-| `11` | `fn :: df_cell_val String String Int Int Int` | `Int` |
-| `12` | `fn :: df_build_row String [String] [Int] Int [Int]` | `[Int]` |
-| `13` | `fn :: df_build_dp [String] [String] [[Int]]` | `[[Int]]` |
-| `14` | `fn :: df_tail_rows [[Int]]` | `[[Int]]` |
-| `15` | `fn :: df_head_row [[Int]]` | `[Int]` |
-| `16` | `fn :: df_rev_edits [DiffEdit] [DiffEdit]` | `[DiffEdit]` |
-| `17` | `fn :: df_backtrack [String] [String] [[Int]] Int Int Int [DiffEdit]` | `[DiffEdit]` |
-| `18` | `fn :: df_backtrack_step String [String] String [String] [[Int]] Int Int Int [DiffEdit]` | `[DiffEdit]` |
-| `19` | `fn :: df_backtrack_branch String [String] String [String] [[Int]] [[Int]] Int Int Int Int Int [DiffEdit]` | `[DiffEdit]` |
-| `20` | `fn :: df_list_length [String]` | `Int` |
+| `1` | `fn :: df max Int Int` | `Int` |
+| `2` | `fn :: df int to str pos Int` | `String` |
+| `3` | `fn :: df int to str Int` | `String` |
+| `4` | `fn :: df rev [String] [String]` | `[String]` |
+| `5` | `fn :: df rev ints [Int] [Int]` | `[Int]` |
+| `6` | `fn :: df split lines loop String Int Int Int [String]` | `[String]` |
+| `7` | `fn :: df split lines String` | `[String]` |
+| `8` | `fn :: df zeros Int [Int]` | `[Int]` |
+| `9` | `fn :: df nth int [Int] Int` | `Int` |
+| `10` | `fn :: df head int [Int]` | `Int` |
+| `11` | `fn :: df cell val String String Int Int Int` | `Int` |
+| `12` | `fn :: df build row String [String] [Int] Int [Int]` | `[Int]` |
+| `13` | `fn :: df build dp [String] [String] [[Int]]` | `[[Int]]` |
+| `14` | `fn :: df tail rows [[Int]]` | `[[Int]]` |
+| `15` | `fn :: df head row [[Int]]` | `[Int]` |
+| `16` | `fn :: df rev edits [DiffEdit] [DiffEdit]` | `[DiffEdit]` |
+| `17` | `fn :: df backtrack [String] [String] [[Int]] Int Int Int [DiffEdit]` | `[DiffEdit]` |
+| `18` | `fn :: df backtrack step String [String] String [String] [[Int]] Int Int Int [DiffEdit]` | `[DiffEdit]` |
+| `19` | `fn :: df backtrack branch String [String] String [String] [[Int]] [[Int]] Int Int Int Int Int [DiffEdit]` | `[DiffEdit]` |
+| `20` | `fn :: df list length [String]` | `Int` |
 | `21` | `fn :: diff lines [String] [String]` | `[DiffEdit]` |
 | `22` | `fn :: diff text String String` | `[DiffEdit]` |
-| `23` | `fn :: df_stats_loop [DiffEdit] Int Int Int` | `DiffStats` |
+| `23` | `fn :: df stats loop [DiffEdit] Int Int Int` | `DiffStats` |
 | `24` | `fn :: diff stats [DiffEdit]` | `DiffStats` |
 | `25` | `fn :: diff edit distance String String` | `Int` |
 | `26` | `fn :: diff has changes [DiffEdit]` | `Bool` |
-| `27` | `fn :: df_format_unified_lines [DiffEdit] String` | `String` |
-| `28` | `fn :: df_hunk_start Int` | `Int` |
-| `29` | `fn :: df_unified_header String String Int Int` | `String` |
+| `27` | `fn :: df format unified lines [DiffEdit] String` | `String` |
+| `28` | `fn :: df hunk start Int` | `Int` |
+| `29` | `fn :: df unified header String String Int Int` | `String` |
 | `30` | `fn :: diff unified String String String String` | `String` |
-| `31` | `fn :: df_apply_collect [DiffEdit] [String]` | `[String]` |
-| `32` | `fn :: df_join_lines [String]` | `String` |
+| `31` | `fn :: df apply collect [DiffEdit] [String]` | `[String]` |
+| `32` | `fn :: df join lines [String]` | `String` |
 | `33` | `fn :: diff apply [DiffEdit]` | `String` |
 
 ---
@@ -125,17 +125,17 @@ fn :: verificar parche String [DiffEdit] => String
 Adibide praktiko honetan `diff` bloke funtzional honetan nola portatzen den sakonki aztertzen dugu, sarrera estandarrak, parametro-konbinazioak eta muga-balioak barne:
 
 ```ridgun
-fn :: test_diff_empty_and_identical => ()
-      test_diff_empty_and_identical =
+fn :: test diff empty and identical => ()
+      test diff empty and identical =
         nl = char from code 10
         e_empty = diff text "" ""
-        assert int equals (count_edits e_empty) 0 "AC1: empty diff edit count"
+        assert int equals (count edits e_empty) 0 "AC1: empty diff edit count"
         assert false (diff has changes e_empty) "AC1: empty diff has no changes"
         assert int equals (diff edit distance "" "") 0 "AC1: empty edit distance"
         assert str eq (diff apply e_empty) "" "AC3: empty diff apply"
         same_doc = "alpha" + nl + "beta" + nl + "gamma"
         e_same = diff text same_doc same_doc
-        assert int equals (count_edits e_same) 3 "AC1: identical 3-line count"
+        assert int equals (count edits e_same) 3 "AC1: identical 3-line count"
         assert false (diff has changes e_same) "AC1: identical has no changes"
         st_same = diff stats e_same
         assert int equals (equal_count st_same) 3 "AC1: equal_count == 3"
@@ -151,8 +151,8 @@ fn :: test_diff_empty_and_identical => ()
 Adibide praktiko honetan `diff` bloke funtzional honetan nola portatzen den sakonki aztertzen dugu, sarrera estandarrak, parametro-konbinazioak eta muga-balioak barne:
 
 ```ridgun
-fn :: test_diff_pure_insert_and_delete => ()
-      test_diff_pure_insert_and_delete =
+fn :: test diff pure insert and delete => ()
+      test diff pure insert and delete =
         nl = char from code 10
         target = "line1" + nl + "line2" + nl + "line3"
         e_ins = diff text "" target
@@ -163,8 +163,8 @@ fn :: test_diff_pure_insert_and_delete => ()
         assert int equals (delete_count st_ins) 0 "AC1: pure insert delete_count"
         assert int equals (diff edit distance "" target) 3 "AC1: pure insert edit distance"
         assert str eq (diff apply e_ins) target "AC3: pure insert apply"
-        ins0 = nth_edit e_ins 0
-        ins2 = nth_edit e_ins 2
+        ins0 = nth edit e_ins 0
+        ins2 = nth edit e_ins 2
         assert str eq (diff_op ins0) "insert" "AC1: ins0 op"
         assert int equals (old_line_no ins0) 0 "AC1: ins0 old_line_no"
         assert int equals (new_line_no ins0) 1 "AC1: ins0 new_line_no"
@@ -177,8 +177,8 @@ fn :: test_diff_pure_insert_and_delete => ()
         assert int equals (delete_count st_del) 3 "AC1: pure delete delete_count"
         assert int equals (diff edit distance target "") 3 "AC1: pure delete edit distance"
         assert str eq (diff apply e_del) "" "AC3: pure delete apply"
-        del0 = nth_edit e_del 0
-        del2 = nth_edit e_del 2
+        del0 = nth edit e_del 0
+        del2 = nth edit e_del 2
         assert str eq (diff_op del0) "delete" "AC1: del0 op"
         assert int equals (old_line_no del0) 1 "AC1: del0 old_line_no"
         assert int equals (new_line_no del0) 0 "AC1: del0 new_line_no"
@@ -191,8 +191,8 @@ fn :: test_diff_pure_insert_and_delete => ()
 Adibide praktiko honetan `diff` bloke funtzional honetan nola portatzen den sakonki aztertzen dugu, sarrera estandarrak, parametro-konbinazioak eta muga-balioak barne:
 
 ```ridgun
-fn :: test_diff_myers_classic_vector => ()
-      test_diff_myers_classic_vector =
+fn :: test diff myers classic vector => ()
+      test diff myers classic vector =
         nl = char from code 10
         old_lines = ["A", "B", "C", "A", "B", "B", "A"]
         new_lines = ["C", "B", "A", "B", "A", "C"]
@@ -213,24 +213,24 @@ fn :: test_diff_myers_classic_vector => ()
 Adibide praktiko honetan `diff` bloke funtzional honetan nola portatzen den sakonki aztertzen dugu, sarrera estandarrak, parametro-konbinazioak eta muga-balioak barne:
 
 ```ridgun
-fn :: test_diff_code_hunks_and_line_numbers => ()
-      test_diff_code_hunks_and_line_numbers =
+fn :: test diff code hunks and line numbers => ()
+      test diff code hunks and line numbers =
         nl = char from code 10
         old_code = "fn :: add Int Int => Int" + nl + "      add a b = a + b" + nl + "" + nl + "fn :: sub Int Int => Int" + nl + "      sub a b = a - b"
         new_code = "fn :: add Int Int => Int" + nl + "      add x y = x + y" + nl + "" + nl + "fn :: mul Int Int => Int" + nl + "      mul a b = a * b" + nl + "" + nl + "fn :: sub Int Int => Int" + nl + "      sub a b = a - b"
         edits = diff text old_code new_code
         assert true (diff has changes edits) "AC1: code refactoring has changes"
         assert str eq (diff apply edits) new_code "AC3: code refactoring lossless apply"
-        e0 = nth_edit edits 0
+        e0 = nth edit edits 0
         assert str eq (diff_op e0) "equal" "AC1: line 1 equal"
         assert int equals (old_line_no e0) 1 "AC1: line 1 old_line_no"
         assert int equals (new_line_no e0) 1 "AC1: line 1 new_line_no"
-        e1 = nth_edit edits 1
+        e1 = nth edit edits 1
         assert str eq (diff_op e1) "delete" "AC1: line 2 deleted"
         assert str eq (line_text e1) "      add a b = a + b" "AC1: deleted line text"
         assert int equals (old_line_no e1) 2 "AC1: deleted old_line_no"
         assert int equals (new_line_no e1) 0 "AC1: deleted new_line_no"
-        e2 = nth_edit edits 2
+        e2 = nth edit edits 2
         assert str eq (diff_op e2) "insert" "AC1: line 2 inserted"
         assert str eq (line_text e2) "      add x y = x + y" "AC1: inserted line text"
         assert int equals (old_line_no e2) 0 "AC1: inserted old_line_no"
@@ -243,8 +243,8 @@ fn :: test_diff_code_hunks_and_line_numbers => ()
 Adibide praktiko honetan `diff` bloke funtzional honetan nola portatzen den sakonki aztertzen dugu, sarrera estandarrak, parametro-konbinazioak eta muga-balioak barne:
 
 ```ridgun
-fn :: test_diff_unified_formatting => ()
-      test_diff_unified_formatting =
+fn :: test diff unified formatting => ()
+      test diff unified formatting =
         nl = char from code 10
         old_s = "one" + nl + "two" + nl + "three"
         new_s = "one" + nl + "TWO" + nl + "three" + nl + "four"
@@ -261,8 +261,8 @@ fn :: test_diff_unified_formatting => ()
 Adibide praktiko honetan `diff` bloke funtzional honetan nola portatzen den sakonki aztertzen dugu, sarrera estandarrak, parametro-konbinazioak eta muga-balioak barne:
 
 ```ridgun
-fn :: test_diff_repetitive_lines => ()
-      test_diff_repetitive_lines =
+fn :: test diff repetitive lines => ()
+      test diff repetitive lines =
         nl = char from code 10
         old_rep = "x" + nl + "x" + nl + "y" + nl + "x" + nl + "x"
         new_rep = "x" + nl + "y" + nl + "y" + nl + "x"

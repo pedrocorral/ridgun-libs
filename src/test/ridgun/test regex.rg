@@ -7,28 +7,28 @@
 import test
 import regex
 
-fn :: re_match_count [RegexMatch] => Int
-      re_match_count []           =  0
-      re_match_count (_:rest)     =  1 + (re_match_count rest)
+fn :: re match count [RegexMatch] => Int
+      re match count []           =  0
+      re match count (_:rest)     =  1 + (re match count rest)
 
-fn :: re_match_at [RegexMatch] Int => RegexMatch
-      re_match_at []           _   =  RegexMatch False (-1) (-1) ""
-      re_match_at (m:_)        0   =  m
-      re_match_at (_:rest)     idx =  re_match_at rest (idx - 1)
+fn :: re match at [RegexMatch] Int => RegexMatch
+      re match at []           _   =  RegexMatch False (-1) (-1) ""
+      re match at (m:_)        0   =  m
+      re match at (_:rest)     idx =  re match at rest (idx - 1)
 
-fn :: re_str_at [String] Int => String
-      re_str_at []       _   =  ""
-      re_str_at (s:_)    0   =  s
-      re_str_at (_:rest) idx =  re_str_at rest (idx - 1)
+fn :: re str at [String] Int => String
+      re str at []       _   =  ""
+      re str at (s:_)    0   =  s
+      re str at (_:rest) idx =  re str at rest (idx - 1)
 
-fn :: re_str_count [String] => Int
-      re_str_count []       =  0
-      re_str_count (_:rest) =  1 + (re_str_count rest)
+fn :: re str count [String] => Int
+      re str count []       =  0
+      re str count (_:rest) =  1 + (re str count rest)
 
 -- 1. Core Thompson NFA operators, character classes, escapes, anchors, and ReDoS immunity
 -- @tests TS-REGEX-001
-fn :: test_regex_operators_and_classes => ()
-      test_regex_operators_and_classes =
+fn :: test regex operators and classes => ()
+      test regex operators and classes =
         _ = assert true (regex match "" "") "AC1: empty pattern matches empty string"
         _ = assert false (regex match "" "nonempty") "AC1: empty pattern rejects non-empty on full match"
         _ = assert true (regex match 'a(b|c)+d?e*' "abcbdeee") "AC1: alternation group plus opt star"
@@ -58,8 +58,8 @@ fn :: test_regex_operators_and_classes => ()
 
 -- 2. Substring find, find all, replace first, replace all, and split
 -- @tests TS-REGEX-001
-fn :: test_regex_find_replace_split => ()
-      test_regex_find_replace_split =
+fn :: test regex find replace split => ()
+      test regex find replace split =
         m1 = regex find '\d+' "item #42 and #99"
         _ = assert true (matched m1) "AC2: find matched"
         _ = assert int equals (match_start m1) 6 "AC2: find start"
@@ -70,10 +70,10 @@ fn :: test_regex_find_replace_split => ()
         _ = assert false (matched m_none) "AC2: find returns matched=False when absent"
 
         all_m = regex find all '[a-z]+=\d+' "id=10, port=8080, ttl=60"
-        _ = assert int equals (re_match_count all_m) 3 "AC2: find all key=val count"
-        _ = assert str eq (text (re_match_at all_m 0)) "id=10" "AC2: find all first match"
-        _ = assert str eq (text (re_match_at all_m 1)) "port=8080" "AC2: find all second match"
-        _ = assert str eq (text (re_match_at all_m 2)) "ttl=60" "AC2: find all third match"
+        _ = assert int equals (re match count all_m) 3 "AC2: find all key=val count"
+        _ = assert str eq (text (re match at all_m 0)) "id=10" "AC2: find all first match"
+        _ = assert str eq (text (re match at all_m 1)) "port=8080" "AC2: find all second match"
+        _ = assert str eq (text (re match at all_m 2)) "ttl=60" "AC2: find all third match"
 
         r1 = regex replace '\d+' "X" "v1.2.3"
         _ = assert str eq r1 "vX.2.3" "AC3: replace first"
@@ -83,16 +83,16 @@ fn :: test_regex_find_replace_split => ()
         _ = assert str eq r2 "vX.X.X" "AC3: replace all"
 
         parts = regex split '\s*[,;]\s*' "alpha, beta ;  gamma,delta"
-        _ = assert int equals (re_str_count parts) 4 "AC3: split count"
-        _ = assert str eq (re_str_at parts 0) "alpha" "AC3: split[0]"
-        _ = assert str eq (re_str_at parts 1) "beta" "AC3: split[1]"
-        _ = assert str eq (re_str_at parts 2) "gamma" "AC3: split[2]"
-        _ = assert str eq (re_str_at parts 3) "delta" "AC3: split[3]"
+        _ = assert int equals (re str count parts) 4 "AC3: split count"
+        _ = assert str eq (re str at parts 0) "alpha" "AC3: split[0]"
+        _ = assert str eq (re str at parts 1) "beta" "AC3: split[1]"
+        _ = assert str eq (re str at parts 2) "gamma" "AC3: split[2]"
+        _ = assert str eq (re str at parts 3) "delta" "AC3: split[3]"
         ()
 
 -- @tests TS-REGEX-001
 fn :: main => ()
       main =
-        _ = test_regex_operators_and_classes
-        _ = test_regex_find_replace_split
+        _ = test regex operators and classes
+        _ = test regex find replace split
         echo "[PASS] test regex: TS-REGEX-001 passed"

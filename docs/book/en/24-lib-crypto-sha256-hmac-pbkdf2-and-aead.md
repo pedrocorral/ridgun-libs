@@ -493,7 +493,7 @@ fn :: verificar sha512 ed25519 y minisign => ()
 
 One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/crypto.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
-### 24.4.1. Internal Implementation: RGF-019 Raw Byte Manipulation (`byte_str`, `bytes_from_list`, `bytes_to_list`)
+### 24.4.1. Internal Implementation: RGF-019 Raw Byte Manipulation (`byte str`, `bytes from list`, `bytes to list`)
 
 Observe how `crypto.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
@@ -682,7 +682,7 @@ fn :: byte slice String Int Int => String
         c byte slice loop (c build b256) s st en "" "" "" ""
 ```
 
-### 24.4.3. Internal Implementation: RGF-015 Pure-Ridgun RFC 9106 Argon2id (`argon2id_hash`, `argon2id_verify`)
+### 24.4.3. Internal Implementation: RGF-015 Pure-Ridgun RFC 9106 Argon2id (`argon2id hash`, `argon2id verify`)
 
 Observe how `crypto.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 

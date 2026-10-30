@@ -39,7 +39,7 @@ fn :: pair snd (A B)  => B
 fn :: test posix constants descriptors and poll => ()
       test posix constants descriptors and poll =
         _       = assert equals (poll in) 1 "POLLIN == 1"
-        _       = assert equals poll_out 4 "POLLOUT == 4"
+        _       = assert equals poll out 4 "POLLOUT == 4"
         _       = assert equals (poll err) 8 "POLLERR == 8"
         _       = assert equals (sig int) 2 "SIGINT == 2"
         _       = assert equals (sig kill) 9 "SIGKILL == 9"
@@ -140,7 +140,7 @@ fn :: test posix filesystem clocks signals and random => ()
         _       = assert false (process exists 99999999) "process exists non-existent pid"
         assert false ((pair snd r1) == (pair snd r2)) "two 32-byte random draws differ"
 
-fn :: is proc exited ProcStatus       Int => Bool
+fn :: is proc exited ProcStatus        Int => Bool
       is proc exited (ProcExited code) exp =  code == exp
       is proc exited _                 _   =  False
 

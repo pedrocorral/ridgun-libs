@@ -9,21 +9,21 @@ import template
 
 fn :: tag2 String => String
       tag2 inner  =
-        lb = char_from_code 123
-        rb = char_from_code 125
+        lb = char from code 123
+        rb = char from code 125
         lb + lb + inner + rb + rb
 
 fn :: tag3 String => String
       tag3 inner  =
-        lb = char_from_code 123
-        rb = char_from_code 125
+        lb = char from code 123
+        rb = char from code 125
         lb + lb + lb + inner + rb + rb + rb
 
 -- 1. Plain interpolation, missing variables, whitespace-padded tags, and comments
 -- @tests TS-TMPL-001
-fn :: test_tmpl_interpolation_and_comments => ()
-      test_tmpl_interpolation_and_comments =
-        nl = char_from_code 10
+fn :: test tmpl interpolation and comments => ()
+      test tmpl interpolation and comments =
+        nl = char from code 10
         ctx = [("name", "Ada Lovelace"), ("role", "Mathematician"), ("empty", "")]
         t1 = "Hello, " + (tag2 "name") + " (" + (tag2 "  role  ") + ")!"
         out1 = tmpl render t1 ctx
@@ -38,9 +38,9 @@ fn :: test_tmpl_interpolation_and_comments => ()
 
 -- 2. HTML auto-escaping vs triple-brace {{{raw}}} and {{&raw}} unescaped interpolation
 -- @tests TS-TMPL-001
-fn :: test_tmpl_html_escaping_and_raw => ()
-      test_tmpl_html_escaping_and_raw =
-        q = char_from_code 34
+fn :: test tmpl html escaping and raw => ()
+      test tmpl html escaping and raw =
+        q = char from code 34
         ctx = [("xss", "<script>alert(" + q + "xss" + q + " & 'pwn')</script>"), ("trusted", "<b>Bold &amp; Safe</b>")]
         tmpl = "Escaped: " + (tag2 "xss") + " | Raw3: " + (tag3 "trusted") + " | RawAmp: " + (tag2 "& trusted ")
         out_html = tmpl render html tmpl ctx
@@ -52,8 +52,8 @@ fn :: test_tmpl_html_escaping_and_raw => ()
 
 -- 3. Conditional sections {{#key}}...{{/key}} and inverted sections {{^key}}...{{/key}}
 -- @tests TS-TMPL-001
-fn :: test_tmpl_sections_and_inverted => ()
-      test_tmpl_sections_and_inverted =
+fn :: test tmpl sections and inverted => ()
+      test tmpl sections and inverted =
         tmpl = (tag2 "#auth") + "Welcome, " + (tag2 "user") + "!" + (tag2 "/auth") + (tag2 "^auth") + "Please log in." + (tag2 "/auth")
         out_in = tmpl render html tmpl [("auth", "true"), ("user", "Alice & Bob")]
         _ = assert str eq out_in "Welcome, Alice &amp; Bob!" "AC2: truthy section rendered with HTML escaping"
@@ -71,8 +71,8 @@ fn :: test_tmpl_sections_and_inverted => ()
 
 -- 4. Nested conditional sections (same key and distinct keys)
 -- @tests TS-TMPL-001
-fn :: test_tmpl_nested_sections => ()
-      test_tmpl_nested_sections =
+fn :: test tmpl nested sections => ()
+      test tmpl nested sections =
         tmpl = (tag2 "#outer") + "A-" + (tag2 "#inner") + "B-" + (tag2 "val") + (tag2 "/inner") + (tag2 "^inner") + "NO_INNER" + (tag2 "/inner") + "-C" + (tag2 "/outer")
         out1 = tmpl render tmpl [("outer", "1"), ("inner", "yes"), ("val", "42")]
         _ = assert str eq out1 "A-B-42-C" "AC2: nested outer+inner truthy"
@@ -87,11 +87,11 @@ fn :: test_tmpl_nested_sections => ()
 
 -- 5. LaTeX auto-escaping for special characters (\, {, }, &, %, $, #, _, ~, ^)
 -- @tests TS-TMPL-001
-fn :: test_tmpl_latex_escaping => ()
-      test_tmpl_latex_escaping =
-        bs = char_from_code 92
-        lb = char_from_code 123
-        rb = char_from_code 125
+fn :: test tmpl latex escaping => ()
+      test tmpl latex escaping =
+        bs = char from code 92
+        lb = char from code 123
+        rb = char from code 125
         braces = lb + rb
         ctx = [("formula", "100% of $50 & #1_item " + lb + "a" + bs + "b" + rb + " ~ ^"), ("raw_tex", bs + "textbf" + lb + "Title" + rb)]
         tmpl = "Text: " + (tag2 "formula") + " | Raw: " + (tag3 "raw_tex")
@@ -102,9 +102,9 @@ fn :: test_tmpl_latex_escaping => ()
 
 -- 6. Malformed/unclosed tags graceful handling (no crash or infinite loop)
 -- @tests TS-TMPL-001
-fn :: test_tmpl_malformed_tags => ()
-      test_tmpl_malformed_tags =
-        lb = char_from_code 123
+fn :: test tmpl malformed tags => ()
+      test tmpl malformed tags =
+        lb = char from code 123
         ctx = [("x", "1")]
         _ = assert str eq (tmpl render ("trailing " + lb + lb) ctx) ("trailing " + lb + lb) "AC1: trailing double brace"
         _ = assert str eq (tmpl render ("unclosed " + lb + lb + "x") ctx) ("unclosed " + lb + lb + "x") "AC1: unclosed var tag"
@@ -115,10 +115,10 @@ fn :: test_tmpl_malformed_tags => ()
 -- @tests TS-TMPL-001
 fn :: main => ()
       main =
-        _ = test_tmpl_interpolation_and_comments
-        _ = test_tmpl_html_escaping_and_raw
-        _ = test_tmpl_sections_and_inverted
-        _ = test_tmpl_nested_sections
-        _ = test_tmpl_latex_escaping
-        _ = test_tmpl_malformed_tags
+        _ = test tmpl interpolation and comments
+        _ = test tmpl html escaping and raw
+        _ = test tmpl sections and inverted
+        _ = test tmpl nested sections
+        _ = test tmpl latex escaping
+        _ = test tmpl malformed tags
         echo "[PASS] test template: TS-TMPL-001 passed"

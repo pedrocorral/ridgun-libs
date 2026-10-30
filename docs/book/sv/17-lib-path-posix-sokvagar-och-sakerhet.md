@@ -161,8 +161,8 @@ fn :: test path components and confinement => ()
         assert str eq (path dirname p) "/home/boogie/ridgun-libs/src" "AC2: dirname"
         assert str eq (path basename p) "socket.rg" "AC2: basename"
         sp = path split p
-        assert str eq (pair_fst sp) "/home/boogie/ridgun-libs/src" "AC2: split dirname"
-        assert str eq (pair_snd sp) "socket.rg" "AC2: split basename"
+        assert str eq (pair fst sp) "/home/boogie/ridgun-libs/src" "AC2: split dirname"
+        assert str eq (pair snd sp) "socket.rg" "AC2: split basename"
         assert str eq (path dirname "/") "/" "AC2: dirname of / is /"
         assert str eq (path basename "/") "/" "AC2: basename of / is /"
         assert str eq (path dirname "/top") "/" "AC2: dirname of /top is /"

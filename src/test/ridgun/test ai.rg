@@ -10,42 +10,42 @@ import test
 import ai
 
 fn :: jobj String => String
-      jobj inner =
+      jobj inner  =
         (char from code 123) + inner + (char from code 125)
 
 fn :: fst str (String String) => String
-      fst str (a, _) =  a
+      fst str (a, _)          =  a
 
 fn :: snd str (String String) => String
-      snd str (_, b) =  b
+      snd str (_, b)          =  b
 
 fn :: fst bool (Bool String) => Bool
-      fst bool (ok, _) =  ok
+      fst bool (ok, _)       =  ok
 
 fn :: snd err (Bool String) => String
-      snd err (_, msg) =  msg
+      snd err (_, msg)      =  msg
 
 fn :: first msg [AiMsg] => AiMsg
-      first msg []    =  AiMsg "" "" "" False
-      first msg (m:_) =  m
+      first msg []      =  AiMsg "" "" "" False
+      first msg (m:_)   =  m
 
-fn :: second msg [AiMsg] => AiMsg
+fn :: second msg [AiMsg]  => AiMsg
       second msg []       =  AiMsg "" "" "" False
       second msg (_:rest) =  first msg rest
 
-fn :: count msgs [AiMsg] Int => Int
+fn :: count msgs [AiMsg]  Int => Int
       count msgs []       acc =  acc
       count msgs (_:rest) acc =  count msgs rest (acc + 1)
 
 fn :: first tool call [AiToolCall] => AiToolCall
-      first tool call []    =  AiToolCall "" "" ""
-      first tool call (c:_) =  c
+      first tool call []           =  AiToolCall "" "" ""
+      first tool call (c:_)        =  c
 
 fn :: first doc [AiDoc] => AiDoc
-      first doc []    =  AiDoc "" "" ""
-      first doc (d:_) =  d
+      first doc []      =  AiDoc "" "" ""
+      first doc (d:_)   =  d
 
-fn :: count docs [AiDoc] Int => Int
+fn :: count docs [AiDoc]  Int => Int
       count docs []       acc =  acc
       count docs (_:rest) acc =  count docs rest (acc + 1)
 
@@ -54,57 +54,57 @@ fn :: count strs [String] Int => Int
       count strs (_:rest) acc =  count strs rest (acc + 1)
 
 fn :: first str [String] => String
-      first str []    =  ""
-      first str (s:_) =  s
+      first str []       =  ""
+      first str (s:_)    =  s
 
 fn :: turn is call tools AiTurn => Bool
-      turn is call tools (AiCallTools _ _ _) =  True
-      turn is call tools _                   =  False
+      turn is call tools (AiCallTools _ _ _) = True
+      turn is call tools _      =  False
 
-fn :: turn is reply AiTurn => Bool
+fn :: turn is reply AiTurn        => Bool
       turn is reply (AiReply _ _) =  True
       turn is reply _             =  False
 
-fn :: turn is err AiTurn => Bool
+fn :: turn is err AiTurn            => Bool
       turn is err (AiStopError _ _) =  True
       turn is err _                 =  False
 
 fn :: turn calls AiTurn => [AiToolCall]
-      turn calls (AiCallTools _ cs _) =  cs
-      turn calls _                    =  []
+      turn calls (AiCallTools _ cs _) = cs
+      turn calls _      =  []
 
-fn :: turn text AiTurn => String
-      turn text (AiReply t _)       =  t
-      turn text (AiCallTools t _ _) =  t
-      turn text (AiStopError _ m)   =  m
+fn :: turn text AiTurn            => String
+      turn text (AiReply t _)     =  t
+      turn text (AiCallTools t _ _) = t
+      turn text (AiStopError _ m) =  m
 
-fn :: turn total tokens AiTurn => Int
-      turn total tokens (AiReply _ u)       =  au_total u
-      turn total tokens (AiCallTools _ _ u) =  au_total u
-      turn total tokens _                   =  0
+fn :: turn total tokens AiTurn        => Int
+      turn total tokens (AiReply _ u) =  au_total u
+      turn total tokens (AiCallTools _ _ u) = au_total u
+      turn total tokens _             =  0
 
 fn :: step conv (AiConv AiStepDecision) => AiConv
-      step conv (c, _) =  c
+      step conv (c, _)                  =  c
 
 fn :: step dec (AiConv AiStepDecision) => AiStepDecision
-      step dec (_, d) =  d
+      step dec (_, d)                  =  d
 
-fn :: dec is done AiStepDecision => Bool
+fn :: dec is done AiStepDecision     => Bool
       dec is done (AiDecisionDone _) =  True
       dec is done _                  =  False
 
 fn :: dec is run tools AiStepDecision => Bool
-      dec is run tools (AiDecisionRunTools _) =  True
-      dec is run tools _                      =  False
+      dec is run tools (AiDecisionRunTools _) = True
+      dec is run tools _              =  False
 
 fn :: dec is abort AiStepDecision => Bool
-      dec is abort (AiDecisionAbort _) =  True
-      dec is abort _                   =  False
+      dec is abort (AiDecisionAbort _) = True
+      dec is abort _              =  False
 
-fn :: dec text AiStepDecision => String
-      dec text (AiDecisionDone t)  =  t
-      dec text (AiDecisionAbort r) =  r
-      dec text _                   =  ""
+fn :: dec text AiStepDecision     => String
+      dec text (AiDecisionDone t) =  t
+      dec text (AiDecisionAbort r) = r
+      dec text _                  =  ""
 
 -- 1. Conversations, <think> separation, token estimation, trimming & compaction
 -- @tests TS-AI-001

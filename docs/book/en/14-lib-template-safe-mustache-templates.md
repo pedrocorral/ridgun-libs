@@ -51,37 +51,37 @@ type TmplEscape = TmplEscapeNone | TmplEscapeHtml | TmplEscapeLatex
 
 | # | Function / Signature (`fn ::`) | Return Type |
 |---|---|---|
-| `1` | `fn :: tm_lbrace` | `String` |
-| `2` | `fn :: tm_rbrace` | `String` |
-| `3` | `fn :: tm_braces` | `String` |
-| `4` | `fn :: tm_is_space Int` | `Bool` |
-| `5` | `fn :: tm_trim_start String Int Int` | `Int` |
-| `6` | `fn :: tm_trim_end String Int Int` | `Int` |
-| `7` | `fn :: tm_trim String` | `String` |
-| `8` | `fn :: tm_lookup [(String, String)] String` | `String` |
-| `9` | `fn :: tm_val_truthy String` | `Bool` |
-| `10` | `fn :: tm_is_truthy [(String, String)] String` | `Bool` |
-| `11` | `fn :: tm_escape_html_char Int` | `String` |
-| `12` | `fn :: tm_escape_html_loop String Int Int String` | `String` |
-| `13` | `fn :: tm_escape_latex_char Int` | `String` |
-| `14` | `fn :: tm_escape_latex_loop String Int Int String` | `String` |
-| `15` | `fn :: tm_escape String TmplEscape` | `String` |
-| `16` | `fn :: tm_find_close2 String Int Int` | `Int` |
-| `17` | `fn :: tm_find_close3 String Int Int` | `Int` |
-| `18` | `fn :: tm_find_section_close String Int Int String Int` | `(Int, Int)` |
-| `19` | `fn :: tm_check_section_tag String Int Int String Int Int` | `(Int, Int)` |
-| `20` | `fn :: tm_check_close_tag String Int Int String Int Int` | `(Int, Int)` |
-| `21` | `fn :: tm_close_tag_match String Int Int String Int Int` | `(Int, Int)` |
-| `22` | `fn :: tm_check_open_tag String Int Int String Int Int` | `(Int, Int)` |
-| `23` | `fn :: tm_scan String Int Int [(String, String)] TmplEscape String` | `String` |
-| `24` | `fn :: tm_dispatch_tag String Int Int [(String, String)] TmplEscape String` | `String` |
-| `25` | `fn :: tm_tag_raw3 String Int Int [(String, String)] TmplEscape String Int` | `String` |
-| `26` | `fn :: tm_tag_raw_amp String Int Int [(String, String)] TmplEscape String Int` | `String` |
-| `27` | `fn :: tm_tag_comment String Int Int [(String, String)] TmplEscape String Int` | `String` |
-| `28` | `fn :: tm_section_active Bool Bool` | `Bool` |
-| `29` | `fn :: tm_render_section_body String Int (Int, Int) Int [(String, String)] TmplEscape String Bool` | `String` |
-| `30` | `fn :: tm_tag_section String Int Int [(String, String)] TmplEscape String Int Bool` | `String` |
-| `31` | `fn :: tm_tag_var String Int Int [(String, String)] TmplEscape String Int` | `String` |
+| `1` | `fn :: tm lbrace` | `String` |
+| `2` | `fn :: tm rbrace` | `String` |
+| `3` | `fn :: tm braces` | `String` |
+| `4` | `fn :: tm is space Int` | `Bool` |
+| `5` | `fn :: tm trim start String Int Int` | `Int` |
+| `6` | `fn :: tm trim end String Int Int` | `Int` |
+| `7` | `fn :: tm trim String` | `String` |
+| `8` | `fn :: tm lookup [(String, String)] String` | `String` |
+| `9` | `fn :: tm val truthy String` | `Bool` |
+| `10` | `fn :: tm is truthy [(String, String)] String` | `Bool` |
+| `11` | `fn :: tm escape html char Int` | `String` |
+| `12` | `fn :: tm escape html loop String Int Int String` | `String` |
+| `13` | `fn :: tm escape latex char Int` | `String` |
+| `14` | `fn :: tm escape latex loop String Int Int String` | `String` |
+| `15` | `fn :: tm escape String TmplEscape` | `String` |
+| `16` | `fn :: tm find close2 String Int Int` | `Int` |
+| `17` | `fn :: tm find close3 String Int Int` | `Int` |
+| `18` | `fn :: tm find section close String Int Int String Int` | `(Int, Int)` |
+| `19` | `fn :: tm check section tag String Int Int String Int Int` | `(Int, Int)` |
+| `20` | `fn :: tm check close tag String Int Int String Int Int` | `(Int, Int)` |
+| `21` | `fn :: tm close tag match String Int Int String Int Int` | `(Int, Int)` |
+| `22` | `fn :: tm check open tag String Int Int String Int Int` | `(Int, Int)` |
+| `23` | `fn :: tm scan String Int Int [(String, String)] TmplEscape String` | `String` |
+| `24` | `fn :: tm dispatch tag String Int Int [(String, String)] TmplEscape String` | `String` |
+| `25` | `fn :: tm tag raw3 String Int Int [(String, String)] TmplEscape String Int` | `String` |
+| `26` | `fn :: tm tag raw amp String Int Int [(String, String)] TmplEscape String Int` | `String` |
+| `27` | `fn :: tm tag comment String Int Int [(String, String)] TmplEscape String Int` | `String` |
+| `28` | `fn :: tm section active Bool Bool` | `Bool` |
+| `29` | `fn :: tm render section body String Int (Int, Int) Int [(String, String)] TmplEscape String Bool` | `String` |
+| `30` | `fn :: tm tag section String Int Int [(String, String)] TmplEscape String Int Bool` | `String` |
+| `31` | `fn :: tm tag var String Int Int [(String, String)] TmplEscape String Int` | `String` |
 | `32` | `fn :: tmpl render with escape String [(String, String)] TmplEscape` | `String` |
 | `33` | `fn :: tmpl render String [(String, String)]` | `String` |
 | `34` | `fn :: tmpl render html String [(String, String)]` | `String` |
@@ -125,8 +125,8 @@ fn :: generar linea latex String => String
 In this hands-on walkthrough we thoroughly exercise how `template` behaves across this functional area, covering standard inputs, parameter combinations, and corner cases:
 
 ```ridgun
-fn :: test_tmpl_interpolation_and_comments => ()
-      test_tmpl_interpolation_and_comments =
+fn :: test tmpl interpolation and comments => ()
+      test tmpl interpolation and comments =
         nl = char from code 10
         ctx = [("name", "Ada Lovelace"), ("role", "Mathematician"), ("empty", "")]
         t1 = "Hello, " + (tag2 "name") + " (" + (tag2 "  role  ") + ")!"
@@ -146,8 +146,8 @@ fn :: test_tmpl_interpolation_and_comments => ()
 In this hands-on walkthrough we thoroughly exercise how `template` behaves across this functional area, covering standard inputs, parameter combinations, and corner cases:
 
 ```ridgun
-fn :: test_tmpl_html_escaping_and_raw => ()
-      test_tmpl_html_escaping_and_raw =
+fn :: test tmpl html escaping and raw => ()
+      test tmpl html escaping and raw =
         q = char from code 34
         ctx = [("xss", "<script>alert(" + q + "xss" + q + " & 'pwn')</script>"), ("trusted", "<b>Bold &amp; Safe</b>")]
         tmpl = "Escaped: " + (tag2 "xss") + " | Raw3: " + (tag3 "trusted") + " | RawAmp: " + (tag2 "& trusted ")
@@ -164,8 +164,8 @@ fn :: test_tmpl_html_escaping_and_raw => ()
 In this hands-on walkthrough we thoroughly exercise how `template` behaves across this functional area, covering standard inputs, parameter combinations, and corner cases:
 
 ```ridgun
-fn :: test_tmpl_sections_and_inverted => ()
-      test_tmpl_sections_and_inverted =
+fn :: test tmpl sections and inverted => ()
+      test tmpl sections and inverted =
         tmpl = (tag2 "#auth") + "Welcome, " + (tag2 "user") + "!" + (tag2 "/auth") + (tag2 "^auth") + "Please log in." + (tag2 "/auth")
         out_in = tmpl render html tmpl [("auth", "true"), ("user", "Alice & Bob")]
         assert str eq out_in "Welcome, Alice &amp; Bob!" "AC2: truthy section rendered with HTML escaping"
@@ -187,8 +187,8 @@ fn :: test_tmpl_sections_and_inverted => ()
 In this hands-on walkthrough we thoroughly exercise how `template` behaves across this functional area, covering standard inputs, parameter combinations, and corner cases:
 
 ```ridgun
-fn :: test_tmpl_nested_sections => ()
-      test_tmpl_nested_sections =
+fn :: test tmpl nested sections => ()
+      test tmpl nested sections =
         tmpl = (tag2 "#outer") + "A-" + (tag2 "#inner") + "B-" + (tag2 "val") + (tag2 "/inner") + (tag2 "^inner") + "NO_INNER" + (tag2 "/inner") + "-C" + (tag2 "/outer")
         out1 = tmpl render tmpl [("outer", "1"), ("inner", "yes"), ("val", "42")]
         assert str eq out1 "A-B-42-C" "AC2: nested outer+inner truthy"
@@ -207,8 +207,8 @@ fn :: test_tmpl_nested_sections => ()
 In this hands-on walkthrough we thoroughly exercise how `template` behaves across this functional area, covering standard inputs, parameter combinations, and corner cases:
 
 ```ridgun
-fn :: test_tmpl_latex_escaping => ()
-      test_tmpl_latex_escaping =
+fn :: test tmpl latex escaping => ()
+      test tmpl latex escaping =
         bs = char from code 92
         lb = char from code 123
         rb = char from code 125
@@ -226,8 +226,8 @@ fn :: test_tmpl_latex_escaping => ()
 In this hands-on walkthrough we thoroughly exercise how `template` behaves across this functional area, covering standard inputs, parameter combinations, and corner cases:
 
 ```ridgun
-fn :: test_tmpl_malformed_tags => ()
-      test_tmpl_malformed_tags =
+fn :: test tmpl malformed tags => ()
+      test tmpl malformed tags =
         lb = char from code 123
         ctx = [("x", "1")]
         assert str eq (tmpl render ("trailing " + lb + lb) ctx) ("trailing " + lb + lb) "AC1: trailing double brace"
