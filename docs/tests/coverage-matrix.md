@@ -19,6 +19,7 @@
 | API-JWT-001 | TS-JWT-001 | src/main/ridgun/lib/jwt.rg | src/test/ridgun/test jwt.rg | ok |
 | API-LINALG-001 | TS-LINALG-001 | src/main/ridgun/lib/linalg.rg | src/test/ridgun/test linalg.rg | ok |
 | API-LIST-001 | TS-LIST-001 | src/main/ridgun/lib/list.rg | src/test/ridgun/test list.rg | ok |
+| API-LOCALE-001 | — | src/main/ridgun/lib/locale.rg | — | no test spec |
 | API-LOG-001 | TS-LOG-001 | src/main/ridgun/lib/log.rg | src/test/ridgun/test log.rg | ok |
 | API-MATH-001 | TS-MATH-001 | src/main/ridgun/lib/math.rg | src/test/ridgun/test math.rg | ok |
 | API-PATH-001 | TS-PATH-001 | src/main/ridgun/lib/path.rg | src/test/ridgun/test path.rg | ok |
@@ -54,6 +55,7 @@
 | FR-JWT-001 | TS-JWT-001 | src/main/ridgun/lib/jwt.rg | src/test/ridgun/test jwt.rg | ok |
 | FR-LINALG-001 | TS-LINALG-001 | src/main/ridgun/lib/linalg.rg | src/test/ridgun/test linalg.rg | ok |
 | FR-LIST-001 | TS-LIST-001 | src/main/ridgun/lib/list.rg | src/test/ridgun/test list.rg | ok |
+| FR-LOCALE-001 | — | src/main/ridgun/lib/locale.rg | — | no test spec |
 | FR-LOG-001 | TS-LOG-001 | src/main/ridgun/lib/log.rg | src/test/ridgun/test log.rg | ok |
 | FR-MATH-001 | TS-MATH-001 | src/main/ridgun/lib/math.rg | src/test/ridgun/test math.rg | ok |
 | FR-PATH-001 | TS-PATH-001 | src/main/ridgun/lib/path.rg | src/test/ridgun/test path.rg | ok |
@@ -77,6 +79,7 @@
 
 ## Orphan test specs (no valid requirement)
 - TS-AI-001
+- TS-LOCALE-001
 
 ## Vulnerability mitigations found in code
 - none

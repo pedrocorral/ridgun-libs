@@ -37,5 +37,6 @@ status: approved
 | Unified Diff & Patch Library | Pure-Ridgun Longest Common Subsequence (LCS) line diff, Unified Diff (`---`, `+++`, `@@`) formatter, and patch applier library (`diff.rg`) | DIFF |
 | Safe Text Template Engine Library | Pure-Ridgun Mustache-style `{{var}}` template renderer with HTML/LaTeX auto-escaping, conditional sections `{{#key}}...{{/key}}`, and inverted sections `{{^key}}...{{/key}}` (`template.rg`) | TMPL |
 | AI Agent, Tool Calling, Streaming, RAG & MCP Library | Pure-Ridgun AI agent conversation management, context compaction, `<think>` separation, declarative tool schemas, OpenAI/Anthropic/Ollama JSON & SSE streaming codecs, structured output extraction/repair, bounded ReAct loop, security guardrails (`prompt injection` & secret scrubbing), BM25/TF mini-RAG, multi-agent handoff, and MCP JSON-RPC protocol (`ai.rg`) | AI |
+| CLDR Locale Data Library | Pure-Ridgun Unicode CLDR locale data library for cardinal plural rules (`plural category`, `plural categories`), UTC date and datetime formatting (`format date`, `format datetime`), localized integer and decimal formatting (`format int`, `format decimal`), and language autonyms (`language name`) (`locale.rg`) | LOCALE |
 
 Domain codes are UPPERCASE, ≤ 8 chars, and name folders in `functional/`, `api/`, and `docs/tests/*/`.

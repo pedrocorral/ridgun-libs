@@ -33,3 +33,4 @@ Read this when: working on a domain. Skip when: the domain is not yours.
 | `diff/` | Longest Common Subsequence line diff, Unified Diff & patch library (`FR-DIFF-001`) | Working on `diff.rg` |
 | `tmpl/` | Mustache-style text template engine with HTML/LaTeX auto-escaping (`FR-TMPL-001`) | Working on `template.rg` |
 | `ai/` | AI agent conversations, `<think>` separation, tool schemas, OpenAI/Anthropic/Ollama JSON & SSE codecs, structured outputs, ReAct loop, security guardrails, mini-RAG, handoffs & MCP (`FR-AI-001`) | Working on `ai.rg` |
+| `locale/` | CLDR locale data library for cardinal plural rules, UTC date/datetime formatting, number formatting & language autonyms (`FR-LOCALE-001`) | Working on `locale.rg` |

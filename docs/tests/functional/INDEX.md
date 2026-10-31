@@ -33,3 +33,4 @@ Read this when: working in a domain.
 | `diff/` | Test specifications for `DIFF` (`FR-DIFF-001`) | Testing `diff.rg` |
 | `tmpl/` | Test specifications for `TMPL` (`FR-TMPL-001`) | Testing `template.rg` |
 | `ai/` | Test specifications for `AI` (`FR-AI-001`) | Testing `ai.rg` |
+| `locale/` | Test specifications for `LOCALE` (`FR-LOCALE-001`) | Testing `locale.rg` |

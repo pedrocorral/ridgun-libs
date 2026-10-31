@@ -33,3 +33,4 @@ Read this when: implementing or consuming a lib's public interface. Skip when: i
 | `diff/` | Public API contract for `diff.rg` (`API-DIFF-001`) | Consuming or editing `diff` |
 | `tmpl/` | Public API contract for `template.rg` (`API-TMPL-001`) | Consuming or editing `template` |
 | `ai/` | Public API contract for `ai.rg` (`API-AI-001`) | Consuming or editing `ai` |
+| `locale/` | Public API contract for `locale.rg` (`API-LOCALE-001`) | Consuming or editing `locale` |
