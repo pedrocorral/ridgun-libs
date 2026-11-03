@@ -28,6 +28,7 @@ verified_by: [TS-LOCALE-001]
 - `fn :: plural category cldr String Int => String`
 - `fn :: plural categories cldr String => [String]`
 - `fn :: plural index String Int => Int`
+- `fn :: plural index cldr String Int => Int`
 - `fn :: month name String Int => String`
 - `fn :: month short name String Int => String`
 - `fn :: weekday name String Int => String`

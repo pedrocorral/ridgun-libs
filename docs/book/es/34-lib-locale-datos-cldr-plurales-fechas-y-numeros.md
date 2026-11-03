@@ -163,6 +163,10 @@ fn :: test locale plural rules => ()
         assert str eq (plural category cldr "es" 1000000) "many" "AC2: strict CLDR es 1000000 -> many"
         assert str eq (plural category cldr "ca" 2000000) "many" "AC2: strict CLDR ca 2000000 -> many"
         assert str eq (plural category cldr "pt" 1000000) "many" "AC2: strict CLDR pt 1000000 -> many"
+        assert str eq (plural category cldr "it" 1000000) "many" "AC2: strict CLDR it 1000000 -> many"
+        assert int equals (plural index cldr "it" 1) 0 "AC2: plural index cldr it 1 -> 0 (one)"
+        assert int equals (plural index cldr "it" 1000000) 1 "AC2: plural index cldr it 1000000 -> 1 (many)"
+        assert int equals (plural index cldr "it" 5) 2 "AC2: plural index cldr it 5 -> 2 (other)"
         assert str eq (plural category cldr "es" 0) "other" "AC2: strict CLDR es 0 -> other"
         assert str eq (plural category cldr "eu" 1000000) "other" "AC2: strict CLDR eu 1000000 -> other"
         assert str eq (loc join strs (plural categories cldr "es")) "one,many,other" "AC2: strict CLDR categories es"
@@ -240,7 +244,8 @@ fn :: test locale numbers => ()
 ```ridgun
 fn :: test locale autonyms normalization and registry => ()
       test locale autonyms normalization and registry =
-        assert str eq (loc join strs (supported locales)) "es,ca,eu,gl,pt,sv,en" "AC1: supported locales order"
+        assert str eq (loc join strs (supported locales)) "es,ca,eu,gl,pt,sv,en,it" "AC1: supported locales order"
+        assert str eq (language name "it") "Italiano" "AC1: language name it"
         assert str eq (language name "es") "Español" "AC1: language name es"
         assert str eq (language name "ca") "Català" "AC1: language name ca"
         assert str eq (language name "eu") "Euskara" "AC1: language name eu"

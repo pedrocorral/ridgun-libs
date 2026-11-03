@@ -95,7 +95,7 @@ fn :: loc spec it => LocaleSpec
 -- @implements API-LOCALE-001
 fn :: supported locales => [String]
       supported locales =
-        ["es", "ca", "eu", "gl", "pt", "sv", "en"]
+        ["es", "ca", "eu", "gl", "pt", "sv", "en", "it"]
 
 -- @implements FR-LOCALE-001
 -- @implements API-LOCALE-001
@@ -248,16 +248,23 @@ fn :: plural categories cldr String => [String]
         spec = lookup locale tag
         loc categories for rule (loc spec plural rule spec) True
 
-fn :: loc cat to index String => Int
-      loc cat to index cat    =
-        | cat == "one" = 0
-        | otherwise    = 1
+fn :: loc index in cats [String] String Int => Int
+      loc index in cats []       _      _   =  0
+      loc index in cats (c:rest) target idx =
+        | c == target = idx
+        | otherwise   = loc index in cats rest target (idx + 1)
 
 -- @implements FR-LOCALE-001
 -- @implements API-LOCALE-001
 fn :: plural index String Int => Int
       plural index tag    n   =
-        loc cat to index (plural category tag n)
+        loc index in cats (plural categories tag) (plural category tag n) 0
+
+-- @implements FR-LOCALE-001
+-- @implements API-LOCALE-001
+fn :: plural index cldr String Int => Int
+      plural index cldr tag    n   =
+        loc index in cats (plural categories cldr tag) (plural category cldr tag n) 0
 
 -- ── Civil UTC Calendar & Date/Datetime Formatting ───────────
 
