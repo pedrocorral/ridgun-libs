@@ -2,7 +2,7 @@
 
 | Path | What | Read when |
 |---|---|---|
-| `index.html` | Självständig interaktiv HTML-bok (Svenska) | Öppna i webbläsaren för att läsa hela guiden till alla 33 libs |
+| `index.html` | Självständig interaktiv HTML-bok (Svenska) | Öppna i webbläsaren för att läsa hela guiden till alla 34 libs |
 | `01-lib-str-textmanipulering.md` | Kapitel 01: Lib:en `str` — Textmanipulering, Sökning och Tabelljustering | Lära dig och använda lib:en `str` (`STR`) i Ridgun-projekt |
 | `02-lib-math-saker-aritmetik-och-talteori.md` | Kapitel 02: Lib:en `math` — Säker Aritmetik, Talteori och Statistik | Lära dig och använda lib:en `math` (`MATH`) i Ridgun-projekt |
 | `03-lib-list-listor-mergesort-och-kv-mappar.md` | Kapitel 03: Lib:en `list` — Listor, $O(N \log N)$ Mergesort och Nyckel-Värde-Mappar | Lära dig och använda lib:en `list` (`LIST`) i Ridgun-projekt |
@@ -36,3 +36,4 @@
 | `31-lib-pool-worker-pool-och-work-stealing.md` | Kapitel 31: Lib:en `pool` — Begränsad Worker-pool, Round-Robin och Work-Stealing | Lära dig och använda lib:en `pool` (`AGENT`) i Ridgun-projekt |
 | `32-lib-net-agent-anslutningsovervakare.md` | Kapitel 32: Lib:en `net_agent` — Övervakare för Nätverksanslutningar och Icke-blockerande Händelsebrygga | Lära dig och använda lib:en `net_agent` (`AGENT`) i Ridgun-projekt |
 | `33-lib-ai-ai-agenter-verktyg-streaming-rag-och-mcp.md` | Kapitel 33: Libben `ai` — AI-agenter, Tool Calling, SSE-streaming, Begränsad ReAct, Skyddsräcken, Mini-RAG och MCP (`AI`) | Lära sig och använda libben `ai` (`AI`) i Ridgun-projekt |
+| `34-lib-locale-cldr-pluralregler-datum-och-tal.md` | Kapitel 34: Libben `locale` — CLDR-pluralregler, UTC-datum- och talformatering samt Språkautonymer | Lära sig och använda libben `locale` (`LOCALE`) i Ridgun-projekt |

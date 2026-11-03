@@ -2,7 +2,7 @@
 
 | Path | What | Read when |
 |---|---|---|
-| `index.html` | Online liburu interaktiboa HTML/CSS/JS formatuan (Euskara) | Nabigatzailean ireki 33 lib-en liburu osoa irakurtzeko |
+| `index.html` | Online liburu interaktiboa HTML/CSS/JS formatuan (Euskara) | Nabigatzailean ireki 34 lib-en liburu osoa irakurtzeko |
 | `01-lib-str-testu-manipulazioa.md` | 01. kapitulua: `str` lib-a — Testu-manipulazioa, Bilaketa eta Formatu Taularatua | `str` (`STR`) lib-a ikasi eta Ridgun proiektuetan erabiltzea |
 | `02-lib-math-aritmetika-eta-zenbaki-teoria.md` | 02. kapitulua: `math` lib-a — Aritmetika Segurua, Zenbaki-teoria eta Estatistika | `math` (`MATH`) lib-a ikasi eta Ridgun proiektuetan erabiltzea |
 | `03-lib-list-zerrendak-mergesort-eta-kv-mapak.md` | 03. kapitulua: `list` lib-a — Zerrendak, $O(N \log N)$ Mergesort eta Gako-Balio Mapak | `list` (`LIST`) lib-a ikasi eta Ridgun proiektuetan erabiltzea |
@@ -36,3 +36,4 @@
 | `31-lib-pool-langileak-eta-lan-lapurreta.md` | 31. kapitulua: `pool` lib-a — Langileen Pool Mugatua, Round-Robin eta Lan-lapurreta | `pool` (`AGENT`) lib-a ikasi eta Ridgun proiektuetan erabiltzea |
 | `32-lib-net-agent-konexioen-gainbegiralea.md` | 32. kapitulua: `net_agent` lib-a — Sare-konexioen Gainbegiralea eta Gertaera-zubi Ez-blokeatzailea | `net_agent` (`AGENT`) lib-a ikasi eta Ridgun proiektuetan erabiltzea |
 | `33-lib-ai-aa-agenteak-tresnak-streaming-rag-eta-mcp.md` | 33. kapitulua: `ai` lib-a — AA Agenteak, Tool Calling, SSE Streaming-a, ReAct Mugatua, Segurtasun-Hesiketak, Mini-RAG eta MCP (`AI`) | `ai` (`AI`) lib-a Ridgun proiektuetan ikasi eta erabiltzeko |
+| `34-lib-locale-cldr-datuak-pluralak-datak-eta-zenbakiak.md` | 34. kapitulua: `locale` lib-a — CLDR Plural-arauak, Data eta Zenbakien UTC Formatua eta Autonimoak | `locale` (`LOCALE`) lib-a ikasi eta Ridgun proiektuetan erabiltzea |

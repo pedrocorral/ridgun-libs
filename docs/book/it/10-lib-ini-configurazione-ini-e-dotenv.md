@@ -1,0 +1,479 @@
+# Capitolo 10: La lib `ini` — File `.ini` a Sezioni, `.env` e Interpolazione di Variabili
+
+## 10.1. Perché esiste la lib `ini`? (Il problema reale e la filosofia Ridgun)
+
+> *«Perché ho bisogno di una lib `ini` scritta da zero in Ridgun puro invece di collegare una libreria C tradizionale?»*
+
+Questa è la prima domanda che si pone qualsiasi ingegnere di sistema arrivando a `ini`. E la risposta riassume l'intera filosofia di `ridgun-libs`:
+
+Siamo sinceri: i file `.env` e `.ini` sembrano banali finché qualcuno non aggiunge `export KEY="valore # con cancelletto"`, commenti `;` a fine riga o riferimenti incrociati tra variabili.
+
+La lib **`ini`** analizza configurazioni `.ini` a sezioni (`[database]`) e file `.env` con prefisso `export`, preservando i simboli `#` e `;` dentro le virgolette e risolvendo le interpolazioni di variabili in `dotenv parse`.
+
+In un ecosistema tradizionale, risolvere i compiti del dominio **`INI`** comporta trascinare dipendenze esterne in C, gestire puntatori grezzi, conversioni opache di tipo, eccezioni non verificate o pause imprevedibili del garbage collector. In Ridgun, la lib **`ini`** (`src/main/ridgun/lib/ini.rg`) affronta il problema con quattro principi non negoziabili:
+
+1. **Dichiara `import ini` (o `import ini as alias`) all'inizio del file**: ogni lib definisce il proprio spazio dei nomi `module :: ini` e in modalità `--strict` le funzioni multi-parola si invocano sempre con spazi naturali.
+2. **Concatena le tue pipeline da sinistra a destra con `->`**: scrivi `input passo uno -> passo due -> risultato`, usa le maschere `(+ _ _ +)` per destrutturare le sequenze e ometti `_ =` nelle istruzioni sequenziali (o scarta il valore con `-> ()`).
+3. **Ricorsione di coda con TCO (*Tail-Call Optimization*)**: tutte le scansioni interne di `ini` vengono compilate in cicli nativi in spazio di stack $O(1)$.
+4. **Memoria deterministica (`RMM1` / `RMM2`)**: ogni struttura intermedia viene liberata nell'istante esatto in cui termina la sua ultima lettura, senza *Garbage Collector*.
+
+---
+
+## 10.2. Artefatti nativi, importazione e catalogo completo dell'API di `ini`
+
+In `ridgun-libs`, **`ini`** è una **lib** di prima classe situata in `src/main/ridgun/lib/ini.rg` (dominio `INI`). Compilando con `stable bundle`, viene impacchettata in tre artefatti nativi:
+
+| Artefatto | Percorso | Scopo |
+|---|---|---|
+| **Bundle Ridgun** | `target/bundles/ini.rglib` | Distribuzione e importazione diretta con `import ini` |
+| **File compilato** | `target/ini.rgc` | Artefatto intermedio verificato da `ridgunc` |
+| **Oggetto condiviso ELF64** | `target/libini.so` | Libreria dinamica nativa senza dipendenze C né `libc` |
+
+> Ogni lib dichiara il proprio spazio dei nomi con `module :: ini`: basta scrivere `import ini` (o `import ini as alias`) nell'intestazione e invocare le sue funzioni con spazi naturali (`mia funzione x`) e pipeline `->` (`x mia funzione -> risultato`).
+
+### 10.2.1. Riepilogo delle famiglie funzionali di `ini`
+
+| Firma / Funzione / Tipo | Cosa fa e quando usarla |
+|---|---|
+| `ini parse / ini stringify` | Analizza testo `.ini` a sezioni in `IniDoc` e lo serializza nuovamente |
+| `ini get / ini get int / ini get bool / ini set` | Query tipizzate per sezione+chiave (`""` per la sezione globale) e aggiornamento immutabile |
+| `ini sections / ini section map` | Elenca i nomi delle sezioni o estrae la mappa `[String String]` di una sezione |
+| `dotenv parse` | Analizza file `.env` (`export K=V`, virgolette, commenti ed espansione di variabili) |
+
+### 10.2.2. Catalogo esaustivo dei tipi e delle firme in `src/main/ridgun/lib/ini.rg`
+
+Di seguito trovi l'inventario completo dei tipi algebrici (`type`), degli operatori (`op ::`) e delle firme di funzione (`fn ::`) definiti in `src/main/ridgun/lib/ini.rg` (`3` tipi, `0` operatori e `44` funzioni):
+
+**Tipi algebrici e record (`type`) di `ini`:**
+
+```ridgun
+type IniEntry = IniEntry String String
+type IniSection = section_name: String, entries: [IniEntry]
+type IniDoc = sections: [IniSection]
+```
+
+| # | Funzione / Firma (`fn ::`) | Tipo di Ritorno |
+|---|---|---|
+| `1` | `fn :: ini is hspace Int` | `Bool` |
+| `2` | `fn :: ini trim left loop String Int Int` | `String` |
+| `3` | `fn :: ini trim right loop String Int` | `String` |
+| `4` | `fn :: ini trim String` | `String` |
+| `5` | `fn :: ini split lines loop String Int Int Int [String]` | `[String]` |
+| `6` | `fn :: ini skip quoted String Int Int Int` | `Int` |
+| `7` | `fn :: ini strip comment loop String Int Int` | `String` |
+| `8` | `fn :: ini unquote unescape loop String Int Int String` | `String` |
+| `9` | `fn :: ini clean val String` | `String` |
+| `10` | `fn :: ini clean val len String Int` | `String` |
+| `11` | `fn :: ini p key IniEntry` | `String` |
+| `12` | `fn :: ini p val IniEntry` | `String` |
+| `13` | `fn :: ini kv get [IniEntry] String String` | `String` |
+| `14` | `fn :: ini kv put [IniEntry] String String` | `[IniEntry]` |
+| `15` | `fn :: ini find rbrace String Int Int` | `Int` |
+| `16` | `fn :: ini expand brace String Int Int [IniEntry] String Int` | `String` |
+| `17` | `fn :: ini interpolate loop String Int Int [IniEntry] String` | `String` |
+| `18` | `fn :: ini interpolate String [IniEntry]` | `String` |
+| `19` | `fn :: ini sec put [IniSection] String String String` | `[IniSection]` |
+| `20` | `fn :: ini sec ensure [IniSection] String` | `[IniSection]` |
+| `21` | `fn :: ini sec get [IniSection] String String String` | `String` |
+| `22` | `fn :: ini find eq String Int Int` | `Int` |
+| `23` | `fn :: ini strip export String` | `String` |
+| `24` | `fn :: ini parse kv at String [IniSection] String Int` | `[IniSection]` |
+| `25` | `fn :: ini sec entries [IniSection] String` | `[IniEntry]` |
+| `26` | `fn :: ini parse lines [String] [IniSection] String` | `[IniSection]` |
+| `27` | `fn :: ini parse sec hdr String [String] [IniSection]` | `[IniSection]` |
+| `28` | `fn :: ini parse kv line String [String] [IniSection] String` | `[IniSection]` |
+| `29` | `fn :: ini parse clean line String [String] [IniSection] String` | `[IniSection]` |
+| `30` | `fn :: ini parse String` | `IniDoc` |
+| `31` | `fn :: dotenv parse String` | `[IniEntry]` |
+| `32` | `fn :: ini get IniDoc String String String` | `String` |
+| `33` | `fn :: ini get int IniDoc String String Int` | `Int` |
+| `34` | `fn :: ini parse int or String Int` | `Int` |
+| `35` | `fn :: ini get bool IniDoc String String Bool` | `Bool` |
+| `36` | `fn :: ini parse bool or String Bool` | `Bool` |
+| `37` | `fn :: ini set IniDoc String String String` | `IniDoc` |
+| `38` | `fn :: ini collect sec names [IniSection]` | `[String]` |
+| `39` | `fn :: ini sections IniDoc` | `[String]` |
+| `40` | `fn :: dotenv get [IniEntry] String String` | `String` |
+| `41` | `fn :: ini format entries [IniEntry]` | `String` |
+| `42` | `fn :: ini format section IniSection` | `String` |
+| `43` | `fn :: ini format sections [IniSection]` | `String` |
+| `44` | `fn :: ini stringify IniDoc` | `String` |
+
+---
+
+## 10.3. Esplorare `ini` a fondo: Esempi passo dopo passo di ogni funzionalità
+
+Non basta consultare la tabella delle firme: esploreremo **ciascuna delle funzionalità** della lib `ini` tramite esempi progressivi ed eseguibili in Ridgun. Inizieremo con due ricette tabulari di uso quotidiano e poi percorreremo nel dettaglio tutti gli scenari funzionali, le trasformazioni e i casi limite verificati in `src/test/ridgun/test ini.rg`.
+
+### 10.3.1. Esempio 1: Flusso principale in stile tabulare con `ini`
+
+Osserva come in Ridgun i segni `=` e i passaggi di trasformazione con `ini` risultino allineati come una tabella pulita, senza variabili mutabili superflue né effetti collaterali nascosti:
+
+```ridgun
+import ini
+
+fn :: cargar base de datos String => String Int Bool
+      cargar base de datos texto_ini =
+        texto_ini ini parse -> doc
+        ini get doc "database" "host" "localhost" -> host
+        ini get int doc "database" "port" 5432 -> port
+        ini get bool doc "database" "pool" True -> pool
+        (host, port, pool)
+```
+
+### 10.3.2. Esempio 2: Composizione sicura e gestione dei casi limite
+
+Ogni funzione della lib `ini` è progettata per comporsi con le guardie booleane `|` e con il resto delle 34 lib di `ridgun-libs`:
+
+```ridgun
+import ini
+
+fn :: actualizar puerto [String String String] String => String
+      actualizar puerto doc nuevo =
+        ini set doc "database" "port" nuevo -> doc2
+        doc2 ini encode
+```
+
+### 10.3.3. Esempio 3: Sezioni `[sezione]`, commenti (`;` e `#`), letture tipizzate (`get str`, `get int`, `get bool`) e aggiornamento immutabile (`ini set`)
+
+In questo esempio pratico esploriamo in modo esaustivo come si comporta `ini` in questo blocco funzionale, inclusi input standard, combinazioni di parametri e valori di frontiera:
+
+```ridgun
+fn :: test ini sections and typed getters => ()
+      test ini sections and typed getters =
+        nl = char from code 10
+        src = "# Global header comment" + nl + "; Secondary comment" + nl + "global_env = production" + nl + nl + "[database]" + nl + "host = \"127.0.0.1\"" + nl + "port = 5432 ; default pg" + nl + "timeout = -1 # infinite" + nl + "password = \"p@ss#word;123\"" + nl + "ssl = true" + nl + "pool_enabled = yes" + nl + "readonly = 0" + nl + "debug_sql = no" + nl + nl + "[server]" + nl + "workers = 4" + nl + "enabled = 1" + nl
+        doc = ini parse src
+        assert str eq (ini get doc "" "global_env" "") "production" "AC1: global sectionless key in root '' section"
+        assert str eq (ini get doc "database" "host" "") "127.0.0.1" "AC1: ini get quoted string"
+        assert int equals (ini get int doc "database" "port" 0) 5432 "AC1: ini get int with ';' inline comment"
+        assert int equals (ini get int doc "database" "timeout" 0) (-1) "AC1: ini get negative int with '#' inline comment"
+        assert str eq (ini get doc "database" "password" "") "p@ss#word;123" "AC1: quoted '#' and ';' preserved inside string"
+        assert true (ini get bool doc "database" "ssl" False) "AC1: ini get bool 'true'"
+        assert true (ini get bool doc "database" "pool_enabled" False) "AC1: ini get bool 'yes'"
+        assert false (ini get bool doc "database" "readonly" True) "AC1: ini get bool '0'"
+        assert false (ini get bool doc "database" "debug_sql" True) "AC1: ini get bool 'off'"
+        assert int equals (ini get int doc "server" "workers" 0) 4 "AC1: ini get second section"
+        assert true (ini get bool doc "server" "enabled" False) "AC1: ini get bool '1'"
+        assert str eq (ini get doc "server" "missing" "default_v") "default_v" "AC1: ini get fallback on missing key"
+        assert str eq (ini get doc "no_such_section" "k" "fallback") "fallback" "AC1: ini get fallback on missing section"
+        secs = ini sections doc
+        assert int equals (ini sec count secs) 3 "AC1: 3 sections (root '', database, server)"
+        ()
+```
+
+### 10.3.4. Esempio 4: File `.env` con `export`, virgolette, interpolazione di variabili `${VAR}` e serializzazione canonica (`ini stringify`)
+
+In questo esempio pratico esploriamo in modo esaustivo come si comporta `ini` in questo blocco funzionale, inclusi input standard, combinazioni di parametri e valori di frontiera:
+
+```ridgun
+fn :: test dotenv interpolation and roundtrip => ()
+      test dotenv interpolation and roundtrip =
+        nl = char from code 10
+        lb = char from code 123
+        rb = char from code 125
+        env_src = "# .env test" + nl + "export BASE_DIR=/srv/app" + nl + "APP_NAME='solstice'" + nl + "LOG_DIR=\"$" + lb + "BASE_DIR" + rb + "/$" + lb + "APP_NAME" + rb + "/logs\"" + nl + "WITH_UNKNOWN=\"prefix_$" + lb + "UNDEFINED_VAR" + rb + "_suffix\"" + nl + "PORT=8080 # inline comment" + nl
+        env = dotenv parse env_src
+        assert str eq (dotenv get env "BASE_DIR" "") "/srv/app" "AC2: dotenv export key"
+        assert str eq (dotenv get env "APP_NAME" "") "solstice" "AC2: dotenv single-quoted value"
+        assert str eq (dotenv get env "LOG_DIR" "") "/srv/app/solstice/logs" "AC2: dotenv multiple variable interpolations"
+        assert str eq (dotenv get env "WITH_UNKNOWN" "") "prefix__suffix" "AC2: dotenv undefined variable expands to empty"
+        assert str eq (dotenv get env "PORT" "") "8080" "AC2: dotenv inline comment stripped"
+        assert str eq (dotenv get env "MISSING_KEY" "def") "def" "AC2: dotenv missing key fallback"
+
+        doc0 = ini parse ("[app]" + nl + "name = demo" + nl + "port = 3000" + nl)
+        doc1 = ini set doc0 "app" "version" "1.0"
+        doc2 = ini set doc1 "app" "port" "9090"
+        doc3 = ini set doc2 "metrics" "enabled" "true"
+        out_s = ini stringify doc3
+        doc_rt = ini parse out_s
+        assert str eq (ini get doc_rt "app" "name" "") "demo" "AC3: ini stringify round-trip name"
+        assert str eq (ini get doc_rt "app" "version" "") "1.0" "AC3: ini set new key + round-trip"
+        assert int equals (ini get int doc_rt "app" "port" 0) 9090 "AC3: ini set overwrite existing key + round-trip"
+        assert true (ini get bool doc_rt "metrics" "enabled" False) "AC3: ini set new section + round-trip"
+        ()
+```
+
+### 10.3.5. Esempio 5: Configurazione gerarchica di un servizio: fusione di `.env` con interpolazione `${VAR}` e sezioni `[database]` / `[server]` in INI
+
+In questo esempio pratico esploriamo in modo esaustivo come si comporta `ini` in questo blocco funzionale, inclusi input standard, combinazioni di parametri e valori di frontiera:
+
+```ridgun
+import ini
+
+fn :: cargar configuracion servicio (raw_ini : String) (raw_env : String) => (String, Int, Bool, String)
+      cargar configuracion servicio raw_ini raw_env =
+        env_entries = dotenv parse raw_env
+        doc         = ini parse raw_ini
+        db_host     = ini get str doc "database" "host" "localhost"
+        db_port     = ini get int doc "database" "port" 5432
+        tls_activo  = ini get bool doc "database" "tls" True
+        doc_act     = ini set doc "server" "dsn" "{db_host}:{db_port}"
+        (dotenv get env_entries "APP_ENV" "prod", db_port, tls_activo, ini stringify doc_act)
+```
+
+---
+
+## 10.4. Sotto il cofano: come è costruita `ini` in Ridgun puro (`src/main/ridgun/lib/ini.rg`)
+
+Uno dei maggiori vantaggi di `ridgun-libs` è che **non ci sono scatole nere in C**. Puoi aprire `src/main/ridgun/lib/ini.rg` e leggere esattamente come è implementata ogni operazione usando *pattern matching*, alberi di guardie `|` / `|.` e ricorsione di coda (TCO). Vediamo i pezzi chiave della sua implementazione reale:
+
+### 10.4.1. Implementazione interna: Whitespace, Comment & Line Helpers
+
+Nota come `ini.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+
+```ridgun
+module :: ini
+
+fn :: ini is hspace Int => Bool
+      ini is hspace c = c == 32 or c == 9 or c == 13
+
+fn :: ini trim left loop String Int Int => String
+      ini trim left loop s pos len =
+        | pos >= len = ""
+        | ini is hspace (str char at s pos) = ini trim left loop s (pos + 1) len
+        | otherwise = str slice s pos len
+
+fn :: ini trim right loop String Int => String
+      ini trim right loop s end_pos =
+        | end_pos <= 0 = ""
+        | ini is hspace (str char at s (end_pos - 1)) = ini trim right loop s (end_pos - 1)
+        | otherwise = str slice s 0 end_pos
+
+fn :: ini trim String => String
+      ini trim s =
+        ini trim right loop s (str len s) -> r
+        ini trim left loop r 0 (str len r)
+
+fn :: ini split lines loop String Int Int Int [String] => [String]
+      ini split lines loop s pos len start acc =
+        | pos >= len and start == len = acc
+        | pos >= len = acc :: [str slice s start len]
+        | (str char at s pos) == 10 = ini split lines loop s (pos + 1) len (pos + 1) (acc :: [str slice s start pos])
+        | otherwise = ini split lines loop s (pos + 1) len start acc
+
+fn :: ini skip quoted String Int Int Int => Int
+      ini skip quoted s pos len q =
+        | pos >= len = len
+        | (str char at s pos) == 92 = ini skip quoted s (pos + 2) len q
+        | (str char at s pos) == q = pos + 1
+        | otherwise = ini skip quoted s (pos + 1) len q
+
+fn :: ini strip comment loop String Int Int => String
+      ini strip comment loop s pos len =
+        | pos >= len = s
+        | (str char at s pos) == 34 = ini strip comment loop s (ini skip quoted s (pos + 1) len 34) len
+        | (str char at s pos) == 39 = ini strip comment loop s (ini skip quoted s (pos + 1) len 39) len
+        | (str char at s pos) == 35 or (str char at s pos) == 59 = str slice s 0 pos
+        | (pos + 1) < len and (str char at s pos) == 45 and (str char at s (pos + 1)) == 45 = str slice s 0 pos
+        | otherwise = ini strip comment loop s (pos + 1) len
+
+fn :: ini unquote unescape loop String Int Int String => String
+      ini unquote unescape loop s pos len acc =
+        | pos >= len = acc
+        | (str char at s pos) == 92 and (pos + 1) < len and (str char at s (pos + 1)) == 110 = ini unquote unescape loop s (pos + 2) len (acc + (char from code 10))
+        | (str char at s pos) == 92 and (pos + 1) < len and (str char at s (pos + 1)) == 116 = ini unquote unescape loop s (pos + 2) len (acc + (char from code 9))
+        | (str char at s pos) == 92 and (pos + 1) < len = ini unquote unescape loop s (pos + 1 + 1) len (acc + (str slice s (pos + 1) (pos + 2)))
+        | otherwise = ini unquote unescape loop s (pos + 1) len (acc + (str slice s pos (pos + 1)))
+
+fn :: ini clean val String => String
+      ini clean val raw =
+        raw ini trim -> tr
+        tr str len -> len
+        ini clean val len tr len
+
+fn :: ini clean val len String Int => String
+      ini clean val len tr len =
+        | len >= 2 and (str char at tr 0) == 34 and (str char at tr (len - 1)) == 34 = ini unquote unescape loop (str slice tr 1 (len - 1)) 0 (len - 2) ""
+        | len >= 2 and (str char at tr 0) == 39 and (str char at tr (len - 1)) == 39 = str slice tr 1 (len - 1)
+        | otherwise = tr
+```
+
+### 10.4.2. Implementazione interna: Key-Value Pair Helpers (`[IniEntry]`)
+
+Nota come `ini.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+
+```ridgun
+fn :: ini p key IniEntry => String
+      ini p key (IniEntry k _) = k
+
+fn :: ini p val IniEntry => String
+      ini p val (IniEntry _ v) = v
+
+fn :: ini kv get [IniEntry] String String => String
+      ini kv get [] _ fallback = fallback
+      ini kv get (pair:rest) key fallback =
+        | (ini p key pair) == key = ini p val pair
+        | otherwise = ini kv get rest key fallback
+
+fn :: ini kv put [IniEntry] String String => [IniEntry]
+      ini kv put [] key val = [IniEntry key val]
+      ini kv put (pair:rest) key val =
+        | (ini p key pair) == key = [IniEntry key val] :: rest
+        | otherwise = [pair] :: (ini kv put rest key val)
+```
+
+### 10.4.3. Implementazione interna: Sectioned INI Document Helpers
+
+Nota come `ini.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+
+```ridgun
+fn :: ini sec put [IniSection] String String String => [IniSection]
+      ini sec put [] sec key val = [IniSection sec [IniEntry key val]]
+      ini sec put (s:rest) sec key val =
+        | (section_name s) == sec = [IniSection sec (ini kv put (entries s) key val)] :: rest
+        | otherwise = [s] :: (ini sec put rest sec key val)
+
+fn :: ini sec ensure [IniSection] String => [IniSection]
+      ini sec ensure [] sec = [IniSection sec []]
+      ini sec ensure (s:rest) sec =
+        | (section_name s) == sec = [s] :: rest
+        | otherwise = [s] :: (ini sec ensure rest sec)
+
+fn :: ini sec get [IniSection] String String String => String
+      ini sec get [] _ _ fallback = fallback
+      ini sec get (s:rest) sec key fallback =
+        | (section_name s) == sec = ini kv get (entries s) key fallback
+        | otherwise = ini sec get rest sec key fallback
+
+fn :: ini find eq String Int Int => Int
+      ini find eq s pos len =
+        | pos >= len = (0 - 1)
+        | (str char at s pos) == 61 = pos
+        | otherwise = ini find eq s (pos + 1) len
+
+fn :: ini strip export String => String
+      ini strip export tr =
+        | str starts with tr "export " = ini trim (str slice tr 7 (str len tr))
+        | otherwise = tr
+
+fn :: ini parse kv at String [IniSection] String Int => [IniSection]
+      ini parse kv at line secs cur_s eq_pos =
+        | eq_pos == (0 - 1) = secs
+        | otherwise = ini sec put secs cur_s (ini trim (str slice line 0 eq_pos)) (ini interpolate (ini clean val (str slice line (eq_pos + 1) (str len line))) (ini sec entries secs cur_s))
+
+fn :: ini sec entries [IniSection] String => [IniEntry]
+      ini sec entries [] _ = []
+      ini sec entries (s:rest) sec =
+        | (section_name s) == sec = entries s
+        | otherwise = ini sec entries rest sec
+
+fn :: ini parse lines [String] [IniSection] String => [IniSection]
+      ini parse lines [] secs _ = secs
+      ini parse lines (l:ls) secs cur_s =
+        ini strip comment loop l 0 (str len l) -> ini trim -> clean
+        ini parse clean line clean ls secs cur_s
+
+fn :: ini parse sec hdr String [String] [IniSection] => [IniSection]
+      ini parse sec hdr clean ls secs =
+        str slice clean 1 ((str len clean) - 1) -> ini trim -> new_sec
+        ini parse lines ls (ini sec ensure secs new_sec) new_sec
+
+fn :: ini parse kv line String [String] [IniSection] String => [IniSection]
+      ini parse kv line clean ls secs cur_s =
+        clean ini strip export -> stripped
+        ini parse kv at stripped secs cur_s (ini find eq stripped 0 (str len stripped)) -> next_secs
+        ini parse lines ls next_secs cur_s
+
+fn :: ini parse clean line String [String] [IniSection] String => [IniSection]
+      ini parse clean line "" ls secs cur_s = ini parse lines ls secs cur_s
+      ini parse clean line clean ls secs cur_s =
+        | (str char at clean 0) == 91 and (str char at clean ((str len clean) - 1)) == 93 = ini parse sec hdr clean ls secs
+        | otherwise = ini parse kv line clean ls secs cur_s
+
+fn :: ini parse String => IniDoc
+      ini parse src =
+        ini split lines loop src 0 (str len src) 0 [] -> lines
+        IniDoc (ini parse lines lines [] "")
+
+fn :: dotenv parse String => [IniEntry]
+      dotenv parse src =
+        src ini parse -> doc
+        ini sec entries (sections doc) ""
+```
+
+### 10.4.4. Implementazione interna: Queries, Updates & Serialization
+
+Nota come `ini.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+
+```ridgun
+fn :: ini get IniDoc String String String => String
+      ini get doc sec key fallback = ini sec get (sections doc) sec key fallback
+
+fn :: ini get int IniDoc String String Int => Int
+      ini get int doc sec key fallback =
+        ini get doc sec key "" -> v
+        ini parse int or v fallback
+
+fn :: ini parse int or String Int => Int
+      ini parse int or "" fallback = fallback
+      ini parse int or v _ = str to int v
+
+fn :: ini get bool IniDoc String String Bool => Bool
+      ini get bool doc sec key fallback =
+        ini get doc sec key "" -> v
+        ini parse bool or v fallback
+
+fn :: ini parse bool or String Bool => Bool
+      ini parse bool or "" fallback = fallback
+      ini parse bool or "true" _ = True
+      ini parse bool or "True" _ = True
+      ini parse bool or "1" _ = True
+      ini parse bool or "yes" _ = True
+      ini parse bool or "false" _ = False
+      ini parse bool or "False" _ = False
+      ini parse bool or "0" _ = False
+      ini parse bool or "no" _ = False
+      ini parse bool or _ fallback = fallback
+
+fn :: ini set IniDoc String String String => IniDoc
+      ini set doc sec key val = IniDoc (ini sec put (sections doc) sec key val)
+
+fn :: ini collect sec names [IniSection] => [String]
+      ini collect sec names [] = []
+      ini collect sec names (s:rest) = [section_name s] :: (ini collect sec names rest)
+
+fn :: ini sections IniDoc => [String]
+      ini sections doc = ini collect sec names (sections doc)
+
+fn :: dotenv get [IniEntry] String String => String
+      dotenv get env key fallback = ini kv get env key fallback
+
+fn :: ini format entries [IniEntry] => String
+      ini format entries [] = ""
+      ini format entries ((IniEntry k v):rs) = k + " = " + v + (char from code 10) + (ini format entries rs)
+
+fn :: ini format section IniSection => String
+      ini format section sec =
+        | (section_name sec) == "" = ini format entries (entries sec)
+        | otherwise = "[" + (section_name sec) + "]" + (char from code 10) + (ini format entries (entries sec))
+
+fn :: ini format sections [IniSection] => String
+      ini format sections [] = ""
+      ini format sections (s:[]) = ini format section s
+      ini format sections (s:rest) = (ini format section s) + (char from code 10) + (ini format sections rest)
+
+fn :: ini stringify IniDoc => String
+      ini stringify doc = ini format sections (sections doc)
+```
+
+---
+
+## 10.5. Garanzie algoritmiche, memoria `RMM1`/`RMM2` e le 5 Regole d'Oro di `ini`
+
+- **Garanzia algoritmica e di sicurezza**: Rispetto totale dei caratteri `#` e `;` quando compaiono tra virgolette singole o doppie e conversione booleana flessibile (`true/1/yes/on` vs `false/0/no/off`).
+- **Complessità dello stack $O(1)$ con TCO**: Tutti i cicli ricorsivi in `src/main/ridgun/lib/ini.rg` sono in posizione di coda, perciò `ridgunc` li compila in salti nativi senza crescita dello stack.
+- **Memoria deterministica (`RMM1`/`RMM2`)**: Zero pause del garbage collector; tutte le strutture intermedie vengono liberate in modo deterministico all'uscita dallo scope.
+- **Verifica continua**: Testata in modo esaustivo con `stable check` e la suite automatizzata `src/test/ridgun/test ini.rg`.
+
+### Le 5 Regole d'Oro quando programmi con `ini`
+
+1. **Dichiara `import ini` all'inizio del file** e usa le funzioni multi-parola con spazi naturali affinché il tuo codice si legga come prosa.
+2. **Allinea le tue pipeline di dati con `=` e `->`**: concatena le chiamate a `ini` in passaggi con nomi chiari e lascia che `stable format` allinei le colonne.
+3. **Sfrutta le funzioni totali di `ini` nelle tue guardie `|`**: controlla i valori di ritorno o destruttura gli ADT con *pattern matching* invece di dare per scontato che l'input esterno sia sempre valido.
+4. **Evita di copiare grandi strutture se devi solo consultare un campo**: ricorda che in `RMM2` gli argomenti di input sono prestati e non incrementano né decrementano i contatori (`+0` / `-0`).
+5. **Combina `ini` con `test` (`import test`)**: scrivi sempre asserzioni con `assert equals` o `assert true` per fissare gli invarianti del tuo dominio.
+
+---
+
+Nel **Capitolo 11** passeremo a esplorare in profondità la lib **`regex`** (La lib `regex` — Motore di Espressioni Regolari Thompson NFA in Tempo Lineare $O(N \cdot M)$).

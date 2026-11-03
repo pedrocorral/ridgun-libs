@@ -87,6 +87,10 @@ fn :: loc spec en => LocaleSpec
       loc spec en =
         LocaleSpec "en" "English" "one_other" "," "." ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] (LocaleDatePatterns "%MM/%DD/%YYYY" "%MMM %D, %YYYY" "%MMMM %D, %YYYY" "%EEEE, %MMMM %D, %YYYY" ", ")
 
+fn :: loc spec it => LocaleSpec
+      loc spec it =
+        LocaleSpec "it" "Italiano" "one_many_millions" "." "," ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"] ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"] ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"] ["lun", "mar", "mer", "gio", "ven", "sab", "dom"] (LocaleDatePatterns "%DD/%MM/%YYYY" "%D %MMM %YYYY" "%D %MMMM %YYYY" "%EEEE %D %MMMM %YYYY" ", ")
+
 -- @implements FR-LOCALE-001
 -- @implements API-LOCALE-001
 fn :: supported locales => [String]
@@ -98,7 +102,7 @@ fn :: supported locales => [String]
 -- @implements DM-Locale
 fn :: default locales => [LocaleSpec]
       default locales =
-        [loc spec es, loc spec ca, loc spec eu, loc spec gl, loc spec pt, loc spec sv, loc spec en]
+        [loc spec es, loc spec ca, loc spec eu, loc spec gl, loc spec pt, loc spec sv, loc spec en, loc spec it]
 
 -- @implements FR-LOCALE-001
 -- @implements API-LOCALE-001
@@ -163,6 +167,7 @@ fn :: loc lookup base String => LocaleSpec
         | base == "gl" = loc spec gl
         | base == "pt" = loc spec pt
         | base == "sv" = loc spec sv
+        | base == "it" = loc spec it
         | otherwise    = loc spec en
 
 -- @implements FR-LOCALE-001

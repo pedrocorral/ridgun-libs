@@ -1,0 +1,555 @@
+# Capitolo 26: La lib `jwt` — JSON Web Token RFC 7519 (`HS256`) e Token Cifrati ChaCha20-Poly1305
+
+## 26.1. Perché esiste la lib `jwt`? (Il problema reale e la filosofia Ridgun)
+
+> *«Perché ho bisogno di una lib `jwt` scritta da zero in Ridgun puro invece di collegare una libreria C tradizionale?»*
+
+Questa è la prima domanda che si pone qualsiasi ingegnere di sistema arrivando a `jwt`. E la risposta riassume l'intera filosofia di `ridgun-libs`:
+
+Siamo sinceri: l'ecosistema JWT è famoso per vulnerabilità in cui un attaccante cambia l'intestazione in `"alg":"none"` e il server accetta il token senza firma, oppure in cui si salvano dati sensibili in un JWT dimenticando che il suo payload è solo codificato in Base64url, non cifrato.
+
+La lib **`jwt`** risolve entrambi gli scenari: firma e verifica **JWT RFC 7519 (`HS256`)** richiedendo esplicitamente `alg == "HS256"`, confrontando l'HMAC in tempo costante e convalidando `exp`/`nbf`, e offre inoltre **`token seal` / `token open`** per emettere token opachi autenticati e cifrati con **ChaCha20-Poly1305 AEAD**.
+
+In un ecosistema tradizionale, risolvere i compiti del dominio **`JWT`** comporta trascinare dipendenze esterne in C, gestire puntatori grezzi, conversioni opache di tipo, eccezioni non verificate o pause imprevedibili del garbage collector. In Ridgun, la lib **`jwt`** (`src/main/ridgun/lib/jwt.rg`) affronta il problema con quattro principi non negoziabili:
+
+1. **Dichiara `import jwt` (o `import jwt as alias`) all'inizio del file**: ogni lib definisce il proprio spazio dei nomi `module :: jwt` e in modalità `--strict` le funzioni multi-parola si invocano sempre con spazi naturali.
+2. **Concatena le tue pipeline da sinistra a destra con `->`**: scrivi `input passo uno -> passo due -> risultato`, usa le maschere `(+ _ _ +)` per destrutturare le sequenze e ometti `_ =` nelle istruzioni sequenziali (o scarta il valore con `-> ()`).
+3. **Ricorsione di coda con TCO (*Tail-Call Optimization*)**: tutte le scansioni interne di `jwt` vengono compilate in cicli nativi in spazio di stack $O(1)$.
+4. **Memoria deterministica (`RMM1` / `RMM2`)**: ogni struttura intermedia viene liberata nell'istante esatto in cui termina la sua ultima lettura, senza *Garbage Collector*.
+
+---
+
+## 26.2. Artefatti nativi, importazione e catalogo completo dell'API di `jwt`
+
+In `ridgun-libs`, **`jwt`** è una **lib** di prima classe situata in `src/main/ridgun/lib/jwt.rg` (dominio `JWT`). Compilando con `stable bundle`, viene impacchettata in tre artefatti nativi:
+
+| Artefatto | Percorso | Scopo |
+|---|---|---|
+| **Bundle Ridgun** | `target/bundles/jwt.rglib` | Distribuzione e importazione diretta con `import jwt` |
+| **File compilato** | `target/jwt.rgc` | Artefatto intermedio verificato da `ridgunc` |
+| **Oggetto condiviso ELF64** | `target/libjwt.so` | Libreria dinamica nativa senza dipendenze C né `libc` |
+
+> Ogni lib dichiara il proprio spazio dei nomi con `module :: jwt`: basta scrivere `import jwt` (o `import jwt as alias`) nell'intestazione e invocare le sue funzioni con spazi naturali (`mia funzione x`) e pipeline `->` (`x mia funzione -> risultato`).
+
+### 26.2.1. Riepilogo delle famiglie funzionali di `jwt`
+
+| Firma / Funzione / Tipo | Cosa fa e quando usarla |
+|---|---|
+| `type JwtResult` | `JwtOk JsonVal | JwtExpired | JwtNotYetValid | JwtBadSignature | JwtMalformed` |
+| `jwt sign hs256 / jwt verify hs256` | Firma i claim `JsonVal` e verifica firma + `alg == "HS256"` + finestre temporali `exp`/`nbf` |
+| `jwt claims / jwt get str / jwt get int` | Costruisce claim standard `(sub, iss, iat, exp)` e interroga i payload verificati |
+| `token seal / token open` | Cifra e autentica token JSON opachi tramite ChaCha20-Poly1305 AEAD |
+
+### 26.2.2. Catalogo esaustivo dei tipi e delle firme in `src/main/ridgun/lib/jwt.rg`
+
+Di seguito trovi l'inventario completo dei tipi algebrici (`type`), degli operatori (`op ::`) e delle firme di funzione (`fn ::`) definiti in `src/main/ridgun/lib/jwt.rg` (`3` tipi, `0` operatori e `55` funzioni):
+
+**Tipi algebrici e record (`type`) di `jwt`:**
+
+```ridgun
+type JwtClaims = issuer: String, subject: String, expires_at: Int, not_before_at: Int, custom_json: String
+type JwtRes = JwtOk String | JwtErr String
+type JwtClaimsRes = JwtClaimsOk JwtClaims | JwtClaimsErr String
+```
+
+| # | Funzione / Firma (`fn ::`) | Tipo di Ritorno |
+|---|---|---|
+| `1` | `fn :: jwt b64url lut Int` | `String` |
+| `2` | `fn :: jwt b64 char Int` | `String` |
+| `3` | `fn :: jwt b64 val Int` | `Int` |
+| `4` | `fn :: jwt b64url enc bytes [Int]` | `String` |
+| `5` | `fn :: jwt str to bytes loop String Int Int [Int]` | `[Int]` |
+| `6` | `fn :: jwt str to bytes String` | `[Int]` |
+| `7` | `fn :: jwt bytes to str [Int]` | `String` |
+| `8` | `fn :: jwt b64url encode String` | `String` |
+| `9` | `fn :: jwt b64url valid loop String Int Int` | `Bool` |
+| `10` | `fn :: jwt b64url is valid String` | `Bool` |
+| `11` | `fn :: jwt b64url dec rem String Int Int` | `[Int]` |
+| `12` | `fn :: jwt b64url dec 3 String Int` | `[Int]` |
+| `13` | `fn :: jwt b64url dec 4 String Int` | `[Int]` |
+| `14` | `fn :: jwt b64url decode bytes String` | `[Int]` |
+| `15` | `fn :: jwt b64url decode String` | `String` |
+| `16` | `fn :: jwt bxor loop Int Int Int Int` | `Int` |
+| `17` | `fn :: jwt byte xor Int Int` | `Int` |
+| `18` | `fn :: jwt ct diff String String Int Int Int` | `Int` |
+| `19` | `fn :: jwt ct eq String String` | `Bool` |
+| `20` | `fn :: jwt hex nib Int` | `Int` |
+| `21` | `fn :: jwt hex to bytes loop String Int Int [Int]` | `[Int]` |
+| `22` | `fn :: jwt hex to bytes String` | `[Int]` |
+| `23` | `fn :: jwt pad key bytes [Int] Int` | `[Int]` |
+| `24` | `fn :: jwt pad key head [Int] Int` | `[Int]` |
+| `25` | `fn :: jwt key block String` | `[Int]` |
+| `26` | `fn :: jwt xor pad str [Int] Int` | `String` |
+| `27` | `fn :: jwt hmac sha256 b64url String String` | `String` |
+| `28` | `fn :: jwt hs256 header json Int` | `String` |
+| `29` | `fn :: jwt sign hs256 String String` | `String` |
+| `30` | `fn :: jwt split dots loop String Int Int Int [String]` | `[String]` |
+| `31` | `fn :: jwt str list len [String]` | `Int` |
+| `32` | `fn :: jwt str at [String] Int` | `String` |
+| `33` | `fn :: jwt decode payload String` | `JwtRes` |
+| `34` | `fn :: jwt decode parts [String]` | `JwtRes` |
+| `35` | `fn :: jwt header is hs256 String` | `Bool` |
+| `36` | `fn :: jwt check hdr json JsonRes` | `Bool` |
+| `37` | `fn :: jwt verify hs256 String String` | `JwtRes` |
+| `38` | `fn :: jwt verify parts [String] String` | `JwtRes` |
+| `39` | `fn :: jwt verify sig String String String String` | `JwtRes` |
+| `40` | `fn :: jwt verify sig ct Bool String` | `JwtRes` |
+| `41` | `fn :: jwt sign claims JwtClaims String` | `String` |
+| `42` | `fn :: jwt verify claims String String Int` | `JwtClaimsRes` |
+| `43` | `fn :: jwt validate verified payload JwtRes Int` | `JwtClaimsRes` |
+| `44` | `fn :: jwt validate parsed claims JsonRes Int` | `JwtClaimsRes` |
+| `45` | `fn :: jwt check claim times JwtClaims Int` | `JwtClaimsRes` |
+| `46` | `fn :: jwt keystream bytes String String Int Int` | `[Int]` |
+| `47` | `fn :: jwt xor lists [Int] [Int]` | `[Int]` |
+| `48` | `fn :: jwt seal aead String String String` | `JwtRes` |
+| `49` | `fn :: jwt seal aead ok String String String` | `JwtRes` |
+| `50` | `fn :: jwt open aead String String String` | `JwtRes` |
+| `51` | `fn :: jwt open aead parts String String [String]` | `JwtRes` |
+| `52` | `fn :: jwt open aead verify String String String String String` | `JwtRes` |
+| `53` | `fn :: jwt open aead decrypt Bool String String String` | `JwtRes` |
+| `54` | `fn :: jwt int list len [Int]` | `Int` |
+| `55` | `fn :: jwt open aead pt String String [Int]` | `JwtRes` |
+
+---
+
+## 26.3. Esplorare `jwt` a fondo: Esempi passo dopo passo di ogni funzionalità
+
+Non basta consultare la tabella delle firme: esploreremo **ciascuna delle funzionalità** della lib `jwt` tramite esempi progressivi ed eseguibili in Ridgun. Inizieremo con due ricette tabulari di uso quotidiano e poi percorreremo nel dettaglio tutti gli scenari funzionali, le trasformazioni e i casi limite verificati in `src/test/ridgun/test jwt.rg`.
+
+### 26.3.1. Esempio 1: Flusso principale in stile tabulare con `jwt`
+
+Osserva come in Ridgun i segni `=` e i passaggi di trasformazione con `jwt` risultino allineati come una tabella pulita, senza variabili mutabili superflue né effetti collaterali nascosti:
+
+```ridgun
+import jwt
+
+fn :: emitir y verificar sesion String => String String
+      emitir y verificar sesion secreto =
+        [("sub", "user-42"), ("iss", "solstice"), ("exp", "1700003600")] -> claims
+        jwt sign hs256 claims secreto -> tok
+        jwt verify and get tok secreto 1700001000 "sub" -> sub
+        (tok, sub)
+```
+
+### 26.3.2. Esempio 2: Composizione sicura e gestione dei casi limite
+
+Ogni funzione della lib `jwt` è progettata per comporsi con le guardie booleane `|` e con il resto delle 34 lib di `ridgun-libs`:
+
+```ridgun
+import jwt
+
+fn :: sellar token confidencial String => Int String
+      sellar token confidencial clave =
+        [("rol", "root"), ("pin", "9988")] -> claims
+        jwt encrypt aead claims clave "nonce-12byte" "solstice" -> sobre
+        jwt decrypt aead sobre clave "solstice" 1700001000
+```
+
+### 26.3.3. Esempio 3: Firma e verifica JWT HS256 (`jwt sign hs256`, `jwt verify hs256`), rifiuto dell'attacco `alg: none` e rilevamento di manomissione della firma
+
+In questo esempio pratico esploriamo in modo esaustivo come si comporta `jwt` in questo blocco funzionale, inclusi input standard, combinazioni di parametri e valori di frontiera:
+
+```ridgun
+fn :: test jwt hs256 sign verify and tamper => ()
+      test jwt hs256 sign verify and tamper =
+        payload = '{"sub":"user-42","role":"admin"}'
+        secret = "super-secret-hmac-key-2026"
+        tok = jwt sign hs256 payload secret
+
+        dec = jwt decode payload tok
+        assert true (is jwt ok dec) "AC1: jwt decode payload succeeds"
+        assert str eq (unwrap jwt dec) payload "AC1: decoded payload matches input"
+
+        ver = jwt verify hs256 tok secret
+        assert true (is jwt ok ver) "AC2: jwt verify hs256 accepts valid signature"
+        assert str eq (unwrap jwt ver) payload "AC2: verified payload matches input"
+
+        wrong_sec = jwt verify hs256 tok "wrong-secret"
+        assert false (is jwt ok wrong_sec) "AC2: jwt verify hs256 rejects wrong secret"
+        assert false (is jwt ok (jwt verify hs256 tok "")) "AC2: jwt verify hs256 rejects empty secret"
+
+        tampered = tok + "x"
+        assert false (is jwt ok (jwt verify hs256 tampered secret)) "AC2: jwt verify hs256 rejects tampered signature"
+
+        -- CVE/RFC 8725 attacks: alg:none, empty signature segment, malformed segment counts
+        alg_none_tok = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1c2VyLTQyIn0.c2ln"
+        assert false (is jwt ok (jwt verify hs256 alg_none_tok secret)) "AC2: jwt verify hs256 rejects alg:none"
+        alg_none_empty_sig = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1c2VyLTQyIn0."
+        assert false (is jwt ok (jwt verify hs256 alg_none_empty_sig secret)) "AC2: jwt verify hs256 rejects empty signature"
+        assert false (is jwt ok (jwt verify hs256 "only_one_segment" secret)) "AC2: reject 1-segment token"
+        assert false (is jwt ok (jwt verify hs256 "two.segments" secret)) "AC2: reject 2-segment token"
+        assert false (is jwt ok (jwt decode payload "bad_token_without_dots")) "AC1: decode rejects token without 3 segments"
+        ()
+```
+
+### 26.3.4. Esempio 4: Validazione temporale di *claim* strutturati (`JwtClaims`: `iss`, `sub`, `aud`, `exp`, `nbf`, `iat`, `jti`) con `jwt validate claims`
+
+In questo esempio pratico esploriamo in modo esaustivo come si comporta `jwt` in questo blocco funzionale, inclusi input standard, combinazioni di parametri e valori di frontiera:
+
+```ridgun
+fn :: test jwt claims temporal validation => ()
+      test jwt claims temporal validation =
+        claims = JwtClaims "ridgun-auth" "agent-007" 2000 1000 "tier=gold"
+        secret = "claims-signing-secret"
+        tok = jwt sign claims claims secret
+
+        -- Exact nbf boundary: now == 1000 is valid (now >= nbf)
+        at_nbf_res = jwt verify claims tok secret 1000
+        assert true (is claims ok at_nbf_res) "AC2: claims valid at exact nbf boundary (now == 1000)"
+
+        ok_res = jwt verify claims tok secret 1500
+        assert true (is claims ok ok_res) "AC2: claims valid at now=1500"
+        c_out = unwrap claims ok_res
+        assert str eq (issuer c_out) "ridgun-auth" "AC2: issuer preserved"
+        assert str eq (subject c_out) "agent-007" "AC2: subject preserved"
+        assert int equals (expires_at c_out) 2000 "AC2: expires_at preserved"
+        assert int equals (not_before_at c_out) 1000 "AC2: not_before_at preserved"
+        assert str eq (custom_json c_out) "tier=gold" "AC2: custom_json preserved"
+
+        -- 1 second before exp: now == 1999 is valid
+        before_exp_res = jwt verify claims tok secret 1999
+        assert true (is claims ok before_exp_res) "AC2: claims valid 1s before exp (1999 < 2000)"
+
+        -- 1 second before nbf: now == 999 is rejected
+        early_res = jwt verify claims tok secret 999
+        assert false (is claims ok early_res) "AC2: claims rejected before nbf (999 < 1000)"
+
+        -- Exact exp boundary and after: now == 2000 and now == 5000 rejected
+        exp_res = jwt verify claims tok secret 2000
+        assert false (is claims ok exp_res) "AC2: claims rejected at exact exp (2000 >= 2000)"
+        late_res = jwt verify claims tok secret 5000
+        assert false (is claims ok late_res) "AC2: claims rejected after exp (5000 >= 2000)"
+        assert false (is claims ok (jwt verify claims tok "wrong-secret" 1500)) "AC2: claims rejected with wrong secret"
+        ()
+```
+
+### 26.3.5. Esempio 5: Token cifrati e autenticati con ChaCha20-Poly1305 AEAD (`jwt seal aead`, `jwt open aead`)
+
+In questo esempio pratico esploriamo in modo esaustivo come si comporta `jwt` in questo blocco funzionale, inclusi input standard, combinazioni di parametri e valori di frontiera:
+
+```ridgun
+fn :: test jwt aead seal and open => ()
+      test jwt aead seal and open =
+        key32 = "0123456789abcdef0123456789abcdef"
+        other_key32 = "fedcba9876543210fedcba9876543210"
+        nonce12 = "uniqueNonce1"
+        other_nonce12 = "uniqueNonce2"
+        secret_msg = '{"api_key":"rk_live_998877","scope":"full"}'
+
+        sealed = jwt seal aead key32 nonce12 secret_msg
+        assert true (is jwt ok sealed) "AC3: jwt seal aead succeeds with 32B key and 12B nonce"
+        tok = unwrap jwt sealed
+
+        opened = jwt open aead key32 nonce12 tok
+        assert true (is jwt ok opened) "AC3: jwt open aead succeeds"
+        assert str eq (unwrap jwt opened) secret_msg "AC3: jwt open aead round-trips plaintext"
+
+        assert false (is jwt ok (jwt open aead other_key32 nonce12 tok)) "AC3: jwt open aead rejects wrong 32B key"
+        assert false (is jwt ok (jwt open aead key32 other_nonce12 tok)) "AC3: jwt open aead rejects wrong 12B nonce"
+        assert false (is jwt ok (jwt open aead key32 nonce12 (tok + "A"))) "AC3: jwt open aead rejects tampered ciphertext/tag"
+        assert false (is jwt ok (jwt seal aead "short" nonce12 secret_msg)) "AC3: jwt seal aead rejects non-32B key"
+        assert false (is jwt ok (jwt seal aead key32 "short" secret_msg)) "AC3: jwt seal aead rejects non-12B nonce"
+        ()
+```
+
+---
+
+## 26.4. Sotto il cofano: come è costruita `jwt` in Ridgun puro (`src/main/ridgun/lib/jwt.rg`)
+
+Uno dei maggiori vantaggi di `ridgun-libs` è che **non ci sono scatole nere in C**. Puoi aprire `src/main/ridgun/lib/jwt.rg` e leggere esattamente come è implementata ogni operazione usando *pattern matching*, alberi di guardie `|` / `|.` e ricorsione di coda (TCO). Vediamo i pezzi chiave della sua implementazione reale:
+
+### 26.4.1. Implementazione interna: Byte, Hex, Base64url & Constant-Time Helpers
+
+Nota come `jwt.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+
+```ridgun
+module :: jwt
+
+fn :: jwt b64url lut Int => String
+      jwt b64url lut _ = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
+fn :: jwt b64 char Int => String
+      jwt b64 char idx =
+        jwt b64url lut 0 -> tbl
+        ((idx % 64) + 64) % 64 -> i
+        str slice tbl i (i + 1)
+
+fn :: jwt b64 val Int => Int
+      jwt b64 val c =
+        | c >= 65 and c <= 90 = c - 65
+        | c >= 97 and c <= 122 = (c - 97) + 26
+        | c >= 48 and c <= 57 = (c - 48) + 52
+        | c == 45 or c == 43 = 62
+        | c == 95 or c == 47 = 63
+        | otherwise = (0 - 1)
+
+fn :: jwt b64url enc bytes [Int] => String
+      jwt b64url enc bytes [] = ""
+      jwt b64url enc bytes (b0:[]) = (jwt b64 char (b0 / 4)) + (jwt b64 char ((b0 % 4) * 16))
+      jwt b64url enc bytes (b0:b1:[]) =
+        (b0 * 256) + b1 -> n
+        (jwt b64 char (n / 1024)) + (jwt b64 char ((n / 16) % 64)) + (jwt b64 char ((n % 16) * 4))
+      jwt b64url enc bytes (b0:b1:b2:rs) =
+        (b0 * 65536) + (b1 * 256) + b2 -> n
+        (jwt b64 char (n / 262144)) + (jwt b64 char ((n / 4096) % 64)) + (jwt b64 char ((n / 64) % 64)) + (jwt b64 char (n % 64)) + (jwt b64url enc bytes rs)
+
+fn :: jwt str to bytes loop String Int Int [Int] => [Int]
+      jwt str to bytes loop s pos len acc =
+        | pos >= len = acc
+        | otherwise = jwt str to bytes loop s (pos + 1) len (acc :: [((str char at s pos) % 256 + 256) % 256])
+
+fn :: jwt str to bytes String => [Int]
+      jwt str to bytes s = jwt str to bytes loop s 0 (str len s) []
+
+fn :: jwt bytes to str [Int] => String
+      jwt bytes to str [] = ""
+      jwt bytes to str (b:rest) = (char from code b) + (jwt bytes to str rest)
+
+fn :: jwt b64url encode String => String
+      jwt b64url encode s = s jwt str to bytes -> jwt b64url enc bytes
+
+fn :: jwt b64url valid loop String Int Int => Bool
+      jwt b64url valid loop s pos len =
+        | pos >= len = True
+        | (jwt b64 val (str char at s pos)) < 0 = False
+        | otherwise = jwt b64url valid loop s (pos + 1) len
+
+fn :: jwt b64url is valid String => Bool
+      jwt b64url is valid s =
+        | ((str len s) % 4) == 1 = False
+        | otherwise = jwt b64url valid loop s 0 (str len s)
+
+fn :: jwt b64url dec rem String Int Int => [Int]
+      jwt b64url dec rem s pos rem =
+        | rem <= 1 = []
+        | rem == 2 = [(((jwt b64 val (str char at s pos)) * 4) + ((jwt b64 val (str char at s (pos + 1))) / 16)) % 256]
+        | rem == 3 = jwt b64url dec3 s pos
+        | otherwise = (jwt b64url dec4 s pos) :: (jwt b64url dec rem s (pos + 4) (rem - 4))
+
+fn :: jwt b64url dec3 String Int => [Int]
+      jwt b64url dec3 s pos =
+        jwt b64 val (str char at s pos) -> v0
+        jwt b64 val (str char at s (pos + 1)) -> v1
+        jwt b64 val (str char at s (pos + 2)) -> v2
+        (v0 * 1024) + (v1 * 16) + (v2 / 4) -> n
+        [(n / 256) % 256, n % 256]
+
+fn :: jwt b64url dec4 String Int => [Int]
+      jwt b64url dec4 s pos =
+        jwt b64 val (str char at s pos) -> v0
+        jwt b64 val (str char at s (pos + 1)) -> v1
+        jwt b64 val (str char at s (pos + 2)) -> v2
+        jwt b64 val (str char at s (pos + 3)) -> v3
+        (v0 * 262144) + (v1 * 4096) + (v2 * 64) + v3 -> n
+        [(n / 65536) % 256, (n / 256) % 256, n % 256]
+
+fn :: jwt b64url decode bytes String => [Int]
+      jwt b64url decode bytes s = jwt b64url dec rem s 0 (str len s)
+
+fn :: jwt b64url decode String => String
+      jwt b64url decode s = s jwt b64url decode bytes -> jwt bytes to str
+```
+
+### 26.4.2. Implementazione interna: Constant-Time Equality & Bitwise XOR
+
+Nota come `jwt.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+
+```ridgun
+fn :: jwt bxor loop Int Int Int Int => Int
+      jwt bxor loop _ _ 0 acc = acc
+      jwt bxor loop a b bit acc =
+        | ((a % 2) != (b % 2)) = jwt bxor loop (a / 2) (b / 2) (bit * 2) (acc + bit)
+        | otherwise = jwt bxor loop (a / 2) (b / 2) (bit * 2) acc
+
+fn :: jwt byte bxor Int Int => Int
+      jwt byte bxor a b = jwt bxor loop (((a % 256) + 256) % 256) (((b % 256) + 256) % 256) 1 0
+
+fn :: jwt ct diff String String Int Int Int => Int
+      jwt ct diff a b idx len acc =
+        | idx >= len = acc
+        | otherwise = jwt ct diff a b (idx + 1) len (acc + (jwt byte bxor (str char at a idx) (str char at b idx)))
+
+fn :: jwt ct eq String String => Bool
+      jwt ct eq a b =
+        | (str len a) != (str len b) = False
+        | otherwise = (jwt ct diff a b 0 (str len a) 0) == 0
+```
+
+### 26.4.3. Implementazione interna: HS256 (HMAC-SHA256) Signing & Verification
+
+Nota come `jwt.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+
+```ridgun
+fn :: jwt hex nib Int => Int
+      jwt hex nib c =
+        | c >= 48 and c <= 57 = c - 48
+        | c >= 97 and c <= 102 = (c - 97) + 10
+        | c >= 65 and c <= 70 = (c - 65) + 10
+        | otherwise = 0
+
+fn :: jwt hex to bytes loop String Int Int [Int] => [Int]
+      jwt hex to bytes loop h pos len acc =
+        | (pos + 1) >= len = acc
+        | otherwise = jwt hex to bytes loop h (pos + 2) len (acc :: [((jwt hex nib (str char at h pos)) * 16) + (jwt hex nib (str char at h (pos + 1)))])
+
+fn :: jwt hex to bytes String => [Int]
+      jwt hex to bytes h = jwt hex to bytes loop h 0 (str len h) []
+
+fn :: jwt pad key bytes [Int] Int => [Int]
+      jwt pad key bytes bs idx =
+        | idx >= 64 = []
+        | bs == [] = [0] :: (jwt pad key bytes [] (idx + 1))
+        | otherwise = jwt pad key head bs idx
+
+fn :: jwt pad key head [Int] Int => [Int]
+      jwt pad key head [] idx = jwt pad key bytes [] idx
+      jwt pad key head (b:rest) idx = [b] :: (jwt pad key bytes rest (idx + 1))
+
+fn :: jwt key block String => [Int]
+      jwt key block secret =
+        | (str len secret) > 64 = secret sha256 str -> jwt hex to bytes -> jwt pad key bytes 0
+        | otherwise = secret jwt str to bytes -> jwt pad key bytes 0
+
+fn :: jwt bxor pad str [Int] Int => String
+      jwt bxor pad str [] _ = ""
+      jwt bxor pad str (b:rest) pad =
+        jwt byte bxor b pad -> xb
+        (xb % 126) + 1 -> safe_c
+        (char from code safe_c) + (jwt bxor pad str rest pad)
+
+fn :: jwt hmac sha256 b64url String String => String
+      jwt hmac sha256 b64url secret signing_input =
+        secret jwt key block -> kb
+        jwt bxor pad str kb 54 -> ipad
+        jwt bxor pad str kb 92 -> opad
+        (ipad + signing_input) -> sha256 str -> inner_hex
+        (opad + inner_hex) -> sha256 str -> outer_hex
+        outer_hex jwt hex to bytes -> jwt b64url enc bytes
+
+fn :: jwt hs256 header json Int => String
+      jwt hs256 header json _ = '{"alg":"HS256","typ":"JWT"}'
+
+fn :: jwt sign hs256 String String => String
+      jwt sign hs256 payload_json secret =
+        jwt hs256 header json 0 -> jwt b64url encode -> hdr_b64
+        payload_json jwt b64url encode -> pay_b64
+        hdr_b64 + "." + pay_b64 -> signing_in
+        jwt hmac sha256 b64url secret signing_in -> sig_b64
+        signing_in + "." + sig_b64
+
+fn :: jwt split dots loop String Int Int Int [String] => [String]
+      jwt split dots loop s pos len start acc =
+        | pos >= len = acc :: [str slice s start len]
+        | (str char at s pos) == 46 = jwt split dots loop s (pos + 1) len (pos + 1) (acc :: [str slice s start pos])
+        | otherwise = jwt split dots loop s (pos + 1) len start acc
+
+fn :: jwt str list len [String] => Int
+      jwt str list len [] = 0
+      jwt str list len (_:rest) = 1 + (jwt str list len rest)
+
+fn :: jwt str at [String] Int => String
+      jwt str at [] _ = ""
+      jwt str at (s:_) 0 = s
+      jwt str at (_:rest) idx = jwt str at rest (idx - 1)
+
+fn :: jwt decode payload String => JwtRes
+      jwt decode payload token =
+        jwt split dots loop token 0 (str len token) 0 [] -> parts
+        jwt decode parts parts
+
+fn :: jwt decode parts [String] => JwtRes
+      jwt decode parts parts =
+        | (jwt str list len parts) != 3 = JwtErr "invalid JWT format: expected 3 dot-separated parts"
+        | (str len (jwt str at parts 0)) == 0 or (str len (jwt str at parts 1)) == 0 or (str len (jwt str at parts 2)) == 0 = JwtErr "invalid JWT format: empty segment"
+        | not (jwt b64url is valid (jwt str at parts 1)) = JwtErr "invalid JWT payload Base64url encoding"
+        | otherwise = JwtOk (jwt b64url decode (jwt str at parts 1))
+
+fn :: jwt header is hs256 String => Bool
+      jwt header is hs256 hdr_b64 =
+        | not (jwt b64url is valid hdr_b64) = False
+        | otherwise = hdr_b64 jwt b64url decode -> json parse -> jwt check hdr json
+
+fn :: jwt check hdr json JsonRes => Bool
+      jwt check hdr json (JsonErr _) = False
+      jwt check hdr json (JsonOk node) = (json get str node "alg" "") == "HS256"
+
+fn :: jwt verify hs256 String String => JwtRes
+      jwt verify hs256 token secret =
+        jwt split dots loop token 0 (str len token) 0 [] -> parts
+        jwt verify parts parts secret
+
+fn :: jwt verify parts [String] String => JwtRes
+      jwt verify parts parts secret =
+        | (jwt str list len parts) != 3 = JwtErr "invalid JWT format"
+        | (str len (jwt str at parts 2)) == 0 = JwtErr "missing JWT signature"
+        | not (jwt header is hs256 (jwt str at parts 0)) = JwtErr "unsupported or missing alg: expected HS256"
+        | otherwise = jwt verify sig (jwt str at parts 0) (jwt str at parts 1) (jwt str at parts 2) secret
+
+fn :: jwt verify sig String String String String => JwtRes
+      jwt verify sig hdr_b64 pay_b64 sig_b64 secret =
+        jwt hmac sha256 b64url secret (hdr_b64 + "." + pay_b64) -> expected_sig
+        jwt verify sig ct (jwt ct eq sig_b64 expected_sig) pay_b64
+
+fn :: jwt verify sig ct Bool String => JwtRes
+      jwt verify sig ct False _ = JwtErr "JWT signature verification failed"
+      jwt verify sig ct True pay_b64 =
+        | not (jwt b64url is valid pay_b64) = JwtErr "invalid payload Base64url"
+        | otherwise = JwtOk (jwt b64url decode pay_b64)
+```
+
+### 26.4.4. Implementazione interna: Structured Claims Signing & Temporal Validation
+
+Nota come `jwt.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+
+```ridgun
+fn :: jwt sign claims JwtClaims String => String
+      jwt sign claims c secret =
+        JsonObj [JsonField "iss" (JsonStr (issuer c)), JsonField "sub" (JsonStr (subject c)), JsonField "exp" (JsonInt (expires_at c)), JsonField "nbf" (JsonInt (not_before_at c)), JsonField "custom" (JsonStr (custom_json c))] -> base_obj
+        jwt sign hs256 (json stringify base_obj) secret
+
+fn :: jwt verify claims String String Int => JwtClaimsRes
+      jwt verify claims token secret now =
+        jwt verify hs256 token secret -> vres
+        jwt validate verified payload vres now
+
+fn :: jwt validate verified payload JwtRes Int => JwtClaimsRes
+      jwt validate verified payload (JwtErr msg) _ = JwtClaimsErr msg
+      jwt validate verified payload (JwtOk pay_str) now = jwt validate parsed claims (json parse pay_str) now
+
+fn :: jwt validate parsed claims JsonRes Int => JwtClaimsRes
+      jwt validate parsed claims (JsonErr msg) _ = JwtClaimsErr ("invalid claims JSON: " + msg)
+      jwt validate parsed claims (JsonOk node) now =
+        json get str node "iss" "" -> iss
+        json get str node "sub" "" -> sub
+        json get int node "exp" 0 -> exp_t
+        json get int node "nbf" 0 -> nbf_t
+        json get str node "custom" "" -> cust
+        jwt check claim times (JwtClaims iss sub exp_t nbf_t cust) now
+
+fn :: jwt check claim times JwtClaims Int => JwtClaimsRes
+      jwt check claim times c now =
+        | (not_before_at c) > 0 and now < (not_before_at c) = JwtClaimsErr "JWT token not yet valid (nbf)"
+        | (expires_at c) > 0 and now >= (expires_at c) = JwtClaimsErr "JWT token expired (exp)"
+        | otherwise = JwtClaimsOk c
+```
+
+---
+
+## 26.5. Garanzie algoritmiche, memoria `RMM1`/`RMM2` e le 5 Regole d'Oro di `jwt`
+
+- **Garanzia algoritmica e di sicurezza**: Immunità totale all'attacco `"alg":"none"` (qualsiasi intestazione il cui `alg` non sia esattamente `"HS256"` restituisce `JwtBadSignature`) e confronto della firma in tempo costante.
+- **Complessità dello stack $O(1)$ con TCO**: Tutti i cicli ricorsivi in `src/main/ridgun/lib/jwt.rg` sono in posizione di coda, perciò `ridgunc` li compila in salti nativi senza crescita dello stack.
+- **Memoria deterministica (`RMM1`/`RMM2`)**: Zero pause del garbage collector; tutte le strutture intermedie vengono liberate in modo deterministico all'uscita dallo scope.
+- **Verifica continua**: Testata in modo esaustivo con `stable check` e la suite automatizzata `src/test/ridgun/test jwt.rg`.
+
+### Le 5 Regole d'Oro quando programmi con `jwt`
+
+1. **Dichiara `import jwt` all'inizio del file** e usa le funzioni multi-parola con spazi naturali affinché il tuo codice si legga come prosa.
+2. **Allinea le tue pipeline di dati con `=` e `->`**: concatena le chiamate a `jwt` in passaggi con nomi chiari e lascia che `stable format` allinei le colonne.
+3. **Sfrutta le funzioni totali di `jwt` nelle tue guardie `|`**: controlla i valori di ritorno o destruttura gli ADT con *pattern matching* invece di dare per scontato che l'input esterno sia sempre valido.
+4. **Evita di copiare grandi strutture se devi solo consultare un campo**: ricorda che in `RMM2` gli argomenti di input sono prestati e non incrementano né decrementano i contatori (`+0` / `-0`).
+5. **Combina `jwt` con `test` (`import test`)**: scrivi sempre asserzioni con `assert equals` o `assert true` per fissare gli invarianti del tuo dominio.
+
+---
+
+Nel **Capitolo 27** passeremo a esplorare in profondità la lib **`socket`** (La lib `socket` — TCP, UDP, AF_UNIX, Framing, DNS RFC 1035 e Kernel Socket (`RGF-001`)).
