@@ -4,7 +4,7 @@ Read this when: working in a domain.
 | Path | What | Read when |
 |---|---|---|
 | `sock/` | Test specifications for `SOCK` (`FR-SOCK-001`..`FR-SOCK-004`) | Testing `socket.rg` |
-| `crypto/` | Test specifications for `CRYPTO` (`FR-CRYPTO-001`..`FR-CRYPTO-005`) | Testing `argon2id.rg`, `crypto.rg` |
+| `crypto/` | Test specifications for `CRYPTO` (`FR-CRYPTO-001`..`FR-CRYPTO-006`) | Testing `argon2id.rg`, `crypto.rg` |
 | `posix/` | Test specifications for `POSIX` (`FR-POSIX-001`, `FR-POSIX-002`) | Testing `posix.rg` |
 | `io/` | Test specifications for `IO` (`FR-IO-001`, `FR-IO-002`) | Testing `io.rg` |
 | `str/` | Test specifications for `STR` (`FR-STR-001`) | Testing `str.rg` |
@@ -34,3 +34,5 @@ Read this when: working in a domain.
 | `tmpl/` | Test specifications for `TMPL` (`FR-TMPL-001`) | Testing `template.rg` |
 | `ai/` | Test specifications for `AI` (`FR-AI-001`) | Testing `ai.rg` |
 | `locale/` | Test specifications for `LOCALE` (`FR-LOCALE-001`) | Testing `locale.rg` |
+| `tls/` | Test specifications for `TLS` (`FR-TLS-001`) | Testing `tls.rg` |
+| `mail/` | Test specifications for `MAIL` (`FR-MAIL-001`) | Testing `mail.rg` |

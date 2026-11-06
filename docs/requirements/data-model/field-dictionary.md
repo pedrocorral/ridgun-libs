@@ -92,3 +92,39 @@ Conventions: `snake_case`; ids end in `_id`; timestamps end in `_at` (UTC ISO-86
 | prompt_tokens | Int | Count of input/prompt tokens consumed by an LLM turn (`>= 0`) | AI | `ai.rg` |
 | completion_tokens | Int | Count of generated output tokens consumed by an LLM turn (`>= 0`) | AI | `ai.rg` |
 | is_tool_error | Bool | Whether a tool execution result represents a recoverable error (`is_error`) | AI | `ai.rg` |
+| tbs_der | String | Raw ASN.1 DER bytes of X.509 `TBSCertificate` signed portion | CRYPTO | `crypto.rg`, `tls.rg` |
+| issuer_der | String | Raw ASN.1 DER bytes of X.509 certificate `issuer` `Name` | CRYPTO | `crypto.rg`, `tls.rg` |
+| subject_der | String | Raw ASN.1 DER bytes of X.509 certificate `subject` `Name` | CRYPTO | `crypto.rg`, `tls.rg` |
+| issuer_cn | String | Common Name (`CN`) extracted from X.509 certificate `issuer` | CRYPTO | `crypto.rg`, `tls.rg` |
+| subject_cn | String | Common Name (`CN`) extracted from X.509 certificate `subject` | CRYPTO | `crypto.rg`, `tls.rg` |
+| not_after_at | Int | X.509 certificate `notAfter` expiration timestamp in UTC epoch seconds | CRYPTO | `crypto.rg`, `tls.rg` |
+| key_alg | String | Public-key algorithm identifier (`rsa`, `ec_p256`, `ec_p384`, `ed25519`) | CRYPTO | `crypto.rg`, `tls.rg` |
+| pubkey_bytes | String | Raw public key bytes (RSA modulus `n`, EC uncompressed point, or 32B Ed25519 key) | CRYPTO | `crypto.rg`, `tls.rg` |
+| rsa_exp_bytes | String | Raw big-endian RSA public exponent `e` bytes | CRYPTO | `crypto.rg`, `tls.rg` |
+| sig_alg | String | X.509 signature algorithm identifier (`rsa_pkcs1_sha256`, `rsa_pss_sha256`, `ecdsa_p256_sha256`, etc.) | CRYPTO | `crypto.rg`, `tls.rg` |
+| sig_bytes | String | Raw signature value bytes from X.509 certificate or TLS handshake | CRYPTO | `crypto.rg`, `tls.rg` |
+| san_dns | [String] | RFC 6125 `subjectAltName` `dNSName` entries extracted from X.509 v3 extension | CRYPTO | `crypto.rg`, `tls.rg` |
+| is_ca | Bool | X.509 v3 `basicConstraints` `cA` boolean flag | CRYPTO | `crypto.rg`, `tls.rg` |
+| key_usage_bits | Int | X.509 v3 `keyUsage` bitmask (`0` if extension absent) | CRYPTO | `crypto.rg`, `tls.rg` |
+| has_server_auth | Bool | Whether X.509 v3 `extKeyUsage` permits TLS server authentication (`id-kp-serverAuth`) | CRYPTO | `crypto.rg`, `tls.rg` |
+| root_certs_path | String | Filesystem path to trusted CA bundle PEM file (default `/etc/ssl/certs/ca-certificates.crt`) | TLS | `tls.rg`, `mail.rg` |
+| root_certs_pem | String | Optional inline PEM trusted root certificates override for testing | TLS | `tls.rg`, `mail.rg` |
+| alpn_protocols | [String] | Optional RFC 7301 ALPN protocol identifiers offered in `ClientHello` | TLS | `tls.rg` |
+| min_version | Int | Minimum allowed TLS protocol version (`0x0303` = TLS 1.2, `0x0304` = TLS 1.3) | TLS | `tls.rg` |
+| max_version | Int | Maximum offered TLS protocol version (`0x0304` = TLS 1.3) | TLS | `tls.rg` |
+| verify_time_sec | Int | UTC epoch seconds override for certificate validity checks (`0` uses current system clock) | TLS | `tls.rg` |
+| server_name | String | Target DNS hostname used for TLS SNI and RFC 6125 certificate verification | TLS | `tls.rg`, `mail.rg` |
+| tls_version | Int | Negotiated TLS protocol version (`0x0304` for TLS 1.3, `0x0303` for TLS 1.2) | TLS | `tls.rg` |
+| cipher_suite | Int | Negotiated TLS AEAD cipher suite code (`0x1301`, `0x1303`, `0xC02F`, `0xC02B`, `0xCCA8`, `0xCCA9`) | TLS | `tls.rg` |
+| selected_alpn | String | Negotiated ALPN protocol string from `EncryptedExtensions` or `ServerHello` | TLS | `tls.rg` |
+| from_addr | String | RFC 5322 `From` mailbox address or display-name mailbox | MAIL | `mail.rg` |
+| to_addrs | [String] | List of RFC 5322 `To` / `RCPT TO` recipient mailbox addresses | MAIL | `mail.rg` |
+| reply_to_addr | String | Optional RFC 5322 `Reply-To` mailbox address | MAIL | `mail.rg` |
+| subject_line | String | RFC 5322 email `Subject` header text (UTF-8) | MAIL | `mail.rg` |
+| text_body | String | Mandatory `text/plain; charset=UTF-8` email message body | MAIL | `mail.rg` |
+| html_body | String | Optional `text/html; charset=UTF-8` alternative body for `multipart/alternative` | MAIL | `mail.rg` |
+| message_id | String | Optional RFC 5322 `Message-ID` header value (`<id@domain>`) | MAIL | `mail.rg` |
+| date_sec | Int | UTC epoch timestamp for RFC 5322 `Date` header (`0` uses current wall clock) | MAIL | `mail.rg` |
+| smtp_user | String | SMTP authentication username for `AUTH PLAIN` / `AUTH LOGIN` | MAIL | `mail.rg` |
+| smtp_password | String | SMTP authentication password for `AUTH PLAIN` / `AUTH LOGIN` | MAIL | `mail.rg` |
+| auth_method | String | Preferred SMTP SASL mechanism (`PLAIN` or `LOGIN`) | MAIL | `mail.rg` |

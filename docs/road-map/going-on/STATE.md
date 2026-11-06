@@ -1,18 +1,19 @@
 ---
-updated: 2026-11-03T21:10
+updated: 2026-11-06T22:30
 active_task: none
-agent_runtime: gemini
+agent_runtime: claude
 ---
 # Session state — read this first when resuming
 
 ## Where we are (3 lines max)
-- `TASK-0042` completed: added `"it"` to `supported locales` (`["es", "ca", "eu", "gl", "pt", "sv", "en", "it"]`), added `plural index cldr` alongside `plural index` in `src/main/ridgun/lib/locale.rg`, verified `language name "it" == "Italiano"` and CLDR plural rules (`one`, `many`, `other`) in `src/test/ridgun/test locale.rg`, and rebuilt all `locale` artifacts and HTML books.
+- `TASK-0043` completed: `crypto.rg` (FR-CRYPTO-006), `tls.rg` (FR-TLS-001) and `mail.rg` (FR-MAIL-001) implemented, tested and documented.
+- No active task.
 ## Files to load for the active task (nothing else)
-- `docs/road-map/completed/2026-11/TASK-0042-add-it-to-supported-locales-and-verify-cldr-plural.md`
+- none
 ## Last verified facts (tests green? migrations applied? env?)
-- `ridgunc run --strict "src/test/ridgun/test locale.rg"` → `[PASS] test locale: TS-LOCALE-001 passed`
-- `aix docs coverage && aix docs validate` → `0 errors, 0 warnings`
+- `test crypto.rg`, `test tls.rg`, `test mail.rg`, `test socket.rg` pass; `aix docs validate` 0 errors; coverage matrix regenerated.
+- `test tensor.rg` fails to compile (`undefined function 'blocks'`) at HEAD too; not caused by TASK-0043.
 ## Immediate next action
-- Await next user instructions.
+- Pick the next task from `docs/road-map/pending/next/INDEX.md`. Candidates: audit `VUL-AUTHN-004`, `VUL-INPUT-003`, `VUL-INJ-003` (`expected`); fix `test tensor.rg`.
 ## Blockers / questions for the user
 - None.

@@ -4,7 +4,7 @@ Read this when: working on a domain. Skip when: the domain is not yours.
 | Path | What | Read when |
 |---|---|---|
 | `sock/` | Socket management library (`FR-SOCK-001`..`FR-SOCK-004`) | Working on `socket.rg` |
-| `crypto/` | Cryptographic & Argon2id libraries (`FR-CRYPTO-001`..`FR-CRYPTO-005`) | Working on `argon2id.rg`, `crypto.rg` |
+| `crypto/` | Cryptographic & Argon2id libraries (`FR-CRYPTO-001`..`FR-CRYPTO-006`) | Working on `argon2id.rg`, `crypto.rg` |
 | `posix/` | POSIX system, descriptor, poll, clock, signal & random library (`FR-POSIX-001`, `FR-POSIX-002`) | Working on `posix.rg` |
 | `io/` | High-level timeout-bounded I/O & file metadata library (`FR-IO-001`, `FR-IO-002`) | Working on `io.rg` |
 | `str/` | String manipulation library (`FR-STR-001`) | Working on `str.rg` |
@@ -34,3 +34,5 @@ Read this when: working on a domain. Skip when: the domain is not yours.
 | `tmpl/` | Mustache-style text template engine with HTML/LaTeX auto-escaping (`FR-TMPL-001`) | Working on `template.rg` |
 | `ai/` | AI agent conversations, `<think>` separation, tool schemas, OpenAI/Anthropic/Ollama JSON & SSE codecs, structured outputs, ReAct loop, security guardrails, mini-RAG, handoffs & MCP (`FR-AI-001`) | Working on `ai.rg` |
 | `locale/` | CLDR locale data library for cardinal plural rules, UTC date/datetime formatting, number formatting & language autonyms (`FR-LOCALE-001`) | Working on `locale.rg` |
+| `tls/` | RFC 8446 TLS 1.3 & RFC 5246 TLS 1.2 (ECDHE + AEAD) client protocol & X.509 certificate verification library (`FR-TLS-001`) | Working on `tls.rg` |
+| `mail/` | RFC 5322 email composition & RFC 5321/6409/8314/3207/4954 SMTP client over TLS library (`FR-MAIL-001`) | Working on `mail.rg` |

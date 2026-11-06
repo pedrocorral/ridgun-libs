@@ -2,7 +2,7 @@
 id: API-CRYPTO-001
 title: Public lib contract for argon2id and crypto (argon2id.rglib, crypto.rglib)
 status: approved
-implements: [FR-CRYPTO-001, FR-CRYPTO-002, FR-CRYPTO-003, FR-CRYPTO-004, FR-CRYPTO-005]
+implements: [FR-CRYPTO-001, FR-CRYPTO-002, FR-CRYPTO-003, FR-CRYPTO-004, FR-CRYPTO-005, FR-CRYPTO-006]
 auth: none
 ---
 # API-CRYPTO-001 — Public lib contract for `argon2id` & `crypto` (`argon2id.rg`, `crypto.rg`)
@@ -47,6 +47,20 @@ auth: none
   - `minisign sign String String String String String => String` (`seed` 32 B, `key_id` 8 B, `msg`, `untrusted_comment`, `trusted_comment` → 4-line `.minisig` text)
   - `minisign verify String String String => Bool` (`pubkey_text`, `msg`, `minisig_text` → `True` if both payload signature and trusted-comment global signature verify)
   - `minisign trusted comment String => String` (`minisig_text` → extracted trusted comment string)
+- SHA-384, HKDF, X25519, AES-128-GCM, ECDHE/ECDSA P-256/P-384, RSA & X.509 API (`FR-CRYPTO-006` in `crypto.rg`):
+  - `sha384 bytes String => String`, `sha384 hex String => String`, `hmac sha384 String String => String`
+  - `hkdf extract String String => String`, `hkdf expand String String Int => String`
+  - `hkdf extract sha384 String String => String`, `hkdf expand sha384 String String Int => String`
+  - `hkdf expand label String String String Int => String`, `derive secret String String String => String`
+  - `x25519 String String => String`, `x25519 public key String => String`
+  - `aes128 block String String => String`, `aes128 gcm seal String String String String => String`, `aes128 gcm open String String String String => Int String`
+  - `p256 public key String => String`, `p256 ecdh String String => String`
+  - `ecdsa p256 verify String String String => Bool`, `ecdsa p256 verify sha256 String String String => Bool`
+  - `ecdsa p384 verify String String String => Bool`, `ecdsa p384 verify sha384 String String String => Bool`
+  - `rsa mod exp String String String => String`, `rsa verify pkcs1 String String String String String => Bool`, `rsa verify pss String String String String String => Bool`
+  - `type X509Cert = tbs_der: String, issuer_der: String, subject_der: String, issuer_cn: String, subject_cn: String, not_before_at: Int, not_after_at: Int, key_alg: String, pubkey_bytes: String, rsa_exp_bytes: String, sig_alg: String, sig_bytes: String, san_dns: [String], is_ca: Bool, key_usage_bits: Int, has_server_auth: Bool`
+  - `pem decode blocks String String => [String]`, `asn1 parse tlv String Int => Bool Int Int Int Int`
+  - `x509 parse cert String => Bool X509Cert`, `x509 match hostname X509Cert String => Bool`, `x509 verify cert sig X509Cert X509Cert => Bool`
 
 ## Responses
 | Code | When | Body |

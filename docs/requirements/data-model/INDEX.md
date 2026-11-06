@@ -23,3 +23,5 @@ Read this when: persistence, API schemas, migrations, or core library ADT defini
 | `DM-Template.md` | Safe Mustache-style text template and auto-escaping model | Working on `template.rg` |
 | `DM-Ai.md` | AI agent messages, conversations, tool schemas, SSE stream accumulators, ReAct policy, mini-RAG documents, and MCP protocol model | Working on `ai.rg` |
 | `DM-Locale.md` | CLDR `LocaleSpec` and `LocaleDatePatterns` model | Working on `locale.rg` |
+| `DM-Tls.md` | TLS client `TlsConfig`, `TlsConn`, `TlsError`, and `TlsResult` model | Working on `tls.rg` |
+| `DM-Mail.md` | RFC 5322 `MailMessage`, `MailResult`, `SmtpConfig`, `SmtpError`, and `SmtpResult` model | Working on `mail.rg` |

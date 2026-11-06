@@ -8,7 +8,7 @@ status: approved
 | Term | Definition | Domain code |
 |---|---|---|
 | Socket Library | Pure-Ridgun networking and IPC socket management (`TCP`, `UDP`, `Unix` domain sockets, options, framing, byte/string I/O, and `RGF-001` `sys_*` status-tuple socket primitives) | SOCK |
-| Cryptographic Library | Pure-Ridgun byte/bitwise primitives (`RGF-019`), SHA-256, HMAC-SHA-256, PBKDF2-HMAC-SHA-256, RFC 7693 Blake2b, RFC 9106 Argon2id (`argon2id` + `crypto`), and RFC 8439 ChaCha20-Poly1305 AEAD (`RGF-015`) | CRYPTO |
+| Cryptographic Library | Pure-Ridgun byte/bitwise primitives (`RGF-019`), SHA-256, SHA-384, SHA-512, HMAC, HKDF (RFC 5869), PBKDF2-HMAC-SHA-256, RFC 7693 Blake2b, RFC 9106 Argon2id (`argon2id` + `crypto`), RFC 8439 ChaCha20-Poly1305 AEAD (`RGF-015`), AES-128-GCM, RFC 7748 X25519, RFC 8032 Ed25519, P-256/P-384 ECDHE & ECDSA, RSA PKCS#1 v1.5 & PSS, and ASN.1 DER / X.509 / PEM parsing | CRYPTO |
 | POSIX System Library | Typed Linux/POSIX descriptor wrappers, `PollStatus` (`ppoll`), `ProcStatus`, open flags, signal numbers & watchers (`RGF-018`), wall/monotonic clocks (`RGF-017`), CSPRNG (`RGF-014`), and filesystem/process calls (`RG-010`) | POSIX |
 | High-Level I/O Library | Extensible `IoError` and `IoResult` types, timeout-guarded descriptor reads/writes (`read fd`, `write fd`), timeout-guarded command execution (`exec with timeout`), line streams, and file metadata predicates (`RG-010`) | IO |
 | String Library | Pure-Ridgun string searching, trimming, replacement, splitting, and ASCII case conversion (`RG-010`: `str_index_of`, `str_trim`, `str_replace`, `str_split`, `str_to_upper`, `str_to_lower`) | STR |
@@ -38,5 +38,7 @@ status: approved
 | Safe Text Template Engine Library | Pure-Ridgun Mustache-style `{{var}}` template renderer with HTML/LaTeX auto-escaping, conditional sections `{{#key}}...{{/key}}`, and inverted sections `{{^key}}...{{/key}}` (`template.rg`) | TMPL |
 | AI Agent, Tool Calling, Streaming, RAG & MCP Library | Pure-Ridgun AI agent conversation management, context compaction, `<think>` separation, declarative tool schemas, OpenAI/Anthropic/Ollama JSON & SSE streaming codecs, structured output extraction/repair, bounded ReAct loop, security guardrails (`prompt injection` & secret scrubbing), BM25/TF mini-RAG, multi-agent handoff, and MCP JSON-RPC protocol (`ai.rg`) | AI |
 | CLDR Locale Data Library | Pure-Ridgun Unicode CLDR locale data library for cardinal plural rules (`plural category`, `plural categories`), UTC date and datetime formatting (`format date`, `format datetime`), localized integer and decimal formatting (`format int`, `format decimal`), and language autonyms (`language name`) (`locale.rg`) | LOCALE |
+| TLS Client Protocol Library | Pure-Ridgun RFC 8446 TLS 1.3 and RFC 5246 TLS 1.2 (ECDHE + AEAD) client protocol, X.509 v3 certificate chain validation, RFC 6125 `subjectAltName` hostname verification, SNI, and ALPN library (`tls.rg`) | TLS |
+| Email Composition & SMTP Client Library | Pure-Ridgun RFC 5322 email message composition, CRLF header-injection guard, RFC 2047 UTF-8 header encoding, `multipart/alternative` MIME rendering, and RFC 5321/6409/8314/3207/4954 SMTP client over implicit TLS (465) and mandatory STARTTLS (587) (`mail.rg`) | MAIL |
 
 Domain codes are UPPERCASE, ≤ 8 chars, and name folders in `functional/`, `api/`, and `docs/tests/*/`.

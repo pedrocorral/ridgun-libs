@@ -4,6 +4,7 @@
 -- @tests TS-CRYPTO-003
 -- @tests TS-CRYPTO-004
 -- @tests TS-CRYPTO-005
+-- @tests TS-CRYPTO-006
 -- @tests TS-PERF-001
 -- ============================================================
 
@@ -399,6 +400,213 @@ fn :: test minisign roundtrip and tamper => ()
         other_pub = minisign encode pubkey "76543210" pk
         assert false (minisign verify other_pub msg msig) "minisign verify rejects mismatched key_id" -> ()
 
+-- ── TS-CRYPTO-006: SHA-384, HKDF, X25519, AES-128-GCM, P-256/P-384, RSA, X.509 ──
+
+-- @tests TS-CRYPTO-006
+fn :: test sha384 hkdf x25519 aes128gcm => ()
+      test sha384 hkdf x25519 aes128gcm =
+        -- 1. SHA-384 & HMAC-SHA-384 (FIPS 180-4 & RFC 4231 TC2)
+        h384_emp = sha384 hex ""
+        assert str eq h384_emp "38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b" "SHA-384 empty" -> ()
+        h384_abc = sha384 hex "abc"
+        assert str eq h384_abc "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7" "SHA-384 abc" -> ()
+        assert eq (str len (sha384 bytes "abc")) 48 -> ()
+        mac384   = hmac sha384 "Jefe" "what do ya want for nothing?"
+        assert str eq (bytes to hex str mac384) "af45d2e376484031617f78d2b58a6b1b9c7ef464f5a01b47e42ec3736322445e8e2240ca5e69e2c78b3239ecfab21649" "RFC 4231 TC2 HMAC-SHA-384" -> ()
+
+        -- 2. HKDF-SHA-256 (RFC 5869 Appendix A Test Case 1) & TLS 1.3 Derive-Secret (RFC 8448 §3)
+        ikm1 = hex to byte str "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"
+        slt1 = hex to byte str "000102030405060708090a0b0c"
+        inf1 = hex to byte str "f0f1f2f3f4f5f6f7f8f9"
+        prk1 = hkdf extract slt1 ikm1
+        okm1 = hkdf expand prk1 inf1 42
+        assert str eq (bytes to hex str prk1) "077709362c2e32df0ddc3f0dc47bba6390b6c73bb50f9c3122ec844ad7c2b3e5" "RFC 5869 TC1 PRK" -> ()
+        assert str eq (bytes to hex str okm1) "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865" "RFC 5869 TC1 OKM" -> ()
+        early_sec = hkdf extract "" (c repeat byte 0 32)
+        assert str eq (bytes to hex str early_sec) "33ad0a1c607ec03b09e6cd9893680ce210adf300aa1f2660e1b22e10f170f92a" "RFC 8448 Early Secret" -> ()
+        derived_s = derive secret early_sec "derived" ""
+        assert str eq (bytes to hex str derived_s) "6f2615a108c702c5678f54fc9dbab69716c076189c48250cebeac3576c3611ba" "RFC 8448 Derived Secret" -> ()
+
+        -- 3. RFC 7748 X25519 Test Vectors (§5.2 and §6.1 Alice/Bob DH)
+        x_sc1  = hex to byte str "a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4"
+        x_u1   = hex to byte str "e6db6867583030db3594c1a424b15f7c726624ec26b3353b10a903a6d0ab1c4c"
+        x_out1 = x25519 x_sc1 x_u1
+        assert str eq (bytes to hex str x_out1) "c3da55379de9c6908e94ea4df28d084f32eccf03491c71f754b4075577a28552" "RFC 7748 §5.2 vector 1" -> ()
+        a_priv = hex to byte str "77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a"
+        a_pub  = x25519 public key a_priv
+        b_priv = hex to byte str "5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb"
+        b_pub  = x25519 public key b_priv
+        assert str eq (bytes to hex str a_pub) "8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a" "RFC 7748 §6.1 Alice pubkey" -> ()
+        assert str eq (bytes to hex str b_pub) "de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f" "RFC 7748 §6.1 Bob pubkey" -> ()
+        sh_ab  = x25519 a_priv b_pub
+        sh_ba  = x25519 b_priv a_pub
+        assert str eq (bytes to hex str sh_ab) "4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742" "RFC 7748 §6.1 shared secret" -> ()
+        assert str eq sh_ab sh_ba "X25519 Alice == Bob" -> ()
+        assert str eq (x25519 a_priv (c repeat byte 0 32)) "" "X25519 rejects all-zero low-order point" -> ()
+
+        -- 4. FIPS 197 AES-128 & NIST SP 800-38D AES-128-GCM
+        aes_k   = hex to byte str "2b7e151628aed2a6abf7158809cf4f3c"
+        aes_pt  = hex to byte str "3243f6a8885a308d313198a2e0370734"
+        aes_ct  = aes128 block aes_k aes_pt
+        assert str eq (bytes to hex str aes_ct) "3925841d02dc09fbdc118597196a0b32" "FIPS 197 Appendix B AES-128 block" -> ()
+
+        gk1     = c repeat byte 0 16
+        gn1     = c repeat byte 0 12
+        g_seal1 = aes128 gcm seal gk1 gn1 "" ""
+        assert str eq (bytes to hex str g_seal1) "58e2fccefa7e3061367f1d57a4e7455a" "NIST GCM Test Case 1 empty PT/AAD" -> ()
+        g_seal2 = aes128 gcm seal gk1 gn1 "" (c repeat byte 0 16)
+        assert str eq (bytes to hex str g_seal2) "0388dace60b6a392f328c2b971b2fe78ab6e47d42cec13bdf53a67b21257bddf" "NIST GCM Test Case 2 16B zero PT" -> ()
+        g_open2 = aes128 gcm open gk1 gn1 "" g_seal2
+        assert eq (aead rc g_open2) 0 -> ()
+        assert str eq (aead pt g_open2) (c repeat byte 0 16) "AES-128-GCM open TC2" -> ()
+
+        -- Tampered tag / AAD rejected with (-12, "")
+        g_bad_aad = aes128 gcm open gk1 gn1 "wrong-aad" g_seal2
+        assert eq (aead rc g_bad_aad) (0 - 12) -> ()
+        assert str eq (aead pt g_bad_aad) "" "AES-128-GCM tampered AAD returns empty" -> ()
+        g_bad_tag = aes128 gcm open gk1 gn1 "" ((byte slice g_seal2 0 31) + (byte str 0))
+        assert eq (aead rc g_bad_tag) (0 - 12) -> ()
+
+-- @tests TS-CRYPTO-006
+fn :: test p256 p384 rsa and x509 => ()
+      test p256 p384 rsa and x509 =
+        -- 1. P-256 ECDHE & ECDSA P-256 / P-384 Verification
+        sk256 = hex to byte str "c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721"
+        pk256 = p256 public key sk256
+        assert str eq (bytes to hex str pk256) "0460fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb67903fe1008b8bc99a41ae9e95628bc64f2f1b20c2d7e9f5177a3c294d4462299" "RFC 6979 P-256 pubkey" -> ()
+        sk256_b = hex to byte str "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+        pk256_b = p256 public key sk256_b
+        ecdh_ab = p256 ecdh sk256 pk256_b
+        ecdh_ba = p256 ecdh sk256_b pk256
+        assert eq (str len ecdh_ab) 32 -> ()
+        assert str eq ecdh_ab ecdh_ba "P-256 ECDH Alice == Bob" -> ()
+        assert str eq (p256 ecdh sk256 ((byte str 4) + (c repeat byte 0 64))) "" "P-256 ECDH rejects off-curve point" -> ()
+
+        sig256 = hex to byte str "3045022057d754539de74a3c6ce2a8744b91c3f73001c733f3e20179f196819bab767e58022100dcd06a946d1b7e568d3ff29a46698e3fe49746f86811588354a4d2d43102d665"
+        assert true (ecdsa p256 verify sha256 pk256 "sample" sig256) "ECDSA P-256 verify valid" -> ()
+        assert false (ecdsa p256 verify sha256 pk256 "tampered" sig256) "ECDSA P-256 rejects tampered msg" -> ()
+
+        pk384  = hex to byte str "04ec3a4e415b4e19a4568618029f427fa5da9a8bc4ae92e02e06aae5286b300c64def8f0ea9055866064a254515480bc138015d9b72d7d57244ea8ef9ac0c621896708a59367f9dfb9f54ca84b3f1c9db1288b231c3ae0d4fe7344fd2533264720"
+        sig384 = hex to byte str "306502307cb9078a9a1ee3685d0eede601238685b0e0bb514de400f799b582a0455be88141853a4cb0284f9d7ed980ea4795126a023100a88ce84cce196de0d329328b915d442bb4f64f8020fc0c6d8337d9887dfabc787cca7eecd1a5661e6f6839df126e92f1"
+        assert true (ecdsa p384 verify sha384 pk384 "sample" sig384) "ECDSA P-384 verify valid" -> ()
+        assert false (ecdsa p384 verify sha384 pk384 "tampered" sig384) "ECDSA P-384 rejects tampered msg" -> ()
+
+        -- 2. RSA-2048 PKCS#1 v1.5 and RSA-PSS Verification + < 2048-bit rejection
+        rsa_n     = hex to byte str ("af2e53e5eec127b0965a32813c253b4513c21de33c05ddb775ae20c53a8cea9743c06a65b9bede2bdba5fb1d307bb91d6822d3750d0b0a7a55189a51c897912e" + "550bd4d6d0ee3a561cf4171b0e8229e346754fe9315b1ca397109a8973f3ad0c3474bbd78e62f745f1530a6a97d2d787fe42def67734aed9b19e05348805d74c" + "68583858b0a477af413a9f39c7f61b6a21b3dd53db9b7025ee4519813ec95e6f60cd35cdd67bc27f874558e55b9eb88008d424be1e92bb60e4fe582907b975b6" + "1a18f5ed1332746aeaf01023ab676cbf0f424783b9c4769a69f33c829a194cdb8313a16a768ef2b2b4a90dcc597fe2764783e4b24906f856eaf81b1fe9a0efbb")
+        rsa_e     = hex to byte str "010001"
+        rsa_pkcs1 = hex to byte str ("6bef0571302c2a2b4c82c4641140cc21823f643127c7fa60ba699901fe23032a7631276ac204314fde6f48586a417967cea5cbfe4d4b02b90acdfc611d5bba7e" + "b1625c3dfec8bb897c73bebf154f1dd79f236e1b62e6ae277d6ad7da32b9e470daa0acbed7b2ae3e247dc97e0cc8ebffd1ba16453fb2879401daf9fc12f766c0" + "9efec85dbcd778cad083d980d40bf8a3aeba6a5cd01b4d6334dbb25128abc6b04166c1307a82be8a327718cb3601d7bb79bc2e407fc0b43db3fe4545b5b503db" + "20aef99e875544301ac564ee95275ad19522d2344316da5ce082dbf1b70516a43e6f0be568d0de055e4ffa5ab13c3ab6feab85a00ce7af459324317078ccfc1c")
+        rsa_pss   = hex to byte str ("5a2ab42312f8554944f88a34e57488750221776acf9b700f48b7e125dfae6f971f7650e18e47065d1c4c494df233fd4d80505fac99110eabee67fc9e9ca7b9e8" + "f4a26f5b677f4d9a05aea41a82301f649e635b63e7b8d944d3fd41c491d7c985ccc933715308b601e6006e6b7486b7c252bf5bafe2570469f51f3cbcfe332a96" + "8e4fd94f2b4d88b64aa994305bbf8fc039506b9efc9fe4791dcebc2d7c64776dfc64fe860f1cae8b4b962a371c6299fa79df3868666df62868e31e3bacf777b1" + "ee7b134e5ceb05ba70f2d260fe54e591bcecce083af82026da8ca9a64bc088ade262610bd9f7a19cff3e1f9bba3558811629a5163b775947a58fe3405ca2e1d2")
+        assert true (rsa verify pkcs1 rsa_n rsa_e "sha256" "hello tls 1.3" rsa_pkcs1) "RSA-2048 PKCS#1 v1.5 valid" -> ()
+        assert false (rsa verify pkcs1 rsa_n rsa_e "sha256" "wrong msg" rsa_pkcs1) "RSA-2048 PKCS#1 v1.5 rejects wrong msg" -> ()
+        assert true (rsa verify pss rsa_n rsa_e "sha256" "hello tls 1.3" rsa_pss) "RSA-2048 PSS valid" -> ()
+        assert false (rsa verify pss rsa_n rsa_e "sha256" "wrong msg" rsa_pss) "RSA-2048 PSS rejects wrong msg" -> ()
+        assert false (rsa verify pkcs1 (byte slice rsa_n 0 128) rsa_e "sha256" "hello tls 1.3" (byte slice rsa_pkcs1 0 128)) "RSA < 2048 bits rejected" -> ()
+
+        -- 3. PEM, ASN.1 DER, X.509 v3 Certificate Parsing, RFC 6125 SAN Matching & Signature Verification
+        cert_pem = "-----BEGIN CERTIFICATE-----\n" + "MIIBezCCASGgAwIBAgICA+kwCgYIKoZIzj0EAwIwFjEUMBIGA1UEAwwLZXhhbXBs\n" + "ZS5jb20wHhcNMjUwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAWMRQwEgYDVQQD\n" + "DAtleGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGD+1LolWp0x\n" + "yWHrdMY1bWjASbiSO2H6bOZpYi5g8p+2eQP+EAi4vJmkGunpVii8ZPLxsgwtfp9R\n" + "d6PClNRGIpmjXzBdMCUGA1UdEQQeMByCDSouZXhhbXBsZS5jb22CC2V4YW1wbGUu\n" + "b3JnMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgKEMBMGA1UdJQQMMAoG\n" + "CCsGAQUFBwMBMAoGCCqGSM49BAMCA0gAMEUCIQCVhHPDc7KdyWWTnxAvfq/cVF1z\n" + "uCcPqO/wDbrwbY72awIgPq5F1Ab9+6ax8pFdr0ryT/h+n6znJEDCfjtZvnzE2wI=\n" + "-----END CERTIFICATE-----\n"
+        ders     = pem decode blocks cert_pem "CERTIFICATE"
+        assert eq (c str list len ders 0) 1 -> ()
+        ok_c, cert = x509 parse cert (c nth str ders 0)
+        assert true ok_c "x509 parse cert succeeds" -> ()
+        assert str eq (subject_cn cert) "example.com" "X.509 subject CN" -> ()
+        assert str eq (key_alg cert) "ec_p256" "X.509 SPKI key_alg" -> ()
+        assert str eq (sig_alg cert) "ecdsa_sha256" "X.509 sig_alg" -> ()
+        assert true (is_ca cert) "X.509 basicConstraints CA=TRUE" -> ()
+        assert true (has_server_auth cert) "X.509 EKU serverAuth" -> ()
+        assert eq (not_before_at cert) 1735689600 -> ()
+        assert eq (not_after_at cert) 1893456000 -> ()
+        assert true (x509 match hostname cert "api.example.com") "RFC 6125 wildcard matches leftmost label" -> ()
+        assert true (x509 match hostname cert "example.org") "RFC 6125 exact SAN match" -> ()
+        assert false (x509 match hostname cert "sub.api.example.com") "RFC 6125 wildcard rejects multi-label prefix" -> ()
+        assert false (x509 match hostname cert "example.com") "RFC 6125 wildcard does not match bare apex" -> ()
+        assert false (x509 match single san "a.*.example.com" "a.b.example.com") "RFC 6125 rejects non-leftmost wildcard" -> ()
+        assert false (x509 match single san "*.com" "example.com") "RFC 6125 rejects top-level wildcard" -> ()
+        assert true (x509 verify cert sig cert cert) "X.509 self-signed signature verified" -> ()
+
+-- @tests TS-CRYPTO-006
+fn :: test crypto006 edge cases and certs => ()
+      test crypto006 edge cases and certs =
+        -- 1. X25519 rejects wrong input lengths (AC2)
+        x_k = hex to byte str "77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a"
+        assert str eq (x25519 (byte slice x_k 0 31) (c repeat byte 9 32)) "" "X25519 rejects 31-byte scalar" -> ()
+        assert str eq (x25519 x_k (c repeat byte 9 33)) "" "X25519 rejects 33-byte u-coordinate" -> ()
+        assert str eq (x25519 public key (byte slice x_k 0 16)) "" "X25519 public key rejects 16-byte scalar" -> ()
+
+        -- 2. NIST SP 800-38D AES-128-GCM Test Cases 3 and 4 (AC3)
+        gk3  = hex to byte str "feffe9928665731c6d6a8f9467308308"
+        gn3  = hex to byte str "cafebabefacedbaddecaf888"
+        gp3  = hex to byte str ("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72" + "1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255")
+        gs3  = aes128 gcm seal gk3 gn3 "" gp3
+        assert str eq (bytes to hex str gs3) ("42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e" + "21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091473f5985" + "4d5c2af327cd64a62cf35abd2ba6fab4") "NIST GCM Test Case 3" -> ()
+        gp4  = byte slice gp3 0 60
+        ga4  = hex to byte str "feedfacedeadbeeffeedfacedeadbeefabaddad2"
+        gs4  = aes128 gcm seal gk3 gn3 ga4 gp4
+        assert str eq (bytes to hex str gs4) ("42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e" + "21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091" + "5bc94fbc3221a5db94fae95ae7121a47") "NIST GCM Test Case 4 with AAD" -> ()
+        go4  = aes128 gcm open gk3 gn3 ga4 gs4
+        assert eq (aead rc go4) 0 -> ()
+        assert str eq (aead pt go4) gp4 "AES-128-GCM open TC4" -> ()
+        gbad = (byte str 1) + (byte slice gs4 1 (str len gs4))
+        assert eq (aead rc (aes128 gcm open gk3 gn3 ga4 gbad)) (0 - 12) -> ()
+        assert eq (aead rc (aes128 gcm open (byte slice gk3 0 15) gn3 ga4 gs4)) (0 - 7) -> ()
+
+        -- 3. ECDSA P-256 raw r || s signature and tampered signature (AC4)
+        sk_e  = hex to byte str "c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721"
+        pk_e  = p256 public key sk_e
+        raw_e = hex to byte str ("57d754539de74a3c6ce2a8744b91c3f73001c733f3e20179f196819bab767e58" + "dcd06a946d1b7e568d3ff29a46698e3fe49746f86811588354a4d2d43102d665")
+        assert true (ecdsa p256 verify sha256 pk_e "sample" raw_e) "ECDSA P-256 raw r||s valid" -> ()
+        bad_e = (byte slice raw_e 0 63) + (byte str 0)
+        assert false (ecdsa p256 verify sha256 pk_e "sample" bad_e) "ECDSA P-256 rejects tampered signature" -> ()
+
+        -- 4. RSA-2048 PKCS#1 v1.5 SHA-384/SHA-512 and RSA-PSS SHA-384 (AC5)
+        rk_n = hex to byte str ("c602350d97a36b3342f59b62741c4657de7edb6e7095733a548eeef5c3e99244df3ae1712743860e457eaf4e3bbccdab5b75713b49cdba1927010da595809151" + "0f9f2ff87c0e01868b51dfb47a08fda7df71f4917870444e7485368d202824d76668e50e55fe43135f681ab7a41cc84eef2dee276997ef324b9267bfb1a83f8f" + "a8f209bb42928d74435073e9f5a3eb27925aa7306744bc3b8a3f34a6b78b5f945c3aa5e0d5907f60666fdeca9524f3be2a9963128e92bff579953b6b6acfeeb5" + "fc361b64a46fe8310731d69d531899744ef905024030c860793440c7e6a8f4ad5da70508d90b1505b3b30e27f77cabfe47794909bd44cf0af57358fbe280f9d1")
+        rk_e = hex to byte str "010001"
+        s512 = hex to byte str ("5af14292d1d30acb0104b64ea57b31266c8f58307b92d2a3abb80ef66696cd29b59654b72de41e2559f58fcf033ec070246655fdfb339bb61a5e99b76789ed56" + "297fbbfe0285920d57a5f74f500000698e6a9f75a8e7cdc7544ac2e333daf8783246b8f54a3cb87f20847770987719f9eb4a2c46e7afd1da8a69524e80dfb984" + "8e8547d4e356a16821e80f88a3ebd48e78d96a29a7f06de6f8884d24d8a24c9601aeb421493c97a1605f05b32fd351c378b51e8ed38defbd50e1c0020d2aa340" + "7c13db18ebc2422096e4063c111e6a082b7175e26fd9fbc238a67af8e01c1803bcd8cf7294e916031f64e68ea5f6b05e88b3c576ec6a341229e39b0c053e7ccd")
+        s384 = hex to byte str ("2d7b014c1227bb49f5bb69495278e6829f44cb2364170ee2b0975c65d59674cd31121bb4a096a99567e01af26c6add5783dff2e0c6b9d6c05b4a6f643c6b3f0a" + "9f3f82bd7ba1eb4757dbe53359006dfeb4a65346ce6ee10bd62ed3a75c04b59f325efe322896246b49e3b38ab6b0a72930682e0f9f556c037a9cc6df1cfed339" + "518bb33ffa00a5f4569a0493c1e9060b7ffb1c570641428f690eecaa959fddfdfb0e53ba6d18a7a124047063a60d462e48f16a19724d3c866476ef9005259375" + "aded472bf9e0ed6107f7d34cd45ceeb78371b0dc17c1d3bcf147f2f85d1a48ac1dc489fe2ce7e5c07680cfa56d760171fc5c19fd9b13f1a1fb5e14e51abb49b9")
+        p384s = hex to byte str ("56377f9c6a7e58606912df904da1fba3a8c40e263bb2fde3c303210e5c0e5426e9e70d5c593ecdef343d33b92eedb736e3c6c6461c0fbca4708a104d60c942d1" + "cf62eb69ec6d03bbf051b97e7d517af04f7b53b431e244abd5350a3e76bad74dd90b762ca20ad66e62b1e26b3ce2b77eb32b2d770fd5521eb0148664e420b2f9" + "588619f7d998c32221bc64b95b2e3c23022488600682d41392487fb6439779bf3f5ece2a8bc08d4414a843c703578bbdebad1efd72afe7f102e4025abeadfd73" + "8cf987392f123933d7fb1ac0a4723818d570aa1296e9dd36f9aeea56adbf72978cf886b6c2ee6c99829cde03f9f8f4d78dc146abdda631bb4555094289e1833e")
+        assert true (rsa verify pkcs1 rk_n rk_e "sha512" "hello tls 1.2" s512) "RSA PKCS#1 v1.5 SHA-512 valid" -> ()
+        assert true (rsa verify pkcs1 rk_n rk_e "sha384" "hello tls 1.2" s384) "RSA PKCS#1 v1.5 SHA-384 valid" -> ()
+        assert false (rsa verify pkcs1 rk_n rk_e "sha384" "hello tls 1.2" s512) "RSA PKCS#1 v1.5 rejects hash mismatch" -> ()
+        assert true (rsa verify pss rk_n rk_e "sha384" "hello tls 1.2" p384s) "RSA-PSS SHA-384 valid" -> ()
+        bad_r = (byte slice s512 0 255) + (byte str 0)
+        assert false (rsa verify pkcs1 rk_n rk_e "sha512" "hello tls 1.2" bad_r) "RSA PKCS#1 v1.5 rejects tampered signature" -> ()
+
+        -- 5. X.509: RSA CA, P-384 and Ed25519 self-signed certs, CA-signed leaf (AC6)
+        ca_pem = "-----BEGIN CERTIFICATE-----\n" + "MIICwDCCAaigAwIBAgIBATANBgkqhkiG9w0BAQwFADAZMRcwFQYDVQQDDA5SaWRn\n" + "dW4gVGVzdCBDQTAeFw0yNTAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMBkxFzAV\n" + "BgNVBAMMDlJpZGd1biBUZXN0IENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB\n" + "CgKCAQEAxgI1DZejazNC9ZtidBxGV95+225wlXM6VI7u9cPpkkTfOuFxJ0OGDkV+\n" + "r047vM2rW3VxO0nNuhknAQ2llYCRUQ+fL/h8DgGGi1HftHoI/affcfSReHBETnSF\n" + "No0gKCTXZmjlDlX+QxNfaBq3pBzITu8t7idpl+8yS5Jnv7GoP4+o8gm7QpKNdENQ\n" + "c+n1o+snklqnMGdEvDuKPzSmt4tflFw6peDVkH9gZm/eypUk874qmWMSjpK/9XmV\n" + "O2tqz+61/DYbZKRv6DEHMdadUxiZdE75BQJAMMhgeTRAx+ao9K1dpwUI2QsVBbOz\n" + "Dif3fKv+R3lJCb1Ezwr1c1j74oD50QIDAQABoxMwETAPBgNVHRMBAf8EBTADAQH/\n" + "MA0GCSqGSIb3DQEBDAUAA4IBAQAGiAYEZCsQ72QJ5EvS1o8w5LZ4SoATUmaLnLSo\n" + "nWMzrsFjuLnB8mFIvM8Bd7n8Y8cC84fPFuaFWVntNmB+UdWr1eQCYsX0bFslgron\n" + "K5U9xKbF8nNjAzlQMKUYPceh/OOAyb20uTOMz4423q4hqpZG0Hmyn9UEgGTTyxOe\n" + "UYnFQ5l7ih6CJlb2wgsh2cvdESs0E5B3O6c+P9E3wp1n+8C+KxUSuxTeDLtnMswV\n" + "0aqP1FXVJ+C6NDGq9pXnD4BIRBiCK8bpp5YqM96htw5FBN7FMCtcJtBh1Lm06d/W\n" + "Tghqly2jDVSNwOlHWLUix/QKQ0AfOsIoOGmivs9wtFc4BIHP\n" + "-----END CERTIFICATE-----\n"
+        p384_pem = "-----BEGIN CERTIFICATE-----\n" + "MIIBjzCCARWgAwIBAgIBAjAKBggqhkjOPQQDAzAUMRIwEAYDVQQDDAlwMzg0LnRl\n" + "c3QwHhcNMjUwMTAxMDAwMDAwWhcNMzAwMTAxMDAwMDAwWjAUMRIwEAYDVQQDDAlw\n" + "Mzg0LnRlc3QwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQN7YsHxPPMDkG+FJ/BoQFZ\n" + "iM0A3NY5RbJbIXX/0iOyequPyOqu8Mly/SNQTHu9zUFezlNxroKowLvipPcCBqX0\n" + "Fh/dEuzKdIS3JYa+IZi7B8c9X08zDsYu9K6w4+tsQf+jOzA5MAwGA1UdEwEB/wQC\n" + "MAAwFAYDVR0RBA0wC4IJcDM4NC50ZXN0MBMGA1UdJQQMMAoGCCsGAQUFBwMBMAoG\n" + "CCqGSM49BAMDA2gAMGUCMQCzuFGZ+otJVilqEid6Cp2qm09R8/XAggZKv/BWdIkx\n" + "cytCxMqMgVMjLJai/L145HICMCTL6kr17XVpxIFgZJYVIW5gvHUH2/L/5qGirtxX\n" + "Mw5JE45iq16UnChyMmQoxYD9XA==\n" + "-----END CERTIFICATE-----\n"
+        ed_pem = "-----BEGIN CERTIFICATE-----\n" + "MIIBCzCBvqADAgECAgEDMAUGAytlcDASMRAwDgYDVQQDDAdlZC50ZXN0MB4XDTI1\n" + "MDEwMTAwMDAwMFoXDTMwMDEwMTAwMDAwMFowEjEQMA4GA1UEAwwHZWQudGVzdDAq\n" + "MAUGAytlcAMhADwgYcwt5uAE05LKMMZaxPUqcfDkcYQrJSjFzrCAOQwaozkwNzAM\n" + "BgNVHRMBAf8EAjAAMBIGA1UdEQQLMAmCB2VkLnRlc3QwEwYDVR0lBAwwCgYIKwYB\n" + "BQUHAwEwBQYDK2VwA0EAt7s0zYTktgQRJv5qOSfzFieWxjGcTw8yV6vRfcaESdpa\n" + "ZhEnvm5qwFVC7LgK/rs0GLSccgBKGNPNV1hLFLxTBQ==\n" + "-----END CERTIFICATE-----\n"
+        leaf_pem = "-----BEGIN CERTIFICATE-----\n" + "MIICQjCCASqgAwIBAgIBBDANBgkqhkiG9w0BAQsFADAZMRcwFQYDVQQDDA5SaWRn\n" + "dW4gVGVzdCBDQTAeFw0yNTAxMDEwMDAwMDBaFw0zMDAxMDEwMDAwMDBaMBQxEjAQ\n" + "BgNVBAMMCWxlYWYudGVzdDB2MBAGByqGSM49AgEGBSuBBAAiA2IABA3tiwfE88wO\n" + "Qb4Un8GhAVmIzQDc1jlFslshdf/SI7J6q4/I6q7wyXL9I1BMe73NQV7OU3GugqjA\n" + "u+Kk9wIGpfQWH90S7Mp0hLclhr4hmLsHxz1fTzMOxi70rrDj62xB/6NIMEYwDAYD\n" + "VR0TAQH/BAIwADAhBgNVHREEGjAYgglsZWFmLnRlc3SCCyoubGVhZi50ZXN0MBMG\n" + "A1UdJQQMMAoGCCsGAQUFBwMBMA0GCSqGSIb3DQEBCwUAA4IBAQBxD/RWuxNKchIB\n" + "j/IBryFHERjKQjUHOGbf/L+AWMgwbMsPSQPpLTZFNQa8222Dm0Jx958JJZ4vufSu\n" + "wNRvh2nFSQ9xg8KGWbdV6gmaI7eMz7kluu8RcHayhObhPyQccCHKGCgSjeIsndjD\n" + "Ezp/OqdfFpmNMDB1WyGNLzuNVupb62x3Q+9EXD4se/1w9sfePqZzRyyJ2duJ+Rc2\n" + "gbUueCot7UGAq7/z9wzg4ouIiXvW7SP+/p9NCtuEjN9X5+qybKTb+f8eKmkthywd\n" + "iPtPwwS1q+rGiPev69clnhkB03RLxQbDYWorYbOrqNy8/qVtAvTgMry8guQHRCnf\n" + "wZSHzFQS\n" + "-----END CERTIFICATE-----\n"
+        ok_ca, ca_c = x509 parse cert (c nth str (pem decode blocks ca_pem "CERTIFICATE") 0)
+        assert true ok_ca "x509 parse RSA CA" -> ()
+        assert str eq (key_alg ca_c) "rsa" "RSA SPKI key_alg" -> ()
+        assert str eq (bytes to hex str (pubkey_bytes ca_c)) "c602350d97a36b3342f59b62741c4657de7edb6e7095733a548eeef5c3e99244df3ae1712743860e457eaf4e3bbccdab5b75713b49cdba1927010da5958091510f9f2ff87c0e01868b51dfb47a08fda7df71f4917870444e7485368d202824d76668e50e55fe43135f681ab7a41cc84eef2dee276997ef324b9267bfb1a83f8fa8f209bb42928d74435073e9f5a3eb27925aa7306744bc3b8a3f34a6b78b5f945c3aa5e0d5907f60666fdeca9524f3be2a9963128e92bff579953b6b6acfeeb5fc361b64a46fe8310731d69d531899744ef905024030c860793440c7e6a8f4ad5da70508d90b1505b3b30e27f77cabfe47794909bd44cf0af57358fbe280f9d1" "RSA SPKI modulus" -> ()
+        assert str eq (bytes to hex str (rsa_exp_bytes ca_c)) "010001" "RSA SPKI exponent" -> ()
+        assert str eq (sig_alg ca_c) "rsa_pkcs1_sha384" "RSA CA sig_alg" -> ()
+        assert true (is_ca ca_c) "RSA CA basicConstraints" -> ()
+        assert true (x509 verify cert sig ca_c ca_c) "RSA CA self-signature" -> ()
+        ok_p, p_c = x509 parse cert (c nth str (pem decode blocks p384_pem "CERTIFICATE") 0)
+        assert true ok_p "x509 parse P-384 cert" -> ()
+        assert str eq (key_alg p_c) "ec_p384" "P-384 SPKI key_alg" -> ()
+        assert str eq (sig_alg p_c) "ecdsa_sha384" "P-384 sig_alg" -> ()
+        assert false (is_ca p_c) "P-384 leaf is not CA" -> ()
+        assert true (x509 verify cert sig p_c p_c) "P-384 self-signature" -> ()
+        ok_d, d_c = x509 parse cert (c nth str (pem decode blocks ed_pem "CERTIFICATE") 0)
+        assert true ok_d "x509 parse Ed25519 cert" -> ()
+        assert str eq (key_alg d_c) "ed25519" "Ed25519 SPKI key_alg" -> ()
+        assert eq (str len (pubkey_bytes d_c)) 32 -> ()
+        assert true (x509 verify cert sig d_c d_c) "Ed25519 self-signature" -> ()
+        ok_l, l_c = x509 parse cert (c nth str (pem decode blocks leaf_pem "CERTIFICATE") 0)
+        assert true ok_l "x509 parse CA-signed leaf" -> ()
+        assert str eq (issuer_cn l_c) "Ridgun Test CA" "leaf issuer CN" -> ()
+        assert str eq (issuer_der l_c) (subject_der ca_c) "leaf issuer == CA subject" -> ()
+        assert true (x509 verify cert sig l_c ca_c) "leaf signed by RSA CA" -> ()
+        assert false (x509 verify cert sig l_c p_c) "leaf signature rejected with wrong issuer key" -> ()
+        assert true (x509 match hostname l_c "www.leaf.test") "leaf wildcard SAN" -> ()
+        assert false (x509 match hostname l_c "other.test") "leaf rejects unrelated host" -> ()
+        assert eq (not_after_at l_c) 1893456000 -> ()
+        two = pem decode blocks (ca_pem + leaf_pem) "CERTIFICATE"
+        assert eq (c str list len two 0) 2 -> ()
+
+
 fn :: main => ()
       main =
         test rgf019 bytes and bitops -> ()
@@ -408,4 +616,7 @@ fn :: main => ()
         test sha512 fips vectors -> ()
         test ed25519 rfc8032 vectors and negatives -> ()
         test minisign roundtrip and tamper -> ()
-        echo "[PASS] test_crypto: TS-CRYPTO-003, TS-CRYPTO-004, TS-CRYPTO-005, and TS-PERF-001 passed"
+        test sha384 hkdf x25519 aes128gcm -> ()
+        test p256 p384 rsa and x509 -> ()
+        test crypto006 edge cases and certs -> ()
+        echo "[PASS] test_crypto: TS-CRYPTO-003, TS-CRYPTO-004, TS-CRYPTO-005, TS-CRYPTO-006, and TS-PERF-001 passed"

@@ -7,6 +7,7 @@
 -- @implements FR-CRYPTO-003
 -- @implements FR-CRYPTO-004
 -- @implements FR-CRYPTO-005
+-- @implements FR-CRYPTO-006
 -- @implements NFR-PERF-001
 -- @implements API-CRYPTO-001
 -- @implements DM-Argon2
@@ -18,8 +19,11 @@ module :: crypto
 
 import argon2id
 
-type CT16    = ct0: A, ct1: A, ct2: A, ct3: A, ct4: A, ct5: A, ct6: A, ct7: A, ct8: A, ct9: A, ct10: A, ct11: A, ct12: A, ct13: A, ct14: A, ct15: A
-type CPbkCtx = cptbl: CT16, cpipad: String, cpopad: String
+type CT16     = ct0: A, ct1: A, ct2: A, ct3: A, ct4: A, ct5: A, ct6: A, ct7: A, ct8: A, ct9: A, ct10: A, ct11: A, ct12: A, ct13: A, ct14: A, ct15: A
+type CPbkCtx  = cptbl: CT16, cpipad: String, cpopad: String
+type EcPoint  = ecx: Tensor[U64 * 260], ecy: Tensor[U64 * 260], ecz: Tensor[U64 * 260], ec_inf: Bool
+type EcCurve  = ecp: Tensor[U64 * 260], ecn: Tensor[U64 * 260], ecb: Tensor[U64 * 260], ecgx: Tensor[U64 * 260], ecgy: Tensor[U64 * 260], eclimbs: Int
+type X509Cert = tbs_der: String, issuer_der: String, subject_der: String, issuer_cn: String, subject_cn: String, not_before_at: Int, not_after_at: Int, key_alg: String, pubkey_bytes: String, rsa_exp_bytes: String, sig_alg: String, sig_bytes: String, san_dns: [String], is_ca: Bool, key_usage_bits: Int, has_server_auth: Bool
 
 -- ── RGF-019 Raw Byte Manipulation (`byte_str`, `bytes_from_list`, `bytes_to_list`) ──
 
@@ -1472,9 +1476,34 @@ fn :: fe freeze Tensor[U64 * 10] => Tensor[U64 * 10]
         q8 = (h_(8) + q7) shr 26
         q9 = (h_(9) + q8) shr 25
         h_(0) = h_(0) + (19 * q9)
-        h1 = fe carry pass h
-        h1_(9) = h1_(9) and 33554431
-        h1
+        c0 = h_(0) shr 26
+        h_(0) = h_(0) and 67108863
+        h_(1) = h_(1) + c0
+        c1 = h_(1) shr 25
+        h_(1) = h_(1) and 33554431
+        h_(2) = h_(2) + c1
+        c2 = h_(2) shr 26
+        h_(2) = h_(2) and 67108863
+        h_(3) = h_(3) + c2
+        c3 = h_(3) shr 25
+        h_(3) = h_(3) and 33554431
+        h_(4) = h_(4) + c3
+        c4 = h_(4) shr 26
+        h_(4) = h_(4) and 67108863
+        h_(5) = h_(5) + c4
+        c5 = h_(5) shr 25
+        h_(5) = h_(5) and 33554431
+        h_(6) = h_(6) + c5
+        c6 = h_(6) shr 26
+        h_(6) = h_(6) and 67108863
+        h_(7) = h_(7) + c6
+        c7 = h_(7) shr 25
+        h_(7) = h_(7) and 33554431
+        h_(8) = h_(8) + c7
+        c8 = h_(8) shr 26
+        h_(8) = h_(8) and 67108863
+        h_(9) = (h_(9) + c8) and 33554431
+        h
 
 fn :: fe eq Tensor[U64 * 10] Tensor[U64 * 10] => Bool
       fe eq f                g                =
@@ -2205,3 +2234,1834 @@ fn :: minisign verify String      String String       => Bool
         lines            = c split lines minisig_text
         ok_hdr           = ((str len pk_bytes) == 32) and ((c str list len lines 0) >= 4)
         minisign verify lines ok_hdr pk_kid pk_bytes msg lines
+
+
+-- ============================================================
+-- FR-CRYPTO-006: SHA-384, HMAC-SHA-384 & HKDF (RFC 5869 / RFC 8446)
+-- ============================================================
+
+fn :: sha384 init h => Tensor[U64 * 16]
+      sha384 init h =
+        h = Tensor[U64 * 16]
+        s = "cbbb9d5dc1059ed8629a292a367cd5079159015a3070dd17152fecd8f70e593967332667ffc00b318eb44a8768581511db0c2e0d64f98fa747b5481dbefa4fa4"
+        sha512 init h loop h s 0
+
+fn :: sha384 state to raw CT16 Tensor[U64 * 16] Int => String
+      sha384 state to raw tbl h idx =
+        | idx >= 12 = ""
+        | otherwise = (c word32 to raw4 tbl h_(idx)) + (sha384 state to raw tbl h (idx + 1))
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: sha384 bytes String => String
+      sha384 bytes msg    =
+        mlen      = str len msg
+        total_len = ((mlen + 17 + 127) / 128) * 128
+        h0        = sha384 init h
+        v0        = Tensor[U64 * 16]
+        k         = sha512 init k
+        w         = Tensor[U64 * 160]
+        hf        = sha512 blocks loop h0 v0 k w msg mlen total_len 0
+        sha384 state to raw (c build b256) hf 0
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: sha384 hex String => String
+      sha384 hex msg    =
+        msg sha384 bytes -> bytes to hex str
+
+fn :: raw hmac384 key bytes String => [Int]
+      raw hmac384 key bytes key    =
+        | (str len key) > 128 = bytes to list (sha384 bytes key)
+        | otherwise           = bytes to list key
+
+fn :: normalize hmac384 key String => [Int]
+      normalize hmac384 key key    =
+        raw  = raw hmac384 key bytes key
+        rlen = c list len raw
+        raw :: (pad zeroes (128 - rlen))
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+fn :: hmac sha384 String String => String
+      hmac sha384 key    msg    =
+        k_block = normalize hmac384 key key
+        ipad_s  = c list to raw short (bitxor key pad k_block 54)
+        opad_s  = c list to raw short (bitxor key pad k_block 92)
+        inner   = sha384 bytes (ipad_s + msg)
+        sha384 bytes (opad_s + inner)
+
+fn :: c repeat byte Int Int => String
+      c repeat byte b   n   =
+        | n <= 0    = ""
+        | otherwise = (byte str b) + (c repeat byte b (n - 1))
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+fn :: hkdf extract String String => String
+      hkdf extract salt   ikm    =
+        | (str len salt) == 0 = hmac sha256 (c repeat byte 0 32) ikm
+        | otherwise           = hmac sha256 salt ikm
+
+fn :: hkdf expand loop String String Int Int String String => String
+      hkdf expand loop prk info out_len idx prev acc =
+        | (str len acc) == out_len = acc
+        | (str len acc) > out_len  = byte slice acc 0 out_len
+        | otherwise                =
+          t_cur = hmac sha256 prk (prev + info + (byte str idx))
+          hkdf expand loop prk info out_len (idx + 1) t_cur (acc + t_cur)
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: hkdf expand String String Int     => String
+      hkdf expand prk    info   out_len =
+        | out_len <= 0 or out_len > 8160 = ""
+        | otherwise                      = hkdf expand loop prk info out_len 1 "" ""
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+fn :: hkdf extract sha384 String String => String
+      hkdf extract sha384 salt   ikm    =
+        | (str len salt) == 0 = hmac sha384 (c repeat byte 0 48) ikm
+        | otherwise           = hmac sha384 salt ikm
+
+fn :: hkdf expand sha384 loop String String Int Int String String => String
+      hkdf expand sha384 loop prk info out_len idx prev acc =
+        | (str len acc) == out_len = acc
+        | (str len acc) > out_len  = byte slice acc 0 out_len
+        | otherwise                =
+          t_cur = hmac sha384 prk (prev + info + (byte str idx))
+          hkdf expand sha384 loop prk info out_len (idx + 1) t_cur (acc + t_cur)
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: hkdf expand sha384 String String Int     => String
+      hkdf expand sha384 prk    info   out_len =
+        | out_len <= 0 or out_len > 12240 = ""
+        | otherwise                       = hkdf expand sha384 loop prk info out_len 1 "" ""
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+fn :: hkdf expand label String String String  Int     => String
+      hkdf expand label secret label  context out_len =
+        full_lbl = "tls13 " + label
+        len_be2  = (byte str ((out_len / 256) % 256)) + (byte str (out_len % 256))
+        lbl_vec  = (byte str (str len full_lbl)) + full_lbl
+        ctx_vec  = (byte str (str len context)) + context
+        hkdf expand secret (len_be2 + lbl_vec + ctx_vec) out_len
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+fn :: derive secret String String String   => String
+      derive secret secret label  messages =
+        hkdf expand label secret label (sha256 bytes messages) 32
+
+-- ============================================================
+-- FR-CRYPTO-006: RFC 7748 X25519 Constant-Time Diffie-Hellman
+-- ============================================================
+
+fn :: fe a24 => Tensor[U64 * 10]
+      fe a24 =  fe lit 121665 0 0 0 0 0 0 0 0 0
+
+fn :: fe cswap loop Tensor[U64 * 10] Tensor[U64 * 10] U64 Int => Tensor[U64 * 10] Tensor[U64 * 10]
+      fe cswap loop p q mask idx =
+        | idx >= 10 = (p, q)
+        | otherwise =
+          t = (p_(idx) xor q_(idx)) and mask
+          p_(idx) = p_(idx) xor t
+          q_(idx) = q_(idx) xor t
+          fe cswap loop p q mask (idx + 1)
+
+fn :: fe cswap Tensor[U64 * 10] Tensor[U64 * 10] U64 => Tensor[U64 * 10] Tensor[U64 * 10]
+      fe cswap p                q                bit =
+        mask = (0 - (bit and 1)) and 0xFFFFFFFF
+        p_c  = fe lit p_(0) p_(1) p_(2) p_(3) p_(4) p_(5) p_(6) p_(7) p_(8) p_(9)
+        q_c  = fe lit q_(0) q_(1) q_(2) q_(3) q_(4) q_(5) q_(6) q_(7) q_(8) q_(9)
+        fe cswap loop p_c q_c mask 0
+
+fn :: x25519 clamp scalar String => Tensor[U64 * 8]
+      x25519 clamp scalar k32    =
+        w = raw32 to words8 k32
+        w_(0) = w_(0) and 0xFFFFFFF8
+        w_(7) = (w_(7) and 0x7FFFFFFF) or 0x40000000
+        w
+
+fn :: x25519 decode u String => Tensor[U64 * 10]
+      x25519 decode u u32    =
+        _, _, u_fe = fe from raw32 u32
+        u_fe
+
+fn :: x25519 ladder loop Tensor[U64 * 8] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] U64 Int => Tensor[U64 * 10] Tensor[U64 * 10]
+      x25519 ladder loop k_w x1 x2 z2 x3 z3 swap_prev t =
+        | t < 0 =
+          x2_f, _ = fe cswap x2 x3 swap_prev
+          z2_f, _ = fe cswap z2 z3 swap_prev
+          (x2_f, z2_f)
+        | otherwise =
+          k_t       = (k_w_(t / 32) shr (t % 32)) and 1
+          swap      = swap_prev xor k_t
+          x2_s, x3_s = fe cswap x2 x3 swap
+          z2_s, z3_s = fe cswap z2 z3 swap
+          a         = fe add x2_s z2_s
+          aa        = fe sq a
+          b         = fe sub x2_s z2_s
+          bb        = fe sq b
+          e         = fe sub aa bb
+          c         = fe add x3_s z3_s
+          d         = fe sub x3_s z3_s
+          da        = fe mul d a
+          cb        = fe mul c b
+          x3_n      = fe sq (fe add da cb)
+          z3_n      = fe mul x1 (fe sq (fe sub da cb))
+          x2_n      = fe mul aa bb
+          z2_n      = fe mul e (fe add aa (fe mul (fe a24) e))
+          x25519 ladder loop k_w x1 x2_n z2_n x3_n z3_n k_t (t - 1)
+
+fn :: x25519 check non zero String => String
+      x25519 check non zero out    =
+        | ct equal out (c repeat byte 0 32) = ""
+        | otherwise                         = out
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: x25519 String String => String
+      x25519 scalar u_coord =
+        | (str len scalar) != 32 or (str len u_coord) != 32 = ""
+        | otherwise =
+          k_w    = x25519 clamp scalar scalar
+          x1     = x25519 decode u u_coord
+          x2, z2 = x25519 ladder loop k_w x1 (fe one) (fe zero) x1 (fe one) 0 254
+          out_fe = fe mul x2 (fe invert z2)
+          out_w  = fe to words8 out_fe
+          x25519 check non zero (words8 to raw32 loop (c build b256) out_w 0)
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: x25519 public key String => String
+      x25519 public key scalar =
+        | (str len scalar) != 32 = ""
+        | otherwise              = x25519 scalar ((byte str 9) + (c repeat byte 0 31))
+
+-- ============================================================
+-- FR-CRYPTO-006: FIPS 197 AES-128 & NIST SP 800-38D AES-128-GCM
+-- ============================================================
+
+fn :: aes sbox hex => String
+      aes sbox hex =
+        "637c777bf26b6fc53001672bfed7ab76ca82c97dfa5947f0add4a2af9ca472c0b7fd9326363ff7cc34a5e5f171d8311504c723c31896059a071280e2eb27b27509832c1a1b6e5aa0523bd6b329e32f8453d100ed20fcb15b6acbbe394a4c58cfd0efaafb434d338545f9027f503c9fa851a3408f929d38f5bcb6da2110fff3d2cd0c13ec5f974417c4a77e3d645d197360814fdc222a908846eeb814de5e0bdbe0323a0a4906245cc2d3ac629195e479e7c8376d8dd54ea96c56f4ea657aae08ba78252e1ca6b4c6e8dd741f4bbd8b8a703eb5664803f60e613557b986c11d9ee1f8981169d98e949b1e87e9ce5528df8ca1890dbfe6426841992d0fb054bb16"
+
+fn :: aes init sbox loop Tensor[U64 * 256] String Int => Tensor[U64 * 256]
+      aes init sbox loop sb h idx =
+        | idx >= 256 = sb
+        | otherwise  =
+          hi = c hex nib (str char at h (idx * 2))
+          lo = c hex nib (str char at h ((idx * 2) + 1))
+          sb_(idx) = (hi shl 4) or lo
+          aes init sbox loop sb h (idx + 1)
+
+fn :: aes init sbox => Tensor[U64 * 256]
+      aes init sbox =
+        sb = Tensor[U64 * 256]
+        aes init sbox loop sb (aes sbox hex) 0
+
+fn :: aes rcon Int => U64
+      aes rcon r   =
+        | r == 1    = 1
+        | r == 2    = 2
+        | r == 3    = 4
+        | r == 4    = 8
+        | r == 5    = 16
+        | r == 6    = 32
+        | r == 7    = 64
+        | r == 8    = 128
+        | r == 9    = 27
+        | otherwise = 54
+
+fn :: aes copy key init Tensor[U64 * 176] String Int => Tensor[U64 * 176]
+      aes copy key init rk key idx =
+        | idx >= 16 = rk
+        | otherwise =
+          rk_(idx) = norm byte (str char at key idx)
+          aes copy key init rk key (idx + 1)
+
+fn :: aes expand key loop Tensor[U64 * 256] Tensor[U64 * 176] Int => Tensor[U64 * 176]
+      aes expand key loop sb rk word_idx =
+        | word_idx >= 44 = rk
+        | otherwise      =
+          off  = word_idx * 4
+          prev = off - 4
+          src  = off - 16
+          t0   = rk_(prev)
+          t1   = rk_(prev + 1)
+          t2   = rk_(prev + 2)
+          t3   = rk_(prev + 3)
+          u0   =
+            | (word_idx % 4) == 0 = sb_(t1) xor (aes rcon (word_idx / 4))
+            | otherwise           = t0
+          u1   =
+            | (word_idx % 4) == 0 = sb_(t2)
+            | otherwise           = t1
+          u2   =
+            | (word_idx % 4) == 0 = sb_(t3)
+            | otherwise           = t2
+          u3   =
+            | (word_idx % 4) == 0 = sb_(t0)
+            | otherwise           = t3
+          rk_(off)     = rk_(src) xor u0
+          rk_(off + 1) = rk_(src + 1) xor u1
+          rk_(off + 2) = rk_(src + 2) xor u2
+          rk_(off + 3) = rk_(src + 3) xor u3
+          aes expand key loop sb rk (word_idx + 1)
+
+fn :: aes expand key Tensor[U64 * 256] String => Tensor[U64 * 176]
+      aes expand key sb key =
+        rk0 = Tensor[U64 * 176]
+        rk1 = aes copy key init rk0 key 0
+        aes expand key loop sb rk1 4
+
+fn :: aes xtime U64 => U64
+      aes xtime x   =
+        ((x shl 1) xor (((x shr 7) and 1) * 27)) and 255
+
+fn :: aes mix col Tensor[U64 * 16] Int => Tensor[U64 * 16]
+      aes mix col st col =
+        off = col * 4
+        a0  = st_(off)
+        a1  = st_(off + 1)
+        a2  = st_(off + 2)
+        a3  = st_(off + 3)
+        t   = a0 xor a1 xor a2 xor a3
+        st_(off)     = a0 xor t xor (aes xtime (a0 xor a1))
+        st_(off + 1) = a1 xor t xor (aes xtime (a1 xor a2))
+        st_(off + 2) = a2 xor t xor (aes xtime (a2 xor a3))
+        st_(off + 3) = a3 xor t xor (aes xtime (a3 xor a0))
+        st
+
+fn :: aes sub shift Tensor[U64 * 256] Tensor[U64 * 16] => Tensor[U64 * 16]
+      aes sub shift sb st =
+        s0  = sb_(st_(0))
+        s1  = sb_(st_(5))
+        s2  = sb_(st_(10))
+        s3  = sb_(st_(15))
+        s4  = sb_(st_(4))
+        s5  = sb_(st_(9))
+        s6  = sb_(st_(14))
+        s7  = sb_(st_(3))
+        s8  = sb_(st_(8))
+        s9  = sb_(st_(13))
+        s10 = sb_(st_(2))
+        s11 = sb_(st_(7))
+        s12 = sb_(st_(12))
+        s13 = sb_(st_(1))
+        s14 = sb_(st_(6))
+        s15 = sb_(st_(11))
+        st_(0)  = s0
+        st_(1)  = s1
+        st_(2)  = s2
+        st_(3)  = s3
+        st_(4)  = s4
+        st_(5)  = s5
+        st_(6)  = s6
+        st_(7)  = s7
+        st_(8)  = s8
+        st_(9)  = s9
+        st_(10) = s10
+        st_(11) = s11
+        st_(12) = s12
+        st_(13) = s13
+        st_(14) = s14
+        st_(15) = s15
+        st
+
+fn :: aes add rk loop Tensor[U64 * 16] Tensor[U64 * 176] Int Int => Tensor[U64 * 16]
+      aes add rk loop st rk base idx =
+        | idx >= 16 = st
+        | otherwise =
+          st_(idx) = st_(idx) xor rk_(base + idx)
+          aes add rk loop st rk base (idx + 1)
+
+fn :: aes rounds loop Tensor[U64 * 256] Tensor[U64 * 176] Tensor[U64 * 16] Int => Tensor[U64 * 16]
+      aes rounds loop sb rk st r =
+        | r >= 10   =
+          st1 = aes sub shift sb st
+          aes add rk loop st1 rk 160 0
+        | otherwise =
+          st1 = aes sub shift sb st
+          st2 = aes mix col st1 0
+          st3 = aes mix col st2 1
+          st4 = aes mix col st3 2
+          st5 = aes mix col st4 3
+          st6 = aes add rk loop st5 rk (r * 16) 0
+          aes rounds loop sb rk st6 (r + 1)
+
+fn :: aes load st Tensor[U64 * 16] Tensor[U64 * 176] String Int => Tensor[U64 * 16]
+      aes load st st rk blk idx =
+        | idx >= 16 = st
+        | otherwise =
+          st_(idx) = (norm byte (str char at blk idx)) xor rk_(idx)
+          aes load st st rk blk (idx + 1)
+
+fn :: aes st to str CT16 Tensor[U64 * 16] Int => String
+      aes st to str tbl st idx =
+        | idx >= 16 = ""
+        | otherwise =
+          v = st_(idx) and 255
+          (c get b256 tbl (v shr 4) (v and 15)) + (aes st to str tbl st (idx + 1))
+
+fn :: aes encrypt with rk CT16 Tensor[U64 * 256] Tensor[U64 * 176] String => String
+      aes encrypt with rk tbl sb rk blk16 =
+        st0 = Tensor[U64 * 16]
+        st1 = aes load st st0 rk blk16 0
+        stf = aes rounds loop sb rk st1 1
+        aes st to str tbl stf 0
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: aes128 block String String => String
+      aes128 block key    blk    =
+        | (str len key) != 16 or (str len blk) != 16 = ""
+        | otherwise =
+          sb = aes init sbox
+          rk = aes expand key sb key
+          aes encrypt with rk (c build b256) sb rk blk
+
+fn :: ghash bytes to words4 String Int => Tensor[U64 * 4]
+      ghash bytes to words4 s off =
+        w = Tensor[U64 * 4]
+        slen = str len s
+        w_(0) = ((ghash byte at s slen off) shl 24) or ((ghash byte at s slen (off + 1)) shl 16) or ((ghash byte at s slen (off + 2)) shl 8) or (ghash byte at s slen (off + 3))
+        w_(1) = ((ghash byte at s slen (off + 4)) shl 24) or ((ghash byte at s slen (off + 5)) shl 16) or ((ghash byte at s slen (off + 6)) shl 8) or (ghash byte at s slen (off + 7))
+        w_(2) = ((ghash byte at s slen (off + 8)) shl 24) or ((ghash byte at s slen (off + 9)) shl 16) or ((ghash byte at s slen (off + 10)) shl 8) or (ghash byte at s slen (off + 11))
+        w_(3) = ((ghash byte at s slen (off + 12)) shl 24) or ((ghash byte at s slen (off + 13)) shl 16) or ((ghash byte at s slen (off + 14)) shl 8) or (ghash byte at s slen (off + 15))
+        w
+
+fn :: ghash byte at String Int Int => U64
+      ghash byte at s slen pos =
+        | pos >= slen = 0
+        | otherwise   = norm byte (str char at s pos)
+
+fn :: ghash mul loop Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Int => Tensor[U64 * 4]
+      ghash mul loop x v z bit_idx =
+        | bit_idx >= 128 = z
+        | otherwise      =
+          w_idx = bit_idx / 32
+          sh    = 31 - (bit_idx % 32)
+          bit   = (x_(w_idx) shr sh) and 1
+          mask  = (0 - bit) and 0xFFFFFFFF
+          z_(0) = z_(0) xor (v_(0) and mask)
+          z_(1) = z_(1) xor (v_(1) and mask)
+          z_(2) = z_(2) xor (v_(2) and mask)
+          z_(3) = z_(3) xor (v_(3) and mask)
+          lsb   = v_(3) and 1
+          rmask = (0 - lsb) and 0xE1000000
+          v0    = v_(0)
+          v1    = v_(1)
+          v2    = v_(2)
+          v3    = v_(3)
+          v_(3) = ((v3 shr 1) or ((v2 and 1) shl 31)) and 0xFFFFFFFF
+          v_(2) = ((v2 shr 1) or ((v1 and 1) shl 31)) and 0xFFFFFFFF
+          v_(1) = ((v1 shr 1) or ((v0 and 1) shl 31)) and 0xFFFFFFFF
+          v_(0) = (v0 shr 1) xor rmask
+          ghash mul loop x v z (bit_idx + 1)
+
+fn :: ghash mul Tensor[U64 * 4] Tensor[U64 * 4] => Tensor[U64 * 4]
+      ghash mul x               h_w             =
+        v = Tensor[U64 * 4]
+        v_(0) = h_w_(0)
+        v_(1) = h_w_(1)
+        v_(2) = h_w_(2)
+        v_(3) = h_w_(3)
+        z = Tensor[U64 * 4]
+        z_(0) = 0
+        z_(1) = 0
+        z_(2) = 0
+        z_(3) = 0
+        ghash mul loop x v z 0
+
+fn :: ghash update stream Tensor[U64 * 4] Tensor[U64 * 4] String Int Int => Tensor[U64 * 4]
+      ghash update stream y h_w data off dlen =
+        | off >= dlen = y
+        | otherwise   =
+          blk_w = ghash bytes to words4 data off
+          y_(0) = y_(0) xor blk_w_(0)
+          y_(1) = y_(1) xor blk_w_(1)
+          y_(2) = y_(2) xor blk_w_(2)
+          y_(3) = y_(3) xor blk_w_(3)
+          y_next = ghash mul y h_w
+          ghash update stream y_next h_w data (off + 16) dlen
+
+fn :: ghash compute CT16 Tensor[U64 * 4] String String => String
+      ghash compute tbl h_w aad ct =
+        y0 = Tensor[U64 * 4]
+        y0_(0) = 0
+        y0_(1) = 0
+        y0_(2) = 0
+        y0_(3) = 0
+        y1   = ghash update stream y0 h_w aad 0 (str len aad)
+        y2   = ghash update stream y1 h_w ct 0 (str len ct)
+        abits = (str len aad) * 8
+        cbits = (str len ct) * 8
+        y2_(0) = y2_(0) xor ((abits shr 32) and 0xFFFFFFFF)
+        y2_(1) = y2_(1) xor (abits and 0xFFFFFFFF)
+        y2_(2) = y2_(2) xor ((cbits shr 32) and 0xFFFFFFFF)
+        y2_(3) = y2_(3) xor (cbits and 0xFFFFFFFF)
+        yf   = ghash mul y2 h_w
+        ((c word32 to raw4 tbl yf_(0)) + (c word32 to raw4 tbl yf_(1))) + ((c word32 to raw4 tbl yf_(2)) + (c word32 to raw4 tbl yf_(3)))
+
+fn :: aes gcm mix chunk CT16 String String Int Int Int String => String
+      aes gcm mix chunk tbl data ks off end_off idx acc =
+        | (off + idx) >= end_off = acc
+        | otherwise              =
+          b_d = norm byte (str char at data (off + idx))
+          b_k = norm byte (str char at ks idx)
+          xv  = b_d xor b_k
+          ch  = c get b256 tbl (xv shr 4) (xv and 15)
+          aes gcm mix chunk tbl data ks off end_off (idx + 1) (acc + ch)
+
+fn :: aes gcm ctr loop CT16 Tensor[U64 * 256] Tensor[U64 * 176] String String Int Int Int String String String String => String
+      aes gcm ctr loop tbl sb rk nonce data off dlen ctr c0 c1 c2 c3 =
+        | off >= dlen = c sb finish c0 c1 c2 c3
+        | otherwise   =
+          cb   = nonce + (be32 bytes ctr)
+          ks   = aes encrypt with rk tbl sb rk cb
+          end_o =
+            | (off + 16) <= dlen = off + 16
+            | otherwise          = dlen
+          chunk = aes gcm mix chunk tbl data ks off end_o 0 ""
+          n0, n1, n2, n3 = c sb append chunk c0 c1 c2 c3
+          aes gcm ctr loop tbl sb rk nonce data (off + 16) dlen (ctr + 1) n0 n1 n2 n3
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: aes128 gcm seal String String String String => String
+      aes128 gcm seal key    nonce  aad    plaintext =
+        | (str len key) != 16 or (str len nonce) != 12 = ""
+        | otherwise =
+          tbl   = c build b256
+          sb    = aes init sbox
+          rk    = aes expand key sb key
+          h_blk = aes encrypt with rk tbl sb rk (c repeat byte 0 16)
+          h_w   = ghash bytes to words4 h_blk 0
+          j0    = nonce + (be32 bytes 1)
+          ej0   = aes encrypt with rk tbl sb rk j0
+          ct    = aes gcm ctr loop tbl sb rk nonce plaintext 0 (str len plaintext) 2 "" "" "" ""
+          s_tag = ghash compute tbl h_w aad ct
+          tag   = aes gcm mix chunk tbl s_tag ej0 0 16 0 ""
+          ct + tag
+
+fn :: aes128 gcm open verified Bool CT16 Tensor[U64 * 256] Tensor[U64 * 176] String String => Int String
+      aes128 gcm open verified False _ _ _ _ _ = (0 - 12, "")
+      aes128 gcm open verified True tbl sb rk nonce ct =
+        pt = aes gcm ctr loop tbl sb rk nonce ct 0 (str len ct) 2 "" "" "" ""
+        (0, pt)
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: aes128 gcm open String String String String => Int String
+      aes128 gcm open key    nonce  aad    ciphertext_and_tag =
+        | (str len key) != 16 or (str len nonce) != 12 or (str len ciphertext_and_tag) < 16 = (0 - 7, "")
+        | otherwise =
+          tlen    = str len ciphertext_and_tag
+          clen    = tlen - 16
+          ct      = byte slice ciphertext_and_tag 0 clen
+          tag     = byte slice ciphertext_and_tag clen tlen
+          tbl     = c build b256
+          sb      = aes init sbox
+          rk      = aes expand key sb key
+          h_blk   = aes encrypt with rk tbl sb rk (c repeat byte 0 16)
+          h_w     = ghash bytes to words4 h_blk 0
+          j0      = nonce + (be32 bytes 1)
+          ej0     = aes encrypt with rk tbl sb rk j0
+          s_tag   = ghash compute tbl h_w aad ct
+          exp_tag = aes gcm mix chunk tbl s_tag ej0 0 16 0 ""
+          aes128 gcm open verified (ct equal tag exp_tag) tbl sb rk nonce ct
+
+-- ============================================================
+-- FR-CRYPTO-006: 16-Bit-Limb BigInt Modular Arithmetic Engine
+-- (Supports P-256 [16 limbs], P-384 [24 limbs], RSA-2048..4096 [128..256 limbs])
+-- ============================================================
+
+fn :: bn zero loop Tensor[U64 * 260] Int Int => Tensor[U64 * 260]
+      bn zero loop a idx lim =
+        | idx >= lim = a
+        | otherwise  =
+          a_(idx) = 0
+          bn zero loop a (idx + 1) lim
+
+fn :: bn zero Int => Tensor[U64 * 260]
+      bn zero lim =
+        a = Tensor[U64 * 260]
+        bn zero loop a 0 (lim + 4)
+
+fn :: bn zero520 loop Tensor[U64 * 520] Int Int => Tensor[U64 * 520]
+      bn zero520 loop a idx lim =
+        | idx >= lim = a
+        | otherwise  =
+          a_(idx) = 0
+          bn zero520 loop a (idx + 1) lim
+
+fn :: bn zero520 Int => Tensor[U64 * 520]
+      bn zero520 lim =
+        a = Tensor[U64 * 520]
+        bn zero520 loop a 0 lim
+
+fn :: bn clone loop Tensor[U64 * 260] Tensor[U64 * 260] Int Int => Tensor[U64 * 260]
+      bn clone loop dst src idx lim =
+        | idx >= lim = dst
+        | otherwise  =
+          dst_(idx) = src_(idx)
+          bn clone loop dst src (idx + 1) lim
+
+fn :: bn clone Tensor[U64 * 260] Int => Tensor[U64 * 260]
+      bn clone src               lim =
+        dst = bn zero lim
+        bn clone loop dst src 0 lim
+
+fn :: bn strip leading zeroes String Int Int => String
+      bn strip leading zeroes s idx slen =
+        | idx >= slen                         = ""
+        | (norm byte (str char at s idx)) == 0 = bn strip leading zeroes s (idx + 1) slen
+        | otherwise                           = byte slice s idx slen
+
+fn :: bn from be loop Tensor[U64 * 260] String Int Int Int => Tensor[U64 * 260]
+      bn from be loop out s slen idx lim =
+        | idx >= lim = out
+        | otherwise  =
+          p_lo = (slen - 1) - (idx * 2)
+          p_hi = p_lo - 1
+          b_lo =
+            | p_lo >= 0 and p_lo < slen = norm byte (str char at s p_lo)
+            | otherwise                 = 0
+          b_hi =
+            | p_hi >= 0 and p_hi < slen = norm byte (str char at s p_hi)
+            | otherwise                 = 0
+          out_(idx) = (b_hi shl 8) or b_lo
+          bn from be loop out s slen (idx + 1) lim
+
+fn :: bn from be String Int => Tensor[U64 * 260]
+      bn from be raw    lim =
+        s   = bn strip leading zeroes raw 0 (str len raw)
+        out = bn zero lim
+        bn from be loop out s (str len s) 0 lim
+
+fn :: bn from hex String Int => Tensor[U64 * 260]
+      bn from hex h      lim =
+        bn from be (hex to byte str h) lim
+
+fn :: bn to be loop CT16 Tensor[U64 * 260] Int String String String String => String
+      bn to be loop tbl a idx c0 c1 c2 c3 =
+        | idx < 0   = c sb finish c0 c1 c2 c3
+        | otherwise =
+          w  = a_(idx)
+          hi = (w shr 8) and 255
+          lo = w and 255
+          pair = (c get b256 tbl (hi shr 4) (hi and 15)) + (c get b256 tbl (lo shr 4) (lo and 15))
+          n0, n1, n2, n3 = c sb append pair c0 c1 c2 c3
+          bn to be loop tbl a (idx - 1) n0 n1 n2 n3
+
+fn :: bn to be Tensor[U64 * 260] Int => String
+      bn to be a                 lim =
+        bn to be loop (c build b256) a (lim - 1) "" "" "" ""
+
+fn :: bn is zero loop Tensor[U64 * 260] Int Int => Bool
+      bn is zero loop a idx lim =
+        | idx >= lim   = True
+        | a_(idx) != 0 = False
+        | otherwise    = bn is zero loop a (idx + 1) lim
+
+fn :: bn is zero Tensor[U64 * 260] Int => Bool
+      bn is zero a                 lim =  bn is zero loop a 0 lim
+
+fn :: bn cmp loop Tensor[U64 * 260] Tensor[U64 * 260] Int => Int
+      bn cmp loop a b idx =
+        | idx < 0         = 0
+        | a_(idx) < b_(idx) = 0 - 1
+        | a_(idx) > b_(idx) = 1
+        | otherwise       = bn cmp loop a b (idx - 1)
+
+fn :: bn cmp Tensor[U64 * 260] Tensor[U64 * 260] Int => Int
+      bn cmp a                 b                 lim =  bn cmp loop a b (lim - 1)
+
+fn :: bn add raw loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int U64 => U64
+      bn add raw loop a b out idx lim carry =
+        | idx >= lim = carry
+        | otherwise  =
+          s = a_(idx) + b_(idx) + carry
+          out_(idx) = s and 0xFFFF
+          bn add raw loop a b out (idx + 1) lim (s shr 16)
+
+fn :: bn sub raw loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int U64 => U64
+      bn sub raw loop a b out idx lim borrow =
+        | idx >= lim = borrow
+        | otherwise  =
+          av  = a_(idx)
+          bv  = b_(idx) + borrow
+          d   =
+            | av >= bv  = av - bv
+            | otherwise = (av + 65536) - bv
+          nb  =
+            | av >= bv  = 0
+            | otherwise = 1
+          out_(idx) = d and 0xFFFF
+          bn sub raw loop a b out (idx + 1) lim nb
+
+fn :: bn add mod finish Bool Tensor[U64 * 260] Tensor[U64 * 260] Int => Tensor[U64 * 260]
+      bn add mod finish False out _ _ = out
+      bn add mod finish True out m lim =
+        _ = bn sub raw loop out m out 0 lim 0
+        out
+
+fn :: bn add mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int => Tensor[U64 * 260]
+      bn add mod a b m lim =
+        out   = bn zero lim
+        carry = bn add raw loop a b out 0 lim 0
+        bn add mod finish (carry > 0 or (bn cmp out m lim) >= 0) out m lim
+
+fn :: bn sub mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int => Tensor[U64 * 260]
+      bn sub mod a b m lim =
+        | (bn cmp a b lim) >= 0 =
+          out = bn zero lim
+          _   = bn sub raw loop a b out 0 lim 0
+          out
+        | otherwise =
+          out = bn zero lim
+          _   = bn add raw loop a m out 0 lim 0
+          _   = bn sub raw loop out b out 0 lim 0
+          out
+
+fn :: bn mul row loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int U64 => Tensor[U64 * 520]
+      bn mul row loop prod b ai i j lim carry =
+        | j >= lim =
+          prod_(i + lim) = prod_(i + lim) + carry
+          prod
+        | otherwise =
+          s = prod_(i + j) + (ai * b_(j)) + carry
+          prod_(i + j) = s and 0xFFFF
+          bn mul row loop prod b ai i (j + 1) lim (s shr 16)
+
+fn :: bn mul full loop Tensor[U64 * 520] Tensor[U64 * 260] Tensor[U64 * 260] Int Int => Tensor[U64 * 520]
+      bn mul full loop prod a b i lim =
+        | i >= lim  = prod
+        | a_(i) == 0 = bn mul full loop prod a b (i + 1) lim
+        | otherwise =
+          prod1 = bn mul row loop prod b a_(i) i 0 lim 0
+          bn mul full loop prod1 a b (i + 1) lim
+
+fn :: bn sub qm loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int U64 => Tensor[U64 * 520]
+      bn sub qm loop prod m q off j lim borrow =
+        | j >= lim =
+          cur_top = prod_(off + lim)
+          prod_(off + lim) =
+            | cur_top >= borrow = cur_top - borrow
+            | otherwise         = 0
+          prod
+        | otherwise =
+          sub_v = (q * m_(j)) + borrow
+          lo    = sub_v and 0xFFFF
+          hi    = sub_v shr 16
+          cur   = prod_(off + j)
+          d     =
+            | cur >= lo = cur - lo
+            | otherwise = (cur + 65536) - lo
+          nb    =
+            | cur >= lo = hi
+            | otherwise = hi + 1
+          prod_(off + j) = d
+          bn sub qm loop prod m q off (j + 1) lim nb
+
+fn :: bn cmp520 offset loop Tensor[U64 * 520] Int Tensor[U64 * 260] Int => Int
+      bn cmp520 offset loop prod off m idx =
+        | idx < 0                  = 0
+        | prod_(off + idx) < m_(idx) = 0 - 1
+        | prod_(off + idx) > m_(idx) = 1
+        | otherwise                = bn cmp520 offset loop prod off m (idx - 1)
+
+fn :: bn ge520 offset Tensor[U64 * 520] Int Tensor[U64 * 260] Int => Bool
+      bn ge520 offset prod off m lim =
+        | prod_(off + lim) > 0 = True
+        | otherwise            = (bn cmp520 offset loop prod off m (lim - 1)) >= 0
+
+fn :: bn sub m while ge Tensor[U64 * 520] Int Tensor[U64 * 260] Int => Tensor[U64 * 520]
+      bn sub m while ge prod off m lim =
+        | not (bn ge520 offset prod off m lim) = prod
+        | otherwise                            =
+          prod1 = bn sub qm loop prod m 1 off 0 lim 0
+          bn sub m while ge prod1 off m lim
+
+fn :: bn reduce step q Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int => Tensor[U64 * 520]
+      bn reduce step q prod m m_top idx off lim =
+        p2    =
+          | idx >= 2  = prod_(idx - 2)
+          | otherwise = 0
+        p_top = (prod_(idx) shl 32) + (prod_(idx - 1) shl 16) + p2
+        q     = p_top / m_top
+        res   =
+          | q <= 0    = prod
+          | otherwise = bn sub qm loop prod m q off 0 lim 0
+        res
+
+fn :: bn reduce loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int => Tensor[U64 * 520]
+      bn reduce loop prod m m_top idx lim =
+        | idx < lim = prod
+        | otherwise =
+          off   = idx - lim
+          prod1 = bn reduce step q prod m m_top idx off lim
+          prod2 = bn reduce step q prod1 m m_top idx off lim
+          prod3 = bn sub m while ge prod2 off m lim
+          bn reduce loop prod3 m m_top (idx - 1) lim
+
+fn :: bn copy520 to out Tensor[U64 * 260] Tensor[U64 * 520] Int Int => Tensor[U64 * 260]
+      bn copy520 to out out prod idx lim =
+        | idx >= lim = out
+        | otherwise  =
+          out_(idx) = prod_(idx)
+          bn copy520 to out out prod (idx + 1) lim
+
+fn :: bn reduce520 Tensor[U64 * 520] Tensor[U64 * 260] Int => Tensor[U64 * 260]
+      bn reduce520 prod m lim =
+        m_lo  =
+          | lim >= 2  = m_(lim - 2)
+          | otherwise = 0
+        m_top = (m_(lim - 1) shl 16) + m_lo + 1
+        prodf = bn reduce loop prod m m_top ((2 * lim) - 1) lim
+        out   = bn zero lim
+        bn copy520 to out out prodf 0 lim
+
+fn :: bn mul mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int => Tensor[U64 * 260]
+      bn mul mod a b m lim =
+        prod0 = bn zero520 ((2 * lim) + 4)
+        prod1 = bn mul full loop prod0 a b 0 lim
+        bn reduce520 prod1 m lim
+
+fn :: bn sq mod Tensor[U64 * 260] Tensor[U64 * 260] Int => Tensor[U64 * 260]
+      bn sq mod a m lim =  bn mul mod a a m lim
+
+fn :: bn mod from be String Tensor[U64 * 260] Int => Tensor[U64 * 260]
+      bn mod from be raw m lim =
+        a     = bn from be raw lim
+        prod0 = bn zero520 ((2 * lim) + 4)
+        one   = bn zero lim
+        one_(0) = 1
+        prod1 = bn mul full loop prod0 a one 0 lim
+        bn reduce520 prod1 m lim
+
+fn :: bn mod exp bits loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int Int => Tensor[U64 * 260]
+      bn mod exp bits loop acc base m lim e_word bit_idx =
+        | bit_idx < 0 = acc
+        | otherwise   =
+          acc2 = bn sq mod acc m lim
+          bit  = (e_word shr bit_idx) and 1
+          acc3 =
+            | bit == 1  = bn mul mod acc2 base m lim
+            | otherwise = acc2
+          bn mod exp bits loop acc3 base m lim e_word (bit_idx - 1)
+
+fn :: bn mod exp bytes loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int String Int Int => Tensor[U64 * 260]
+      bn mod exp bytes loop acc base m lim exp_s idx elen =
+        | idx >= elen = acc
+        | otherwise   =
+          b    = norm byte (str char at exp_s idx)
+          acc1 = bn mod exp bits loop acc base m lim b 7
+          bn mod exp bytes loop acc1 base m lim exp_s (idx + 1) elen
+
+fn :: bn mod exp Tensor[U64 * 260] String Tensor[U64 * 260] Int => Tensor[U64 * 260]
+      bn mod exp base exp_be m lim =
+        exp_s = bn strip leading zeroes exp_be 0 (str len exp_be)
+        acc0  = bn zero lim
+        acc0_(0) = 1
+        bn mod exp bytes loop acc0 base m lim exp_s 0 (str len exp_s)
+
+fn :: bn mod inv Tensor[U64 * 260] Tensor[U64 * 260] Int => Tensor[U64 * 260]
+      bn mod inv a m lim =
+        two   = bn zero lim
+        two_(0) = 2
+        m_m2  = bn sub mod m two m lim
+        exp_s = bn to be m_m2 lim
+        bn mod exp a exp_s m lim
+
+-- ============================================================
+-- FR-CRYPTO-006: NIST P-256 & P-384 Jacobian Curve & ECDSA / ECDHE
+-- ============================================================
+
+fn :: p256 curve => EcCurve
+      p256 curve =
+        p  = bn from hex "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff" 16
+        n  = bn from hex "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551" 16
+        b  = bn from hex "5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b" 16
+        gx = bn from hex "6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296" 16
+        gy = bn from hex "4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5" 16
+        EcCurve p n b gx gy 16
+
+fn :: p384 curve => EcCurve
+      p384 curve =
+        p  = bn from hex "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff" 24
+        n  = bn from hex "ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973" 24
+        b  = bn from hex "b3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef" 24
+        gx = bn from hex "aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7" 24
+        gy = bn from hex "3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f" 24
+        EcCurve p n b gx gy 24
+
+fn :: ec inf point Int => EcPoint
+      ec inf point lim =
+        EcPoint (bn zero lim) (bn zero lim) (bn zero lim) True
+
+fn :: ec affine point Tensor[U64 * 260] Tensor[U64 * 260] Int => EcPoint
+      ec affine point x y lim =
+        z = bn zero lim
+        z_(0) = 1
+        EcPoint x y z False
+
+fn :: ec point on curve EcCurve Tensor[U64 * 260] Tensor[U64 * 260] => Bool
+      ec point on curve crv x y =
+        | (bn cmp x (ecp crv) (eclimbs crv)) >= 0 or (bn cmp y (ecp crv) (eclimbs crv)) >= 0 = False
+        | otherwise =
+          p   = ecp crv
+          b   = ecb crv
+          lim = eclimbs crv
+          lhs = bn sq mod y p lim
+          x2  = bn sq mod x p lim
+          x3  = bn mul mod x2 x p lim
+          x_3 = bn add mod x (bn add mod x x p lim) p lim
+          rhs = bn add mod (bn sub mod x3 x_3 p lim) b p lim
+          (bn cmp lhs rhs lim) == 0
+
+fn :: ec dbl EcCurve EcPoint => EcPoint
+      ec dbl crv     pt      =
+        | (ec_inf pt) or (bn is zero (ecy pt) (eclimbs crv)) = ec inf point (eclimbs crv)
+        | otherwise =
+          p     = ecp crv
+          lim   = eclimbs crv
+          x1    = ecx pt
+          y1    = ecy pt
+          z1    = ecz pt
+          delta = bn sq mod z1 p lim
+          gamma = bn sq mod y1 p lim
+          beta  = bn mul mod x1 gamma p lim
+          x_m_d = bn sub mod x1 delta p lim
+          x_p_d = bn add mod x1 delta p lim
+          prod  = bn mul mod x_m_d x_p_d p lim
+          alpha = bn add mod prod (bn add mod prod prod p lim) p lim
+          b2    = bn add mod beta beta p lim
+          b4    = bn add mod b2 b2 p lim
+          b8    = bn add mod b4 b4 p lim
+          x3    = bn sub mod (bn sq mod alpha p lim) b8 p lim
+          yz    = bn mul mod y1 z1 p lim
+          z3    = bn add mod yz yz p lim
+          g_sq  = bn sq mod gamma p lim
+          g2    = bn add mod g_sq g_sq p lim
+          g4    = bn add mod g2 g2 p lim
+          g8    = bn add mod g4 g4 p lim
+          y3    = bn sub mod (bn mul mod alpha (bn sub mod b4 x3 p lim) p lim) g8 p lim
+          EcPoint x3 y3 z3 False
+
+fn :: ec add diff EcCurve EcPoint Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] => EcPoint
+      ec add diff crv p1 u1 u2 s1 s2 z1 z2 =
+        | (bn cmp u1 u2 (eclimbs crv)) == 0 and (bn cmp s1 s2 (eclimbs crv)) == 0 = ec dbl crv p1
+        | (bn cmp u1 u2 (eclimbs crv)) == 0                                       = ec inf point (eclimbs crv)
+        | otherwise =
+          p   = ecp crv
+          lim = eclimbs crv
+          h   = bn sub mod u2 u1 p lim
+          r   = bn sub mod s2 s1 p lim
+          hh  = bn sq mod h p lim
+          hhh = bn mul mod h hh p lim
+          v   = bn mul mod u1 hh p lim
+          v2  = bn add mod v v p lim
+          x3  = bn sub mod (bn sub mod (bn sq mod r p lim) hhh p lim) v2 p lim
+          y3  = bn sub mod (bn mul mod r (bn sub mod v x3 p lim) p lim) (bn mul mod s1 hhh p lim) p lim
+          z3  = bn mul mod (bn mul mod z1 z2 p lim) h p lim
+          EcPoint x3 y3 z3 False
+
+fn :: ec add EcCurve EcPoint EcPoint => EcPoint
+      ec add crv     p1      p2      =
+        | ec_inf p1 = p2
+        | ec_inf p2 = p1
+        | otherwise =
+          p    = ecp crv
+          lim  = eclimbs crv
+          x1   = ecx p1
+          y1   = ecy p1
+          z1   = ecz p1
+          x2   = ecx p2
+          y2   = ecy p2
+          z2   = ecz p2
+          z1z1 = bn sq mod z1 p lim
+          z2z2 = bn sq mod z2 p lim
+          u1   = bn mul mod x1 z2z2 p lim
+          u2   = bn mul mod x2 z1z1 p lim
+          s1   = bn mul mod y1 (bn mul mod z2 z2z2 p lim) p lim
+          s2   = bn mul mod y2 (bn mul mod z1 z1z1 p lim) p lim
+          ec add diff crv p1 u1 u2 s1 s2 z1 z2
+
+fn :: ec to affine EcCurve EcPoint => Bool Tensor[U64 * 260] Tensor[U64 * 260]
+      ec to affine crv     pt      =
+        | (ec_inf pt) or (bn is zero (ecz pt) (eclimbs crv)) = (False, bn zero (eclimbs crv), bn zero (eclimbs crv))
+        | otherwise =
+          p     = ecp crv
+          lim   = eclimbs crv
+          zinv  = bn mod inv (ecz pt) p lim
+          zinv2 = bn sq mod zinv p lim
+          zinv3 = bn mul mod zinv2 zinv p lim
+          ax    = bn mul mod (ecx pt) zinv2 p lim
+          ay    = bn mul mod (ecy pt) zinv3 p lim
+          (True, ax, ay)
+
+fn :: ec cselect bn loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] U64 Int Int => Tensor[U64 * 260]
+      ec cselect bn loop out a b mask idx lim =
+        | idx >= lim = out
+        | otherwise  =
+          v0 = a_(idx)
+          v1 = b_(idx)
+          out_(idx) = v0 xor ((v0 xor v1) and mask)
+          ec cselect bn loop out a b mask (idx + 1) lim
+
+fn :: ec cselect point EcPoint EcPoint U64 Int => EcPoint
+      ec cselect point p0      p1      bit lim =
+        mask = (0 - (bit and 1)) and 0xFFFF
+        ox   = ec cselect bn loop (bn zero lim) (ecx p0) (ecx p1) mask 0 lim
+        oy   = ec cselect bn loop (bn zero lim) (ecy p0) (ecy p1) mask 0 lim
+        oz   = ec cselect bn loop (bn zero lim) (ecz p0) (ecz p1) mask 0 lim
+        oinf =
+          | (bit and 1) == 1 = ec_inf p1
+          | otherwise        = ec_inf p0
+        EcPoint ox oy oz oinf
+
+fn :: ec scalar mul loop EcCurve EcPoint EcPoint Tensor[U64 * 260] Int => EcPoint
+      ec scalar mul loop crv acc base k bit_idx =
+        | bit_idx < 0 = acc
+        | otherwise   =
+          lim  = eclimbs crv
+          acc2 = ec dbl crv acc
+          w    = k_(bit_idx / 16)
+          bit  = (w shr (bit_idx % 16)) and 1
+          sum  = ec add crv acc2 base
+          acc3 = ec cselect point acc2 sum bit lim
+          ec scalar mul loop crv acc3 base k (bit_idx - 1)
+
+fn :: ec scalar mul EcCurve EcPoint Tensor[U64 * 260] => EcPoint
+      ec scalar mul crv     base    k                 =
+        lim = eclimbs crv
+        ec scalar mul loop crv (ec inf point lim) base k ((lim * 16) - 1)
+
+fn :: ec shamir loop EcCurve EcPoint EcPoint EcPoint EcPoint Tensor[U64 * 260] Tensor[U64 * 260] Int => EcPoint
+      ec shamir loop crv acc g_pt q_pt gq_pt u1 u2 bit_idx =
+        | bit_idx < 0 = acc
+        | otherwise   =
+          acc2 = ec dbl crv acc
+          b1   = (u1_(bit_idx / 16) shr (bit_idx % 16)) and 1
+          b2   = (u2_(bit_idx / 16) shr (bit_idx % 16)) and 1
+          acc3 =
+            | b1 == 1 and b2 == 1 = ec add crv acc2 gq_pt
+            | b1 == 1             = ec add crv acc2 g_pt
+            | b2 == 1             = ec add crv acc2 q_pt
+            | otherwise           = acc2
+          ec shamir loop crv acc3 g_pt q_pt gq_pt u1 u2 (bit_idx - 1)
+
+fn :: p256 public key inner EcCurve Tensor[U64 * 260] => String
+      p256 public key inner crv k =
+        | (bn is zero k 16) or (bn cmp k (ecn crv) 16) >= 0 = ""
+        | otherwise =
+          g_pt       = ec affine point (ecgx crv) (ecgy crv) 16
+          pub_pt     = ec scalar mul crv g_pt k
+          ok, ax, ay = ec to affine crv pub_pt
+          out_s      =
+            | not ok    = ""
+            | otherwise = (byte str 4) + (bn to be ax 16) + (bn to be ay 16)
+          out_s
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: p256 public key String => String
+      p256 public key priv32 =
+        | (str len priv32) != 32 = ""
+        | otherwise              = p256 public key inner (p256 curve) (bn from be priv32 16)
+
+fn :: p256 ecdh inner EcCurve Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] => String
+      p256 ecdh inner crv k px py =
+        | (bn is zero k 16) or (bn cmp k (ecn crv) 16) >= 0 = ""
+        | not (ec point on curve crv px py)                  = ""
+        | otherwise =
+          peer_pt   = ec affine point px py 16
+          sh_pt     = ec scalar mul crv peer_pt k
+          ok, sx, _ = ec to affine crv sh_pt
+          out_s     =
+            | not ok    = ""
+            | otherwise = bn to be sx 16
+          out_s
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: p256 ecdh String String  => String
+      p256 ecdh priv32 peer_pub =
+        | (str len priv32) != 32 or (str len peer_pub) != 65 = ""
+        | (norm byte (str char at peer_pub 0)) != 4          = ""
+        | otherwise =
+          crv = p256 curve
+          k   = bn from be priv32 16
+          px  = bn from be (byte slice peer_pub 1 33) 16
+          py  = bn from be (byte slice peer_pub 33 65) 16
+          p256 ecdh inner crv k px py
+
+fn :: ecdsa unpack der rs Bool Int Int Int Int Bool Int Int Int String Int => Bool String String
+      ecdsa unpack der rs ok_r tag_r r_vs r_vlen next_r ok_s tag_s s_vs s_vlen sig coord_bytes =
+        | (not ok_r) or (not ok_s) or (tag_r != 2) or (tag_s != 2) = (False, "", "")
+        | otherwise =
+          r_raw = bn strip leading zeroes (byte slice sig r_vs (r_vs + r_vlen)) 0 r_vlen
+          s_raw = bn strip leading zeroes (byte slice sig s_vs (s_vs + s_vlen)) 0 s_vlen
+          ok_l  = ((str len r_raw) <= coord_bytes) and ((str len s_raw) <= coord_bytes)
+          r_out =
+            | ok_l      = r_raw
+            | otherwise = ""
+          s_out =
+            | ok_l      = s_raw
+            | otherwise = ""
+          (ok_l, r_out, s_out)
+
+fn :: ecdsa unpack der seq Bool Int Int String Int => Bool String String
+      ecdsa unpack der seq False _ _ _ _ = (False, "", "")
+      ecdsa unpack der seq True seq_vs seq_vlen sig coord_bytes =
+        ok_r, tag_r, r_vs, r_vlen, next_r = asn1 parse tlv sig seq_vs
+        ok_s, tag_s, s_vs, s_vlen, _      = asn1 parse tlv sig next_r
+        ecdsa unpack der rs (ok_r and (next_r <= (seq_vs + seq_vlen))) tag_r r_vs r_vlen next_r ok_s tag_s s_vs s_vlen sig coord_bytes
+
+fn :: ecdsa unpack sig String Int => Bool String String
+      ecdsa unpack sig sig coord_bytes =
+        | (str len sig) == (coord_bytes * 2) =
+          (True, byte slice sig 0 coord_bytes, byte slice sig coord_bytes (str len sig))
+        | (str len sig) >= 6 and (norm byte (str char at sig 0)) == 48 =
+          ok_seq, _, seq_vs, seq_vlen, _ = asn1 parse tlv sig 0
+          ecdsa unpack der seq ok_seq seq_vs seq_vlen sig coord_bytes
+        | otherwise = (False, "", "")
+
+fn :: ecdsa verify shamir EcCurve Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] String Int => Bool
+      ecdsa verify shamir crv qx qy r s msg_hash coord_bytes =
+        | (bn is zero r (eclimbs crv)) or (bn cmp r (ecn crv) (eclimbs crv)) >= 0 = False
+        | (bn is zero s (eclimbs crv)) or (bn cmp s (ecn crv) (eclimbs crv)) >= 0 = False
+        | otherwise =
+          lim   = eclimbs crv
+          n     = ecn crv
+          e_bn  = bn mod from be (byte slice msg_hash 0 coord_bytes) n lim
+          w     = bn mod inv s n lim
+          u1    = bn mul mod e_bn w n lim
+          u2    = bn mul mod r w n lim
+          g_pt  = ec affine point (ecgx crv) (ecgy crv) lim
+          q_pt  = ec affine point qx qy lim
+          gq_pt = ec add crv g_pt q_pt
+          r_pt  = ec shamir loop crv (ec inf point lim) g_pt q_pt gq_pt u1 u2 ((lim * 16) - 1)
+          ok_a, rx, _ = ec to affine crv r_pt
+          v     = bn mod from be (bn to be rx lim) n lim
+          ok_a and ((bn cmp v r lim) == 0)
+
+fn :: ecdsa verify curve EcCurve String String String => Bool
+      ecdsa verify curve crv pubkey msg_hash sig =
+        | (str len pubkey) != (1 + ((eclimbs crv) * 4)) = False
+        | (norm byte (str char at pubkey 0)) != 4       = False
+        | (str len msg_hash) < ((eclimbs crv) * 2)      = False
+        | otherwise =
+          lim         = eclimbs crv
+          coord_bytes = lim * 2
+          qx          = bn from be (byte slice pubkey 1 (1 + coord_bytes)) lim
+          qy          = bn from be (byte slice pubkey (1 + coord_bytes) (1 + (coord_bytes * 2))) lim
+          ok_sig, r_raw, s_raw = ecdsa unpack sig sig coord_bytes
+          r           = bn from be r_raw lim
+          s           = bn from be s_raw lim
+          (ec point on curve crv qx qy) and ok_sig and (ecdsa verify shamir crv qx qy r s msg_hash coord_bytes)
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: ecdsa p256 verify String String   String => Bool
+      ecdsa p256 verify pubkey msg_hash sig    =
+        ecdsa verify curve (p256 curve) pubkey msg_hash sig
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+fn :: ecdsa p256 verify sha256 String String String => Bool
+      ecdsa p256 verify sha256 pubkey msg    sig    =
+        ecdsa p256 verify pubkey (sha256 bytes msg) sig
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: ecdsa p384 verify String String   String => Bool
+      ecdsa p384 verify pubkey msg_hash sig    =
+        ecdsa verify curve (p384 curve) pubkey msg_hash sig
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+fn :: ecdsa p384 verify sha384 String String String => Bool
+      ecdsa p384 verify sha384 pubkey msg    sig    =
+        ecdsa p384 verify pubkey (sha384 bytes msg) sig
+
+-- ============================================================
+-- FR-CRYPTO-006: RSA PKCS#1 v1.5 & RSA-PSS Verification (>= 2048 bits)
+-- ============================================================
+
+fn :: rsa mod exp inner String String String Int => String
+      rsa mod exp inner base_be exp_be mod_s mlen =
+        | mlen < 4 or mlen > 512 or (mlen % 2) != 0 = ""
+        | otherwise =
+          lim  = mlen / 2
+          m_bn = bn from be mod_s lim
+          b_bn = bn from be base_be lim
+          r_bn = bn mod exp b_bn exp_be m_bn lim
+          out  =
+            | (bn cmp b_bn m_bn lim) >= 0 = ""
+            | otherwise                   = bn to be r_bn lim
+          out
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: rsa mod exp String  String String => String
+      rsa mod exp base_be exp_be mod_be =
+        mod_s = bn strip leading zeroes mod_be 0 (str len mod_be)
+        rsa mod exp inner base_be exp_be mod_s (str len mod_s)
+
+fn :: rsa hash msg String   String => String
+      rsa hash msg hash_alg msg    =
+        | hash_alg == "sha256" = sha256 bytes msg
+        | hash_alg == "sha384" = sha384 bytes msg
+        | hash_alg == "sha512" = sha512 bytes msg
+        | otherwise            = ""
+
+fn :: rsa digest info prefix String   => String
+      rsa digest info prefix hash_alg =
+        | hash_alg == "sha256" = hex to byte str "3031300d060960864801650304020105000420"
+        | hash_alg == "sha384" = hex to byte str "3041300d060960864801650304020205000430"
+        | hash_alg == "sha512" = hex to byte str "3051300d060960864801650304020305000440"
+        | otherwise            = ""
+
+fn :: rsa verify pkcs1 inner String String String String String Int => Bool
+      rsa verify pkcs1 inner mod_s e_be hash_alg msg sig k =
+        | k < 256 or k > 512 or (str len sig) != k             = False
+        | ((norm byte (str char at mod_s (k - 1))) and 1) == 0 = False
+        | otherwise =
+          em     = rsa mod exp sig e_be mod_s
+          mhash  = rsa hash msg hash_alg msg
+          di_pfx = rsa digest info prefix hash_alg
+          t_info = di_pfx + mhash
+          t_len  = str len t_info
+          ps_len = (k - t_len) - 3
+          exp_em =
+            | ps_len >= 8 = (byte str 0) + (byte str 1) + (c repeat byte 255 ps_len) + (byte str 0) + t_info
+            | otherwise   = ""
+          ((str len em) == k) and ((str len mhash) > 0) and (ps_len >= 8) and (ct equal em exp_em)
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: rsa verify pkcs1 String String String   String String => Bool
+      rsa verify pkcs1 n_be   e_be   hash_alg msg    sig    =
+        mod_s = bn strip leading zeroes n_be 0 (str len n_be)
+        rsa verify pkcs1 inner mod_s e_be hash_alg msg sig (str len mod_s)
+
+fn :: rsa mgf1 loop String String Int Int String => String
+      rsa mgf1 loop hash_alg seed mask_len ctr acc =
+        | (str len acc) == mask_len = acc
+        | (str len acc) > mask_len  = byte slice acc 0 mask_len
+        | otherwise                 =
+          blk = rsa hash msg hash_alg (seed + (be32 bytes ctr))
+          rsa mgf1 loop hash_alg seed mask_len (ctr + 1) (acc + blk)
+
+fn :: rsa pss check db zeroes String Int Int => Bool
+      rsa pss check db zeroes db idx zero_len =
+        | idx >= zero_len                      = (norm byte (str char at db zero_len)) == 1
+        | (norm byte (str char at db idx)) != 0 = False
+        | otherwise                            = rsa pss check db zeroes db (idx + 1) zero_len
+
+fn :: rsa pss unmask db CT16 String String Int Int String => String
+      rsa pss unmask db tbl masked_db db_mask idx dlen acc =
+        | idx >= dlen = acc
+        | otherwise   =
+          b0  = norm byte (str char at masked_db idx)
+          b1  = norm byte (str char at db_mask idx)
+          xv  =
+            | idx == 0  = (b0 xor b1) and 127
+            | otherwise = b0 xor b1
+          ch  = c get b256 tbl (xv shr 4) (xv and 15)
+          rsa pss unmask db tbl masked_db db_mask (idx + 1) dlen (acc + ch)
+
+fn :: rsa verify pss em String String String Int Int => Bool
+      rsa verify pss em hash_alg mhash em k hlen =
+        | (str len em) != k or hlen == 0 or k < ((2 * hlen) + 2) = False
+        | (norm byte (str char at em (k - 1))) != 188            = False
+        | ((norm byte (str char at em 0)) and 128) != 0          = False
+        | otherwise =
+          db_len    = (k - hlen) - 1
+          masked_db = byte slice em 0 db_len
+          h_ext     = byte slice em db_len (db_len + hlen)
+          db_mask   = rsa mgf1 loop hash_alg h_ext db_len 0 ""
+          db        = rsa pss unmask db (c build b256) masked_db db_mask 0 db_len ""
+          zero_len  = (db_len - hlen) - 1
+          salt      = byte slice db (zero_len + 1) db_len
+          m_prm     = (c repeat byte 0 8) + mhash + salt
+          h_exp     = rsa hash msg hash_alg m_prm
+          (rsa pss check db zeroes db 0 zero_len) and (ct equal h_ext h_exp)
+
+fn :: rsa verify pss inner String String String String String Int => Bool
+      rsa verify pss inner mod_s e_be hash_alg msg sig k =
+        | k < 256 or k > 512 or (str len sig) != k             = False
+        | ((norm byte (str char at mod_s (k - 1))) and 1) == 0 = False
+        | otherwise =
+          em    = rsa mod exp sig e_be mod_s
+          mhash = rsa hash msg hash_alg msg
+          rsa verify pss em hash_alg mhash em k (str len mhash)
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: rsa verify pss String String String   String String => Bool
+      rsa verify pss n_be   e_be   hash_alg msg    sig    =
+        mod_s = bn strip leading zeroes n_be 0 (str len n_be)
+        rsa verify pss inner mod_s e_be hash_alg msg sig (str len mod_s)
+
+-- ============================================================
+-- FR-CRYPTO-006: ASN.1 DER, PEM & X.509 Certificate Parsing / Verification
+-- ============================================================
+
+fn :: pem strip ws step Bool CT16 Int String Int Int String String String String => String
+      pem strip ws step True tbl _ s idx slen c0 c1 c2 c3 =
+        pem strip ws loop tbl s (idx + 1) slen c0 c1 c2 c3
+      pem strip ws step False tbl ch s idx slen c0 c1 c2 c3 =
+        bs = c get b256 tbl (ch shr 4) (ch and 15)
+        n0, n1, n2, n3 = c sb append bs c0 c1 c2 c3
+        pem strip ws loop tbl s (idx + 1) slen n0 n1 n2 n3
+
+fn :: pem strip ws loop CT16 String Int Int String String String String => String
+      pem strip ws loop tbl s idx slen c0 c1 c2 c3 =
+        | idx >= slen = c sb finish c0 c1 c2 c3
+        | otherwise   =
+          ch = norm byte (str char at s idx)
+          pem strip ws step (c is ws ch) tbl ch s idx slen c0 c1 c2 c3
+
+fn :: pem decode b64 block CT16 String => Bool String
+      pem decode b64 block tbl raw_b64 =
+        clean = pem strip ws loop tbl raw_b64 0 (str len raw_b64) "" "" "" ""
+        clen  = str len clean
+        c b64 decode trimmed clean clen
+
+fn :: pem find sub from String String Int Int Int => Int
+      pem find sub from s sub idx slen sublen =
+        | (idx + sublen) > slen = 0 - 1
+        | (idx + 4096 + sublen) <= slen and (not (str contains (str slice s idx (idx + 4096 + sublen - 1)) sub)) =
+          pem find sub from s sub (idx + 4096) slen sublen
+        | (str slice s idx (idx + sublen)) == sub = idx
+        | otherwise                               = pem find sub from s sub (idx + 1) slen sublen
+
+fn :: pem decode blocks step CT16 String String String Int Int Int [String] => [String]
+      pem decode blocks step tbl pem_text begin_m end_m b_idx e_idx plen acc =
+        | b_idx < 0 or e_idx < 0 = acc
+        | otherwise =
+          body_st   = b_idx + (str len begin_m)
+          b64_chunk = str slice pem_text body_st e_idx
+          ok, der   = pem decode b64 block tbl b64_chunk
+          next_pos  = e_idx + (str len end_m)
+          next_acc  =
+            | ok        = acc :: [der]
+            | otherwise = acc
+          pem decode blocks loop tbl pem_text begin_m end_m next_pos plen next_acc
+
+fn :: pem decode blocks loop CT16 String String String Int Int [String] => [String]
+      pem decode blocks loop tbl pem_text begin_m end_m pos plen acc =
+        b_idx = pem find sub from pem_text begin_m pos plen (str len begin_m)
+        e_idx =
+          | b_idx < 0 = 0 - 1
+          | otherwise = pem find sub from pem_text end_m (b_idx + (str len begin_m)) plen (str len end_m)
+        pem decode blocks step tbl pem_text begin_m end_m b_idx e_idx plen acc
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: pem decode blocks String   String => [String]
+      pem decode blocks pem_text label  =
+        begin_m = "-----BEGIN " + label + "-----"
+        end_m   = "-----END " + label + "-----"
+        pem decode blocks loop (c build b256) pem_text begin_m end_m 0 (str len pem_text) []
+
+fn :: asn1 read len bytes String Int Int Int => Int
+      asn1 read len bytes der idx rem acc =
+        | rem <= 0  = acc
+        | otherwise =
+          b = norm byte (str char at der idx)
+          asn1 read len bytes der (idx + 1) (rem - 1) ((acc * 256) + b)
+
+fn :: asn1 finish tlv Bool Int Int Int Int Int => Bool Int Int Int Int
+      asn1 finish tlv False _ _ _ _ dlen = (False, 0, 0, 0, dlen)
+      asn1 finish tlv True tag vs vlen next _ = (True, tag, vs, vlen, next)
+
+fn :: asn1 parse long len String Int Int Int Int => Bool Int Int Int Int
+      asn1 parse long len der off dlen tag nbytes =
+        | nbytes > 4 or (off + 2 + nbytes) > dlen = (False, 0, 0, 0, dlen)
+        | otherwise =
+          vlen = asn1 read len bytes der (off + 2) nbytes 0
+          vs   = off + 2 + nbytes
+          next = vs + vlen
+          asn1 finish tlv (vlen >= 0 and next <= dlen) tag vs vlen next dlen
+
+fn :: asn1 parse len dispatch String Int Int Int Int => Bool Int Int Int Int
+      asn1 parse len dispatch der off dlen tag lb =
+        | lb < 128 =
+          vs   = off + 2
+          next = vs + lb
+          asn1 finish tlv (next <= dlen) tag vs lb next dlen
+        | lb == 128 = (False, 0, 0, 0, dlen)
+        | otherwise = asn1 parse long len der off dlen tag (lb - 128)
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: asn1 parse tlv String Int => Bool Int Int Int Int
+      asn1 parse tlv der    off =
+        | off < 0 or (off + 2) > (str len der) = (False, 0, 0, 0, str len der)
+        | otherwise =
+          dlen = str len der
+          tag  = norm byte (str char at der off)
+          lb   = norm byte (str char at der (off + 1))
+          asn1 parse len dispatch der off dlen tag lb
+
+fn :: x509 parse dec2 String Int => Int
+      x509 parse dec2 s off =
+        d0 = (norm byte (str char at s off)) - 48
+        d1 = (norm byte (str char at s (off + 1))) - 48
+        res =
+          | d0 < 0 or d0 > 9 or d1 < 0 or d1 > 9 = 0 - 1
+          | otherwise                             = (d0 * 10) + d1
+        res
+
+fn :: x509 days from civil Int Int Int => Int
+      x509 days from civil y m d =
+        y_adj =
+          | m <= 2    = y - 1
+          | otherwise = y
+        era   =
+          | y_adj >= 0 = y_adj / 400
+          | otherwise  = (y_adj - 399) / 400
+        yoe   = y_adj - (era * 400)
+        mp    =
+          | m > 2     = m - 3
+          | otherwise = m + 9
+        doy   = (((153 * mp) + 2) / 5) + d - 1
+        doe   = (yoe * 365) + (yoe / 4) - (yoe / 100) + doy
+        ((era * 146097) + doe) - 719468
+
+fn :: x509 parse time tag Int String => Int
+      x509 parse time tag tag s =
+        | tag == 23 and (str len s) >= 12 =
+          yy = x509 parse dec2 s 0
+          mm = x509 parse dec2 s 2
+          dd = x509 parse dec2 s 4
+          hh = x509 parse dec2 s 6
+          mi = x509 parse dec2 s 8
+          ss = x509 parse dec2 s 10
+          yr =
+            | yy >= 50  = 1900 + yy
+            | otherwise = 2000 + yy
+          t_u =
+            | yy < 0 or mm < 1 or mm > 12 or dd < 1 or dd > 31 or hh < 0 or hh > 23 or mi < 0 or mi > 59 or ss < 0 or ss > 59 = 0 - 1
+            | otherwise = ((x509 days from civil yr mm dd) * 86400) + (hh * 3600) + (mi * 60) + ss
+          t_u
+        | tag == 24 and (str len s) >= 14 =
+          y_hi = x509 parse dec2 s 0
+          y_lo = x509 parse dec2 s 2
+          mm   = x509 parse dec2 s 4
+          dd   = x509 parse dec2 s 6
+          hh   = x509 parse dec2 s 8
+          mi   = x509 parse dec2 s 10
+          ss   = x509 parse dec2 s 12
+          yr   = (y_hi * 100) + y_lo
+          t_g  =
+            | y_hi < 0 or y_lo < 0 or mm < 1 or mm > 12 or dd < 1 or dd > 31 or hh < 0 or hh > 23 or mi < 0 or mi > 59 or ss < 0 or ss > 59 = 0 - 1
+            | otherwise = ((x509 days from civil yr mm dd) * 86400) + (hh * 3600) + (mi * 60) + ss
+          t_g
+        | otherwise = 0 - 1
+
+fn :: x509 parse validity inner Bool Int Int Int Int Int Int String => Int Int
+      x509 parse validity inner False _ _ _ _ _ _ _ = (0 - 1, 0 - 1)
+      x509 parse validity inner True t1 vs1 vl1 t2 vs2 vl2 der =
+        nb = x509 parse time tag t1 (byte slice der vs1 (vs1 + vl1))
+        na = x509 parse time tag t2 (byte slice der vs2 (vs2 + vl2))
+        (nb, na)
+
+fn :: x509 parse validity String Int Int => Int Int
+      x509 parse validity der vs vlen =
+        ok1, t1, vs1, vl1, next1 = asn1 parse tlv der vs
+        ok2, t2, vs2, vl2, _     = asn1 parse tlv der next1
+        x509 parse validity inner (ok1 and ok2 and (next1 <= (vs + vlen))) t1 vs1 vl1 t2 vs2 vl2 der
+
+fn :: x509 check cn attr Bool String Int Int Int => String
+      x509 check cn attr False _ _ _ _ = ""
+      x509 check cn attr True der a_vs a_vlen end_pos =
+        ok_o, tag_o, o_vs, o_vlen, o_next = asn1 parse tlv der a_vs
+        ok_v, _, v_vs, v_vlen, _          = asn1 parse tlv der o_next
+        oid_hex = bytes to hex str (byte slice der o_vs (o_vs + o_vlen))
+        out     =
+          | ok_o and ok_v and (tag_o == 6) and (oid_hex == "550403") and (o_next < (a_vs + a_vlen)) and (end_pos >= 0) =
+            str slice der v_vs (v_vs + v_vlen)
+          | otherwise = ""
+        out
+
+fn :: x509 find cn in rdn String Int Int => String
+      x509 find cn in rdn der pos end_pos =
+        | pos >= end_pos = ""
+        | otherwise      =
+          ok_s, _, s_vs, _, s_next = asn1 parse tlv der pos
+          ok_a, _, a_vs, a_vlen, _ = asn1 parse tlv der s_vs
+          cn_cur = x509 check cn attr (ok_s and ok_a) der a_vs a_vlen end_pos
+          out    =
+            | not ok_s            = ""
+            | (str len cn_cur) > 0 = cn_cur
+            | otherwise           = x509 find cn in rdn der s_next end_pos
+          out
+
+fn :: x509 parse sig alg oid String String => String
+      x509 parse sig alg oid oid_hex params_hex =
+        | oid_hex == "2a864886f70d01010b" = "rsa_pkcs1_sha256"
+        | oid_hex == "2a864886f70d01010c" = "rsa_pkcs1_sha384"
+        | oid_hex == "2a864886f70d01010d" = "rsa_pkcs1_sha512"
+        | oid_hex == "2a8648ce3d040302"   = "ecdsa_sha256"
+        | oid_hex == "2a8648ce3d040303"   = "ecdsa_sha384"
+        | oid_hex == "2a8648ce3d040304"   = "ecdsa_sha512"
+        | oid_hex == "2b6570"             = "ed25519"
+        | oid_hex == "2a864886f70d01010a" =
+          | str contains params_hex "608648016503040202" = "rsa_pss_sha384"
+          | str contains params_hex "608648016503040203" = "rsa_pss_sha512"
+          | otherwise                                    = "rsa_pss_sha256" |.
+        | otherwise = "unknown"
+
+fn :: x509 parse sig alg String Int Int => String
+      x509 parse sig alg der vs vlen =
+        ok_o, tag_o, o_vs, o_vlen, o_next = asn1 parse tlv der vs
+        oid_hex    = bytes to hex str (byte slice der o_vs (o_vs + o_vlen))
+        params_hex = bytes to hex str (byte slice der o_next (vs + vlen))
+        out        =
+          | (not ok_o) or (tag_o != 6) = "unknown"
+          | otherwise                  = x509 parse sig alg oid oid_hex params_hex
+        out
+
+fn :: x509 parse rsa spki String => String String String
+      x509 parse rsa spki pk_raw =
+        ok_rs, _, rs_vs, _, _           = asn1 parse tlv pk_raw 0
+        ok_n, tag_n, n_vs, n_vlen, n_nx = asn1 parse tlv pk_raw rs_vs
+        ok_e, tag_e, e_vs, e_vlen, _    = asn1 parse tlv pk_raw n_nx
+        ok_all  = ok_rs and ok_n and ok_e and (tag_n == 2) and (tag_e == 2)
+        n_clean = bn strip leading zeroes (byte slice pk_raw n_vs (n_vs + n_vlen)) 0 n_vlen
+        e_clean = bn strip leading zeroes (byte slice pk_raw e_vs (e_vs + e_vlen)) 0 e_vlen
+        alg_s   =
+          | ok_all    = "rsa"
+          | otherwise = "unknown"
+        n_out   =
+          | ok_all    = n_clean
+          | otherwise = ""
+        e_out   =
+          | ok_all    = e_clean
+          | otherwise = ""
+        (alg_s, n_out, e_out)
+
+fn :: x509 parse ec spki String Int String => String String String
+      x509 parse ec spki der o_next pk_raw =
+        ok_c, tag_c, c_vs, c_vlen, _ = asn1 parse tlv der o_next
+        crv_hex =
+          | ok_c and (tag_c == 6) = bytes to hex str (byte slice der c_vs (c_vs + c_vlen))
+          | otherwise             = ""
+        alg_s   =
+          | crv_hex == "2a8648ce3d030107" = "ec_p256"
+          | crv_hex == "2b81040022"       = "ec_p384"
+          | otherwise                     = "ec_unknown"
+        (alg_s, pk_raw, "")
+
+fn :: x509 dispatch spki oid String String Int String => String String String
+      x509 dispatch spki oid oid_hex der o_next pk_raw =
+        | oid_hex == "2a864886f70d010101" or oid_hex == "2a864886f70d01010a" = x509 parse rsa spki pk_raw
+        | oid_hex == "2a8648ce3d0201" = x509 parse ec spki der o_next pk_raw
+        | oid_hex == "2b6570"         = ("ed25519", pk_raw, "")
+        | otherwise                   = ("unknown", "", "")
+
+fn :: x509 parse spki inner Bool String Int Int Int => String String String
+      x509 parse spki inner False _ _ _ _ = ("unknown", "", "")
+      x509 parse spki inner True der a_vs b_vs b_vlen =
+        ok_o, tag_o, o_vs, o_vlen, o_next = asn1 parse tlv der a_vs
+        oid_hex =
+          | ok_o and (tag_o == 6) = bytes to hex str (byte slice der o_vs (o_vs + o_vlen))
+          | otherwise             = "unknown"
+        pk_raw  = byte slice der (b_vs + 1) (b_vs + b_vlen)
+        x509 dispatch spki oid oid_hex der o_next pk_raw
+
+fn :: x509 parse spki String Int Int => String String String
+      x509 parse spki der vs vlen =
+        ok_a, _, a_vs, _, a_next     = asn1 parse tlv der vs
+        ok_b, tag_b, b_vs, b_vlen, _ = asn1 parse tlv der a_next
+        ok_all = ok_a and ok_b and (tag_b == 3) and (b_vlen >= 2) and (a_next <= (vs + vlen))
+        x509 parse spki inner ok_all der a_vs b_vs b_vlen
+
+fn :: x509 parse san entry Bool Int Int Int Int String Int [String] => [String]
+      x509 parse san entry False _ _ _ _ _ _ acc = acc
+      x509 parse san entry True tag_g g_vs g_vlen g_next der end_pos acc =
+        | tag_g == 130 =
+          dns = str slice der g_vs (g_vs + g_vlen)
+          x509 parse san loop der g_next end_pos (acc :: [dns])
+        | tag_g == 135 and g_vlen == 4 =
+          ip = (int to str (norm byte (str char at der g_vs))) + "." + (int to str (norm byte (str char at der (g_vs + 1)))) + "." + (int to str (norm byte (str char at der (g_vs + 2)))) + "." + (int to str (norm byte (str char at der (g_vs + 3))))
+          x509 parse san loop der g_next end_pos (acc :: [ip])
+        | otherwise =
+          x509 parse san loop der g_next end_pos acc
+
+fn :: x509 parse san loop String Int Int [String] => [String]
+      x509 parse san loop der pos end_pos acc =
+        | pos >= end_pos = acc
+        | otherwise      =
+          ok_g, tag_g, g_vs, g_vlen, g_next = asn1 parse tlv der pos
+          x509 parse san entry ok_g tag_g g_vs g_vlen g_next der end_pos acc
+
+fn :: x509 ext octet span String Bool Int Int Int Int => Int Int
+      x509 ext octet span der ok_nx tag_nx nx_vs nx_vlen nx_next =
+        | ok_nx and (tag_nx == 1) =
+          _, _, v_vs, v_vlen, _ = asn1 parse tlv der nx_next
+          (v_vs, v_vlen)
+        | otherwise = (nx_vs, nx_vlen)
+
+fn :: x509 dispatch ext oid String String Int Int [String] Bool Int Bool => [String] Bool Int Bool
+      x509 dispatch ext oid oid_hex der oct_vs oct_vlen san_acc is_ca_acc ku_acc sa_acc =
+        | oid_hex == "551d11" =
+          ok_sq, _, sq_vs, sq_vlen, _ = asn1 parse tlv der oct_vs
+          san_next =
+            | not ok_sq = san_acc
+            | otherwise = x509 parse san loop der sq_vs (sq_vs + sq_vlen) san_acc
+          (san_next, is_ca_acc, ku_acc, sa_acc)
+        | oid_hex == "551d13" =
+          ok_bc, _, bc_vs, bc_vlen, _  = asn1 parse tlv der oct_vs
+          ok_b, tag_b, b_vs, b_vlen, _ = asn1 parse tlv der bc_vs
+          ca_flag = ok_bc and (bc_vlen > 0) and ok_b and (tag_b == 1) and (b_vlen >= 1) and ((norm byte (str char at der b_vs)) != 0)
+          (san_acc, is_ca_acc or ca_flag, ku_acc, sa_acc)
+        | oid_hex == "551d0f" =
+          ok_ku, tag_ku, ku_vs, ku_vlen, _ = asn1 parse tlv der oct_vs
+          ku_next =
+            | (not ok_ku) or (tag_ku != 3) or (ku_vlen < 2) = ku_acc
+            | otherwise = norm byte (str char at der (ku_vs + 1))
+          (san_acc, is_ca_acc, ku_next, sa_acc)
+        | oid_hex == "551d25" =
+          eku_hex = bytes to hex str (byte slice der oct_vs (oct_vs + oct_vlen))
+          has_sa  = (str contains eku_hex "2b06010505070301") or (str contains eku_hex "551d2500")
+          (san_acc, is_ca_acc, ku_acc, has_sa)
+        | otherwise = (san_acc, is_ca_acc, ku_acc, sa_acc)
+
+fn :: x509 parse single ext inner Bool String Int Int Int [String] Bool Int Bool => [String] Bool Int Bool
+      x509 parse single ext inner False _ _ _ _ san_acc is_ca_acc ku_acc sa_acc = (san_acc, is_ca_acc, ku_acc, sa_acc)
+      x509 parse single ext inner True der o_vs o_vlen o_next san_acc is_ca_acc ku_acc sa_acc =
+        oid_hex = bytes to hex str (byte slice der o_vs (o_vs + o_vlen))
+        ok_nx, tag_nx, nx_vs, nx_vlen, nx_next = asn1 parse tlv der o_next
+        oct_vs, oct_vlen = x509 ext octet span der ok_nx tag_nx nx_vs nx_vlen nx_next
+        x509 dispatch ext oid oid_hex der oct_vs oct_vlen san_acc is_ca_acc ku_acc sa_acc
+
+fn :: x509 parse single ext String Int Int [String] Bool Int Bool => [String] Bool Int Bool
+      x509 parse single ext der vs vlen san_acc is_ca_acc ku_acc sa_acc =
+        end_e = vs + vlen
+        ok_o, tag_o, o_vs, o_vlen, o_next = asn1 parse tlv der vs
+        x509 parse single ext inner (ok_o and (tag_o == 6) and (o_next < end_e)) der o_vs o_vlen o_next san_acc is_ca_acc ku_acc sa_acc
+
+fn :: x509 parse exts step Bool String Int Int Int Int [String] Bool Int Bool => [String] Bool Int Bool
+      x509 parse exts step False _ _ _ _ _ san_acc is_ca_acc ku_acc sa_acc = (san_acc, is_ca_acc, ku_acc, sa_acc)
+      x509 parse exts step True der e_vs e_vlen e_next end_pos san_acc is_ca_acc ku_acc sa_acc =
+        n_san, n_ca, n_ku, n_sa = x509 parse single ext der e_vs e_vlen san_acc is_ca_acc ku_acc sa_acc
+        x509 parse exts loop der e_next end_pos n_san n_ca n_ku n_sa
+
+fn :: x509 parse exts loop String Int Int [String] Bool Int Bool => [String] Bool Int Bool
+      x509 parse exts loop der pos end_pos san_acc is_ca_acc ku_acc sa_acc =
+        | pos >= end_pos = (san_acc, is_ca_acc, ku_acc, sa_acc)
+        | otherwise      =
+          ok_e, _, e_vs, e_vlen, e_next = asn1 parse tlv der pos
+          x509 parse exts step ok_e der e_vs e_vlen e_next end_pos san_acc is_ca_acc ku_acc sa_acc
+
+fn :: x509 find exts step Bool Int Int Int String Int => [String] Bool Int Bool
+      x509 find exts step False _ _ _ _ _ = ([], False, 0, True)
+      x509 find exts step True tag_t t_vs t_next der end_pos =
+        | tag_t == 163 =
+          ok_sq, _, sq_vs, sq_vlen, _ = asn1 parse tlv der t_vs
+          x509 parse exts step ok_sq der 0 0 sq_vs (sq_vs + sq_vlen) [] False 0 True
+        | otherwise = x509 find exts in tbs der t_next end_pos
+
+fn :: x509 find exts in tbs String Int Int => [String] Bool Int Bool
+      x509 find exts in tbs der pos end_pos =
+        | pos >= end_pos = ([], False, 0, True)
+        | otherwise      =
+          ok_t, tag_t, t_vs, _, t_next = asn1 parse tlv der pos
+          x509 find exts step ok_t tag_t t_vs t_next der end_pos
+
+fn :: x509 empty cert => X509Cert
+      x509 empty cert =
+        X509Cert "" "" "" "" "" 0 0 "unknown" "" "" "unknown" "" [] False 0 False
+
+fn :: x509 parse cert tbs Bool String Int Int Int Int Int Int Int => Bool X509Cert
+      x509 parse cert tbs False _ _ _ _ _ _ _ _ = (False, x509 empty cert)
+      x509 parse cert tbs True cert_der c_vs tbs_vs tbs_vlen tbs_next alg_vs alg_vlen sig_vs =
+        _, _, _, sig_vlen, _ = asn1 parse tlv cert_der (alg_vs + alg_vlen)
+        tbs_raw = byte slice cert_der c_vs tbs_next
+        sig_alg = x509 parse sig alg cert_der alg_vs alg_vlen
+        sig_raw = byte slice cert_der (sig_vs + 1) (sig_vs + sig_vlen)
+        ok_f0, tag_f0, _, _, f0_next = asn1 parse tlv cert_der tbs_vs
+        ser_pos =
+          | ok_f0 and (tag_f0 == 160) = f0_next
+          | otherwise                 = tbs_vs
+        ok_ser, _, _, _, ser_next               = asn1 parse tlv cert_der ser_pos
+        ok_ta, _, _, _, ta_next                 = asn1 parse tlv cert_der ser_next
+        ok_iss, _, iss_vs, iss_vlen, iss_next   = asn1 parse tlv cert_der ta_next
+        ok_val, _, val_vs, val_vlen, val_next   = asn1 parse tlv cert_der iss_next
+        ok_sub, _, sub_vs, sub_vlen, sub_next   = asn1 parse tlv cert_der val_next
+        ok_spk, _, spk_vs, spk_vlen, spk_next   = asn1 parse tlv cert_der sub_next
+        ok_all = ok_ser and ok_ta and ok_iss and ok_val and ok_sub and ok_spk
+        iss_der            = byte slice cert_der ta_next iss_next
+        sub_der            = byte slice cert_der val_next sub_next
+        iss_cn             = x509 find cn in rdn cert_der iss_vs (iss_vs + iss_vlen)
+        sub_cn             = x509 find cn in rdn cert_der sub_vs (sub_vs + sub_vlen)
+        nb, na             = x509 parse validity cert_der val_vs val_vlen
+        k_alg, pk_b, exp_b = x509 parse spki cert_der spk_vs spk_vlen
+        sans, is_ca, ku, sa = x509 find exts in tbs cert_der spk_next (tbs_vs + tbs_vlen)
+        sans_final         =
+          | (c str list len sans 0) > 0 = sans
+          | (str len sub_cn) > 0        = [sub_cn]
+          | otherwise                   = []
+        cert_obj = X509Cert tbs_raw iss_der sub_der iss_cn sub_cn nb na k_alg pk_b exp_b sig_alg sig_raw sans_final is_ca ku sa
+        res_ok   =
+          | ok_all    = True
+          | otherwise = False
+        res_cert =
+          | ok_all    = cert_obj
+          | otherwise = x509 empty cert
+        (res_ok, res_cert)
+
+fn :: x509 parse cert outer Bool String Int => Bool X509Cert
+      x509 parse cert outer False _ _ = (False, x509 empty cert)
+      x509 parse cert outer True cert_der c_vs =
+        ok_tbs, tag_tbs, tbs_vs, tbs_vlen, tbs_next = asn1 parse tlv cert_der c_vs
+        ok_alg, tag_alg, alg_vs, alg_vlen, alg_next = asn1 parse tlv cert_der tbs_next
+        ok_sig, tag_sig, sig_vs, sig_vlen, _        = asn1 parse tlv cert_der alg_next
+        ok_top = ok_tbs and ok_alg and ok_sig and (tag_tbs == 48) and (tag_alg == 48) and (tag_sig == 3) and (sig_vlen >= 2)
+        x509 parse cert tbs ok_top cert_der c_vs tbs_vs tbs_vlen tbs_next alg_vs alg_vlen sig_vs
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: x509 parse cert String   => Bool X509Cert
+      x509 parse cert cert_der =
+        ok_c, tag_c, c_vs, _, _ = asn1 parse tlv cert_der 0
+        x509 parse cert outer (ok_c and (tag_c == 48)) cert_der c_vs
+
+fn :: x509 ascii lower char Int => String
+      x509 ascii lower char c   =
+        | c >= 65 and c <= 90 = char from code (c + 32)
+        | otherwise           = byte str c
+
+fn :: x509 to lower loop String Int Int String => String
+      x509 to lower loop s idx slen acc =
+        | idx >= slen = acc
+        | otherwise   =
+          ch = norm byte (str char at s idx)
+          x509 to lower loop s (idx + 1) slen (acc + (x509 ascii lower char ch))
+
+fn :: x509 to lower String => String
+      x509 to lower s      =  x509 to lower loop s 0 (str len s) ""
+
+fn :: x509 count dots loop String Int Int Int => Int
+      x509 count dots loop s idx slen cnt =
+        | idx >= slen                         = cnt
+        | (norm byte (str char at s idx)) == 46 = x509 count dots loop s (idx + 1) slen (cnt + 1)
+        | otherwise                           = x509 count dots loop s (idx + 1) slen cnt
+
+fn :: x509 first dot String Int Int => Int
+      x509 first dot s idx slen =
+        | idx >= slen                         = 0 - 1
+        | (norm byte (str char at s idx)) == 46 = idx
+        | otherwise                           = x509 first dot s (idx + 1) slen
+
+fn :: x509 match single san inner String String => Bool
+      x509 match single san inner lpat lhost =
+        | lpat == lhost = True
+        | not (c starts with lpat "*.") = False
+        | otherwise =
+          suffix  = str slice lpat 1 (str len lpat)
+          dot_idx = x509 first dot lhost 0 (str len lhost)
+          ok_w    =
+            | (x509 count dots loop suffix 0 (str len suffix) 0) < 2 = False
+            | (str contains (str slice lpat 2 (str len lpat)) "*")   = False
+            | dot_idx <= 0                                           = False
+            | otherwise = (str slice lhost dot_idx (str len lhost)) == suffix
+          ok_w
+
+fn :: x509 match single san String String => Bool
+      x509 match single san pat    host   =
+        x509 match single san inner (x509 to lower pat) (x509 to lower host)
+
+fn :: x509 match san list [String] String => Bool
+      x509 match san list [] _ = False
+      x509 match san list (p:rest) host =
+        | x509 match single san p host = True
+        | otherwise                    = x509 match san list rest host
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: x509 match hostname X509Cert String => Bool
+      x509 match hostname cert     host   =
+        | (str len host) == 0 = False
+        | otherwise           = x509 match san list (san_dns cert) host
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: x509 verify signature String String String String String String => Bool
+      x509 verify signature k_alg pk_b exp_b s_alg msg sig =
+        | k_alg == "rsa" =
+          | s_alg == "rsa_pkcs1_sha256" = rsa verify pkcs1 pk_b exp_b "sha256" msg sig
+          | s_alg == "rsa_pkcs1_sha384" = rsa verify pkcs1 pk_b exp_b "sha384" msg sig
+          | s_alg == "rsa_pkcs1_sha512" = rsa verify pkcs1 pk_b exp_b "sha512" msg sig
+          | s_alg == "rsa_pss_sha256"   = rsa verify pss pk_b exp_b "sha256" msg sig
+          | s_alg == "rsa_pss_sha384"   = rsa verify pss pk_b exp_b "sha384" msg sig
+          | s_alg == "rsa_pss_sha512"   = rsa verify pss pk_b exp_b "sha512" msg sig
+          | otherwise                   = False |.
+        | k_alg == "ec_p256" =
+          | s_alg == "ecdsa_sha256" = ecdsa p256 verify pk_b (sha256 bytes msg) sig
+          | s_alg == "ecdsa_sha384" = ecdsa p256 verify pk_b (sha384 bytes msg) sig
+          | s_alg == "ecdsa_sha512" = ecdsa p256 verify pk_b (sha512 bytes msg) sig
+          | otherwise               = False |.
+        | k_alg == "ec_p384" =
+          | s_alg == "ecdsa_sha384" = ecdsa p384 verify pk_b (sha384 bytes msg) sig
+          | s_alg == "ecdsa_sha256" = ecdsa p384 verify pk_b ((c repeat byte 0 16) + (sha256 bytes msg)) sig
+          | s_alg == "ecdsa_sha512" = ecdsa p384 verify pk_b (sha512 bytes msg) sig
+          | otherwise               = False |.
+        | k_alg == "ed25519" and s_alg == "ed25519" =
+          ed25519 verify pk_b msg sig
+        | otherwise = False
+
+-- @implements FR-CRYPTO-006
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: x509 verify cert sig X509Cert X509Cert => Bool
+      x509 verify cert sig child    issuer   =
+        | (issuer_der child) != (subject_der issuer) = False
+        | otherwise =
+          x509 verify signature (key_alg issuer) (pubkey_bytes issuer) (rsa_exp_bytes issuer) (sig_alg child) (tbs_der child) (sig_bytes child)
