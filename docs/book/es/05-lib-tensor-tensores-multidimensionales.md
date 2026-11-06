@@ -53,9 +53,9 @@ A continuación tienes el inventario completo de tipos algebraicos (`type`), ope
 | `3` | `fn :: tensor shape Tensor[Int * r * c]` | `Int Int` |
 | `4` | `fn :: tensor row Tensor[Int * r * c] Int` | `Tensor[Int * c]` |
 | `5` | `fn :: tensor col Tensor[Int * r * c] Int` | `Tensor[Int * r]` |
-| `6` | `fn :: tensor xor blocks Tensor[U64 * r * c] Tensor[U64 * r * c]` | `Tensor[U64 * r * c]` |
-| `7` | `fn :: tensor and blocks Tensor[U64 * r * c] Tensor[U64 * r * c]` | `Tensor[U64 * r * c]` |
-| `8` | `fn :: tensor or blocks Tensor[U64 * r * c] Tensor[U64 * r * c]` | `Tensor[U64 * r * c]` |
+| `6` | `fn :: tensor bitxor blocks Tensor[U64 * r * c] Tensor[U64 * r * c]` | `Tensor[U64 * r * c]` |
+| `7` | `fn :: tensor bitand blocks Tensor[U64 * r * c] Tensor[U64 * r * c]` | `Tensor[U64 * r * c]` |
+| `8` | `fn :: tensor bitor blocks Tensor[U64 * r * c] Tensor[U64 * r * c]` | `Tensor[U64 * r * c]` |
 | `9` | `fn :: tensor add blocks Tensor[Int * r * c] Tensor[Int * r * c]` | `Tensor[Int * r * c]` |
 | `10` | `fn :: tensor sub blocks Tensor[Int * r * c] Tensor[Int * r * c]` | `Tensor[Int * r * c]` |
 | `11` | `fn :: tensor mul blocks Tensor[Int * r * c] Tensor[Int * r * c]` | `Tensor[Int * r * c]` |
@@ -158,13 +158,13 @@ fn :: test tensor hadamard and clone => ()
         ub_(0, 1) = 0xFF
         ub_(1, 0) = 0x0F
         ub_(1, 1) = 0x55
-        ux   = tensor xor blocks ua ub
+        ux   = tensor bitxor blocks ua ub
         assert int equals ux_(0, 0) 0xF0 "xor (0,0) == 0xF0"
         assert int equals ux_(1, 1) 0xFF "xor (1,1) == 0xFF"
-        uan  = tensor and blocks ua ub
+        uan  = tensor bitand blocks ua ub
         assert int equals uan_(0, 0) 0x0F "and (0,0) == 0x0F"
         assert int equals uan_(1, 1) 0x00 "and (1,1) == 0x00"
-        uor  = tensor or blocks ua ub
+        uor  = tensor bitor blocks ua ub
         assert int equals uor_(0, 0) 0xFF "or (0,0) == 0xFF"
         assert int equals uor_(1, 0) 0xFF "or (1,0) == 0xFF"
         uc   = tensor clone ua
@@ -253,8 +253,8 @@ fn :: tensor row Tensor[Int * r * c] Int => Tensor[Int * c]
 fn :: tensor col Tensor[Int * r * c] Int => Tensor[Int * r]
       tensor col m                   idx =  m_(,idx)
 
-fn :: tensor xor blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
-      tensor xor blocks a b = a_ij xor b_ij
+fn :: tensor bitxor blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
+      tensor bitxor blocks a b = a_ij xor b_ij
 ```
 
 ### 05.4.2. Implementación interna: Core Implementation Part 2
@@ -262,11 +262,11 @@ fn :: tensor xor blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * 
 Fíjate en cómo `tensor.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
-fn :: tensor and blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
-      tensor and blocks a b = a_ij and b_ij
+fn :: tensor bitand blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
+      tensor bitand blocks a b = a_ij and b_ij
 
-fn :: tensor or blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
-      tensor or blocks a b = a_ij or b_ij
+fn :: tensor bitor blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
+      tensor bitor blocks a b = a_ij or b_ij
 
 fn :: tensor add blocks Tensor[Int * r * c] Tensor[Int * r * c] => Tensor[Int * r * c]
       tensor add blocks a b = a_ij + b_ij

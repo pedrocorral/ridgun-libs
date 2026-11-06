@@ -44,20 +44,20 @@ fn :: tensor col Tensor[Int * r * c] Int => Tensor[Int * r]
 -- @implements FR-TENSOR-001
 -- @implements API-TENSOR-001
 -- @implements DM-Tensor
-fn :: tensor xor blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
-      tensor xor blocks a b = a_ij xor b_ij
+fn :: tensor bitxor blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
+      tensor bitxor blocks a b = a_ij xor b_ij
 
 -- @implements FR-TENSOR-001
 -- @implements API-TENSOR-001
 -- @implements DM-Tensor
-fn :: tensor and blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
-      tensor and blocks a b = a_ij and b_ij
+fn :: tensor bitand blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
+      tensor bitand blocks a b = a_ij and b_ij
 
 -- @implements FR-TENSOR-001
 -- @implements API-TENSOR-001
 -- @implements DM-Tensor
-fn :: tensor or blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
-      tensor or blocks a b = a_ij or b_ij
+fn :: tensor bitor blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
+      tensor bitor blocks a b = a_ij or b_ij
 
 -- @implements FR-TENSOR-001
 -- @implements API-TENSOR-001

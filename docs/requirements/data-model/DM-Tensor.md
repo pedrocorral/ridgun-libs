@@ -15,7 +15,7 @@ related: [FR-TENSOR-001, API-TENSOR-001, FR-CRYPTO-004, ADR-0002]
 | col_idx | Int | `0..col_count-1` | Zero-based column index for subscript slice `m_(,col_idx)` |
 
 ## Relations
-- Used by `tensor.rg` (`tensor rows`, `tensor cols`, `tensor row`, `tensor col`, `tensor xor blocks`, `tensor matmul`, and arithmetic/bitwise Hadamard helpers) and by `crypto.rg` / `argon2id.rg` (`Tensor[U64 * 16]` and `Tensor[U64 * 8 * 16]` for Argon2id/Blake2b `BlaMka` 1024-byte block compression).
+- Used by `tensor.rg` (`tensor rows`, `tensor cols`, `tensor row`, `tensor col`, `tensor bitxor blocks`, `tensor matmul`, and arithmetic/bitwise Hadamard helpers) and by `crypto.rg` / `argon2id.rg` (`Tensor[U64 * 16]` and `Tensor[U64 * 8 * 16]` for Argon2id/Blake2b `BlaMka` 1024-byte block compression).
 
 ## Invariants
 - Integer and byte tensors (`Tensor[Int]`, `Tensor[U64]`, `Tensor[Byte]`) store unboxed 64-bit integer values without lossy floating-point conversion.

@@ -73,13 +73,13 @@ fn :: test tensor hadamard and clone => ()
         ub_(0, 1) = 0xFF
         ub_(1, 0) = 0x0F
         ub_(1, 1) = 0x55
-        ux   = tensor xor blocks ua ub
+        ux   = tensor bitxor blocks ua ub
         _    = assert int equals ux_(0, 0) 0xF0 "xor (0,0) == 0xF0"
         _    = assert int equals ux_(1, 1) 0xFF "xor (1,1) == 0xFF"
-        uan  = tensor and blocks ua ub
+        uan  = tensor bitand blocks ua ub
         _    = assert int equals uan_(0, 0) 0x0F "and (0,0) == 0x0F"
         _    = assert int equals uan_(1, 1) 0x00 "and (1,1) == 0x00"
-        uor  = tensor or blocks ua ub
+        uor  = tensor bitor blocks ua ub
         _    = assert int equals uor_(0, 0) 0xFF "or (0,0) == 0xFF"
         _    = assert int equals uor_(1, 0) 0xFF "or (1,0) == 0xFF"
         uc   = tensor clone ua

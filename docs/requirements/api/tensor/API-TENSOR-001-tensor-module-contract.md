@@ -17,9 +17,9 @@ auth: none
   - `tensor row (Tensor[Int * r * c] m) Int => Tensor[Int * c]`
   - `tensor col (Tensor[Int * r * c] m) Int => Tensor[Int * r]`
 - Bitwise & Arithmetic Hadamard Operations:
-  - `tensor xor blocks (Tensor[U64 * r * c] a) (Tensor[U64 * r * c] b) => Tensor[U64 * r * c]`
-  - `tensor and blocks (Tensor[U64 * r * c] a) (Tensor[U64 * r * c] b) => Tensor[U64 * r * c]`
-  - `tensor or blocks (Tensor[U64 * r * c] a) (Tensor[U64 * r * c] b) => Tensor[U64 * r * c]`
+  - `tensor bitxor blocks (Tensor[U64 * r * c] a) (Tensor[U64 * r * c] b) => Tensor[U64 * r * c]`
+  - `tensor bitand blocks (Tensor[U64 * r * c] a) (Tensor[U64 * r * c] b) => Tensor[U64 * r * c]`
+  - `tensor bitor blocks (Tensor[U64 * r * c] a) (Tensor[U64 * r * c] b) => Tensor[U64 * r * c]`
   - `tensor add blocks (Tensor[Int * r * c] a) (Tensor[Int * r * c] b) => Tensor[Int * r * c]`
   - `tensor sub blocks (Tensor[Int * r * c] a) (Tensor[Int * r * c] b) => Tensor[Int * r * c]`
   - `tensor mul blocks (Tensor[Int * r * c] a) (Tensor[Int * r * c] b) => Tensor[Int * r * c]`
@@ -35,5 +35,5 @@ auth: none
 | `Tensor[T * r * c]` | Hadamard, clone, or matrix multiplication | Resulting 2D tensor |
 
 ## Rules
-- All public functions use natural space-separated Ridgun names (`tensor rows`, `tensor xor blocks`, `tensor matmul`, etc.).
+- All public functions use natural space-separated Ridgun names (`tensor rows`, `tensor bitxor blocks`, `tensor matmul`, etc.).
 - Dimension variables (`r`, `c`, `k`) are bound directly in the `Tensor[T * r * c]` parameter pattern.
