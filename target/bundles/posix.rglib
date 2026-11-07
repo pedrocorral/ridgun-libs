@@ -3,6 +3,7 @@
 -- Pure-Ridgun POSIX Descriptors, Poll, Signals, Clocks & Random Library (POSIX)
 -- @implements FR-POSIX-001
 -- @implements FR-POSIX-002
+-- @implements FR-POSIX-003
 -- @implements API-POSIX-001
 -- @implements DM-PosixStatus
 -- @mitigates VUL-INJ-002
@@ -105,6 +106,39 @@ fn :: o nonblock => Int
 fn :: o cloexec => Int
       o cloexec =  524288
 
+-- @implements FR-POSIX-003
+-- @implements API-POSIX-001
+fn :: o directory for SysArch => Int
+      o directory for Arm64   =  16384
+      o directory for _       =  65536
+
+-- @implements FR-POSIX-003
+-- @implements API-POSIX-001
+fn :: o directory => Int
+      o directory =  o directory for (sys arch)
+
+-- ── Kernel Error Numbers (FR-POSIX-003) ──────────────────────
+
+-- @implements FR-POSIX-003
+-- @implements API-POSIX-001
+fn :: errno eio => Int
+      errno eio =  5
+
+fn :: errno ebadf => Int
+      errno ebadf =  9
+
+fn :: errno ewouldblock => Int
+      errno ewouldblock =  11
+
+fn :: errno enotdir => Int
+      errno enotdir =  20
+
+fn :: errno einval => Int
+      errno einval =  22
+
+fn :: errno enospc => Int
+      errno enospc =  28
+
 -- ── Path Safety Validation (VUL-INJ-002 / VUL-INPUT-001) ─────
 
 fn :: is bad posix code Int => Bool
@@ -188,30 +222,74 @@ fn :: px decode u64 le String Int => Int
         hi = px decode u32 le s (off + 4)
         lo + (hi * 4294967296)
 
+-- ── Per-Architecture Syscall Numbers (FR-POSIX-003 AC1) ──────
+-- x86_64 numbers from arch/x86/entry/syscalls/syscall_64.tbl;
+-- arm64 numbers from include/uapi/asm-generic/unistd.h.
+
+-- @implements FR-POSIX-003
+fn :: px sys nr SysArch Int Int => Int
+      px sys nr Arm64   _   a   =  a
+      px sys nr _       x   _   =  x
+
+fn :: px nr Int Int => Int
+      px nr x86 arm =  px sys nr (sys arch) x86 arm
+
+fn :: nr lseek => Int
+      nr lseek =  px nr 8 62
+
+fn :: nr mmap => Int
+      nr mmap =  px nr 9 222
+
+fn :: nr munmap => Int
+      nr munmap =  px nr 11 215
+
+fn :: nr pread64 => Int
+      nr pread64 =  px nr 17 67
+
+fn :: nr pwrite64 => Int
+      nr pwrite64 =  px nr 18 68
+
+fn :: nr flock => Int
+      nr flock =  px nr 73 32
+
+fn :: nr fsync => Int
+      nr fsync =  px nr 74 82
+
+fn :: nr fdatasync => Int
+      nr fdatasync =  px nr 75 83
+
+fn :: nr ftruncate => Int
+      nr ftruncate =  px nr 77 46
+
+fn :: nr memfd create => Int
+      nr memfd create =  px nr 319 279
+
 fn :: px alloc page Int => Int
       px alloc page sz  =
         neg1 = 0 - 1
-        sys call 9 0 sz 3 34 neg1 0
+        sys call (nr mmap) 0 sz 3 34 neg1 0
 
 fn :: px free page Int Int Int => Int
       px free page mfd ptr sz =
         _ = sys close mfd
-        sys call 11 ptr sz 0 0 0 0
+        sys call (nr munmap) ptr sz 0 0 0 0
 
-fn :: px alloc mfd => Int
-      px alloc mfd =  sys call 319 4194311 1 0 0 0 0
+-- `name_ptr` must point at a fresh anonymous mmap page: its first byte is 0, so the
+-- memfd name is "". This works in an executable and in a .so at any load address.
+fn :: px alloc mfd Int      => Int
+      px alloc mfd name_ptr =  sys call (nr memfd create) name_ptr 1 0 0 0 0
 
 fn :: px poke Int Int String => Int
       px poke mfd ptr s      =
         slen = str len s
-        _    = sys call 8 mfd 0 0 0 0 0
+        _    = sys call (nr lseek) mfd 0 0 0 0 0
         _    = sys write fd mfd s
-        sys call 17 mfd ptr slen 0 0 0
+        sys call (nr pread64) mfd ptr slen 0 0 0
 
 fn :: px peek Int Int Int => String
       px peek mfd ptr len =
-        _ = sys call 18 mfd ptr len 0 0 0
-        _ = sys call 8 mfd 0 0 0 0 0
+        _ = sys call (nr pwrite64) mfd ptr len 0 0 0
+        _ = sys call (nr lseek) mfd 0 0 0 0 0
         sys read fd mfd len
 
 -- ── Monotonic & Wall-Clock Time (RGF-017 / RG-010) ───────────
@@ -219,7 +297,7 @@ fn :: px peek Int Int Int => String
 fn :: px clock gettime Int    => Int Int
       px clock gettime clk_id =
         ptr  = px alloc page 4096
-        mfd  = px alloc mfd
+        mfd  = px alloc mfd ptr
         _    = sys call 228 clk_id ptr 0 0 0 0
         raw  = px peek mfd ptr 16
         _    = px free page mfd ptr 4096
@@ -328,7 +406,7 @@ fn :: pack pipe fds Int Int Int => Int Int Int
 fn :: posix pipe flags Int => Int Int Int
       posix pipe flags flags =
         ptr = px alloc page 4096
-        mfd = px alloc mfd
+        mfd = px alloc mfd ptr
         rc  = sys call 293 ptr flags 0 0 0 0
         raw = px peek mfd ptr 8
         _   = px free page mfd ptr 4096
@@ -417,7 +495,7 @@ fn :: posix chdir String => Bool
 fn :: px syscall1 path Int String => Int
       px syscall1 path nr  path   =
         ptr = px alloc page 4096
-        mfd = px alloc mfd
+        mfd = px alloc mfd ptr
         b0  = px raw byte 0
         _   = px poke mfd ptr (path + b0)
         rc  = sys call nr ptr 0 0 0 0 0
@@ -427,7 +505,7 @@ fn :: px syscall1 path Int String => Int
 fn :: px syscall2 path Int String String => Int
       px syscall2 path nr p1 p2 =
         ptr   = px alloc page 4096
-        mfd   = px alloc mfd
+        mfd   = px alloc mfd ptr
         b0    = px raw byte 0
         p2048 = ptr + 2048
         _     = px poke mfd ptr (p1 + b0)
@@ -506,7 +584,7 @@ fn :: sys signal watch [Int] => Int Int
         | not (valid signal list sigs) = (0 - 7, 0 - 1)
         | otherwise                    =
           ptr  = px alloc page 4096
-          mfd  = px alloc mfd
+          mfd  = px alloc mfd ptr
           mask = px sig mask sigs
           neg1 = 0 - 1
           _    = px poke mfd ptr (px u64 le mask)
@@ -526,7 +604,7 @@ fn :: px wait sig after poll Int Int => Int Int
         | prc < 0  = (0 - 7, 0)
         | otherwise =
           ptr = px alloc page 4096
-          mfd = px alloc mfd
+          mfd = px alloc mfd ptr
           n   = sys call 0 handle ptr 128 0 0 0
           raw = px peek mfd ptr 16
           _   = px free page mfd ptr 4096
@@ -578,7 +656,7 @@ fn :: px getrandom checked Int => Int String
       px getrandom checked n   =
         ((n / 4096) + 2) * 4096 -> psz
         px alloc page psz -> ptr
-        px alloc mfd -> mfd
+        px alloc mfd ptr -> mfd
         px getrandom loop ptr n -> rc
         px peek mfd ptr n -> raw
         px free page mfd ptr psz -> ()
@@ -631,3 +709,106 @@ fn :: process exists Int => Bool
       process exists pid =
         | pid <= 0  = False
         | otherwise = (sys kill pid 0) == 0
+
+-- ── Durable File Sync, Truncate, Lock & Positional Read (FR-POSIX-003) ─
+-- Every syscall number comes from the `nr ...` table, picked per `sys arch`.
+
+-- @implements FR-POSIX-003
+-- @implements API-POSIX-001
+fn :: posix fdatasync Int => Int
+      posix fdatasync fd  =
+        | fd < 0    = 0 - errno ebadf
+        | otherwise = sys call (nr fdatasync) fd 0 0 0 0 0
+
+-- @implements FR-POSIX-003
+-- @implements API-POSIX-001
+fn :: posix fsync Int => Int
+      posix fsync fd  =
+        | fd < 0    = 0 - errno ebadf
+        | otherwise = sys call (nr fsync) fd 0 0 0 0 0
+
+-- @implements FR-POSIX-003
+-- @implements API-POSIX-001
+-- @mitigates VUL-INPUT-001
+fn :: posix ftruncate Int Int    => Int
+      posix ftruncate fd  length =
+        | fd < 0     = 0 - errno ebadf
+        | length < 0 = 0 - errno einval
+        | otherwise  = sys call (nr ftruncate) fd length 0 0 0 0
+
+fn :: px close keep rc Int Int => Int
+      px close keep rc fd  rc  =
+        _ = sys close fd
+        rc
+
+fn :: px fsync opened dir Int => Int
+      px fsync opened dir fd  =
+        | fd < 0    = fd
+        | otherwise = px close keep rc fd (sys call (nr fsync) fd 0 0 0 0 0)
+
+-- @implements FR-POSIX-003
+-- @implements API-POSIX-001
+-- @mitigates VUL-INPUT-001
+fn :: posix sync dir String => Int
+      posix sync dir path   =
+        | not (is safe posix path path) = 0 - errno einval
+        | otherwise                     = px fsync opened dir (sys open path ((o rdonly) + (o directory) + (o cloexec)) 0)
+
+-- @implements FR-POSIX-003
+-- @implements API-POSIX-001
+fn :: posix lock exclusive Int => Int
+      posix lock exclusive fd  =
+        | fd < 0    = 0 - errno ebadf
+        | otherwise = sys call (nr flock) fd 6 0 0 0 0
+
+-- @implements FR-POSIX-003
+-- @implements API-POSIX-001
+fn :: posix unlock Int => Int
+      posix unlock fd  =
+        | fd < 0    = 0 - errno ebadf
+        | otherwise = sys call (nr flock) fd 8 0 0 0 0
+
+-- @implements FR-POSIX-003
+fn :: posix pread max => Int
+      posix pread max =  16777216
+
+fn :: px pread data Int Int Int => String
+      px pread data mfd ptr n   =
+        | n > 0     = px peek mfd ptr n
+        | otherwise = ""
+
+fn :: px pread result Int String => Int String
+      px pread result n   data   =
+        | n < 0     = (n, "")
+        | otherwise = (n, data)
+
+fn :: px pread finish Int Int Int Int => Int String
+      px pread finish mfd ptr sz  n   =
+        data = px pread data mfd ptr n
+        _    = px free page mfd ptr sz
+        px pread result n data
+
+fn :: px pread fail Int Int Int Int => Int String
+      px pread fail mfd ptr sz  rc  =
+        _ = px free page mfd ptr sz
+        (rc, "")
+
+fn :: px pread with mfd Int Int    Int Int Int Int => Int String
+      px pread with mfd fd  offset len sz  ptr mfd =
+        | mfd < 0   = px pread fail mfd ptr sz mfd
+        | otherwise = px pread finish mfd ptr sz (sys call (nr pread64) fd ptr len offset 0 0)
+
+fn :: px pread mapped Int Int    Int Int Int => Int String
+      px pread mapped fd  offset len sz  ptr =
+        | ptr < 0   = (ptr, "")
+        | otherwise = px pread with mfd fd offset len sz ptr (px alloc mfd ptr)
+
+-- @implements FR-POSIX-003
+-- @implements API-POSIX-001
+-- @mitigates VUL-INPUT-001
+fn :: posix pread Int Int    Int => Int String
+      posix pread fd  offset len =
+        | fd < 0                                         = (0 - errno ebadf, "")
+        | offset < 0 or len < 0 or len > posix pread max = (0 - errno einval, "")
+        | len == 0                                       = (0, "")
+        | otherwise                                      = px pread mapped fd offset len (((len + 4095) / 4096) * 4096) (px alloc page (((len + 4095) / 4096) * 4096))

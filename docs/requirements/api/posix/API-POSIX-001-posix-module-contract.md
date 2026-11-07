@@ -2,7 +2,7 @@
 id: API-POSIX-001
 title: Public lib contract for posix (posix.rglib / libposix.so)
 status: approved
-implements: [FR-POSIX-001, FR-POSIX-002]
+implements: [FR-POSIX-001, FR-POSIX-002, FR-POSIX-003]
 auth: none
 ---
 # API-POSIX-001 — Public lib contract for `posix` (`posix.rg`)
@@ -28,6 +28,13 @@ auth: none
   - `sys_time_ms () => Int`, `sys_monotonic_ms () => Int`, `sys_monotonic_ns () => Int`, `sys_sleep_ms Int => Int`
   - `sys_signal_watch [Int] => (Int, Int)`, `sys_signal_wait Int Int => (Int, Int)`
   - `sys_random_bytes Int => (Int, String)`
+- Durable File Functions (`FR-POSIX-003`; syscall numbers picked per `sys arch`):
+  - `posix fdatasync Int => Int`, `posix fsync Int => Int`, `posix ftruncate Int Int => Int` (`fd length`)
+  - `posix sync dir String => Int` (`open O_RDONLY|O_DIRECTORY|O_CLOEXEC`, `fsync`, `close`)
+  - `posix lock exclusive Int => Int` (`flock LOCK_EX|LOCK_NB`), `posix unlock Int => Int` (`flock LOCK_UN`)
+  - `posix pread Int Int Int => Int String` (`fd offset len` → `(bytes_read, data)` or `(-errno, "")`; `len <= 16777216`)
+  - `o directory => Int` (`65536` on x86_64, `16384` on arm64)
+  - `errno eio => Int` (`5`), `errno ebadf => Int` (`9`), `errno ewouldblock => Int` (`11`), `errno enotdir => Int` (`20`), `errno einval => Int` (`22`), `errno enospc => Int` (`28`)
 
 ## Responses
 | Code | When | Body |
@@ -35,7 +42,9 @@ auth: none
 | `0` / `PollReady revents` | Operation succeeded or descriptor ready | `0` / `(0, ...)` / `PollReady revents` |
 | `PollTimeout` / `-2` | Poll or signal wait timed out | `PollTimeout` / `(-2, 0)` |
 | `PollError errno_code` / `< 0` | Invalid descriptor, signal, or syscall error | `PollError errno_code` / `(-7, ...)` |
+| `-errno` | Durable file function failed (`FR-POSIX-003`) | `0 - errno ebadf`, `0 - errno ewouldblock`, ... / `(-errno, "")` |
 
 ## Rules
 - `wait fd` delegates directly to the compiler's `sys poll` (`ppoll`) primitive.
 - `sys_random_bytes` reads cryptographic entropy from the Linux kernel (`getrandom` syscall / `/dev/urandom`).
+- `FR-POSIX-003` functions return the raw negative kernel error number; callers compare it with `0 - errno <name>`.

@@ -3,10 +3,12 @@
 -- Automated test suite for the POSIX system library (POSIX)
 -- @tests TS-POSIX-001
 -- @tests TS-POSIX-002
+-- @tests TS-POSIX-003
 -- ============================================================
 
 import test
 import posix
+import io
 
 fn :: is poll timeout PollStatus  => Bool
       is poll timeout PollTimeout =  True
@@ -72,7 +74,8 @@ fn :: test posix constants descriptors and poll => ()
 -- @tests TS-POSIX-002
 fn :: test posix filesystem clocks signals and random => ()
       test posix filesystem clocks signals and random =
-        dir_p   = "/tmp/rg_posix_test_{sys_getpid}"
+        my_pid  = sys getpid
+        dir_p   = "/tmp/rg_posix_test_{my_pid}"
         f1      = "{dir_p}/a.txt"
         f2      = "{dir_p}/b.txt"
         lnk     = "{dir_p}/sym.txt"
@@ -178,9 +181,123 @@ fn :: test posix fork pipe dup2 execve waitpid => ()
         wfd     = tuple3 wfd p_res
         handle fork branch (posix fork) rfd wfd
 
+fn :: child lock probe String => ()
+      child lock probe path   =
+        fd = posix open path (o rdwr) 0
+        rc = posix lock exclusive fd
+        _  = posix exit (0 - rc)
+        ()
+
+fn :: parent lock check Int Int => ()
+      parent lock check pid t0  =
+        w_res = posix waitpid pid 0
+        st    = pair snd w_res
+        -- `sys waitpid` may return the decoded exit code (11) or the raw wait status (11 shl 8).
+        _     = assert true ((st == (errno ewouldblock)) or (st == ((errno ewouldblock) * 256))) "second process gets EWOULDBLOCK (exit 11)"
+        assert true (((sys monotonic ms) - t0) < 1000) "second process did not wait for the lock"
+
+fn :: handle lock fork Int String Int => ()
+      handle lock fork pid path   t0  =
+        | pid == 0  = child lock probe path
+        | otherwise = parent lock check pid t0
+
+-- @tests TS-POSIX-003
+fn :: test posix durable file ops => ()
+      test posix durable file ops =
+        _      = assert equals (px sys nr X86_64 75 83) 75 "picker: x86_64 number"
+        _      = assert equals (px sys nr Arm64 75 83) 83 "picker: arm64 number"
+        _      = assert equals (o directory for X86_64) 65536 "O_DIRECTORY x86_64"
+        _      = assert equals (o directory for Arm64) 16384 "O_DIRECTORY arm64"
+        _      = assert equals (nr fdatasync) (px sys nr (sys arch) 75 83) "fdatasync nr matches the host arch"
+        _      = assert equals (nr fsync) (px sys nr (sys arch) 74 82) "fsync nr matches the host arch"
+        _      = assert equals (nr ftruncate) (px sys nr (sys arch) 77 46) "ftruncate nr matches the host arch"
+        _      = assert equals (nr flock) (px sys nr (sys arch) 73 32) "flock nr matches the host arch"
+        _      = assert equals (nr pread64) (px sys nr (sys arch) 17 67) "pread64 nr matches the host arch"
+        my_pid = sys getpid
+        dir_p  = "/tmp/rg_posix_dur_{my_pid}"
+        f_dat  = "{dir_p}/f.dat"
+        f_lock = "{dir_p}/lock"
+        f_r    = "{dir_p}/r.dat"
+        _      = assert true (posix mkdir dir_p) "mkdir durable test dir"
+        fd     = posix open f_dat ((o creat) + (o rdwr) + (o trunc)) 420
+        _      = assert true (fd >= 0) "open f.dat"
+        _      = assert equals (posix write fd "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789") 100 "write 100 bytes"
+        _      = assert equals (posix fdatasync fd) 0 "fdatasync on fresh write -> 0"
+        _      = assert equals (posix fsync fd) 0 "fsync on fresh write -> 0"
+        _      = assert equals (posix close fd) 0 "close f.dat"
+        _      = assert equals (posix fdatasync fd) (0 - errno ebadf) "fdatasync on closed fd -> -EBADF"
+        _      = assert equals (posix fsync fd) (0 - errno ebadf) "fsync on closed fd -> -EBADF"
+        _      = assert equals (posix fdatasync (0 - 1)) (0 - 9) "fdatasync on -1 -> -9"
+        fd2    = posix open f_dat (o rdwr) 0
+        _      = assert equals (file size f_dat) 100 "file size before truncate"
+        _      = assert equals (posix ftruncate fd2 40) 0 "ftruncate to 40 -> 0"
+        _      = assert equals (file size f_dat) 40 "file size after truncate == 40"
+        _      = assert equals (posix ftruncate fd2 (0 - 1)) (0 - errno einval) "ftruncate negative -> -EINVAL"
+        _      = posix close fd2
+        _      = assert equals (posix sync dir dir_p) 0 "sync dir on directory -> 0"
+        _      = assert equals (posix sync dir f_dat) (0 - errno enotdir) "sync dir on file -> -ENOTDIR"
+        _      = assert true ((posix sync dir "{dir_p}/missing") < 0) "sync dir on missing path -> error"
+        _      = write file f_lock "x"
+        la     = posix open f_lock (o rdwr) 0
+        lb     = posix open f_lock (o rdwr) 0
+        _      = assert equals (posix lock exclusive la) 0 "first lock -> 0"
+        _      = assert equals (posix lock exclusive lb) (0 - errno ewouldblock) "second open file -> -EWOULDBLOCK"
+        t0     = sys monotonic ms
+        _      = handle lock fork (posix fork) f_lock t0
+        _      = assert equals (posix unlock la) 0 "unlock -> 0"
+        _      = assert equals (posix lock exclusive lb) 0 "lock after unlock -> 0"
+        _      = posix close la
+        _      = posix close lb
+        _      = write file f_r "0123456789ABCDEFGHIJ"
+        rf     = posix open f_r (o rdonly) 0
+        _      = assert equals (posix read rf 3) "012" "read 3 moves position to 3"
+        p1     = posix pread rf 10 5
+        _      = assert equals (pair fst p1) 5 "pread 5 bytes"
+        _      = assert equals (pair snd p1) "ABCDE" "pread [10,15)"
+        p2     = posix pread rf 15 100
+        _      = assert equals (pair fst p2) 5 "pread short read at end"
+        _      = assert equals (pair snd p2) "FGHIJ" "pread [15,20)"
+        p3     = posix pread rf 20 4
+        _      = assert equals (pair fst p3) 0 "pread at EOF -> 0"
+        _      = assert equals (pair snd p3) "" "pread at EOF -> empty"
+        _      = assert equals (posix read rf 2) "34" "pread kept the descriptor position"
+        _      = assert equals (pair fst (posix pread rf (0 - 1) 4)) (0 - errno einval) "pread negative offset -> -EINVAL"
+        _      = assert equals (pair fst (posix pread rf 0 (0 - 1))) (0 - errno einval) "pread negative length -> -EINVAL"
+        _      = assert equals (pair fst (posix pread rf 0 16777217)) (0 - errno einval) "pread over 16 MiB -> -EINVAL"
+        _      = assert equals (pair fst (posix pread rf 0 0)) 0 "pread length 0 -> 0"
+        _      = posix close rf
+        z      = px raw byte 0
+        ff     = px raw byte 255
+        hi     = px raw byte 128
+        bin    = "{z}{ff}{z}A{hi}{ff}{z}Z"
+        _      = assert equals (str len bin) 8 "binary fixture is 8 bytes"
+        bf     = posix open "{dir_p}/b.dat" ((o creat) + (o wronly) + (o trunc)) 420
+        _      = assert equals (posix write bf bin) 8 "write 8 binary bytes"
+        _      = posix close bf
+        bf2    = posix open "{dir_p}/b.dat" (o rdonly) 0
+        pb     = posix pread bf2 1 6
+        _      = posix close bf2
+        got    = pair snd pb
+        _      = assert equals (pair fst pb) 6 "pread 6 binary bytes"
+        _      = assert equals got (str slice bin 1 7) "pread binary [1,7) matches"
+        _      = assert equals (str char at got 0) 255 "pread keeps 0xFF"
+        _      = assert equals (str char at got 1) 0 "pread keeps 0x00"
+        _      = assert equals (str char at got 3) 128 "pread keeps 0x80"
+        _      = assert equals (str char at got 5) 0 "pread keeps trailing 0x00"
+        _      = sys unlink "{dir_p}/b.dat"
+        _      = assert equals (pair fst (posix pread 99999 0 4)) (0 - errno ebadf) "pread on unopened fd -> -EBADF"
+        _      = assert equals (pair fst (posix pread (0 - 1) 0 4)) (0 - errno ebadf) "pread on -1 -> -EBADF"
+        _      = assert equals (errno eio) 5 "EIO == 5"
+        _      = assert equals (errno enospc) 28 "ENOSPC == 28"
+        _      = sys unlink f_dat
+        _      = sys unlink f_lock
+        _      = sys unlink f_r
+        assert true (sys rmdir dir_p) "remove durable test dir"
+
 fn :: main => ()
       main =
         _ = test posix constants descriptors and poll
         _ = test posix filesystem clocks signals and random
+        _ = test posix durable file ops
         _ = test posix fork pipe dup2 execve waitpid
-        echo "[PASS] test_posix: TS-POSIX-001 and TS-POSIX-002 passed"
+        echo "[PASS] test_posix: TS-POSIX-001, TS-POSIX-002 and TS-POSIX-003 passed"
