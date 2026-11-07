@@ -6,10 +6,13 @@
 -- @implements NFR-PERF-001
 -- @implements API-CRYPTO-001
 -- @implements DM-Argon2
+-- @implements FR-POSIX-004
 -- @mitigates VUL-AUTHN-001
 -- @mitigates VUL-INPUT-001
 
 module :: argon2id
+
+import posix
 
 type Argon2Params = m_cost: Int, t_cost: Int, lanes: Int, tag_len: Int, version: Int
 type Argon2Phc    = params: Argon2Params, salt_b64: String, tag_b64: String
@@ -1027,20 +1030,16 @@ fn :: a2 getrandom step Int Int Int => Int
 fn :: a2 getrandom loop Int Int => Int
       a2 getrandom loop ptr rem =
         | rem <= 0  = 0
-        | otherwise = a2 getrandom step ptr rem (a2 getrandom call ptr rem (sys call 318 ptr rem 0 0 0 0))
+        | otherwise = a2 getrandom step ptr rem (a2 getrandom call ptr rem (sys call (nr getrandom) ptr rem 0 0 0 0))
 
 fn :: argon2id generate salt Int => String
       argon2id generate salt n   =
         eff_n = clamp salt len n
-        neg1  = 0 - 1
-        ptr   = sys call 9 0 4096 3 34 neg1 0
-        mfd   = sys call 319 4194311 1 0 0 0 0
+        ptr   = px alloc page 4096
+        mfd   = px alloc mfd ptr
         _     = a2 getrandom loop ptr eff_n
-        _     = sys call 18 mfd ptr eff_n 0 0 0
-        _     = sys call 8 mfd 0 0 0 0 0
-        raw   = sys read fd mfd eff_n
-        _     = sys close mfd
-        _     = sys call 11 ptr 4096 0 0 0 0
+        raw   = px peek mfd ptr eff_n
+        _     = px free page mfd ptr 4096
         raw
 
 fn :: validate argon2 params Argon2Params [Int]      => String

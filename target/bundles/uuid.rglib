@@ -3,10 +3,13 @@
 -- Pure-Ridgun RFC 9562 UUIDv4/UUIDv7, FNV-1a/Adler-32/CRC-32 Checksums & Seeded PRNG Library (UUID)
 -- @implements FR-UUID-001
 -- @implements API-UUID-001
+-- @implements FR-POSIX-004
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
 module :: uuid
+
+import posix
 
 fn :: uu hex lut Int => String
       uu hex lut _   =  "0123456789abcdef"
@@ -98,24 +101,7 @@ fn :: prng range Int  Int Int => Int Int
 
 -- ── RFC 9562 UUIDv4 & UUIDv7 Generation & Validation (CSPRNG + clock_gettime) ──
 
-fn :: uu alloc page Int => Int
-      uu alloc page sz  =
-        neg1 = 0 - 1
-        sys call 9 0 sz 3 34 neg1 0
-
-fn :: uu free page Int Int Int => Int
-      uu free page mfd ptr sz =
-        sys close mfd -> ()
-        sys call 11 ptr sz 0 0 0 0
-
-fn :: uu alloc mfd => Int
-      uu alloc mfd =  sys call 319 4194311 1 0 0 0 0
-
-fn :: uu peek Int Int Int => String
-      uu peek mfd ptr len =
-        sys call 18 mfd ptr len 0 0 0 -> ()
-        sys call 8 mfd 0 0 0 0 0 -> ()
-        sys read fd mfd len
+-- Buffer helpers come from `posix` (`px alloc page`, `px alloc mfd`, `px peek`, `px free page`; ADR-0007).
 
 fn :: uu decode u32 le String Int => Int
       uu decode u32 le s off =
@@ -133,11 +119,11 @@ fn :: uu decode u64 le String Int => Int
 
 fn :: uu wall time ms => Int
       uu wall time ms =
-        uu alloc page 4096 -> ptr
-        uu alloc mfd -> mfd
-        sys call 228 0 ptr 0 0 0 0 -> ()
-        uu peek mfd ptr 16 -> raw
-        uu free page mfd ptr 4096 -> ()
+        px alloc page 4096 -> ptr
+        px alloc mfd ptr -> mfd
+        sys call (nr clock gettime) 0 ptr 0 0 0 0 -> ()
+        px peek mfd ptr 16 -> raw
+        px free page mfd ptr 4096 -> ()
         uu decode u64 le raw 0 -> sec
         uu decode u64 le raw 8 -> nsec
         (sec * 1000) + (nsec / 1000000)
@@ -154,11 +140,11 @@ fn :: uu bytes to hex loop String Int Int => String
 
 fn :: uu random hex16 => String
       uu random hex16 =
-        uu alloc page 4096 -> ptr
-        uu alloc mfd -> mfd
-        sys call 318 ptr 16 0 0 0 0 -> ()
-        uu peek mfd ptr 16 -> raw
-        uu free page mfd ptr 4096 -> ()
+        px alloc page 4096 -> ptr
+        px alloc mfd ptr -> mfd
+        sys call (nr getrandom) ptr 16 0 0 0 0 -> ()
+        px peek mfd ptr 16 -> raw
+        px free page mfd ptr 4096 -> ()
         uu bytes to hex loop raw 0 16
 
 fn :: uu hex val Int => Int

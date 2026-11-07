@@ -4,6 +4,7 @@
 -- @implements FR-POSIX-001
 -- @implements FR-POSIX-002
 -- @implements FR-POSIX-003
+-- @implements FR-POSIX-004
 -- @implements API-POSIX-001
 -- @implements DM-PosixStatus
 -- @mitigates VUL-INJ-002
@@ -227,12 +228,19 @@ fn :: px decode u64 le String Int => Int
 -- arm64 numbers from include/uapi/asm-generic/unistd.h.
 
 -- @implements FR-POSIX-003
+-- @implements FR-POSIX-004
 fn :: px sys nr SysArch Int Int => Int
       px sys nr Arm64   _   a   =  a
       px sys nr _       x   _   =  x
 
 fn :: px nr Int Int => Int
       px nr x86 arm =  px sys nr (sys arch) x86 arm
+
+-- @implements FR-POSIX-004
+-- @implements API-POSIX-001
+-- One `nr <name>` per syscall the libs use (ADR-0007). Never pass a literal number to `sys call`.
+fn :: nr read => Int
+      nr read =  px nr 0 63
 
 fn :: nr lseek => Int
       nr lseek =  px nr 8 62
@@ -243,11 +251,59 @@ fn :: nr mmap => Int
 fn :: nr munmap => Int
       nr munmap =  px nr 11 215
 
+fn :: nr rt sigprocmask => Int
+      nr rt sigprocmask =  px nr 14 135
+
 fn :: nr pread64 => Int
       nr pread64 =  px nr 17 67
 
 fn :: nr pwrite64 => Int
       nr pwrite64 =  px nr 18 68
+
+fn :: nr socket => Int
+      nr socket =  px nr 41 198
+
+fn :: nr connect => Int
+      nr connect =  px nr 42 203
+
+fn :: nr accept => Int
+      nr accept =  px nr 43 202
+
+fn :: nr sendto => Int
+      nr sendto =  px nr 44 206
+
+fn :: nr shutdown => Int
+      nr shutdown =  px nr 48 210
+
+fn :: nr bind => Int
+      nr bind =  px nr 49 200
+
+fn :: nr listen => Int
+      nr listen =  px nr 50 201
+
+fn :: nr getsockname => Int
+      nr getsockname =  px nr 51 204
+
+fn :: nr setsockopt => Int
+      nr setsockopt =  px nr 54 208
+
+fn :: nr getsockopt => Int
+      nr getsockopt =  px nr 55 209
+
+fn :: nr clone => Int
+      nr clone =  px nr 56 220
+
+fn :: nr execve => Int
+      nr execve =  px nr 59 221
+
+fn :: nr exit => Int
+      nr exit =  px nr 60 93
+
+fn :: nr wait4 => Int
+      nr wait4 =  px nr 61 260
+
+fn :: nr fcntl => Int
+      nr fcntl =  px nr 72 25
 
 fn :: nr flock => Int
       nr flock =  px nr 73 32
@@ -261,8 +317,39 @@ fn :: nr fdatasync => Int
 fn :: nr ftruncate => Int
       nr ftruncate =  px nr 77 46
 
+fn :: nr clock gettime => Int
+      nr clock gettime =  px nr 228 113
+
+fn :: nr unlinkat => Int
+      nr unlinkat =  px nr 263 35
+
+fn :: nr symlinkat => Int
+      nr symlinkat =  px nr 266 36
+
+fn :: nr signalfd4 => Int
+      nr signalfd4 =  px nr 289 74
+
+fn :: nr eventfd2 => Int
+      nr eventfd2 =  px nr 290 19
+
+fn :: nr dup3 => Int
+      nr dup3 =  px nr 292 24
+
+fn :: nr pipe2 => Int
+      nr pipe2 =  px nr 293 59
+
+fn :: nr renameat2 => Int
+      nr renameat2 =  px nr 316 276
+
+fn :: nr getrandom => Int
+      nr getrandom =  px nr 318 278
+
 fn :: nr memfd create => Int
       nr memfd create =  px nr 319 279
+
+-- `AT_FDCWD`: resolve relative paths against the working directory (same on both architectures).
+fn :: at fdcwd => Int
+      at fdcwd =  0 - 100
 
 fn :: px alloc page Int => Int
       px alloc page sz  =
@@ -298,7 +385,7 @@ fn :: px clock gettime Int    => Int Int
       px clock gettime clk_id =
         ptr  = px alloc page 4096
         mfd  = px alloc mfd ptr
-        _    = sys call 228 clk_id ptr 0 0 0 0
+        _    = sys call (nr clock gettime) clk_id ptr 0 0 0 0
         raw  = px peek mfd ptr 16
         _    = px free page mfd ptr 4096
         sec  = px decode u64 le raw 0
@@ -407,7 +494,7 @@ fn :: posix pipe flags Int => Int Int Int
       posix pipe flags flags =
         ptr = px alloc page 4096
         mfd = px alloc mfd ptr
-        rc  = sys call 293 ptr flags 0 0 0 0
+        rc  = sys call (nr pipe2) ptr flags 0 0 0 0
         raw = px peek mfd ptr 8
         _   = px free page mfd ptr 4096
         rfd = px decode u32 le raw 0
@@ -432,19 +519,26 @@ fn :: posix pipe cloexec => Int Int Int
 fn :: posix dup2 Int Int => Int
       posix dup2 oldfd newfd =
         | oldfd < 0 or newfd < 0 = 0 - 9
-        | otherwise              = sys call 33 oldfd newfd 0 0 0 0
+        | oldfd == newfd         = px dup same oldfd (sys call (nr fcntl) oldfd 1 0 0 0 0)
+        | otherwise              = sys call (nr dup3) oldfd newfd 0 0 0 0
+
+-- `dup3` rejects equal descriptors; `dup2(fd, fd)` returns `fd` when it is open.
+fn :: px dup same Int Int => Int
+      px dup same fd  rc  =
+        | rc < 0    = rc
+        | otherwise = fd
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 fn :: posix fork => Int
       posix fork =
-        sys call 57 0 0 0 0 0 0
+        sys call (nr clone) (sig chld) 0 0 0 0 0
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 fn :: posix exit Int => Int
       posix exit code =
-        sys call 60 (code and 255) 0 0 0 0 0
+        sys call (nr exit) (code and 255) 0 0 0 0 0
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
@@ -453,13 +547,70 @@ fn :: posix exit Int => Int
 fn :: posix execve String [String] [String] => Int
       posix execve path argv envp =
         | (str len path) == 0 or (str len path) > 4096 = 0 - 22
-        | otherwise                                    = sys execve path argv envp
+        | otherwise                                    = px execve raw path argv envp
+
+fn :: px count [A]      => Int
+      px count []       =  0
+      px count (_:rest) =  1 + (px count rest)
+
+-- Bytes of the NUL-terminated strings.
+fn :: px cstr size [String] => Int
+      px cstr size []       =  0
+      px cstr size (x:rest) =  (str len x) + 1 + (px cstr size rest)
+
+fn :: px cstr blob [String] => String
+      px cstr blob []       =  ""
+      px cstr blob (x:rest) =  x + (px raw byte 0) + (px cstr blob rest)
+
+-- u64 pointers to consecutive strings starting at `addr`, then a NULL pointer.
+fn :: px cstr table [String] Int  => String
+      px cstr table []       _    =  px u64 le 0
+      px cstr table (x:rest) addr =  (px u64 le addr) + (px cstr table rest (addr + (str len x) + 1))
+
+-- Page layout: argv pointers, NULL, envp pointers, NULL, path, argv strings, envp strings.
+fn :: px execve raw String [String] [String] => Int
+      px execve raw path   argv     envp     =
+        na     = px count argv
+        ne     = px count envp
+        tbl_sz = 8 * (na + ne + 2)
+        total  = tbl_sz + (str len path) + 1 + (px cstr size argv) + (px cstr size envp)
+        sz     = ((total + 4095) / 4096) * 4096
+        ptr    = px alloc page sz
+        mfd    = px alloc mfd ptr
+        p_path = ptr + tbl_sz
+        p_argv = p_path + (str len path) + 1
+        p_envp = p_argv + (px cstr size argv)
+        blob   = (px cstr table argv p_argv) + (px cstr table envp p_envp) + path + (px raw byte 0) + (px cstr blob argv) + (px cstr blob envp)
+        _      = px poke mfd ptr blob
+        rc     = sys call (nr execve) p_path ptr (ptr + (8 * (na + 1))) 0 0 0
+        _      = px free page mfd ptr sz
+        rc
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 fn :: posix waitpid Int Int => Int Int
       posix waitpid pid options =
-        sys waitpid pid options
+        ptr = px alloc page 4096
+        mfd = px alloc mfd ptr
+        rc  = px wait4 retry pid ptr options
+        raw = px peek mfd ptr 4
+        _   = px free page mfd ptr 4096
+        px wait4 result rc (px decode u32 le raw 0)
+
+-- `wait4(pid, &status, options, NULL)`, retried on `EINTR`.
+fn :: px wait4 retry Int Int Int     => Int
+      px wait4 retry pid ptr options =  px wait4 again pid ptr options (sys call (nr wait4) pid ptr options 0 0 0)
+
+fn :: px wait4 again Int Int Int     Int => Int
+      px wait4 again pid ptr options rc  =
+        | rc == (0 - 4) = px wait4 retry pid ptr options
+        | otherwise     = rc
+
+-- `(ret_pid, raw wait status)`; the status is `0` when `wait4` failed or `WNOHANG` found nothing.
+fn :: px wait4 result Int Int    => Int Int
+      px wait4 result rc  status =
+        | rc <= 0   = (rc, 0)
+        | otherwise = (rc, status)
 
 fn :: waitpid decode sig Int Int => ProcStatus
       waitpid decode sig wstatus sig =
@@ -492,25 +643,31 @@ fn :: posix chdir String => Bool
         | not (is safe posix path path) = False
         | otherwise                     = (sys chdir path) == 0
 
-fn :: px syscall1 path Int String => Int
-      px syscall1 path nr  path   =
+-- `unlinkat(AT_FDCWD, path, flags)`; flags `512` (`AT_REMOVEDIR`) removes a directory.
+fn :: px unlinkat path String Int   => Int
+      px unlinkat path path   flags =
         ptr = px alloc page 4096
         mfd = px alloc mfd ptr
         b0  = px raw byte 0
         _   = px poke mfd ptr (path + b0)
-        rc  = sys call nr ptr 0 0 0 0 0
+        rc  = sys call (nr unlinkat) (at fdcwd) ptr flags 0 0 0
         _   = px free page mfd ptr 4096
         rc
 
-fn :: px syscall2 path Int String String => Int
-      px syscall2 path nr p1 p2 =
+-- kind `0`: `renameat2(AT_FDCWD, p1, AT_FDCWD, p2, 0)`; kind `1`: `symlinkat(p1, AT_FDCWD, p2)`.
+fn :: px path pair sys Int Int Int => Int
+      px path pair sys 0    a   b   =  sys call (nr renameat2) (at fdcwd) a (at fdcwd) b 0
+      px path pair sys _    a   b   =  sys call (nr symlinkat) a (at fdcwd) b 0 0 0
+
+fn :: px path pair call Int String String => Int
+      px path pair call kind p1 p2 =
         ptr   = px alloc page 4096
         mfd   = px alloc mfd ptr
         b0    = px raw byte 0
         p2048 = ptr + 2048
         _     = px poke mfd ptr (p1 + b0)
         _     = px poke mfd p2048 (p2 + b0)
-        rc    = sys call nr ptr p2048 0 0 0 0
+        rc    = px path pair sys kind ptr p2048
         _     = px free page mfd ptr 4096
         rc
 
@@ -519,28 +676,28 @@ fn :: px syscall2 path Int String String => Int
 fn :: sys rmdir String => Bool
       sys rmdir path   =
         | not (is safe posix path path) = False
-        | otherwise                     = (px syscall1 path 84 path) == 0
+        | otherwise                     = (px unlinkat path path 512) == 0
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys unlink String => Bool
       sys unlink path   =
         | not (is safe posix path path) = False
-        | otherwise                     = (px syscall1 path 87 path) == 0
+        | otherwise                     = (px unlinkat path path 0) == 0
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys rename String String   => Bool
       sys rename old_p  new_path =
         | not (is safe posix path old_p) or not (is safe posix path new_path) = False
-        | otherwise = (px syscall2 path 82 old_p new_path) == 0
+        | otherwise = (px path pair call 0 old_p new_path) == 0
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys symlink String String    => Bool
       sys symlink target link_path =
         | not (is safe posix path target) or not (is safe posix path link_path) = False
-        | otherwise = (px syscall2 path 88 target link_path) == 0
+        | otherwise = (px path pair call 1 target link_path) == 0
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
@@ -588,8 +745,8 @@ fn :: sys signal watch [Int] => Int Int
           mask = px sig mask sigs
           neg1 = 0 - 1
           _    = px poke mfd ptr (px u64 le mask)
-          _    = sys call 14 0 ptr 0 8 0 0
-          sfd  = sys call 289 neg1 ptr 8 526336 0 0
+          _    = sys call (nr rt sigprocmask) 0 ptr 0 8 0 0
+          sfd  = sys call (nr signalfd4) neg1 ptr 8 526336 0 0
           _    = px free page mfd ptr 4096
           px finish sig watch sfd
 
@@ -605,7 +762,7 @@ fn :: px wait sig after poll Int Int => Int Int
         | otherwise =
           ptr = px alloc page 4096
           mfd = px alloc mfd ptr
-          n   = sys call 0 handle ptr 128 0 0 0
+          n   = sys call (nr read) handle ptr 128 0 0 0
           raw = px peek mfd ptr 16
           _   = px free page mfd ptr 4096
           px finish sig read n raw
@@ -615,7 +772,7 @@ fn :: px wait sig after poll Int Int => Int Int
 fn :: sys signal wait Int    Int        => Int Int
       sys signal wait handle timeout_ms =
         | handle < 0 or timeout_ms < (0 - 1)       = (0 - 7, 0)
-        | (sys call 72 handle 1 0 0 0 0) < 0       = (0 - 7, 0)
+        | (sys call (nr fcntl) handle 1 0 0 0 0) < 0 = (0 - 7, 0)
         | otherwise                                = px wait sig after poll handle (sys poll handle 1 timeout_ms)
 
 fn :: posix notify signal Int    Int    => Int
@@ -645,7 +802,7 @@ fn :: px getrandom step Int Int Int => Int
 fn :: px getrandom loop Int Int => Int
       px getrandom loop ptr rem =
         | rem <= 0  = 0
-        | otherwise = px getrandom step ptr rem (px getrandom call ptr rem (sys call 318 ptr rem 0 0 0 0))
+        | otherwise = px getrandom step ptr rem (px getrandom call ptr rem (sys call (nr getrandom) ptr rem 0 0 0 0))
 
 fn :: px finish getrandom Int String Int => Int String
       px finish getrandom rc raw n =

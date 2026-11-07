@@ -4,6 +4,7 @@
 -- @tests TS-POSIX-001
 -- @tests TS-POSIX-002
 -- @tests TS-POSIX-003
+-- @tests TS-POSIX-004
 -- ============================================================
 
 import test
@@ -102,7 +103,7 @@ fn :: test posix filesystem clocks signals and random => ()
         _       = assert true (n2 > n1) "monotonic ns non-decreasing"
         _       = assert true ((n2 - n1) >= 20000000) "monotonic ns elapsed >= 20ms (20,000,000 ns)"
         _       = assert true (w1 > 1700000000000) "wall time > 1700000000000"
-        k_sec   = sys call 201 0 0 0 0 0 0
+        k_sec   = px pair fst (px clock gettime 0)
         w_sec   = w2 / 1000
         _       = assert true (((w_sec - k_sec) <= 2) and ((k_sec - w_sec) <= 2)) "sys_wall_time_ms matches kernel time(0) within 2s"
         _       = assert true ((w2 - w1) >= 20) "wall time ms elapsed >= 20"
@@ -111,7 +112,7 @@ fn :: test posix filesystem clocks signals and random => ()
         sw_ok   = sys signal watch [sig term]
         _       = assert equals (pair fst sw_ok) 0 "SIGTERM watch ok"
         sh      = pair snd sw_ok
-        _       = assert true ((sys call 72 sh 1 0 0 0 0) >= 0) "signalfd handle is real kernel fd"
+        _       = assert true ((sys call (nr fcntl) sh 1 0 0 0 0) >= 0) "signalfd handle is real kernel fd"
         _       = assert equals (sys kill (sys getpid) (sig term)) 0 "real kernel sys_kill SIGTERM does not kill process"
         sw_got  = sys signal wait sh 100
         _       = assert equals (pair fst sw_got) 0 "sys_signal_wait status 0 after real sys_kill"
@@ -191,9 +192,8 @@ fn :: child lock probe String => ()
 fn :: parent lock check Int Int => ()
       parent lock check pid t0  =
         w_res = posix waitpid pid 0
-        st    = pair snd w_res
-        -- `sys waitpid` may return the decoded exit code (11) or the raw wait status (11 shl 8).
-        _     = assert true ((st == (errno ewouldblock)) or (st == ((errno ewouldblock) * 256))) "second process gets EWOULDBLOCK (exit 11)"
+        st    = waitpid decode status (pair snd w_res)
+        _     = assert true (is proc exited st (errno ewouldblock)) "second process gets EWOULDBLOCK (exit 11)"
         assert true (((sys monotonic ms) - t0) < 1000) "second process did not wait for the lock"
 
 fn :: handle lock fork Int String Int => ()
@@ -294,10 +294,102 @@ fn :: test posix durable file ops => ()
         _      = sys unlink f_r
         assert true (sys rmdir dir_p) "remove durable test dir"
 
+fn :: is digit code Int => Bool
+      is digit code c   =  c >= 48 and c <= 57
+
+-- True when `line` has `sys call ` followed by a digit before any `--` comment.
+fn :: has literal sys call String Int => Bool
+      has literal sys call line   i   =
+        | (i + 10) > (str len line)                                                   = False
+        | (str slice line i (i + 2)) == "--"                                          = False
+        | (str slice line i (i + 9)) == "sys call " and is digit code (str char at line (i + 9)) = True
+        | otherwise                                                                   = has literal sys call line (i + 1)
+
+fn :: count literal sys calls [String] => Int
+      count literal sys calls []       =  0
+      count literal sys calls (l:rest) =
+        | has literal sys call l 0 = 1 + (count literal sys calls rest)
+        | otherwise                = count literal sys calls rest
+
+fn :: check no literal sys calls [String] => ()
+      check no literal sys calls []       =  ()
+      check no literal sys calls (f:rest) =
+        _ = assert equals (count literal sys calls (io read lines "src/main/ridgun/lib/{f}.rg")) 0 "no literal sys call number in {f}.rg"
+        check no literal sys calls rest
+
+fn :: exit child Int => ()
+      exit child code =
+        _ = posix exit code
+        ()
+
+fn :: sleep child => ()
+      sleep child =
+        _ = sys sleep ms 5000
+        _ = posix exit 0
+        ()
+
+fn :: reap status Int => ProcStatus
+      reap status pid =
+        w_res = posix waitpid pid 0
+        _     = assert equals (pair fst w_res) pid "waitpid returns the child pid"
+        waitpid decode status (pair snd w_res)
+
+fn :: fork exit code Int => ProcStatus
+      fork exit code code =  fork exit branch (posix fork) code
+
+fn :: fork exit branch Int Int  => ProcStatus
+      fork exit branch pid code =
+        | pid == 0  = fork exit in child code
+        | otherwise = reap status pid
+
+fn :: fork exit in child Int => ProcStatus
+      fork exit in child code =
+        _ = exit child code
+        ProcExited 0
+
+fn :: fork killed => ProcStatus
+      fork killed =  fork killed branch (posix fork)
+
+fn :: fork killed branch Int => ProcStatus
+      fork killed branch pid =
+        | pid == 0  = fork killed in child
+        | otherwise = fork kill and reap pid
+
+fn :: fork killed in child => ProcStatus
+      fork killed in child =
+        _ = sleep child
+        ProcExited 0
+
+fn :: fork kill and reap Int => ProcStatus
+      fork kill and reap pid =
+        _ = posix kill pid (sig kill)
+        reap status pid
+
+fn :: is proc signal ProcStatus       Int => Bool
+      is proc signal (ProcSignal sig) exp =  sig == exp
+      is proc signal _                _   =  False
+
+-- @tests TS-POSIX-004
+fn :: test posix kernel bridge => ()
+      test posix kernel bridge =
+        _     = check no literal sys calls ["posix", "socket", "uuid", "argon2id", "io", "crypto", "tls", "mail"]
+        _     = assert true (is proc exited (fork exit code 11) 11) "exit 11 decodes to ProcExited 11"
+        _     = assert true (is proc exited (fork exit code 0) 0) "exit 0 decodes to ProcExited 0"
+        _     = assert true (is proc signal fork killed 9) "SIGKILL decodes to ProcSignal 9"
+        _     = assert equals (at fdcwd) (0 - 100) "AT_FDCWD == -100"
+        p_res = posix pipe
+        rfd   = tuple3 rfd p_res
+        wfd   = tuple3 wfd p_res
+        _     = assert equals (posix dup2 rfd rfd) rfd "dup2 fd fd on an open fd returns fd"
+        _     = assert equals (posix dup2 99999 99999) (0 - errno ebadf) "dup2 fd fd on a closed fd -> -EBADF"
+        _     = posix close rfd
+        assert equals (posix close wfd) 0 "close bridge pipe"
+
 fn :: main => ()
       main =
         _ = test posix constants descriptors and poll
         _ = test posix filesystem clocks signals and random
-        _ = test posix durable file ops
         _ = test posix fork pipe dup2 execve waitpid
-        echo "[PASS] test_posix: TS-POSIX-001, TS-POSIX-002 and TS-POSIX-003 passed"
+        _ = test posix durable file ops
+        _ = test posix kernel bridge
+        echo "[PASS] test_posix: TS-POSIX-001, TS-POSIX-002, TS-POSIX-003 and TS-POSIX-004 passed"

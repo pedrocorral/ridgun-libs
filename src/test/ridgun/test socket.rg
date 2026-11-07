@@ -11,6 +11,7 @@ import test
 import str
 import crypto
 import socket
+import posix
 
 fn :: is addr ok SockAddrRes     => Bool
       is addr ok (SockAddrOk  _) =  True
@@ -275,7 +276,7 @@ fn :: test sock rgf001 kernel tcp and unix => ()
         _      = assert int equals (tup2 fst l_res) 0 "sys_tcp_listen status"
         lfd    = tup2 snd l_res
         _      = assert true (lfd >= 0) "lfd >= 0"
-        _      = assert true ((sys call 72 lfd 1 0 0 0 0) >= 0) "lfd is real kernel fd (fcntl F_GETFD >= 0)"
+        _      = assert true ((sys call (nr fcntl) lfd 1 0 0 0 0) >= 0) "lfd is real kernel fd (fcntl F_GETFD >= 0)"
         lport  = sys local port lfd
         _      = assert true (lport > 0) "ephemeral port > 0"
         dup_l  = sys tcp listen "127.0.0.1" lport 8

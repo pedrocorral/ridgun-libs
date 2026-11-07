@@ -66,6 +66,7 @@
 | FR-POSIX-001 | TS-POSIX-001 | src/main/ridgun/lib/posix.rg | src/test/ridgun/test posix.rg | ok |
 | FR-POSIX-002 | TS-POSIX-002 | src/main/ridgun/lib/posix.rg | src/test/ridgun/test posix.rg | ok |
 | FR-POSIX-003 | TS-POSIX-003 | src/main/ridgun/lib/posix.rg | src/test/ridgun/test posix.rg | ok |
+| FR-POSIX-004 | TS-POSIX-004 | src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/posix.rg, src/main/ridgun/lib/socket.rg, src/main/ridgun/lib/uuid.rg | src/test/ridgun/test posix.rg | ok |
 | FR-REGEX-001 | TS-REGEX-001 | src/main/ridgun/lib/regex.rg | src/test/ridgun/test regex.rg | ok |
 | FR-SOCK-001 | TS-SOCK-001 | src/main/ridgun/lib/socket.rg | src/test/ridgun/test socket.rg | ok |
 | FR-SOCK-002 | TS-SOCK-002 | src/main/ridgun/lib/socket.rg | src/test/ridgun/test socket.rg | ok |

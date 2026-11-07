@@ -8,10 +8,13 @@
 -- @implements NFR-OBS-001
 -- @implements API-SOCK-001
 -- @implements DM-Socket
+-- @implements FR-POSIX-004
 -- @mitigates VUL-INJ-002
 -- @mitigates VUL-INPUT-001
 
 module :: socket
+
+import posix
 
 type SockAddr = family: String, host: String, port: Int, path: String
 type SockOpts = reuse_addr: Bool, keep_alive: Bool, non_blocking: Bool, tcp_nodelay: Bool, broadcast: Bool, timeout_ms: Int, rcvbuf: Int, sndbuf: Int
@@ -355,17 +358,17 @@ fn :: sk udp dns query String String Int => String
       sk udp dns query ns_ip host timeout_ms =
         | not (is valid ipv4 ns_ip) or not (is valid hostname host) = ""
         | otherwise =
-          ptr  = sk alloc page 4096
-          mfd  = sk alloc mfd
-          ufd  = sys call 41 2 2 0 0 0 0
+          ptr  = px alloc page 4096
+          mfd  = px alloc mfd ptr
+          ufd  = sys call (nr socket) 2 2 0 0 0 0
           sin  = sk build sockaddr in ns_ip 53 True
-          _    = sk poke mfd ptr sin
-          _    = sys call 42 ufd ptr 16 0 0 0
+          _    = px poke mfd ptr sin
+          _    = sys call (nr connect) ufd ptr 16 0 0 0
           q    = sk build dns query host
           qlen = str len q
-          _    = sk poke mfd ptr q
-          _    = sys call 44 ufd ptr qlen 16384 0 0
-          _    = sk free page mfd ptr 4096
+          _    = px poke mfd ptr q
+          _    = sys call (nr sendto) ufd ptr qlen 16384 0 0
+          _    = px free page mfd ptr 4096
           prc  = sys poll ufd 1 timeout_ms
           sk read dns after poll ufd prc
 
@@ -804,7 +807,7 @@ fn :: sk raw byte ub Int => String
       sk raw byte ub ub  =
         | ub >= 1 and ub <= 127 = char from code ub
         | otherwise =
-          efd = sys call 290 (256 + ub) 526336 0 0 0 0
+          efd = sys call (nr eventfd2) (256 + ub) 526336 0 0 0 0
           s   = sys read fd efd 8
           _   = sys close efd
           str slice s 0 1
@@ -818,7 +821,7 @@ fn :: sk u64 le Int => String
           b0 = sk raw byte 0
           b0 + b0 + b0 + b0 + b0 + b0 + b0 + b0
         | otherwise =
-          efd = sys call 290 val 526336 0 0 0 0
+          efd = sys call (nr eventfd2) val 526336 0 0 0 0
           s   = sys read fd efd 8
           _   = sys close efd
           s
@@ -839,31 +842,7 @@ fn :: sk decode u32 le String Int => Int
         b3 = str char at s (off + 3)
         b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
 
-fn :: sk alloc page Int => Int
-      sk alloc page sz  =
-        neg1 = 0 - 1
-        sys call 9 0 sz 3 34 neg1 0
-
-fn :: sk free page Int Int Int => Int
-      sk free page mfd ptr sz =
-        _ = sys close mfd
-        sys call 11 ptr sz 0 0 0 0
-
-fn :: sk alloc mfd => Int
-      sk alloc mfd =  sys call 319 4194311 1 0 0 0 0
-
-fn :: sk poke Int Int String => Int
-      sk poke mfd ptr s      =
-        slen = str len s
-        _    = sys call 8 mfd 0 0 0 0 0
-        _    = sys write fd mfd s
-        sys call 17 mfd ptr slen 0 0 0
-
-fn :: sk peek Int Int Int => String
-      sk peek mfd ptr len =
-        _ = sys call 18 mfd ptr len 0 0 0
-        _ = sys call 8 mfd 0 0 0 0 0
-        sys read fd mfd len
+-- Buffer helpers come from `posix` (`px alloc page`, `px alloc mfd`, `px poke`, `px peek`, `px free page`; ADR-0007).
 
 fn :: is valid listen host String => Bool
       is valid listen host host   =
@@ -909,22 +888,22 @@ fn :: sk apply reuseport Int Int Int Bool => Int
       sk apply reuseport lfd mfd ptr reuseport =
         | not reuseport = 0
         | otherwise     =
-          _ = sk poke mfd ptr (sk u64 le 1)
-          sys call 54 lfd 1 15 ptr 4 0
+          _ = px poke mfd ptr (sk u64 le 1)
+          sys call (nr setsockopt) lfd 1 15 ptr 4 0
 
 fn :: sk exec tcp listen opt String Int Int Bool => Int Int
       sk exec tcp listen opt host port backlog reuseport =
-        ptr  = sk alloc page 4096
-        mfd  = sk alloc mfd
-        lfd  = sys call 41 2 1 0 0 0 0
-        _    = sk poke mfd ptr (sk u64 le 1)
-        _    = sys call 54 lfd 1 2 ptr 4 0
+        ptr  = px alloc page 4096
+        mfd  = px alloc mfd ptr
+        lfd  = sys call (nr socket) 2 1 0 0 0 0
+        _    = px poke mfd ptr (sk u64 le 1)
+        _    = sys call (nr setsockopt) lfd 1 2 ptr 4 0
         _    = sk apply reuseport lfd mfd ptr reuseport
         sin  = sk build sockaddr in host port False
-        _    = sk poke mfd ptr sin
-        rc_b = sys call 49 lfd ptr 16 0 0 0
-        rc_l = sys call 50 lfd backlog 0 0 0 0
-        _    = sk free page mfd ptr 4096
+        _    = px poke mfd ptr sin
+        rc_b = sys call (nr bind) lfd ptr 16 0 0 0
+        rc_l = sys call (nr listen) lfd backlog 0 0 0 0
+        _    = px free page mfd ptr 4096
         sk finish tcp listen lfd rc_b rc_l
 
 fn :: sk exec tcp listen String Int Int => Int Int
@@ -943,14 +922,14 @@ fn :: sys set reuseport Int Bool    => Int
       sys set reuseport fd  enabled =
         | fd < 0 = 0 - 7
         | otherwise =
-          ptr = sk alloc page 4096
-          mfd = sk alloc mfd
+          ptr = px alloc page 4096
+          mfd = px alloc mfd ptr
           val =
             | enabled   = 1
             | otherwise = 0
-          _   = sk poke mfd ptr (sk u64 le val)
-          rc  = sys call 54 fd 1 15 ptr 4 0
-          _   = sk free page mfd ptr 4096
+          _   = px poke mfd ptr (sk u64 le val)
+          rc  = sys call (nr setsockopt) fd 1 15 ptr 4 0
+          _   = px free page mfd ptr 4096
           sk map setsockopt rc rc
 
 -- @implements FR-SOCK-004
@@ -985,18 +964,18 @@ fn :: sk finish unix listen Int Int Int => Int Int
 
 fn :: sk exec unix listen String Int => Int Int
       sk exec unix listen path backlog =
-        ptr  = sk alloc page 4096
-        mfd  = sk alloc mfd
+        ptr  = px alloc page 4096
+        mfd  = px alloc mfd ptr
         b0   = sk raw byte 0
-        _    = sk poke mfd ptr (path + b0)
-        _    = sys call 87 ptr 0 0 0 0 0
-        lfd  = sys call 41 1 1 0 0 0 0
+        _    = px poke mfd ptr (path + b0)
+        _    = sys call (nr unlinkat) (at fdcwd) ptr 0 0 0 0
+        lfd  = sys call (nr socket) 1 1 0 0 0 0
         sun  = (sk raw byte 1) + b0 + path + b0
         ulen = str len sun
-        _    = sk poke mfd ptr sun
-        rc_b = sys call 49 lfd ptr ulen 0 0 0
-        rc_l = sys call 50 lfd backlog 0 0 0 0
-        _    = sk free page mfd ptr 4096
+        _    = px poke mfd ptr sun
+        rc_b = sys call (nr bind) lfd ptr ulen 0 0 0
+        rc_l = sys call (nr listen) lfd backlog 0 0 0 0
+        _    = px free page mfd ptr 4096
         sk finish unix listen lfd rc_b rc_l
 
 -- @implements FR-SOCK-004
@@ -1021,13 +1000,13 @@ fn :: sys local port Int => Int
       sys local port lfd =
         | lfd < 0 = 0 - 7
         | otherwise =
-          ptr = sk alloc page 4096
-          mfd = sk alloc mfd
+          ptr = px alloc page 4096
+          mfd = px alloc mfd ptr
           p64 = ptr + 64
-          _   = sk poke mfd p64 (sk u64 le 112)
-          rc  = sys call 51 lfd ptr p64 0 0 0
-          sa  = sk peek mfd ptr 16
-          _   = sk free page mfd ptr 4096
+          _   = px poke mfd p64 (sk u64 le 112)
+          rc  = sys call (nr getsockname) lfd ptr p64 0 0 0
+          sa  = px peek mfd ptr 16
+          _   = px free page mfd ptr 4096
           sk extract local port rc sa
 
 fn :: sk finish connect Int Int => Int Int
@@ -1045,13 +1024,13 @@ fn :: sk finish connect Int Int => Int Int
 
 fn :: sk exec tcp connect ip String Int => Int Int
       sk exec tcp connect ip ip_addr port =
-        ptr = sk alloc page 4096
-        mfd = sk alloc mfd
-        cfd = sys call 41 2 1 0 0 0 0
+        ptr = px alloc page 4096
+        mfd = px alloc mfd ptr
+        cfd = sys call (nr socket) 2 1 0 0 0 0
         sin = sk build sockaddr in ip_addr port True
-        _   = sk poke mfd ptr sin
-        rc  = sys call 42 cfd ptr 16 0 0 0
-        _   = sk free page mfd ptr 4096
+        _   = px poke mfd ptr sin
+        rc  = sys call (nr connect) cfd ptr 16 0 0 0
+        _   = px free page mfd ptr 4096
         sk finish connect cfd rc
 
 fn :: sk connect resolved (Int String)    Int  => Int Int
@@ -1077,15 +1056,15 @@ fn :: sys unix connect String Int        => Int Int
       sys unix connect path   timeout_ms =
         | not (is safe unix path path) or timeout_ms < (0 - 1) = (0 - 7, 0 - 1)
         | otherwise =
-          ptr  = sk alloc page 4096
-          mfd  = sk alloc mfd
+          ptr  = px alloc page 4096
+          mfd  = px alloc mfd ptr
           b0   = sk raw byte 0
-          cfd  = sys call 41 1 1 0 0 0 0
+          cfd  = sys call (nr socket) 1 1 0 0 0 0
           sun  = (sk raw byte 1) + b0 + path + b0
           ulen = str len sun
-          _    = sk poke mfd ptr sun
-          rc   = sys call 42 cfd ptr ulen 0 0 0
-          _    = sk free page mfd ptr 4096
+          _    = px poke mfd ptr sun
+          rc   = sys call (nr connect) cfd ptr ulen 0 0 0
+          _    = px free page mfd ptr 4096
           sk finish connect cfd rc
 
 fn :: sk decode acceptconn Int String => Int
@@ -1097,14 +1076,14 @@ fn :: sk sock acceptconn Int => Int
       sk sock acceptconn fd  =
         | fd < 0 = 0 - 1
         | otherwise =
-          ptr = sk alloc page 4096
-          mfd = sk alloc mfd
+          ptr = px alloc page 4096
+          mfd = px alloc mfd ptr
           p64 = ptr + 64
-          _   = sk poke mfd ptr (sk u64 le 0)
-          _   = sk poke mfd p64 (sk u64 le 4)
-          rc  = sys call 55 fd 1 30 ptr p64 0
-          raw = sk peek mfd ptr 4
-          _   = sk free page mfd ptr 4096
+          _   = px poke mfd ptr (sk u64 le 0)
+          _   = px poke mfd p64 (sk u64 le 4)
+          rc  = sys call (nr getsockopt) fd 1 30 ptr p64 0
+          raw = px peek mfd ptr 4
+          _   = px free page mfd ptr 4096
           sk decode acceptconn rc raw
 
 fn :: sk format peer ip String => String
@@ -1123,13 +1102,13 @@ fn :: sk accept after poll Int Int => Int Int String
         | prc == 0 = (0 - 2, 0 - 1, "")
         | prc < 0  = (0 - 7, 0 - 1, "")
         | otherwise =
-          ptr = sk alloc page 4096
-          mfd = sk alloc mfd
+          ptr = px alloc page 4096
+          mfd = px alloc mfd ptr
           p64 = ptr + 64
-          _   = sk poke mfd p64 (sk u64 le 112)
-          sfd = sys call 43 lfd ptr p64 0 0 0
-          sa  = sk peek mfd ptr 16
-          _   = sk free page mfd ptr 4096
+          _   = px poke mfd p64 (sk u64 le 112)
+          sfd = sys call (nr accept) lfd ptr p64 0 0 0
+          sa  = px peek mfd ptr 16
+          _   = px free page mfd ptr 4096
           sk finish accept sfd sa
 
 -- @implements FR-SOCK-004
@@ -1169,7 +1148,7 @@ fn :: sk send after poll Int Int Int Int Int Int Int => Int Int
         | prc == 0  = (0 - 2, sent)
         | prc < 0   = (0 - 7, sent)
         | otherwise =
-          rc = sys call 44 fd (ptr + sent) (dlen - sent) 16448 0 0
+          rc = sys call (nr sendto) fd (ptr + sent) (dlen - sent) 16448 0 0
           sk send after rc fd ptr dlen sent timeout_ms deadline rc
 
 fn :: sk send loop Int Int Int Int Int Int => Int Int
@@ -1183,12 +1162,12 @@ fn :: sk send loop Int Int Int Int Int Int => Int Int
 fn :: sk exec send step Int String Int Int => Int Int
       sk exec send step fd data timeout_ms dlen =
         ((dlen / 4096) + 2) * 4096 -> psz
-        sk alloc page psz -> ptr
-        sk alloc mfd -> mfd
-        sk poke mfd ptr data -> ()
+        px alloc page psz -> ptr
+        px alloc mfd ptr -> mfd
+        px poke mfd ptr data -> ()
         (sys time ms) + timeout_ms -> deadline
         sk send loop fd ptr dlen 0 timeout_ms deadline -> res
-        sk free page mfd ptr psz -> ()
+        px free page mfd ptr psz -> ()
         res
 
 fn :: sk exec send Int String Int => Int Int
@@ -1211,7 +1190,7 @@ fn :: sys shutdown write Int => Int
       sys shutdown write fd  =
         | fd < 0                          = 0 - 7
         | (sk sock acceptconn fd) != 0    = 0 - 7
-        | (sys call 48 fd 1 0 0 0 0) == 0 = 0
+        | (sys call (nr shutdown) fd 1 0 0 0 0) == 0 = 0
         | otherwise                       = 0 - 7
 
 fn :: sk wrap recv chunk String => Int String

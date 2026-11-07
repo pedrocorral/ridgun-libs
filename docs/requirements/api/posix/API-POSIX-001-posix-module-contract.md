@@ -2,7 +2,7 @@
 id: API-POSIX-001
 title: Public lib contract for posix (posix.rglib / libposix.so)
 status: approved
-implements: [FR-POSIX-001, FR-POSIX-002, FR-POSIX-003]
+implements: [FR-POSIX-001, FR-POSIX-002, FR-POSIX-003, FR-POSIX-004]
 auth: none
 ---
 # API-POSIX-001 — Public lib contract for `posix` (`posix.rg`)
@@ -20,8 +20,8 @@ auth: none
   - `wait fd Int Int Int => PollStatus` (`wait fd fd events timeout_ms`)
   - `posix open String Int Int => Int`, `posix close Int => Int`, `posix read Int Int => String`, `posix write Int String => Int`
   - `posix pipe => Int Int Int` (`(status, read_fd, write_fd)`), `posix pipe cloexec => Int Int Int`, `posix pipe flags Int => Int Int Int`
-  - `posix dup2 Int Int => Int` (`sys call 33`)
-  - `posix fork => Int` (`sys call 57`), `posix execve String [String] [String] => Int` (`sys call 59`), `posix waitpid Int Int => Int Int` (`sys call 61`), `waitpid decode status Int => ProcStatus`, `posix exit Int => Int` (`sys call 60`), `wnohang => Int` (`1`), `wuntraced => Int` (`2`)
+  - `posix dup2 Int Int => Int` (`dup3`; `dup2 fd fd` returns `fd` when open)
+  - `posix fork => Int` (`clone` with `SIGCHLD`), `posix execve String [String] [String] => Int` (`execve`, argv unchanged), `posix waitpid Int Int => Int Int` (`wait4`; `(ret_pid, raw wait status)`), `waitpid decode status Int => ProcStatus`, `posix exit Int => Int` (`exit`), `wnohang => Int` (`1`), `wuntraced => Int` (`2`)
   - `posix kill Int Int => Int`
 - Filesystem, Process, Clock, Signal Watch & CSPRNG Functions (`RG-010`, `RGF-014`, `RGF-017`, `RGF-018`):
   - `sys_mkdir String => Int`, `sys_rmdir String => Int`, `sys_rename String String => Int`, `sys_symlink String String => Int`, `sys_readlink String => String`, `sys_unlink String => Int`, `sys_chmod String Int => Int`, `sys_chdir String => Int`, `sys_getcwd () => String`, `sys_getenv String => String`, `sys_getpid () => Int`
@@ -34,6 +34,7 @@ auth: none
   - `posix lock exclusive Int => Int` (`flock LOCK_EX|LOCK_NB`), `posix unlock Int => Int` (`flock LOCK_UN`)
   - `posix pread Int Int Int => Int String` (`fd offset len` → `(bytes_read, data)` or `(-errno, "")`; `len <= 16777216`)
   - `o directory => Int` (`65536` on x86_64, `16384` on arm64)
+- Kernel Bridge (`FR-POSIX-004`, `ADR-0007`): `nr <name> => Int` returns the syscall number for `sys arch` for `read`, `lseek`, `mmap`, `munmap`, `rt sigprocmask`, `pread64`, `pwrite64`, `socket`, `connect`, `accept`, `sendto`, `shutdown`, `bind`, `listen`, `getsockname`, `setsockopt`, `getsockopt`, `clone`, `execve`, `exit`, `wait4`, `fcntl`, `flock`, `fsync`, `fdatasync`, `ftruncate`, `clock gettime`, `unlinkat`, `symlinkat`, `signalfd4`, `eventfd2`, `dup3`, `pipe2`, `renameat2`, `getrandom`, `memfd create`; `at fdcwd => Int` (`-100`). Buffer helpers for other libs: `px alloc page Int => Int`, `px alloc mfd Int => Int`, `px poke Int Int String => Int`, `px peek Int Int Int => String`, `px free page Int Int Int => Int`.
   - `errno eio => Int` (`5`), `errno ebadf => Int` (`9`), `errno ewouldblock => Int` (`11`), `errno enotdir => Int` (`20`), `errno einval => Int` (`22`), `errno enospc => Int` (`28`)
 
 ## Responses
@@ -48,3 +49,4 @@ auth: none
 - `wait fd` delegates directly to the compiler's `sys poll` (`ppoll`) primitive.
 - `sys_random_bytes` reads cryptographic entropy from the Linux kernel (`getrandom` syscall / `/dev/urandom`).
 - `FR-POSIX-003` functions return the raw negative kernel error number; callers compare it with `0 - errno <name>`.
+- Lib code never passes a literal syscall number to `sys call`; it uses `nr <name>` (`ADR-0007`).

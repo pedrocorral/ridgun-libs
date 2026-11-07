@@ -17,7 +17,7 @@ automated_in: [src/test/ridgun/test posix.rg]
 2. Write 100 bytes to `f.dat` through `posix write`; call `posix fdatasync` and `posix fsync`; close the descriptor; call both again on the closed descriptor and on `-1`.
 3. Reopen `f.dat` read-write; `posix ftruncate fd 40`; check `file size` is `40`; call `posix ftruncate fd -1`.
 4. `posix sync dir` on the test directory, on `f.dat`, and on a missing path.
-5. Open `lock` twice (two separate open files). `posix lock exclusive` on the first. Fork a child that opens `lock` again, calls `posix lock exclusive`, and exits with the negated result; the parent checks the exit code is `11` (decoded, or `11 * 256` as a raw wait status) and the child returned at once (under 1 s). Check the second descriptor in the parent also gets `0 - errno ewouldblock`. `posix unlock` the first, then lock the second.
+5. Open `lock` twice (two separate open files). `posix lock exclusive` on the first. Fork a child that opens `lock` again, calls `posix lock exclusive`, and exits with the negated result; the parent checks `waitpid decode status` gives `ProcExited 11` and the child returned at once (under 1 s). Check the second descriptor in the parent also gets `0 - errno ewouldblock`. `posix unlock` the first, then lock the second.
 6. Write `0123456789ABCDEFGHIJ` to `r.dat`; open it read-only; `posix read fd 3` (position 3); `posix pread fd 10 5` → `(5, "ABCDE")`; `posix pread fd 15 100` → `(5, "FGHIJ")`; `posix pread fd 20 4` → `(0, "")`; `posix read fd 2` → `"34"` (position unchanged); write the 8 binary bytes `00 FF 00 41 80 FF 00 5A` to `b.dat` and check `posix pread fd 1 6` returns those 6 bytes unchanged, including `0x00`, `0x80` and `0xFF`; `posix pread` with offset `-1`, length `-1`, length `16777217` → `(-22, "")`; on an unopened descriptor (`99999`) and on `-1` → `(-9, "")`. A closed descriptor is not used here: `posix pread` opens a `memfd` buffer that can reuse the closed number.
 
 ## Expected results (map to acceptance criteria)
@@ -30,5 +30,5 @@ automated_in: [src/test/ridgun/test posix.rg]
 
 ## Not covered here (to avoid duplication)
 - Real durability across a power loss (needs fault-injection hardware).
-- Running on arm64: the suite must also be run on an arm64 host; this host is x86_64. Step 5 forks through `posix fork` / `posix exit`, which still use x86_64 numbers, so step 5 cannot pass on arm64 until those calls move onto the per-arch table.
+- Running on arm64: the suite must also be run on an arm64 host; this host is x86_64. Step 5's `posix fork` / `posix exit` use the per-architecture table since `FR-POSIX-004`.
 - See `TS-POSIX-001` for `posix open/read/write/close`.
