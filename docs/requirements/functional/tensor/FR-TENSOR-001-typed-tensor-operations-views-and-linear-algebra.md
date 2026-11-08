@@ -20,7 +20,7 @@ Applications and cryptographic/numerical kernels require reusable, type-safe com
 ## Acceptance criteria
 - AC1: Given a 2D tensor `m` of shape `r * c`, when `tensor rows m`, `tensor cols m`, `tensor shape m`, `tensor row m row_idx`, and `tensor col m col_idx` are called, then `tensor rows` returns `r`, `tensor cols` returns `c`, `tensor shape` returns `(r, c)`, `tensor row` returns the 1D row slice `m_(row_idx,)` of length `c`, and `tensor col` returns the 1D column slice `m_(,col_idx)` of length `r`.
 - AC2: Given two 2D tensors `a` and `b` of matching shape `r * c`, when `tensor bitxor blocks a b`, `tensor bitand blocks a b`, `tensor bitor blocks a b`, `tensor add blocks a b`, `tensor sub blocks a b`, `tensor mul blocks a b`, or `tensor clone a` are called, then they return a new tensor with the corresponding element-wise 64-bit bitwise or arithmetic result without mutating `a` or `b`.
-- AC3: Given a 2D tensor `a` of shape `r * k` and a 2D tensor `b` of shape `k * c`, when `tensor matmul a b` is called, then it returns the contracted 2D tensor `a_ik @ b_kj` of shape `r * c`.
+- AC3: Given a 2D tensor `a` of shape `r * k` and a 2D tensor `b` of shape `k * c`, when `tensor matmul a b` is called, then it returns the matrix product $\sum_p a_{ip} b_{pj}$ as a 2D `Real` tensor of shape `r * c` (computed with explicit loops while `@` on `Real` tensors is faulty in ridgunc 0.9.41, ADR-0008).
 
 ## Actors & permissions
 - Any Ridgun program or lib importing `tensor`.

@@ -92,24 +92,24 @@ fn :: test tensor hadamard and clone => ()
 fn :: test tensor matmul => ()
       test tensor matmul =
         ma  = Tensor[Real * 2 * 3]
-        ma_(0, 0) = 1
-        ma_(0, 1) = 2
-        ma_(0, 2) = 3
-        ma_(1, 0) = 4
-        ma_(1, 1) = 5
-        ma_(1, 2) = 6
+        ma_(0, 0) = 1.0
+        ma_(0, 1) = 2.0
+        ma_(0, 2) = 3.0
+        ma_(1, 0) = 4.0
+        ma_(1, 1) = 5.0
+        ma_(1, 2) = 6.5
         mb  = Tensor[Real * 3 * 2]
-        mb_(0, 0) = 7
-        mb_(0, 1) = 8
-        mb_(1, 0) = 9
-        mb_(1, 1) = 10
-        mb_(2, 0) = 11
-        mb_(2, 1) = 12
+        mb_(0, 0) = 7.0
+        mb_(0, 1) = 8.0
+        mb_(1, 0) = 9.0
+        mb_(1, 1) = 10.0
+        mb_(2, 0) = 11.0
+        mb_(2, 1) = 0.5
         mc  = tensor matmul ma mb
-        _   = assert int equals mc_(0, 0) 58 "matmul (0,0) == 58"
-        _   = assert int equals mc_(0, 1) 64 "matmul (0,1) == 64"
-        _   = assert int equals mc_(1, 0) 139 "matmul (1,0) == 139"
-        _   = assert int equals mc_(1, 1) 154 "matmul (1,1) == 154"
+        assert true (mc_(0, 0) == 58.0) "matmul (0,0) == 7 + 18 + 33"
+        assert true (mc_(0, 1) == 29.5) "matmul (0,1) == 8 + 20 + 1.5"
+        assert true (mc_(1, 0) == 144.5) "matmul (1,0) == 28 + 45 + 71.5"
+        assert true (mc_(1, 1) == 85.25) "matmul (1,1) == 32 + 50 + 3.25"
         ()
 
 -- @tests TS-TENSOR-001
