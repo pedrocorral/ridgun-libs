@@ -1,12 +1,15 @@
 -- ============================================================
 -- src/main/ridgun/lib/list.rg
--- Pure-Ridgun List Operations, O(N log N) Mergesort & Key-Value Map Library (LIST)
+-- Pure-Ridgun List Operations, Sorting, Grouping & Key-Value Map Library (LIST)
 -- @implements FR-LIST-001
+-- @implements FR-LIST-002
 -- @implements API-LIST-001
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
 module :: list
+
+import hashmap
 
 -- ── List Length & Emptiness ──────────────────────────────────
 
@@ -263,28 +266,38 @@ fn :: l dedup strs [String] [String] => [String]
 fn :: list str dedup [String] => [String]
       list str dedup xs       =  l dedup strs xs []
 
--- ── Deterministic O(N log N) Mergesort ───────────────────────
+-- ── Sorting (FR-LIST-002) ───────────────────────────────────
+-- The native `sort by ints` and `sort by texts` (ridgunc 0.9.44) are stable and
+-- use the order of `<` (byte order for text). The key list is built once, so f
+-- is called once per element.
 
-fn :: l merge ints [Int]    [Int]    => [Int]
-      l merge ints []       ys       =  ys
-      l merge ints xs       []       =  xs
-      l merge ints (x:xrst) (y:yrst) =
-        | x <= y    = [x] :: (l merge ints xrst ([y] :: yrst))
-        | otherwise = [y] :: (l merge ints ([x] :: xrst) yrst)
+-- @implements FR-LIST-002
+-- @implements API-LIST-001
+fn :: list sort ints [Int] => [Int]
+      list sort ints xs = sort by ints xs xs
 
-fn :: l sort ints len [Int] Int => [Int]
-      l sort ints len xs n =
-        | n <= 1 = xs
-        | otherwise =
-          mid  = n / 2
-          left = list take xs mid
-          rght = list drop xs mid
-          l merge ints (l sort ints len left mid) (l sort ints len rght (n - mid))
+-- Byte order.
+-- @implements FR-LIST-002
+-- @implements API-LIST-001
+fn :: list sort texts [String] => [String]
+      list sort texts xs = sort by texts xs xs
+
+-- Stable: elements with equal keys keep their order. f is called once per element.
+-- @implements FR-LIST-002
+-- @implements API-LIST-001
+fn :: list sort by int [A] (A => Int) => [A]
+      list sort by int xs f = sort by ints xs (map f xs)
+
+-- Stable, byte order of the keys. f is called once per element.
+-- @implements FR-LIST-002
+-- @implements API-LIST-001
+fn :: list sort by text [A] (A => String) => [A]
+      list sort by text xs f = sort by texts xs (map f xs)
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
 fn :: list sort [Int] => [Int]
-      list sort xs    =  l sort ints len xs (list len xs)
+      list sort xs    =  list sort ints xs
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
@@ -295,38 +308,80 @@ fn :: list is sorted [Int]      => Bool
         | a > b     = False
         | otherwise = list is sorted ([b] :: rest)
 
-fn :: l str le loop String String Int Int Int => Bool
-      l str le loop a b idx la lb =
-        | idx >= la and idx >= lb                   = True
-        | idx >= la                                 = True
-        | idx >= lb                                 = False
-        | (str char at a idx) < (str char at b idx) = True
-        | (str char at a idx) > (str char at b idx) = False
-        | otherwise                                 = l str le loop a b (idx + 1) la lb
-
-fn :: l str le String String => Bool
-      l str le a      b      =  l str le loop a b 0 (str len a) (str len b)
-
-fn :: l merge strs [String] [String] => [String]
-      l merge strs []       ys       =  ys
-      l merge strs xs       []       =  xs
-      l merge strs (x:xrst) (y:yrst) =
-        | l str le x y = [x] :: (l merge strs xrst ([y] :: yrst))
-        | otherwise    = [y] :: (l merge strs ([x] :: xrst) yrst)
-
-fn :: l sort strs len [String] Int => [String]
-      l sort strs len xs n =
-        | n <= 1 = xs
-        | otherwise =
-          mid  = n / 2
-          left = list str take xs mid
-          rght = list str drop xs mid
-          l merge strs (l sort strs len left mid) (l sort strs len rght (n - mid))
-
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
 fn :: list str sort [String] => [String]
-      list str sort xs       =  l sort strs len xs (list str len xs)
+      list str sort xs       =  list sort texts xs
+
+-- Length of a list of any element type.
+fn :: l gen len [A] Int => Int
+      l gen len []     acc = acc
+      l gen len (_:xs) acc = l gen len xs (acc + 1)
+
+-- ── Counting and grouping by key (FR-LIST-002) ──────────────
+-- A hashmap lists its keys in insertion order, so the results list the keys in
+-- order of first appearance.
+
+-- Numbers each key in order of first appearance and writes the number of
+-- element i to gid_(i). The map gives key -> number.
+fn :: l group ids [A] (A => String) (HashMap Int) Tensor[Int * n] Int => HashMap Int
+      l group ids []     f m gid i = m
+      l group ids (x:xs) f m gid i = l group ids key xs f m gid i (f x)
+
+fn :: l group ids key [A] (A => String) (HashMap Int) Tensor[Int * n] Int String => HashMap Int
+      l group ids key xs f m gid i k = l group ids step xs f m gid i k (hashmap get m k (0 - 1))
+
+fn :: l group ids step [A] (A => String) (HashMap Int) Tensor[Int * n] Int String Int => HashMap Int
+      l group ids step xs f m gid i k g =
+        | g >= 0    =
+          gid_(i) = g
+          l group ids xs f m gid (i + 1)
+        | otherwise =
+          ng = hashmap size m
+          gid_(i) = ng
+          l group ids xs f (hashmap put m k ng) gid (i + 1)
+
+fn :: l count into [A] (A => String) (HashMap Int) => HashMap Int
+      l count into []     f m = m
+      l count into (x:xs) f m = l count into xs f (hashmap add m (f x) 1)
+
+-- How many elements have each key, keys in order of first appearance.
+-- @implements FR-LIST-002
+-- @implements API-LIST-001
+fn :: list count by [A] (A => String) => [String Int]
+      list count by xs f = hashmap pairs (l count into xs f hashmap empty)
+
+fn :: l rev gen [A] [A] => [A]
+      l rev gen []     acc = acc
+      l rev gen (x:xs) acc = l rev gen xs ([x] :: acc)
+
+fn :: l collect [A] Tensor[Int * n] Tensor[[A] * n] Int => ()
+      l collect []     gid groups i = ()
+      l collect (x:xs) gid groups i =
+        g = gid_(i)
+        groups_(g) = [x] :: groups_(g)
+        l collect xs gid groups (i + 1)
+
+fn :: l group pairs [String Int] Tensor[[A] * n] [String [A]] => [String [A]]
+      l group pairs []            groups acc = l rev gen acc []
+      l group pairs ((k, g):rest) groups acc = l group pairs rest groups ([(k, l rev gen groups_(g) [])] :: acc)
+
+fn :: l group by n [A] (A => String) Int => [String [A]]
+      l group by n xs f n =
+        | n == 0    = []
+        | otherwise =
+          gid    = Tensor[Int * n]
+          m      = l group ids xs f hashmap empty gid 0
+          ng     = hashmap size m
+          groups = Tensor[[A] * ng]
+          l collect xs gid groups 0
+          l group pairs (hashmap pairs m) groups []
+
+-- The elements of each key, in their original order; keys in order of first appearance.
+-- @implements FR-LIST-002
+-- @implements API-LIST-001
+fn :: list group by [A] (A => String) => [String [A]]
+      list group by xs f = l group by n xs f (l gen len xs 0)
 
 -- ── Associative Key-Value Map (`[String String]`, `RG-066`) ─────────
 

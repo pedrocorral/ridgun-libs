@@ -2,7 +2,7 @@
 id: API-LIST-001
 title: Public lib contract for list (list.rglib / liblist.so)
 status: approved
-implements: [FR-LIST-001]
+implements: [FR-LIST-001, FR-LIST-002]
 auth: none
 ---
 # API-LIST-001 — Public lib contract for `list` (`list.rg`)
@@ -17,13 +17,18 @@ auth: none
 - Search, Deduplication & Sorting:
   - `list contains [Int] Int => Bool`, `list str contains [String] String => Bool`, `list index of [Int] Int => Int`, `list str index of [String] String => Int`, `list count [Int] Int => Int`, `list str count [String] String => Int`
   - `list dedup [Int] => [Int]`, `list str dedup [String] => [String]`, `list sort [Int] => [Int]`, `list str sort [String] => [String]`, `list is sorted [Int] => Bool`
+- Sorting, Counting & Grouping by Key (`FR-LIST-002`):
+  - `list sort ints [Int] => [Int]`, `list sort texts [String] => [String]` (byte order)
+  - `list sort by int [A] (A => Int) => [A]`, `list sort by text [A] (A => String) => [A]` (stable; the key function is called once per element)
+  - `list count by [A] (A => String) => [String Int]`, `list group by [A] (A => String) => [String [A]]` (keys in order of first appearance; elements in original order)
 - Associative Key-Value Map (`[String String]`, `RG-066`):
   - `list kv empty => [String String]`, `list kv len [String String] => Int`, `list kv has [String String] String => Bool`, `list kv get [String String] String => String`, `list kv get or [String String] String String => String`, `list kv put [String String] String String => [String String]`, `list kv remove [String String] String => [String String]`, `list kv keys [String String] => [String]`, `list kv values [String String] => [String]`, `list kv merge [String String] [String String] => [String String]`
 
 ## Responses
 | Code | When | Body |
 |---|---|---|
-| `[Int]` / `[String]` / `[String String]` | Transformation, sort, or map update | New immutable collection |
+| `[Int]` / `[String]` / `[String String]` / `[A]` | Transformation, sort, or map update | New immutable collection |
+| `[String Int]` / `[String [A]]` | `list count by` / `list group by` | One pair per key, in order of first appearance |
 | `-1` / `0` / `""` | Element or key not found | `-1` for `index_of`, `0`/`""` (or `default_val`) for `nth`/`list_kv_get` |
 
 ## Rules

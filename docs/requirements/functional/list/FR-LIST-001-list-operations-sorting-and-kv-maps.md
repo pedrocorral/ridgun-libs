@@ -6,7 +6,7 @@ status: implemented
 priority: must
 domain: LIST
 depends_on: []
-related: [ADR-0002, ADR-0003, VUL-INPUT-001]
+related: [ADR-0002, ADR-0003, VUL-INPUT-001, FR-LIST-002]
 tests: [TS-LIST-001]
 ---
 # FR-LIST-001 — Provide pure-Ridgun list slicing, searching, deduplication, O(N log N) mergesort, and associative key-value map utilities
@@ -19,7 +19,7 @@ Ridgun's compiler provides `map`, `filter`, `fold`, and list cons/concat (`:`, `
 
 ## Acceptance criteria
 - AC1: Given `[Int]` and `[String]` lists, when indexing, slicing, reversal, range generation (`list range`, `list range step`, `list replicate`), searching (`list contains`, `list index of`, `list count`), and deduplication (`list dedup`, `list str dedup`) are called, then they return exact results and clamp out-of-bounds indices/steps safely without panicking or infinite looping.
-- AC2: Given unsorted `[Int]` and `[String]` lists, when `list sort` and `list str sort` are called, then they return deterministically sorted ascending lists in $O(N \log N)$ time using mergesort, and `list is sorted` returns `True`.
+- AC2: Given unsorted `[Int]` and `[String]` lists, when `list sort` and `list str sort` are called, then they return ascending lists in $O(N \log N)$ time, and `list is sorted` returns `True`. They are `list sort ints` and `list sort texts` (`FR-LIST-002`).
 - AC3: Given associative `[String String]` key-value maps, when `list kv empty`, `list kv len`, `list kv put`, `list kv get`, `list kv get or`, `list kv has`, `list kv remove`, `list kv keys`, `list kv values`, and `list kv merge` are called (including in a module that also imports `agent`, `RG-066`), then `list kv put` updates existing keys in-place without duplicating keys, `list kv remove` removes matching keys, and `list kv merge` combines two maps with right-hand precedence.
 
 ## Actors & permissions

@@ -3,3 +3,4 @@
 | File | ID | Title | Status |
 |---|---|---|---|
 | `FR-LIST-001-list-operations-sorting-and-kv-maps.md` | `FR-LIST-001` | Provide pure-Ridgun list slicing, searching, deduplication, O(N log N) mergesort, and associative key-value map utilities | implemented |
+| `FR-LIST-002-sort-count-and-group-by-key.md` | `FR-LIST-002` | Sort lists by Int or String keys and count or group elements by a String key | implemented |

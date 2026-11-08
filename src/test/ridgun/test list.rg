@@ -3,6 +3,7 @@
 -- Comprehensive test suite for list.rg inspired by Rust std::slice & Haskell Data.List
 -- Covers RG-066 (importing `list` and `agent` together without name collisions)
 -- @tests TS-LIST-001
+-- @tests TS-LIST-002
 -- ============================================================
 
 import test
@@ -120,10 +121,119 @@ fn :: test kv associative map => ()
         _  = stop agent ag
         ()
 
+-- ── TS-LIST-002: sorting, counting and grouping by key ──────
+
+type Entry = name: String, score: Int
+
+fn :: rep text String Int => String
+      rep text s n =
+        | n <= 0    = ""
+        | otherwise = s + (rep text s (n - 1))
+
+fn :: kb10 String => String
+      kb10 last = (rep text (rep text "k" 100) 100) + last
+
+fn :: gen ints Int Int [Int] => [Int]
+      gen ints i n acc =
+        | i >= n    = acc
+        | otherwise = gen ints (i + 1) n ([((i * 1103515245 + 12345) % 2147483648) - 1073741824] :: acc)
+
+fn :: gen entries Int Int [Entry] => [Entry]
+      gen entries i n acc =
+        | i >= n    = acc
+        | otherwise = gen entries (i + 1) n ([Entry (int to str i) ((i * 7919) % 1000)] :: acc)
+
+fn :: ascending ints [Int] => Bool
+      ascending ints []      = True
+      ascending ints (_:[])  = True
+      ascending ints (a:b:r) =
+        | a > b     = False
+        | otherwise = ascending ints ([b] :: r)
+
+-- Equal scores keep the original order: the names, generated in descending
+-- order, must then be descending within each score.
+fn :: stable entries [Entry] => Bool
+      stable entries []      = True
+      stable entries (_:[])  = True
+      stable entries (a:b:r) =
+        | score a > score b                                            = False
+        | score a == score b and str to int (name a) < str to int (name b) = False
+        | otherwise                                                    = stable entries ([b] :: r)
+
+fn :: sum counts [String Int] Int => Int
+      sum counts []            acc = acc
+      sum counts ((_, c):rest) acc = sum counts rest (acc + c)
+
+-- @tests TS-LIST-002
+fn :: test list sort by key => ()
+      test list sort by key =
+        big   = 9223372036854775807
+        small = 0 - 9223372036854775807 - 1
+        _ = assert eq (list sort ints []) []
+        _ = assert eq (list sort ints [7]) [7]
+        _ = assert eq (list sort ints [3, 0 - 1, big, 0, small, 0 - 65536, 65536, 2, 2]) [small, 0 - 65536, 0 - 1, 0, 2, 2, 3, 65536, big]
+
+        hi  = char from code 200
+        hi2 = char from code 255
+        long_a = kb10 "a"
+        long_b = kb10 "b"
+        _ = assert eq (list sort texts []) []
+        _ = assert eq (list sort texts ["b", hi, "", "a", "ab", "a", hi2]) ["", "a", "a", "ab", "b", hi, hi2]
+        _ = assert eq (list sort texts [long_b, "z", long_a]) [long_a, long_b, "z"]
+        _ = assert eq (list sort [3, 1, 2]) [1, 2, 3]
+        _ = assert eq (list str sort ["b", "a"]) ["a", "b"]
+
+        es = [Entry "a" 2, Entry "b" 1, Entry "c" 2, Entry "d" 1]
+        _ = assert eq (list sort by int es (e => score e)) [Entry "b" 1, Entry "d" 1, Entry "a" 2, Entry "c" 2]
+        _ = assert eq (list sort by text es (e => int to str (score e))) [Entry "b" 1, Entry "d" 1, Entry "a" 2, Entry "c" 2]
+        _ = assert eq (list sort by text [Entry hi 1, Entry "" 2, Entry "a" 3, Entry "" 4] (e => name e)) [Entry "" 2, Entry "" 4, Entry "a" 3, Entry hi 1]
+        _ = assert eq (list sort by int [] (e => score e)) []
+        _ = assert eq (list sort by text [] (e => name e)) []
+
+        calls = Tensor[Int * 1]
+        _ = list sort by int es (e =>
+          calls_(0) = calls_(0) + 1
+          score e
+        )
+        _ = assert int equals calls_(0) 4 "AC3: key function called once per element"
+
+        n  = 100000
+        xs = list sort ints (gen ints 0 n [])
+        _ = assert true (ascending ints xs) "AC6: 100k ints ascending"
+        _ = assert int equals (list len xs) n "AC6: 100k ints keep every element"
+        ys = list sort by int (gen entries 0 n []) (e => score e)
+        _ = assert true (stable entries ys) "AC6: 100k records ascending and stable"
+        ()
+
+-- @tests TS-LIST-002
+fn :: test list count and group by => ()
+      test list count and group by =
+        hi = char from code 200
+        long_a = kb10 "a"
+        long_b = kb10 "b"
+        words = ["x", "y", "x", "", hi, long_a, "x", "", long_b, hi]
+        counts = list count by words (w => w)
+        _ = assert eq counts [("x", 3), ("y", 1), ("", 2), (hi, 2), (long_a, 1), (long_b, 1)]
+        _ = assert int equals (sum counts counts 0) 10 "AC4: counts add up to the length"
+        _ = assert eq (list count by [] (w => w)) []
+
+        es = [Entry "a" 2, Entry "b" 1, Entry "c" 2, Entry "d" 1, Entry "e" 3]
+        _ = assert eq (list group by es (e => int to str (score e))) [("2", [Entry "a" 2, Entry "c" 2]), ("1", [Entry "b" 1, Entry "d" 1]), ("3", [Entry "e" 3])]
+        _ = assert eq (list group by words (w => w)) [("x", ["x", "x", "x"]), ("y", ["y"]), ("", ["", ""]), (hi, [hi, hi]), (long_a, [long_a]), (long_b, [long_b])]
+        _ = assert eq (list group by [] (e => name e)) []
+
+        big = list count by (gen entries 0 20000 []) (e => int to str (score e))
+        _ = assert int equals (list len (map ((k c) => c) big)) 1000 "AC4: 1000 distinct keys"
+        _ = assert int equals (sum counts big 0) 20000 "AC4: counts add up to 20000"
+        ()
+
 -- @tests TS-LIST-001
+-- @tests TS-LIST-002
 fn :: main => ()
       main =
         _ = test list indexing slicing and ranges
         _ = test list mergesort
         _ = test kv associative map
-        echo "[PASS] test list: TS-LIST-001 (including RG-066) passed"
+        _ = test list sort by key
+        _ = test list count and group by
+        echo "[PASS] test list: TS-LIST-001 (including RG-066) and TS-LIST-002 passed"

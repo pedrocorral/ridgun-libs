@@ -11,3 +11,4 @@ Accepted ADRs are settled: do not re-open a decision ("should we switch to Mongo
 | `ADR-0006-tensor-bitwise-functions-use-bit-prefixed-names.md` | Tensor bitwise functions use bit-prefixed names (`CONFLICT-0004`) | accepted |
 | `ADR-0007-libs-reach-the-kernel-only-through-the-posix-bridge.md` | Libs reach the kernel only through the posix per-architecture bridge | accepted |
 | `ADR-0008-linalg-computes-with-real.md` | linalg computes with Real, not with integers in Real tensors | accepted |
+| `ADR-0009-hashmap-is-updated-in-place.md` | hashmap is updated in place and lists keys in insertion order | accepted |

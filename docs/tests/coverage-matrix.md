@@ -12,13 +12,14 @@
 | API-DIFF-001 | TS-DIFF-001 | src/main/ridgun/lib/diff.rg | src/test/ridgun/test diff.rg | ok |
 | API-FMT-001 | TS-FMT-001 | src/main/ridgun/lib/fmt.rg | src/test/ridgun/test fmt.rg | ok |
 | API-GLOB-001 | TS-GLOB-001 | src/main/ridgun/lib/glob.rg | src/test/ridgun/test glob.rg | ok |
+| API-HASHMAP-001 | TS-HASHMAP-001 | src/main/ridgun/lib/hashmap.rg | src/test/ridgun/test hashmap.rg | ok |
 | API-HTTP-001 | TS-HTTP-001 | src/main/ridgun/lib/http.rg | src/test/ridgun/test http.rg | ok |
 | API-INI-001 | TS-INI-001 | src/main/ridgun/lib/ini.rg | src/test/ridgun/test ini.rg | ok |
 | API-IO-001 | TS-IO-001 | src/main/ridgun/lib/io.rg | src/test/ridgun/test io.rg | ok |
 | API-JSON-001 | TS-JSON-001 | src/main/ridgun/lib/json.rg | src/test/ridgun/test json.rg | ok |
 | API-JWT-001 | TS-JWT-001 | src/main/ridgun/lib/jwt.rg | src/test/ridgun/test jwt.rg | ok |
 | API-LINALG-001 | TS-LINALG-001 | src/main/ridgun/lib/linalg.rg | src/test/ridgun/test linalg.rg | ok |
-| API-LIST-001 | TS-LIST-001 | src/main/ridgun/lib/list.rg | src/test/ridgun/test list.rg | ok |
+| API-LIST-001 | TS-LIST-001, TS-LIST-002 | src/main/ridgun/lib/list.rg | src/test/ridgun/test list.rg | ok |
 | API-LOCALE-001 | — | src/main/ridgun/lib/locale.rg | — | no test spec |
 | API-LOG-001 | TS-LOG-001 | src/main/ridgun/lib/log.rg | src/test/ridgun/test log.rg | ok |
 | API-MAIL-001 | TS-MAIL-001 | src/main/ridgun/lib/mail.rg | src/test/ridgun/test mail.rg | ok |
@@ -50,6 +51,7 @@
 | FR-DIFF-001 | TS-DIFF-001 | src/main/ridgun/lib/diff.rg | src/test/ridgun/test diff.rg | ok |
 | FR-FMT-001 | TS-FMT-001 | src/main/ridgun/lib/fmt.rg, src/test/ridgun/test fmt.rg | src/test/ridgun/test fmt.rg | ok |
 | FR-GLOB-001 | TS-GLOB-001 | src/main/ridgun/lib/glob.rg | src/test/ridgun/test glob.rg | ok |
+| FR-HASHMAP-001 | TS-HASHMAP-001 | src/main/ridgun/lib/hashmap.rg | src/test/ridgun/test hashmap.rg | ok |
 | FR-HTTP-001 | TS-HTTP-001 | src/main/ridgun/lib/http.rg | src/test/ridgun/test http.rg | ok |
 | FR-INI-001 | TS-INI-001 | src/main/ridgun/lib/ini.rg | src/test/ridgun/test ini.rg | ok |
 | FR-IO-001 | TS-IO-001 | src/main/ridgun/lib/io.rg | src/test/ridgun/test io.rg | ok |
@@ -58,6 +60,7 @@
 | FR-JWT-001 | TS-JWT-001 | src/main/ridgun/lib/jwt.rg | src/test/ridgun/test jwt.rg | ok |
 | FR-LINALG-001 | TS-LINALG-001 | src/main/ridgun/lib/linalg.rg | src/test/ridgun/test linalg.rg | ok |
 | FR-LIST-001 | TS-LIST-001 | src/main/ridgun/lib/list.rg | src/test/ridgun/test list.rg | ok |
+| FR-LIST-002 | TS-LIST-002 | src/main/ridgun/lib/list.rg | src/test/ridgun/test list.rg | ok |
 | FR-LOCALE-001 | — | src/main/ridgun/lib/locale.rg | — | no test spec |
 | FR-LOG-001 | TS-LOG-001 | src/main/ridgun/lib/log.rg | src/test/ridgun/test log.rg | ok |
 | FR-MAIL-001 | TS-MAIL-001 | src/main/ridgun/lib/mail.rg | src/test/ridgun/test mail.rg | ok |

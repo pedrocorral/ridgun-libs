@@ -11,6 +11,7 @@ Read this when: working in a domain.
 | `tst/` | Test specifications for `TST` (`FR-TST-001`) | Testing `test.rg` |
 | `math/` | Test specifications for `MATH` (`FR-MATH-001`) | Testing `math.rg` |
 | `list/` | Test specifications for `LIST` (`FR-LIST-001`) | Testing `list.rg` |
+| `hashmap/` | Test specifications for `HASHMAP` (`FR-HASHMAP-001`) | Testing `hashmap.rg` |
 | `codec/` | Test specifications for `CODEC` (`FR-CODEC-001`) | Testing `codec.rg` |
 | `cli/` | Test specifications for `CLI` (`FR-CLI-001`) | Testing `cli.rg` |
 | `path/` | Test specifications for `PATH` (`FR-PATH-001`) | Testing `path.rg` |

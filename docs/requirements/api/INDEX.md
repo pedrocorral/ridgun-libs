@@ -11,6 +11,7 @@ Read this when: implementing or consuming a lib's public interface. Skip when: i
 | `tst/` | Public API contract for `test.rg` (`API-TST-001`) | Consuming or editing `test` |
 | `math/` | Public API contract for `math.rg` (`API-MATH-001`) | Consuming or editing `math` |
 | `list/` | Public API contract for `list.rg` (`API-LIST-001`) | Consuming or editing `list` |
+| `hashmap/` | Public API contract for `hashmap.rg` (`API-HASHMAP-001`) | Consuming or editing `hashmap` |
 | `codec/` | Public API contract for `codec.rg` (`API-CODEC-001`) | Consuming or editing `codec` |
 | `cli/` | Public API contract for `cli.rg` (`API-CLI-001`) | Consuming or editing `cli` |
 | `path/` | Public API contract for `path.rg` (`API-PATH-001`) | Consuming or editing `path` |

@@ -15,6 +15,7 @@ status: approved
 | Test Assertion Library | Pure-Ridgun test runner assertion helpers (`RG-011`: `assert_equals`, `assert_true`, `assert_false`) | TST |
 | Mathematics Library | Pure-Ridgun integer arithmetic, rounding division, powers/roots/logarithms, modular number theory (`gcd`, `lcm`, `mod_pow`, `mod_inv`, primality), combinatorics, and list statistics | MATH |
 | List & Key-Value Collection Library | Pure-Ridgun list manipulation (`len`, `nth`, `take`, `drop`, `slice`, `reverse`, `range`, `dedup`, $O(N \log N)$ mergesort) and associative `[(String, String)]` key-value map utilities | LIST |
+| String-Keyed Hash Map Library | Pure-Ridgun hash map from `String` keys to values of any type on general tensors, with constant amortized `put`, `get`, `has` and counting `add`, and pairs in insertion order (`hashmap.rg`) | HASHMAP |
 | Encoding & Lightweight JSON Library | Pure-Ridgun RFC 4648 Hex/Base64/Base64url, RFC 3986 URL percent-encoding and query strings, and RFC 8259 JSON escaping, formatting, and key extraction | CODEC |
 | Command-Line & Environment Library | Pure-Ridgun CLI flag/option/positional argument parser (`--flag`, `-f`, `--key=val`, `--`) and typed environment variable readers (`env_get_or`, `env_get_int_or`, `env_get_bool_or`) | CLI |
 | Path Manipulation & Confinement Library | Pure-Ridgun cross-platform path joining, normalization (`path_clean`), component extraction (`dirname`, `basename`, `stem`, `ext`), and anti-traversal confinement (`path_is_safe_subpath`) | PATH |

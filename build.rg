@@ -1,13 +1,13 @@
 -- build.rg — Ridgun Library Project Definition
 
 fn :: project name => String
-      project name =  "ridgun-libs"
+      project name =  "libs"
 
 fn :: project kind => String
       project kind =  "lib"
 
 fn :: project version => String
-      project version =  "0.1.0"
+      project version =  "0.2.0"
 
 fn :: main entry => String
       main entry =  "src/main/ridgun/lib/socket.rg"
@@ -28,7 +28,7 @@ fn :: strict mode => Bool
       strict mode =  True
 
 fn :: task check strict => String
-      task check strict =  "for m in socket argon2id crypto posix io str test math list codec cli path time log glob uuid http agent pool net_agent tensor fmt json csv ini regex btree jwt ws linalg diff template ai locale tls mail; do ridgunc check --strict src/main/ridgun/lib/$m.rg; done"
+      task check strict =  "for m in socket argon2id crypto posix io str test math hashmap list codec cli path time log glob uuid http agent pool net_agent tensor fmt json csv ini regex btree jwt ws linalg diff template ai locale tls mail; do ridgunc check --strict src/main/ridgun/lib/$m.rg; done"
 
 fn :: task bundle => String
-      task bundle =  "mkdir -p target target/bundles build && rm -f target/socket.rglib target/argon2id.rglib target/crypto.rglib target/posix.rglib target/io.rglib target/str.rglib target/test.rglib target/math.rglib target/list.rglib target/codec.rglib target/cli.rglib target/path.rglib target/time.rglib target/log.rglib target/glob.rglib target/uuid.rglib target/http.rglib target/agent.rglib target/pool.rglib target/net_agent.rglib target/tensor.rglib target/fmt.rglib target/json.rglib target/csv.rglib target/ini.rglib target/regex.rglib target/btree.rglib target/jwt.rglib target/ws.rglib target/linalg.rglib target/diff.rglib target/template.rglib target/ai.rglib target/locale.rglib target/tls.rglib target/mail.rglib && for m in socket argon2id crypto posix io str test math list codec cli path time log glob uuid http agent pool net_agent tensor fmt json csv ini regex btree jwt ws linalg diff template ai locale tls mail; do ridgunc check --strict src/main/ridgun/lib/$m.rg && cp src/main/ridgun/lib/$m.rg target/bundles/$m.rglib && cp target/bundles/$m.rglib target/$m.rgc && cp target/bundles/$m.rglib build/$m.rglib && ridgunc build --strict --so src/main/ridgun/lib/$m.rg -o target/lib$m.so; done"
+      task bundle =  "mkdir -p target target/bundles build && rm -f target/socket.rglib target/argon2id.rglib target/crypto.rglib target/posix.rglib target/io.rglib target/str.rglib target/test.rglib target/math.rglib target/hashmap.rglib target/list.rglib target/codec.rglib target/cli.rglib target/path.rglib target/time.rglib target/log.rglib target/glob.rglib target/uuid.rglib target/http.rglib target/agent.rglib target/pool.rglib target/net_agent.rglib target/tensor.rglib target/fmt.rglib target/json.rglib target/csv.rglib target/ini.rglib target/regex.rglib target/btree.rglib target/jwt.rglib target/ws.rglib target/linalg.rglib target/diff.rglib target/template.rglib target/ai.rglib target/locale.rglib target/tls.rglib target/mail.rglib && for m in socket argon2id crypto posix io str test math hashmap list codec cli path time log glob uuid http agent pool net_agent tensor fmt json csv ini regex btree jwt ws linalg diff template ai locale tls mail; do ridgunc check --strict src/main/ridgun/lib/$m.rg && cp src/main/ridgun/lib/$m.rg target/bundles/$m.rglib && cp target/bundles/$m.rglib target/$m.rgc && cp target/bundles/$m.rglib build/$m.rglib && ridgunc build --strict --so src/main/ridgun/lib/$m.rg -o target/lib$m.so; done"

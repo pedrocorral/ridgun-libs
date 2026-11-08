@@ -11,6 +11,7 @@ Read this when: working on a domain. Skip when: the domain is not yours.
 | `tst/` | Test assertion library (`FR-TST-001`) | Working on `test.rg` |
 | `math/` | Integer mathematics, number theory, combinatorics & statistics library (`FR-MATH-001`) | Working on `math.rg` |
 | `list/` | List manipulation, $O(N \log N)$ mergesort & associative key-value map library (`FR-LIST-001`) | Working on `list.rg` |
+| `hashmap/` | String-keyed hash map library with constant amortized time (`FR-HASHMAP-001`) | Working on `hashmap.rg` |
 | `codec/` | Hex, Base64/Base64url, URL percent-encoding & lightweight JSON library (`FR-CODEC-001`) | Working on `codec.rg` |
 | `cli/` | Command-line flag/option/positional parser & typed environment library (`FR-CLI-001`) | Working on `cli.rg` |
 | `path/` | Cross-platform path normalization, component extraction & safe confinement library (`FR-PATH-001`) | Working on `path.rg` |
