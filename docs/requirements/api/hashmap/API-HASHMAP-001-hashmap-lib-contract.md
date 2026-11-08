@@ -28,4 +28,4 @@ auth: none
 ## Rules
 - Every exported function starts with `hashmap `.
 - `put` and `add` change the map they receive and return it (ADR-0009). Callers use the returned map and do not keep the old one.
-- The fields of `HashMap` are private. Their names start with `hm_` (see DM-HashMap).
+- The fields of `HashMap` are private (see DM-HashMap).

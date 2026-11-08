@@ -30,10 +30,9 @@ Option 3.
 - Keys and values live in dense tensors at most twice the number of keys, so the slow non-numeric tensor creation touches half as many elements as in option 2.
 - `pairs` returns the keys in first-insertion order. `list count by` and `list group by` rely on it for first-appearance order.
 - The hash is SHA-256 of a per-map random seed and the key, so input cannot force collisions.
-- Record field names start with `hm_`, because a program function with the name of a lib record field replaces the accessor inside the lib (reported to the compiler team).
 
 ## Consequences
 - Callers must use the map linearly. Keeping an old map and using it after a `put` sees the new contents.
 - A map sent to an agent or through a channel is a copy (ridgunc 0.9.43).
-- 1,000,000 `add` over 100,000 keys takes about 1.5 s. About 0.4 s is tensor creation, which the compiler team is asked to speed up; with that fixed the estimate is about 1.1 s.
+- With ridgunc 0.9.44, 1,000,000 `add` over 100,000 keys took about 1.5 s; about 0.4 s was tensor creation. ridgunc 0.9.45 creates those tensors about 40 times faster: the same run takes about 0.9 s, under the 1 s target.
 - Removing keys is not supported; it would need tombstones in the slot table.

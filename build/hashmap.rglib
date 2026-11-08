@@ -12,16 +12,13 @@
 
 module :: hashmap
 
--- Field names start with hm_: with ridgunc 0.9.44 a program function with the
--- same name as a field of a lib record replaces the field accessor inside the lib.
---
--- hm_slots: 0 = free, otherwise hash * 2^31 + position in the dense tensors
--- hm_keys, hm_vals: keys and values at positions 0 .. size - 1, in insertion order
--- hm_vals is an empty list until the first value gives a fill value
--- hm_fill: [] until the first insert, then [that value] (a Tensor of V needs one)
--- hm_cap: slots; hm_room: positions in the dense tensors
--- hm_n: one element, the number of keys; kept in a tensor so an insert does not copy the record
-type HashMap V = hm_fill: [V], hm_vals: [Tensor[V * n]], hm_slots: Tensor[Int * n], hm_keys: Tensor[String * n], hm_cap: Int, hm_room: Int, hm_n: Tensor[Int * k], hm_seed: String
+-- slots: 0 = free, otherwise hash * 2^31 + position in the dense tensors
+-- keys, vals: keys and values at positions 0 .. size - 1, in insertion order
+-- vals is an empty list until the first value gives a fill value
+-- fill: [] until the first insert, then [that value] (a Tensor of V needs one)
+-- cap: slots; room: positions in the dense tensors
+-- count: one element, the number of keys; kept in a tensor so an insert does not copy the record
+type HashMap V = fill: [V], vals: [Tensor[V * n]], slots: Tensor[Int * n], keys: Tensor[String * n], cap: Int, room: Int, count: Tensor[Int * k], seed: String
 
 -- ── Hash ─────────────────────────────────────────────────────
 
@@ -72,7 +69,7 @@ fn :: hashmap empty => HashMap V
       hashmap empty = HashMap [] [] (Tensor[Int * 16]) (Tensor[String * 8]) 16 8 (Tensor[Int * 1]) (hm new seed)
 
 fn :: hm size (HashMap V) => Int
-      hm size m = (hm n m)_(0)
+      hm size m = (count m)_(0)
 
 fn :: hm bump Tensor[Int * k] => ()
       hm bump t =
@@ -93,26 +90,26 @@ fn :: hm rehash Tensor[Int * n] Tensor[Int * m] Int Int Int => ()
 
 fn :: hm grow slots (HashMap V) => HashMap V
       hm grow slots m =
-        ncap = 2 * (hm cap m)
+        ncap = 2 * (cap m)
         ns   = Tensor[Int * ncap]
-        hm rehash (hm slots m) ns 0 (hm cap m) ncap
-        m with hm_slots = ns, hm_cap = ncap
+        hm rehash (slots m) ns 0 (cap m) ncap
+        m with slots = ns, cap = ncap
 
 fn :: hm copy Tensor[String * n] Tensor[V * n] Tensor[String * m] Tensor[V * m] Int Int => ()
       hm copy ok ov nk nv i n =
         | i >= n    = ()
         | otherwise =
           nk_(i) = ok_(i)
-          hm val set nv i (hm val get ov i)
+          nv_(i) = ov_(i)
           hm copy ok ov nk nv (i + 1) n
 
 fn :: hm grow dense (HashMap V) [V] => HashMap V
       hm grow dense m (d:_) =
-        nr = 2 * (hm room m)
+        nr = 2 * (room m)
         nk = Tensor[String * nr]
         nv = Tensor[V * nr] with d
-        hm copy (hm keys m) (hm vt (hm vals m)) nk nv 0 (hm size m)
-        m with hm_keys = nk, hm_vals = [nv], hm_room = nr
+        hm copy (keys m) (hm vt (vals m)) nk nv 0 (hm size m)
+        m with keys = nk, vals = [nv], room = nr
 
 -- Keeps the slot table at most half full and room for one more key.
 fn :: hm make room (HashMap V) => HashMap V
@@ -120,34 +117,24 @@ fn :: hm make room (HashMap V) => HashMap V
 
 fn :: hm room slots (HashMap V) => HashMap V
       hm room slots m =
-        | 2 * ((hm size m) + 1) > hm cap m = hm grow slots m
+        | 2 * ((hm size m) + 1) > cap m = hm grow slots m
         | otherwise                      = m
 
 fn :: hm room dense (HashMap V) => HashMap V
       hm room dense m =
-        | (hm size m) + 1 > hm room m = hm grow dense m (hm fill m)
+        | (hm size m) + 1 > room m = hm grow dense m (fill m)
         | otherwise                  = m
 
 -- The first insert supplies the fill value for the value tensor.
 fn :: hm ensure vals (HashMap V) V => HashMap V
-      hm ensure vals m v = m with hm_fill = [v], hm_vals = [Tensor[V * (hm room m)] with v]
-
--- Value tensors are created in generic code (Tensor[V * n]). With ridgunc 0.9.44 a
--- write through a Tensor[Int] parameter to such a tensor is lost, so values are
--- read and written through these generic helpers.
-fn :: hm val get Tensor[V * n] Int => V
-      hm val get vt i = vt_(i)
-
-fn :: hm val set Tensor[V * n] Int V => ()
-      hm val set vt i v =
-        vt_(i) = v
+      hm ensure vals m v = m with fill = [v], vals = [Tensor[V * (room m)] with v]
 
 -- Puts a new key at the next position and points slot i at it.
 fn :: hm insert Tensor[V * n] Tensor[Int * c] Tensor[String * r] Tensor[Int * k] Int Int String V => ()
       hm insert vt st kt cnt i h k v =
         pos = cnt_(0)
         kt_(pos) = k
-        hm val set vt pos v
+        vt_(pos) = v
         st_(i) = h * 2147483648 + pos
         cnt_(0) = pos + 1
 
@@ -169,7 +156,7 @@ fn :: hm put slot (HashMap V) Tensor[V * n] Tensor[Int * c] Tensor[String * r] T
           hm insert vt st kt cnt i h k v
           m
         | otherwise =
-          hm val set vt (st_(i) % 2147483648) v
+          vt_(st_(i) % 2147483648) = v
           m
 
 -- @implements FR-HASHMAP-001
@@ -183,17 +170,17 @@ fn :: hm add go (HashMap Int) (HashMap Int) String Int => HashMap Int
         | 2 * (cnt_(0) + 1) > cap or cnt_(0) + 1 > room = hashmap add (hm make room m) k d
         | otherwise = hm add at m vt st kt cnt k d (hm hash seed k) cap
 
-fn :: hm add at (HashMap Int) Tensor[V * n] Tensor[Int * c] Tensor[String * r] Tensor[Int * k] String Int Int Int => HashMap Int
+fn :: hm add at (HashMap Int) Tensor[Int * n] Tensor[Int * c] Tensor[String * r] Tensor[Int * k] String Int Int Int => HashMap Int
       hm add at m vt st kt cnt k d h cap = hm add slot m vt st kt cnt k d h (hm probe st kt cap k h (h % cap))
 
-fn :: hm add slot (HashMap Int) Tensor[V * n] Tensor[Int * c] Tensor[String * r] Tensor[Int * k] String Int Int Int => HashMap Int
+fn :: hm add slot (HashMap Int) Tensor[Int * n] Tensor[Int * c] Tensor[String * r] Tensor[Int * k] String Int Int Int => HashMap Int
       hm add slot m vt st kt cnt k d h i =
         | st_(i) == 0 =
           hm insert vt st kt cnt i h k d
           m
         | otherwise =
           p = st_(i) % 2147483648
-          hm val set vt p ((hm val get vt p) + d)
+          vt_(p) = vt_(p) + d
           m
 
 -- Adds d to the value of k; a missing key starts at 0. For counting.
@@ -240,4 +227,4 @@ fn :: hm pairs loop Tensor[String * n] Tensor[V * n] Int [String V] => [String V
 fn :: hashmap pairs (HashMap V) => [String V]
       hashmap pairs m =
         | hm size m == 0 = []
-        | otherwise      = hm pairs loop (hm keys m) (hm vt (hm vals m)) ((hm size m) - 1) []
+        | otherwise      = hm pairs loop (keys m) (hm vt (vals m)) ((hm size m) - 1) []

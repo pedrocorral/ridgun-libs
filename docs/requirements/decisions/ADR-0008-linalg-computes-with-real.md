@@ -39,3 +39,4 @@ Option 2, chosen by the user on 2026-11-07. Linear algebra is real-valued, so op
 - Behaviour change for callers: results are `Real` instead of `Int`, and activations are no longer in permille. No other project imports `linalg`.
 - `linalg` runs only on x86_64 until the arm64 backend supports `Real` (ridgunc 0.9.41 "Pendiente").
 - The `@` fault is reported to the compiler team in `/tmp/ridgun-compiler/2026-11-07/tensor-from-list-longitud.md`.
+- ridgunc 0.9.45 fixed `@` on `Real` tensors (2026-11-08). `tensor matmul` uses `a_ik @ b_kj` again: a 200 × 200 product takes 1 ms instead of 1.3 s with the loops.

@@ -39,7 +39,7 @@ Solstice groups, counts and indexes text by key (request `2026-11-07-comparar-te
 
 ## Constraints & edge cases
 - The map is updated in place (ADR-0009). After `m2 = hashmap put m k v`, only `m2` may be used; `m` is not a separate copy.
-- With ridgunc 0.9.44, 1,000,000 `add` calls over 100,000 keys take about 1.5 s. About 0.4 s of that is creating `Tensor[String * n]` and generic `Tensor[V * n]` tensors, which the compiler team is asked to speed up.
+- With ridgunc 0.9.45, 1,000,000 `add` calls over 100,000 keys take about 0.9 s and 1,000,000 `get` calls about 0.7 s.
 - Keys are compared byte by byte, so keys with bytes >= 128 and the empty key are ordinary keys.
 
 ## Data & privacy

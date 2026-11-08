@@ -128,11 +128,11 @@ Conventions: `snake_case`; ids end in `_id`; timestamps end in `_at` (UTC ISO-86
 | smtp_user | String | SMTP authentication username for `AUTH PLAIN` / `AUTH LOGIN` | MAIL | `mail.rg` |
 | smtp_password | String | SMTP authentication password for `AUTH PLAIN` / `AUTH LOGIN` | MAIL | `mail.rg` |
 | auth_method | String | Preferred SMTP SASL mechanism (`PLAIN` or `LOGIN`) | MAIL | `mail.rg` |
-| hm_fill | [V] | First value put into a hash map; fill value for its value tensor | HASHMAP | `hashmap.rg` |
-| hm_vals | [Tensor[V * room]] | Hash map values in insertion order | HASHMAP | `hashmap.rg` |
-| hm_slots | Tensor[Int * cap] | Hash map slot table (`0` free, otherwise `hash * 2^31 + position`) | HASHMAP | `hashmap.rg` |
-| hm_keys | Tensor[String * room] | Hash map keys in insertion order | HASHMAP | `hashmap.rg` |
-| hm_cap | Int | Number of slots of a hash map | HASHMAP | `hashmap.rg` |
-| hm_room | Int | Positions available in the dense key and value tensors | HASHMAP | `hashmap.rg` |
-| hm_n | Tensor[Int * 1] | Number of keys of a hash map | HASHMAP | `hashmap.rg` |
-| hm_seed | String | Per-map random seed for the key hash | HASHMAP | `hashmap.rg` |
+| fill | [V] | First value put into a hash map; fill value for its value tensor | HASHMAP | `hashmap.rg` |
+| vals | [Tensor[V * room]] | Hash map values in insertion order | HASHMAP | `hashmap.rg` |
+| slots | Tensor[Int * cap] | Hash map slot table (`0` free, otherwise `hash * 2^31 + position`) | HASHMAP | `hashmap.rg` |
+| keys | Tensor[String * room] | Hash map keys in insertion order | HASHMAP | `hashmap.rg` |
+| cap | Int | Number of slots of a hash map | HASHMAP | `hashmap.rg` |
+| room | Int | Positions available in the dense key and value tensors | HASHMAP | `hashmap.rg` |
+| count | Tensor[Int * 1] | Number of keys of a hash map | HASHMAP | `hashmap.rg` |
+| seed | String | Per-map random seed for the key hash | HASHMAP | `hashmap.rg` |
