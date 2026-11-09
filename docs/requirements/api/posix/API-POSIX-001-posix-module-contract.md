@@ -25,16 +25,19 @@ auth: none
   - `posix kill Int Int => Int`
 - Filesystem, Process, Clock, Signal Watch & CSPRNG Functions (`RG-010`, `RGF-014`, `RGF-017`, `RGF-018`):
   - `sys_mkdir String => Int`, `sys_rmdir String => Int`, `sys_rename String String => Int`, `sys_symlink String String => Int`, `sys_readlink String => String`, `sys_unlink String => Int`, `sys_chmod String Int => Int`, `sys_chdir String => Int`, `sys_getcwd () => String`, `sys_getenv String => String`, `sys_getpid () => Int`
-  - `sys_time_ms () => Int`, `sys_monotonic_ms () => Int`, `sys_monotonic_ns () => Int`, `sys_sleep_ms Int => Int`
-  - `sys_signal_watch [Int] => (Int, Int)`, `sys_signal_wait Int Int => (Int, Int)`
-  - `sys_random_bytes Int => (Int, String)`
+  - `sys monotonic ms => Int` and `sys monotonic ns => Int` return the built-ins `sys time ms` / `sys time ns` (vDSO). The wall clock is the built-in `sys wall time ms => Int`; `posix` does not define it (`ADR-0010`). `sys sleep ms Int => ()` is a built-in.
+  - `sys_signal_watch [Int] => (Int, Int)` (a list of signal numbers), `sys_signal_wait Int Int => (Int, Int)`
+  - `sys random bytes Int => Int String` (`(status, bytes)`)
+  - `sys random tensor Int => Int Tensor[U8]` (`(status, bytes)`; replaces `sys random bytes list Int => Int [Int]`, `ADR-0010`)
 - Durable File Functions (`FR-POSIX-003`; syscall numbers picked per `sys arch`):
   - `posix fdatasync Int => Int`, `posix fsync Int => Int`, `posix ftruncate Int Int => Int` (`fd length`)
   - `posix sync dir String => Int` (`open O_RDONLY|O_DIRECTORY|O_CLOEXEC`, `fsync`, `close`)
   - `posix lock exclusive Int => Int` (`flock LOCK_EX|LOCK_NB`), `posix unlock Int => Int` (`flock LOCK_UN`)
   - `posix pread Int Int Int => Int String` (`fd offset len` → `(bytes_read, data)` or `(-errno, "")`; `len <= 16777216`)
   - `o directory => Int` (`65536` on x86_64, `16384` on arm64)
-- Kernel Bridge (`FR-POSIX-004`, `ADR-0007`): `nr <name> => Int` returns the syscall number for `sys arch` for `read`, `lseek`, `mmap`, `munmap`, `rt sigprocmask`, `pread64`, `pwrite64`, `socket`, `connect`, `accept`, `sendto`, `shutdown`, `bind`, `listen`, `getsockname`, `setsockopt`, `getsockopt`, `clone`, `execve`, `exit`, `wait4`, `fcntl`, `flock`, `fsync`, `fdatasync`, `ftruncate`, `clock gettime`, `unlinkat`, `symlinkat`, `signalfd4`, `eventfd2`, `dup3`, `pipe2`, `renameat2`, `getrandom`, `memfd create`; `at fdcwd => Int` (`-100`). Buffer helpers for other libs: `px alloc page Int => Int`, `px alloc mfd Int => Int`, `px poke Int Int String => Int`, `px peek Int Int Int => String`, `px free page Int Int Int => Int`.
+- Kernel Bridge (`FR-POSIX-004`, `ADR-0007`): `nr <name> => Int` returns the syscall number for `sys arch` for `read`, `lseek`, `mmap`, `munmap`, `rt sigprocmask`, `pread64`, `pwrite64`, `socket`, `connect`, `accept`, `sendto`, `shutdown`, `bind`, `listen`, `getsockname`, `setsockopt`, `getsockopt`, `clone`, `execve`, `exit`, `wait4`, `fcntl`, `flock`, `fsync`, `fdatasync`, `ftruncate`, `clock gettime`, `unlinkat`, `symlinkat`, `signalfd4`, `eventfd2`, `dup3`, `pipe2`, `renameat2`, `getrandom`, `memfd create`; `at fdcwd => Int` (`-100`).
+  - Kernel buffers are `Tensor[U8]` values passed straight to `sys call` (`ADR-0010`). Byte helpers for other libs: `px raw byte Int => String`, `px u64 le Int => String`, `px put u64 le Tensor[U8] Int Int => Tensor[U8]`, `px get u32 le Tensor[U8] Int => Int`, `px get u64 le Tensor[U8] Int => Int`, `px cstr String => Tensor[U8]` (NUL-terminated copy), `px tensor addr Tensor[U8] => Int` (address of byte 0, for kernel structures that hold pointers).
+  - The memfd helpers `px alloc page`, `px alloc mfd`, `px poke`, `px peek` and `px free page` are deprecated. Only `posix execve` uses them (a pointer table needs a known address); they are removed once the compiler offers an execve that keeps the caller's argv[0] (`ADR-0010`).
   - `errno eio => Int` (`5`), `errno ebadf => Int` (`9`), `errno ewouldblock => Int` (`11`), `errno enotdir => Int` (`20`), `errno einval => Int` (`22`), `errno enospc => Int` (`28`)
 
 ## Responses
@@ -47,6 +50,7 @@ auth: none
 
 ## Rules
 - `wait fd` delegates directly to the compiler's `sys poll` (`ppoll`) primitive.
-- `sys_random_bytes` reads cryptographic entropy from the Linux kernel (`getrandom` syscall / `/dev/urandom`).
+- `sys random bytes` and `sys random tensor` read cryptographic entropy with the `getrandom` syscall into a `Tensor[U8]`, retried on `EINTR`.
+- `posix pread` reads into a `Tensor[U8 * len]` with `pread64`; `posix execve` builds argv/envp in one `Tensor[U8]` and takes its address with `px tensor addr`.
 - `FR-POSIX-003` functions return the raw negative kernel error number; callers compare it with `0 - errno <name>`.
 - Lib code never passes a literal syscall number to `sys call`; it uses `nr <name>` (`ADR-0007`).

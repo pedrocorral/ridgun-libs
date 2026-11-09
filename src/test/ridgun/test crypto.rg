@@ -17,6 +17,27 @@ fn :: range bytes Int Int => [Int]
         | cur > hi  = []
         | otherwise = [cur] :: (range bytes (cur + 1) hi)
 
+fn :: nth of [Int]    Int => Int
+      nth of []       _   =  0 - 1
+      nth of (x:rest) idx =
+        | idx <= 0  = x
+        | otherwise = nth of rest (idx - 1)
+
+fn :: int count [Int]    => Int
+      int count []       =  0
+      int count (_:rest) =  1 + (int count rest)
+
+fn :: same ints [Int]  [Int]  => Bool
+      same ints []     []     =  True
+      same ints (a:ar) (b:br) =  (a == b) and (same ints ar br)
+      same ints _      _      =  False
+
+fn :: all byte str len one Int => Bool
+      all byte str len one n   =
+        | n > 255                     = True
+        | (str len (byte str n)) != 1 = False
+        | otherwise                   = all byte str len one (n + 1)
+
 fn :: aead rc (Int String) => Int
       aead rc (rc, _)      =  rc
 
@@ -38,18 +59,32 @@ fn :: test rgf019 bytes and bitops => ()
         b5   = bytes from list [0, 1, 127, 128, 255]
         _    = assert int equals (str len b5) 5 "len b5 == 5"
         rt   = bytes to list b5
-        _    = assert int equals (c nth int rt 0) 0 "rt 0"
-        _    = assert int equals (c nth int rt 1) 1 "rt 1"
-        _    = assert int equals (c nth int rt 2) 127 "rt 2"
-        _    = assert int equals (c nth int rt 3) 128 "rt 3"
-        _    = assert int equals (c nth int rt 4) 255 "rt 4"
+        _    = assert int equals (nth of rt 0) 0 "rt 0"
+        _    = assert int equals (nth of rt 1) 1 "rt 1"
+        _    = assert int equals (nth of rt 2) 127 "rt 2"
+        _    = assert int equals (nth of rt 3) 128 "rt 3"
+        _    = assert int equals (nth of rt 4) 255 "rt 4"
         b256 = bytes from list (range bytes 0 255)
         _    = assert int equals (str len b256) 256 "len b256 == 256"
         r256 = bytes to list b256
-        _    = assert int equals (c list len r256) 256 "r256 list len == 256"
-        _    = assert int equals (c nth int r256 0) 0 "r256[0] == 0"
-        _    = assert int equals (c nth int r256 128) 128 "r256[128] == 128"
-        _    = assert int equals (c nth int r256 255) 255 "r256[255] == 255"
+        _    = assert int equals (int count r256) 256 "r256 list len == 256"
+        _    = assert int equals (nth of r256 0) 0 "r256[0] == 0"
+        _    = assert int equals (nth of r256 128) 128 "r256[128] == 128"
+        _    = assert int equals (nth of r256 255) 255 "r256[255] == 255"
+        _    = assert true (same ints r256 (range bytes 0 255)) "bytes to list (bytes from list 0..255) == 0..255"
+
+        -- ADR-0010: bytes are built on Tensor[U8]; values outside 0..255 are taken modulo 256
+        hi7  = [0, 7, 128, 200, 255, 192, 245]
+        b7   = bytes from list hi7
+        _    = assert int equals (str len b7) 7 "len bytes from list hi7 == 7"
+        _    = assert true (same ints (bytes to list b7) hi7) "bytes from list [0, 7, 128, 200, 255, 192, 245] round-trips"
+        _    = assert true (all byte str len one 0) "str len (byte str n) == 1 for all n in 0..255"
+        _    = assert str eq (bytes from list [256, 0 - 1, 300, 0 - 256]) (bytes from list [0, 255, 44, 0]) "bytes from list wraps modulo 256"
+        _    = assert str eq (bytes from list []) "" "bytes from list [] is empty"
+        _    = assert str eq (bytes to hex str (bytes from list hi7)) "000780c8ffc0f5" "bytes to hex str"
+        _    = assert str eq (bytes list to hex (hex str to bytes "000780c8ffc0f5")) "000780c8ffc0f5" "hex str to bytes Tensor[U8] round-trip"
+        _    = assert str eq (bytes to hex str (bitxor byte strings (hex to byte str "ff00f0") (hex to byte str "0f0fff"))) "f00f0f" "bitxor byte strings"
+        _    = assert str eq (bytes to hex str (byte slice b7 2 5)) "80c8ff" "byte slice keeps high bytes"
 
         -- 2. RGF-019 32-bit unsigned bitwise operations and boundary shifts
         _    = assert int equals (band 4294967295 255) 255 "band"

@@ -3,6 +3,7 @@ id: API-SOCK-001
 title: Public lib contract for socket (socket.rglib / libsocket.so)
 status: approved
 implements: [FR-SOCK-001, FR-SOCK-002, FR-SOCK-003, FR-SOCK-004]
+related: [ADR-0010]
 auth: none
 ---
 # API-SOCK-001 — Public lib contract for `socket` (`socket.rg`)
@@ -15,9 +16,12 @@ auth: none
   - `sock tcp () => Socket`, `sock tcp6 () => Socket`, `sock udp () => Socket`, `sock udp6 () => Socket`, `sock unix stream () => Socket`, `sock unix dgram () => Socket`
   - `sock set options Socket SockOpts => SockRes`, `sock set timeout Socket Int => SockRes`, `sock set tcp nodelay Socket Bool => SockRes`, `sock set broadcast Socket Bool => SockRes`, `sock set buf sizes Socket Int Int => SockRes`
   - `sock bind Socket SockAddr => SockRes`, `sock listen Socket Int => SockRes`, `sock connect Socket SockAddr => SockRes`, `sock accept Socket => SockPairRes`, `sock shutdown Socket String => SockRes`, `sock close Socket => Socket`
-  - `sock send bytes Socket [Int] => SockRes`, `sock recv bytes Socket Int => SockBytesRes`, `sock send str Socket String => SockRes`, `sock recv str Socket Int => SockStrRes`, `sock send all Socket [Int] => SockRes`, `sock recv exact Socket Int => SockBytesRes`
-  - `sock send to Socket SockAddr [Int] => SockRes`, `sock recv from Socket Int => SockDgramRes`
-  - `sock send frame Socket String => SockRes`, `sock recv frame Socket Int => SockStrRes`, `sock send line Socket String => SockRes`, `sock recv line Socket Int => SockStrRes`
+  - Bytes are `Tensor[U8]` (`ADR-0010`): `type SockRecvBytesRes = SockBytesOk Socket Tensor[U8] | SockBytesErr String`, `type SockRecvFromRes = SockFromOk Socket Tensor[U8] SockAddr | SockFromErr String`.
+  - `sock send bytes Socket Tensor[U8] => SockRes`, `sock recv bytes Socket Int => SockRecvBytesRes`, `sock send str Socket String => SockRes`, `sock recv str Socket Int => SockRecvStrRes`, `sock send all Socket Tensor[U8] => SockRes`, `sock recv exact Socket Int => SockRecvBytesRes`
+  - `sock send to Socket Tensor[U8] SockAddr => SockRes`, `sock recv from Socket Int => SockRecvFromRes`
+  - `sock send frame Socket Tensor[U8] => SockRes`, `sock recv frame Socket Int => SockRecvBytesRes`, `sock send line Socket String => SockRes`, `sock recv line Socket Int => SockRecvStrRes`
+  - `encode be32 Int => Tensor[U8]`, `decode be32 Tensor[U8] => Int` (`-1` for fewer than 4 bytes)
+  - Removed with `ADR-0010`: `str to byte list`, `byte list to str`, `int list len`, `take ints`, `drop ints`, `all valid bytes` (use `tensor from str` / `tensor to str`).
   - `sock local addr Socket => SockAddrRes`, `sock peer addr Socket => SockAddrRes`, `sock poll Socket => SockPoll`, `is valid hostname String => Bool`, `sock resolve host String Int => SockAddrRes`, `ip in cidr String String => Bool`
 - Solstice `RGF-001` status-tuple signatures:
   - `sys_resolve_ipv4 String => (Int, String)`
@@ -47,3 +51,5 @@ auth: none
 ## Rules
 - All blocking `sys_*` operations with `timeout_ms >= 0` poll descriptor readiness before kernel I/O so stalled peers never hang the process.
 - `sys_tcp_listen` sets `SO_REUSEADDR` before `bind`.
+- Kernel arguments (`sockaddr_in`, `sockaddr_un`, option values, `socklen_t`) are `Tensor[U8]` values passed straight to `sys call`; no memfd buffer is used (`ADR-0010`).
+- `sys send` keeps the payload in one `Tensor[U8]`; after a partial `sendto` it rebuilds the tensor from the bytes not yet sent.

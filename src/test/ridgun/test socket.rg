@@ -41,8 +41,13 @@ fn :: is recv bytes ok SockRecvBytesRes   => Bool
       is recv bytes ok (SockBytesOk  _ _) =  True
       is recv bytes ok (SockBytesErr _)   =  False
 
+-- The list goes through `byte list` (a typed parameter): `tensor to list` straight on a
+-- constructor-pattern variable reads the tensor words, not the bytes (ridgunc 0.9.49).
+fn :: byte list Tensor[U8] => [Int]
+      byte list t          =  tensor to list t
+
 fn :: unwrap recv bytes SockRecvBytesRes => [Int]
-      unwrap recv bytes (SockBytesOk _ payload) = payload
+      unwrap recv bytes (SockBytesOk _ payload) = byte list payload
       unwrap recv bytes (SockBytesErr _) =  []
 
 fn :: unwrap recv bytes sock SockRecvBytesRes  => Socket
@@ -62,8 +67,22 @@ fn :: unwrap recv str sock SockRecvStrRes  => Socket
       unwrap recv str sock (SockStrErr _)  =  sock tcp
 
 fn :: unwrap dgram payload SockRecvFromRes => [Int]
-      unwrap dgram payload (SockFromOk _ bytes _) = bytes
+      unwrap dgram payload (SockFromOk _ bytes _) = byte list bytes
       unwrap dgram payload (SockFromErr _) =  []
+
+fn :: tb count [Int]    => Int
+      tb count []       =  0
+      tb count (_:rest) =  1 + (tb count rest)
+
+fn :: tb fill Tensor[U8] Int [Int]    => Tensor[U8]
+      tb fill t          _   []       =  t
+      tb fill t          i   (x:rest) =
+        t_(i) = x
+        tb fill t (i + 1) rest
+
+-- A Tensor[U8] from a list literal of byte values (0..255).
+fn :: tb [Int] => Tensor[U8]
+      tb xs     =  tb fill (Tensor[U8 * (tb count xs)]) 0 xs
 
 fn :: unwrap dgram sender SockRecvFromRes => SockAddr
       unwrap dgram sender (SockFromOk _ _ sender) = sender
@@ -149,7 +168,7 @@ fn :: test sock data transfer and framing => ()
         _        = assert ok (is recv str ok r_str)
         _        = assert eq (unwrap recv str r_str) "hello ridgun"
         p2       = unwrap recv str sock r_str
-        c2       = unwrap sock (sock send frame (unwrap pair left pair1) [10, 20, 30, 40])
+        c2       = unwrap sock (sock send frame (unwrap pair left pair1) (tb [10, 20, 30, 40]))
         pair2    = sock pipe transfer c2 p2
         p3       = unwrap pair right pair2
         r_frm_sm = sock recv frame p3 2
@@ -167,23 +186,35 @@ fn :: test sock data transfer and framing => ()
         p6       = unwrap recv str sock r_line
         u_sender = unwrap sock (sock bind (sock udp) cli_addr)
         u_rcvr   = unwrap sock (sock bind (sock udp) srv_addr)
-        u_sent   = unwrap sock (sock send to u_sender [1, 2, 3] srv_addr)
+        u_sent   = unwrap sock (sock send to u_sender (tb [1, 2, 3]) srv_addr)
         d_pair   = sock deliver dgram u_sent u_rcvr
         u_rcvr2  = unwrap pair right d_pair
         d_res    = sock recv from u_rcvr2 16
         _        = assert eq (unwrap dgram payload d_res) [1, 2, 3]
         _        = assert eq (port (unwrap dgram sender d_res)) 50001
-        -- Additional framing, line, byte-range, and datagram negative edge cases
-        _        = assert eq (is sock ok (sock send bytes c0 [0, 256])) False
-        _        = assert eq (is sock ok (sock send bytes c0 [0 - 1])) False
-        c_short  = unwrap sock (sock send bytes (unwrap pair left pair3) [0, 1])
+        -- Byte round trip through the in-memory stream: 0, 128 and 255 survive (ADR-0010)
+        c_bin    = unwrap sock (sock send bytes c0 (tb [0, 128, 255, 10, 0]))
+        p_bin    = unwrap pair right (sock pipe transfer c_bin p0)
+        r_bin    = sock recv bytes p_bin 3
+        _        = assert ok (is recv bytes ok r_bin)
+        _        = assert eq (unwrap recv bytes r_bin) [0, 128, 255]
+        r_bin2   = sock recv exact (unwrap recv bytes sock r_bin) 2
+        _        = assert eq (unwrap recv bytes r_bin2) [10, 0]
+        _        = assert eq (decode be32 (encode be32 4278255360)) 4278255360
+        _        = assert eq (tensor to list (encode be32 258)) [0, 0, 1, 2]
+        _        = assert eq (decode be32 (tb [1, 2])) (0 - 1)
+        c_bfrm   = unwrap sock (sock send frame c0 (tb [255, 0, 128]))
+        p_bfrm   = unwrap pair right (sock pipe transfer c_bfrm p0)
+        _        = assert eq (unwrap recv bytes (sock recv frame p_bfrm 16)) [255, 0, 128]
+        -- Additional framing, line and datagram negative edge cases
+        c_short  = unwrap sock (sock send bytes (unwrap pair left pair3) (tb [0, 1]))
         p_short  = unwrap pair right (sock pipe transfer c_short p6)
         _        = assert eq (is recv bytes ok (sock recv frame p_short 16)) False
         _        = assert eq (is recv str ok (sock recv line p_short 16)) False
         c_longl  = unwrap sock (sock send line (unwrap pair left pair3) "LINE_TOO_LONG_FOR_LIMIT")
         p_longl  = unwrap pair right (sock pipe transfer c_longl (unwrap recv bytes sock (sock recv bytes p_short 2)))
         _        = assert eq (is recv str ok (sock recv line p_longl 4)) False
-        assert eq (is sock ok (sock send to c0 [1, 2] srv_addr)) False
+        assert eq (is sock ok (sock send to c0 (tb [1, 2]) srv_addr)) False
 
 -- @tests TS-SOCK-003
 fn :: test sock advanced ops dns cidr and polling => ()
@@ -219,7 +250,7 @@ fn :: test sock advanced ops dns cidr and polling => ()
         poll0     = sock poll p0
         _         = assert eq (readable poll0) False
         _         = assert ok (writable poll0)
-        c1        = unwrap sock (sock send all c0 [5, 6, 7, 8, 9])
+        c1        = unwrap sock (sock send all c0 (tb [5, 6, 7, 8, 9]))
         pair1     = sock pipe transfer c1 p0
         p1        = unwrap pair right pair1
         poll1     = sock poll p1
@@ -230,7 +261,7 @@ fn :: test sock advanced ops dns cidr and polling => ()
         _         = assert ok (is recv bytes ok ex_ok)
         _         = assert eq (unwrap recv bytes ex_ok) [5, 6, 7, 8, 9]
         c_shut_wr = unwrap sock (sock shutdown (unwrap pair left pair1) "wr")
-        _         = assert eq (is sock ok (sock send bytes c_shut_wr [1])) False
+        _         = assert eq (is sock ok (sock send bytes c_shut_wr (tb [1]))) False
         p_shut_rd = unwrap sock (sock shutdown p1 "rd")
         _         = assert eq (is recv bytes ok (sock recv bytes p_shut_rd 4)) False
         c_shut_all = unwrap sock (sock shutdown p1 "rdwr")
@@ -381,7 +412,8 @@ fn :: test sock rgf001 kernel tcp and unix => ()
         u_bad  = sys unix listen "../traversal.sock" 8
         _      = assert int equals (tup2 fst u_bad) (0 - 7) "sys_unix_listen traversal -> -7"
         _      = assert int equals (tup2 fst (sys unix connect "/tmp/rg_nonexistent_99999.sock" 50)) (0 - 3) "sys_unix_connect missing -> -3"
-        upath  = "/tmp/rg_sock_rgf001_{sys_getpid}.sock"
+        pid    = sys getpid
+        upath  = "/tmp/rg_sock_rgf001_{pid}.sock"
         ul_res = sys unix listen upath 8
         _      = assert int equals (tup2 fst ul_res) 0 "sys_unix_listen ok"
         ulfd   = tup2 snd ul_res

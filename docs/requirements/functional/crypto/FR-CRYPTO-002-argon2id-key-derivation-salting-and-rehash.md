@@ -6,7 +6,7 @@ status: implemented
 priority: must
 domain: CRYPTO
 depends_on: [FR-CRYPTO-001]
-related: [ADR-0001, VUL-AUTHN-001, VUL-INPUT-001]
+related: [ADR-0001, ADR-0010, VUL-AUTHN-001, VUL-INPUT-001]
 tests: [TS-CRYPTO-002]
 ---
 # FR-CRYPTO-002 — Provide Argon2id salt generation, auto-salted hashing, PHC parsing, rehash detection, raw key derivation, context pepper/AD, and OWASP presets
@@ -27,6 +27,8 @@ Standard Argon2id libraries in other languages provide automatic salt generation
 
 ## Constraints & edge cases
 - `argon2id generate salt` with `< 8` bytes must clamp to at least `16` bytes so generated salts never violate RFC 9106 minimum salt length.
+- `argon2id generate salt` reads getrandom(2) into a `Tensor[U8]` passed to `sys call` (`ADR-0010`), retrying on `EINTR` and short reads; it uses no `memfd` buffer.
+- `argon2id derive key` returns the raw key as `Argon2KeyOk Tensor[U8]` (`ADR-0010`); `argon2id hash bytes` takes the salt as a `Tensor[U8]`.
 
 ## Data & privacy
 - Secrets, peppers, and derived keys are never written to logs or files.

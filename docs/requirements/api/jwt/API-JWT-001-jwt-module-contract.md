@@ -22,6 +22,11 @@ auth: none
 - Encrypted Authenticated Tokens (`ChaCha20-Poly1305` AEAD):
   - `jwt seal aead String String String => JwtRes`
   - `jwt open aead String String String => JwtRes`
+- Base64url byte helpers (unpadded, RFC 4648 §5; bytes are `Tensor[U8]`, ADR-0010):
+  - `jwt b64url encode String => String`
+  - `jwt b64url decode String => String`
+  - `jwt b64url enc bytes Tensor[U8] => String`
+  - `jwt b64url decode bytes String => Tensor[U8]`
 
 ## Responses
 | Code | When | Body |
@@ -32,3 +37,6 @@ auth: none
 
 ## Rules
 - Signature comparison is strictly constant-time (`constant_time_eq`).
+- `HS256` is RFC 2104 HMAC-SHA256; the AEAD is RFC 8439 ChaCha20-Poly1305, both from `crypto` (ADR-0011).
+- `jwt seal aead` returns `RGAEAD2.<nonce>.<ciphertext>.<tag>` (unpadded Base64url parts); the AAD is `RGAEAD2.<nonce>`. `jwt open aead` rejects any other version, including `RGAEAD1`.
+- `jwt b64url decode bytes` does not validate its input; callers check it with the token functions first. A trailing single character is ignored.

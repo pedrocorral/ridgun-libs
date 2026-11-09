@@ -37,12 +37,9 @@ fn :: norm byte Int => Int
 
 fn :: byte str norm Int => String
       byte str norm ub  =
-        | ub >= 1 and ub <= 127 = char from code ub
-        | ub == 0 = str slice (sha256 raw "00679") 0 1
-        | otherwise =
-          idx = (ub - 128) * 5
-          lut = "0056400101002080010000179000010024100109003430040100361007870009100353001870030400471000870020200071002360012501171004140236900275001810016001398004440080400017005250027000314001400024700004006350015700183005940027600207007720028400601003400038000839006850084900617003060113500277000320006900483000580019200151008700008500193000100057000070002880002600326006460038800018009190028900103006000043900073011700038900628007210077300074004740006000041001410019900066003680001900383001730005700558000670024500065002030031900000008250001100128001360034900030003750039600228002380008400618005900031800062001770087900076002570009600034002200001600161"
-          str slice (sha256 raw (str slice lut idx (idx + 5))) 0 1
+        t     = Tensor[U8 * 1]
+        t_(0) = ub and 255
+        tensor to str t
 
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
@@ -73,49 +70,52 @@ fn :: c sb append String String String String String => String String String Str
 fn :: c sb finish String String String String => String
       c sb finish c0 c1 c2 c3 = ((c3 + c2) + c1) + c0
 
-fn :: c lb append2 [Int] [Int] Int => [Int] [Int] [Int] Int
-      c lb append2 n1 l2 cnt =
-        | (cnt % 1024) == 0 = ([], [], l2 :: n1, cnt)
-        | otherwise         = ([], n1, l2, cnt)
+-- The tensor is bound to a name: with `_` ridgunc 0.9.49 binds a wrong `n`.
+fn :: c u8 len Tensor[U8]          => Int
+      c u8 len (Tensor[U8 * n] bs) =  n
 
-fn :: c lb append1 [Int] [Int] [Int] Int => [Int] [Int] [Int] Int
-      c lb append1 n0 l1 l2 cnt =
-        | (cnt % 32) == 0 = c lb append2 (l1 :: n0) l2 cnt
-        | otherwise       = (n0, l1, l2, cnt)
+fn :: c copy loop Tensor[U8] Int Tensor[U8] Int Int Int => Int
+      c copy loop dst doff src soff i n =
+        | i >= n    = doff + n
+        | otherwise =
+          dst_(doff + i) = src_(soff + i)
+          c copy loop dst doff src soff (i + 1) n
 
-fn :: c lb append Int [Int] [Int] [Int] Int => [Int] [Int] [Int] Int
-      c lb append item l0 l1 l2 cnt =
-        c lb append1 (l0 :: [item]) l1 l2 (cnt + 1)
+-- Copies `n` bytes of `src` from `soff` into `dst` at `doff`; returns `doff + n`.
+fn :: c copy bytes Tensor[U8] Int Tensor[U8] Int Int => Int
+      c copy bytes dst doff src soff n =  c copy loop dst doff src soff 0 n
 
-fn :: c lb finish [Int] [Int] [Int] => [Int]
-      c lb finish l0 l1 l2 = l2 :: (l1 :: l0)
+-- Writes `w` as 4 little-endian bytes at `off`; returns `off + 4`.
+fn :: c put le32 Tensor[U8] Int Int => Int
+      c put le32 t          off w   =
+        uw          = w and 0xFFFFFFFF
+        t_(off)     = uw and 255
+        t_(off + 1) = (uw shr 8) and 255
+        t_(off + 2) = (uw shr 16) and 255
+        t_(off + 3) = (uw shr 24) and 255
+        off + 4
 
-fn :: bytes from list loop CT16 [Int] String String String String => String
-      bytes from list loop _ [] c0 c1 c2 c3 = c sb finish c0 c1 c2 c3
-      bytes from list loop tbl (b:rest) c0 c1 c2 c3 =
-        ub = norm byte b
-        ch = c get b256 tbl (ub / 16) (ub % 16)
-        n0, n1, n2, n3 = c sb append ch c0 c1 c2 c3
-        bytes from list loop tbl rest n0 n1 n2 n3
+fn :: bytes from list loop Tensor[U8] [Int]    Int => Tensor[U8]
+      bytes from list loop t          []       _   =  t
+      bytes from list loop t          (b:rest) i   =
+        t_(i) = b and 255
+        bytes from list loop t rest (i + 1)
 
+-- Values outside 0..255 are taken modulo 256 (`norm byte`).
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
 fn :: bytes from list [Int] => String
       bytes from list []    =  ""
-      bytes from list bs    =  bytes from list loop (c build b256) bs "" "" "" ""
-
-fn :: bytes to list loop String Int Int [Int] [Int] [Int] Int => [Int]
-      bytes to list loop s idx slen l0 l1 l2 cnt =
-        | idx >= slen = c lb finish l0 l1 l2
-        | otherwise   =
-          n0, n1, n2, ncnt = c lb append (norm byte (str char at s idx)) l0 l1 l2 cnt
-          bytes to list loop s (idx + 1) slen n0 n1 n2 ncnt
+      bytes from list bs    =
+        n = c list len bs
+        t = Tensor[U8 * n]
+        tensor to str (bytes from list loop t bs 0)
 
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
 fn :: bytes to list String => [Int]
       bytes to list s      =
-        bytes to list loop s 0 (str len s) [] [] [] 0
+        tensor to list (tensor from str s)
 
 -- ── RGF-019 32-Bit Unsigned Bitwise Operations (`band`, `bor`, `bxor`, `shl`, `shr`) ──
 
@@ -184,28 +184,12 @@ fn :: rotl32 Int Int => Int
 
 -- ── Hex & List Utilities ─────────────────────────────────────
 
-fn :: hextable Int => String
-      hextable _   =  "0123456789abcdef"
-
-fn :: crypto byte to hex Int => String
-      crypto byte to hex b   =
-        ub = norm byte b
-        hi = (ub / 16) % 16
-        lo = ub % 16
-        (str slice (hextable 0) hi (hi + 1)) + (str slice (hextable 0) lo (lo + 1))
-
-fn :: bytes list to hex loop [Int] String String String String => String
-      bytes list to hex loop [] c0 c1 c2 c3 = c sb finish c0 c1 c2 c3
-      bytes list to hex loop (b:rest) c0 c1 c2 c3 =
-        n0, n1, n2, n3 = c sb append (crypto byte to hex b) c0 c1 c2 c3
-        bytes list to hex loop rest n0 n1 n2 n3
-
-fn :: bytes list to hex [Int] => String
-      bytes list to hex bs    =  bytes list to hex loop bs "" "" "" ""
+fn :: bytes list to hex Tensor[U8] => String
+      bytes list to hex bs         =  bytes to hex bs
 
 fn :: bytes to hex str String => String
       bytes to hex str raw    =
-        bytes list to hex (bytes to list raw)
+        bytes list to hex (tensor from str raw)
 
 fn :: crypto hex val Int => Int
       crypto hex val c   =
@@ -214,18 +198,24 @@ fn :: crypto hex val Int => Int
         | c >= 65 and c <= 70  = (c - 65) + 10
         | otherwise            = 0
 
-fn :: hex str to bytes loop String Int Int [Int] [Int] [Int] Int => [Int]
-      hex str to bytes loop h idx hlen l0 l1 l2 cnt =
-        | (idx + 1) >= hlen = c lb finish l0 l1 l2
-        | otherwise         =
-          hi = crypto hex val (str char at h idx)
-          lo = crypto hex val (str char at h (idx + 1))
-          n0, n1, n2, ncnt = c lb append ((hi * 16) + lo) l0 l1 l2 cnt
-          hex str to bytes loop h (idx + 2) hlen n0 n1 n2 ncnt
+fn :: hex str to bytes loop String Tensor[U8] Int Int => Tensor[U8]
+      hex str to bytes loop h      out        i   n   =
+        | i >= n    = out
+        | otherwise =
+          hi      = crypto hex val (str char at h (2 * i))
+          lo      = crypto hex val (str char at h ((2 * i) + 1))
+          out_(i) = (hi * 16) + lo
+          hex str to bytes loop h out (i + 1) n
+
+fn :: hex str to bytes String => Tensor[U8]
+      hex str to bytes h      =
+        n   = (str len h) / 2
+        out = Tensor[U8 * n]
+        hex str to bytes loop h out 0 n
 
 fn :: hex to byte str String => String
       hex to byte str h      =
-        bytes from list (hex str to bytes loop h 0 (str len h) [] [] [] 0)
+        tensor to str (hex str to bytes h)
 
 fn :: c list len loop [Int] Int => Int
       c list len loop [] acc = acc
@@ -233,35 +223,6 @@ fn :: c list len loop [Int] Int => Int
 
 fn :: c list len [Int] => Int
       c list len xs    =  c list len loop xs 0
-
-fn :: c nth int [Int]    Int => Int
-      c nth int []       _   =  0
-      c nth int (x:rest) idx =
-        | idx <= 0  = x
-        | otherwise = c nth int rest (idx - 1)
-
-fn :: c take ints loop [Int] Int [Int] => [Int]
-      c take ints loop [] _ acc = acc
-      c take ints loop (x:rest) n acc =
-        | n <= 0    = acc
-        | otherwise = c take ints loop rest (n - 1) (acc :: [x])
-
-fn :: c take ints [Int] Int => [Int]
-      c take ints xs    n   =  c take ints loop xs n []
-
-fn :: c drop ints [Int]    Int => [Int]
-      c drop ints []       _   =  []
-      c drop ints (x:rest) n   =
-        | n <= 0    = [x] :: rest
-        | otherwise = c drop ints rest (n - 1)
-
-fn :: c byte slice loop CT16 String Int Int String String String String => String
-      c byte slice loop tbl s idx end_idx c0 c1 c2 c3 =
-        | idx >= end_idx = c sb finish c0 c1 c2 c3
-        | otherwise      =
-          ub = norm byte (str char at s idx)
-          n0, n1, n2, n3 = c sb append (c get b256 tbl (ub / 16) (ub % 16)) c0 c1 c2 c3
-          c byte slice loop tbl s (idx + 1) end_idx n0 n1 n2 n3
 
 fn :: byte slice String Int   Int     => String
       byte slice s      start end_idx =
@@ -274,7 +235,10 @@ fn :: byte slice String Int   Int     => String
           | end_idx < st = st
           | end_idx > slen = slen
           | otherwise = end_idx
-        c byte slice loop (c build b256) s st en "" "" "" ""
+        n    = en - st
+        out  = Tensor[U8 * n]
+        _    = c copy bytes out 0 (tensor from str s) st n
+        tensor to str out
 
 -- ── RGF-015 SHA-256, HMAC-SHA-256, `ct_equal`, PBKDF2-HMAC-SHA-256 ──
 
@@ -290,38 +254,39 @@ fn :: sha256 bytes String => String
       sha256 bytes data   =
         sha256 raw data
 
-fn :: pad zeroes Int => [Int]
-      pad zeroes n   =
-        | n <= 0    = []
-        | otherwise = [0] :: (pad zeroes (n - 1))
+fn :: bitxor key pad loop Tensor[U8] Tensor[U8] Int Int Int => Tensor[U8]
+      bitxor key pad loop kb         out        pad i   n   =
+        | i >= n    = out
+        | otherwise =
+          out_(i) = (kb_(i) xor pad) and 255
+          bitxor key pad loop kb out pad (i + 1) n
 
-fn :: bitxor key pad [Int]    Int => [Int]
-      bitxor key pad []       _   =  []
-      bitxor key pad (b:rest) pad =  [byte bxor b pad] :: (bitxor key pad rest pad)
+fn :: bitxor key pad Tensor[U8] Int => Tensor[U8]
+      bitxor key pad kb         pad =
+        n   = c u8 len kb
+        out = Tensor[U8 * n]
+        bitxor key pad loop kb out pad 0 n
 
-fn :: raw hmac key bytes String => [Int]
-      raw hmac key bytes key    =
-        | (str len key) > 64 = bytes to list (sha256 bytes key)
-        | otherwise          = bytes to list key
+-- The HMAC key `raw` zero-padded to `blen` bytes (`raw` is at most `blen` bytes).
+fn :: c hmac key block String Int  => Tensor[U8]
+      c hmac key block raw    blen =
+        k   = tensor from str raw
+        out = Tensor[U8 * blen]
+        _   = c copy bytes out 0 k 0 (c u8 len k)
+        out
 
-fn :: normalize hmac key String => [Int]
+fn :: normalize hmac key String => Tensor[U8]
       normalize hmac key key    =
-        raw  = raw hmac key bytes key
-        rlen = c list len raw
-        raw :: (pad zeroes (64 - rlen))
-
-fn :: c list to raw short [Int] => String
-      c list to raw short [] = ""
-      c list to raw short (b:rest) =
-        (byte str norm (norm byte b)) + (c list to raw short rest)
+        | (str len key) > 64 = c hmac key block (sha256 bytes key) 64
+        | otherwise          = c hmac key block key 64
 
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
 fn :: hmac sha256 String String => String
       hmac sha256 key    msg    =
         k_block = normalize hmac key key
-        ipad_s  = c list to raw short (bitxor key pad k_block 54)
-        opad_s  = c list to raw short (bitxor key pad k_block 92)
+        ipad_s  = tensor to str (bitxor key pad k_block 54)
+        opad_s  = tensor to str (bitxor key pad k_block 92)
         inner   = sha256 raw (ipad_s + msg)
         sha256 raw (opad_s + inner)
 
@@ -341,24 +306,37 @@ fn :: ct equal String String => Bool
         | (str len a) != (str len b) = False
         | otherwise                  = (ct diff str a b 0 (str len a) 0) == 0
 
-fn :: bitxor byte lists [Int]     [Int]     => [Int]
-      bitxor byte lists []        _         =  []
-      bitxor byte lists _         []        =  []
-      bitxor byte lists (a:arest) (b:brest) =
-        [byte bxor a b] :: (bitxor byte lists arest brest)
+fn :: bitxor byte lists loop Tensor[U8] Tensor[U8] Tensor[U8] Int Int => Tensor[U8]
+      bitxor byte lists loop a          b          out        i   n   =
+        | i >= n    = out
+        | otherwise =
+          out_(i) = byte bxor a_(i) b_(i)
+          bitxor byte lists loop a b out (i + 1) n
+
+-- Byte-wise XOR over the shorter of the two lengths.
+fn :: bitxor byte lists Tensor[U8] Tensor[U8] => Tensor[U8]
+      bitxor byte lists a          b          =
+        la  = c u8 len a
+        lb  = c u8 len b
+        n   =
+          | la < lb   = la
+          | otherwise = lb
+        out = Tensor[U8 * n]
+        bitxor byte lists loop a b out 0 n
 
 fn :: bitxor byte strings String String => String
       bitxor byte strings a      b      =
-        c list to raw short (bitxor byte lists (bytes to list a) (bytes to list b))
+        tensor to str (bitxor byte lists (tensor from str a) (tensor from str b))
 
 fn :: be32 bytes Int => String
       be32 bytes n   =
-        un = u32 val n
-        b0 = (un / 16777216) % 256
-        b1 = (un / 65536) % 256
-        b2 = (un / 256) % 256
-        b3 = un % 256
-        ((byte str norm b0) + (byte str norm b1)) + ((byte str norm b2) + (byte str norm b3))
+        un    = u32 val n
+        t     = Tensor[U8 * 4]
+        t_(0) = (un shr 24) and 255
+        t_(1) = (un shr 16) and 255
+        t_(2) = (un shr 8) and 255
+        t_(3) = un and 255
+        tensor to str t
 
 fn :: c get16 CT16 Int => A
       c get16 row  idx =
@@ -517,12 +495,6 @@ fn :: c acc8 to raw CT16 Tensor[U64 * 8] => String
         q6 = c word32 to raw4 tbl acc_(6)
         q7 = c word32 to raw4 tbl acc_(7)
         ((q0 + q1) + (q2 + q3)) + ((q4 + q5) + (q6 + q7))
-
-fn :: c list to raw CT16 [Int] => String
-      c list to raw _ [] = ""
-      c list to raw tbl (b:rest) =
-        ub = norm byte b
-        (c get b256 tbl (ub / 16) (ub % 16)) + (c list to raw tbl rest)
 
 fn :: c init acc32 String => Tensor[U64 * 32]
       c init acc32 s      =
@@ -687,11 +659,6 @@ fn :: pbkdf2 block CPbkCtx String Int Int => String
         accf = pbkdf2 iter loop (iterations - 1) ipad opad u1 acc0
         c acc32 to raw tbl accf
 
-fn :: c list to raw fast [Int] => String
-      c list to raw fast [] = ""
-      c list to raw fast (b:rest) =
-        (byte str norm (norm byte b)) + (c list to raw fast rest)
-
 fn :: pbkdf2 blocks loop CPbkCtx String Int Int Int String => String
       pbkdf2 blocks loop ctx salt iterations block_idx dk_len acc =
         | (str len acc) == dk_len = acc
@@ -710,8 +677,8 @@ fn :: pbkdf2 hmac sha256 String String Int Int => String
         | otherwise                    =
           tbl     = CT16 "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""
           k_block = normalize hmac key pwd
-          ipad_s  = c list to raw fast (bitxor key pad k_block 54)
-          opad_s  = c list to raw fast (bitxor key pad k_block 92)
+          ipad_s  = tensor to str (bitxor key pad k_block 54)
+          opad_s  = tensor to str (bitxor key pad k_block 92)
           ctx     = CPbkCtx tbl ipad_s opad_s
           pbkdf2 blocks loop ctx salt iterations 1 dk_len ""
 
@@ -784,18 +751,9 @@ fn :: compress block Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 * 8
 
 -- ── RFC 8439 ChaCha20 Stream Cipher (`chacha20_block`, `chacha20_xor`) ──
 
-fn :: le32 at [Int] Int => Int
-      le32 at bs    off =
-        b0 = c nth int bs off
-        b1 = c nth int bs (off + 1)
-        b2 = c nth int bs (off + 2)
-        b3 = c nth int bs (off + 3)
-        b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
-
-fn :: u32 to le4 Int => [Int]
-      u32 to le4 w   =
-        uw = u32 val w
-        [uw % 256, (uw / 256) % 256, (uw / 65536) % 256, (uw / 16777216) % 256]
+fn :: le32 at Tensor[U8] Int => Int
+      le32 at bs         off =
+        bs_(off) + (bs_(off + 1) * 256) + (bs_(off + 2) * 65536) + (bs_(off + 3) * 16777216)
 
 fn :: chacha qr Int Int Int Int => Int Int Int Int
       chacha qr a0 b0 c0 d0 =
@@ -826,12 +784,7 @@ fn :: chacha rounds loop Tensor[Int * 16] Int => Tensor[Int * 16]
         | idx >= 10 = st
         | otherwise = chacha rounds loop (chacha double round st) (idx + 1)
 
-fn :: words16 tensor to bytes Tensor[Int * 16] Tensor[Int * 16] Int => [Int]
-      words16 tensor to bytes mixed init_st idx =
-        | idx >= 16 = []
-        | otherwise = (u32 to le4 ((mixed_(idx) + init_st_(idx)) and 0xFFFFFFFF)) :: (words16 tensor to bytes mixed init_st (idx + 1))
-
-fn :: chacha20 init st [Int] [Int] Int => Tensor[Int * 16]
+fn :: chacha20 init st Tensor[U8] Tensor[U8] Int => Tensor[Int * 16]
       chacha20 init st key_bs nonce_bs counter =
         st      = Tensor[Int * 16]
         st_(0)  = 1634760805
@@ -852,68 +805,88 @@ fn :: chacha20 init st [Int] [Int] Int => Tensor[Int * 16]
         st_(15) = le32 at nonce_bs 8
         st
 
-fn :: chacha20 block [Int]  [Int]    Int     => [Int]
-      chacha20 block key_bs nonce_bs counter =
+fn :: chacha20 emit loop Tensor[Int * 16] Tensor[Int * 16] Tensor[U8] Int => Tensor[U8]
+      chacha20 emit loop mixed init out w =
+        | w >= 16   = out
+        | otherwise =
+          _ = c put le32 out (4 * w) ((mixed_(w) + init_(w)) and 0xFFFFFFFF)
+          chacha20 emit loop mixed init out (w + 1)
+
+-- The 64-byte keystream block `counter` (RFC 8439 §2.3).
+fn :: chacha20 block Tensor[U8] Tensor[U8] Int     => Tensor[U8]
+      chacha20 block key_bs     nonce_bs   counter =
         init_st = chacha20 init st key_bs nonce_bs counter
         work_st = chacha20 init st key_bs nonce_bs counter
         mixed   = chacha rounds loop work_st 0
-        words16 tensor to bytes mixed init_st 0
+        chacha20 emit loop mixed init_st (Tensor[U8 * 64]) 0
 
-fn :: chacha20 bitxor loop [Int] [Int] Int [Int] [Int] [Int] [Int] Int => [Int]
-      chacha20 bitxor loop _ _ _ [] l0 l1 l2 _ = c lb finish l0 l1 l2
-      chacha20 bitxor loop key_bs nonce_bs ctr msg l0 l1 l2 cnt =
-        ks    = chacha20 block key_bs nonce_bs ctr
-        chunk = c take ints msg 64
-        rest  = c drop ints msg 64
-        xored = bitxor byte lists chunk ks
-        n0, n1, n2, ncnt = c lb append1 (l0 :: xored) l1 l2 (cnt + 1)
-        chacha20 bitxor loop key_bs nonce_bs (ctr + 1) rest n0 n1 n2 ncnt
+fn :: chacha copy st Tensor[Int * 16] Tensor[Int * 16] Int => Tensor[Int * 16]
+      chacha copy st src              dst              i   =
+        | i >= 16   = dst
+        | otherwise =
+          dst_(i) = src_(i)
+          chacha copy st src dst (i + 1)
+
+fn :: chacha20 mix block Tensor[Int * 16] Tensor[Int * 16] Tensor[U8] Tensor[U8] Int Int Int => Int
+      chacha20 mix block mixed init msg out off n i =
+        | i >= 64 or (off + i) >= n = 0
+        | otherwise =
+          w             = i shr 2
+          ks            = ((mixed_(w) + init_(w)) shr (8 * (i and 3))) and 255
+          out_(off + i) = msg_(off + i) xor ks
+          chacha20 mix block mixed init msg out off n (i + 1)
+
+fn :: chacha20 bitxor loop Tensor[Int * 16] Tensor[U8] Tensor[U8] Int Int Int => Tensor[U8]
+      chacha20 bitxor loop init msg out off n ctr =
+        | off >= n  = out
+        | otherwise =
+          init_(12) = ctr and 0xFFFFFFFF
+          mixed     = chacha rounds loop (chacha copy st init (Tensor[Int * 16]) 0) 0
+          _         = chacha20 mix block mixed init msg out off n 0
+          chacha20 bitxor loop init msg out (off + 64) n (ctr + 1)
+
+-- RFC 8439 §2.4 encryption: `msg` XOR the keystream from block `ctr` on.
+fn :: chacha20 bitxor Tensor[U8] Tensor[U8] Int Tensor[U8] => Tensor[U8]
+      chacha20 bitxor key_bs     nonce_bs   ctr msg        =
+        n    = c u8 len msg
+        out  = Tensor[U8 * n]
+        init = chacha20 init st key_bs nonce_bs ctr
+        chacha20 bitxor loop init msg out 0 n ctr
 
 -- ── RFC 8439 Poly1305 One-Time Authenticator (5 x 26-bit limbs) ──
 
-fn :: poly1305 clamp r [Int] => [Int]
-      poly1305 clamp r otk   =
-        [c nth int otk 0, c nth int otk 1, c nth int otk 2, byte band (c nth int otk 3) 15, byte band (c nth int otk 4) 252, c nth int otk 5, c nth int otk 6, byte band (c nth int otk 7) 15, byte band (c nth int otk 8) 252, c nth int otk 9, c nth int otk 10, byte band (c nth int otk 11) 15, byte band (c nth int otk 12) 252, c nth int otk 13, c nth int otk 14, byte band (c nth int otk 15) 15]
+-- r = clamp(otk[0..16)) as 5 x 26-bit limbs (RFC 8439 §2.5.1 clamp as word masks).
+fn :: poly1305 r limbs Tensor[U8] => Tensor[Int * 5]
+      poly1305 r limbs otk        =
+        t0    = (le32 at otk 0) and 0x0FFFFFFF
+        t1    = (le32 at otk 4) and 0x0FFFFFFC
+        t2    = (le32 at otk 8) and 0x0FFFFFFC
+        t3    = (le32 at otk 12) and 0x0FFFFFFC
+        r     = Tensor[Int * 5]
+        r_(0) = t0 % 67108864
+        r_(1) = ((t0 / 67108864) + ((t1 % 1048576) * 64)) % 67108864
+        r_(2) = ((t1 / 1048576) + ((t2 % 16384) * 4096)) % 67108864
+        r_(3) = ((t2 / 16384) + ((t3 % 256) * 262144)) % 67108864
+        r_(4) = t3 / 256
+        r
 
-fn :: poly1305 r limbs [Int] => [Int]
-      poly1305 r limbs r_bs  =
-        t0 = le32 at r_bs 0
-        t1 = le32 at r_bs 4
-        t2 = le32 at r_bs 8
-        t3 = le32 at r_bs 12
-        r0 = t0 % 67108864
-        r1 = ((t0 / 67108864) + ((t1 % 1048576) * 64)) % 67108864
-        r2 = ((t1 / 1048576) + ((t2 % 16384) * 4096)) % 67108864
-        r3 = ((t2 / 16384) + ((t3 % 256) * 262144)) % 67108864
-        r4 = t3 / 256
-        [r0, r1, r2, r3, r4]
-
-fn :: poly1305 block limbs [Int] => [Int]
-      poly1305 block limbs blk   =
-        t0 = le32 at blk 0
-        t1 = le32 at blk 4
-        t2 = le32 at blk 8
-        t3 = le32 at blk 12
-        b0 = t0 % 67108864
-        b1 = ((t0 / 67108864) + ((t1 % 1048576) * 64)) % 67108864
-        b2 = ((t1 / 1048576) + ((t2 % 16384) * 4096)) % 67108864
-        b3 = ((t2 / 16384) + ((t3 % 256) * 262144)) % 67108864
-        b4 = (t3 / 256) + 16777216
-        [b0, b1, b2, b3, b4]
-
-fn :: poly1305 step [Int] [Int] [Int] => [Int]
-      poly1305 step h     r     blk   =
-        b  = poly1305 block limbs blk
-        h0 = (c nth int h 0) + (c nth int b 0)
-        h1 = (c nth int h 1) + (c nth int b 1)
-        h2 = (c nth int h 2) + (c nth int b 2)
-        h3 = (c nth int h 3) + (c nth int b 3)
-        h4 = (c nth int h 4) + (c nth int b 4)
-        r0 = c nth int r 0
-        r1 = c nth int r 1
-        r2 = c nth int r 2
-        r3 = c nth int r 3
-        r4 = c nth int r 4
+-- h = (h + block) * r mod 2^130 - 5 for the full 16-byte block at `off`; updates `h` in place.
+fn :: poly1305 step Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int => Tensor[Int * 5]
+      poly1305 step h                r                msg        off =
+        t0 = le32 at msg off
+        t1 = le32 at msg (off + 4)
+        t2 = le32 at msg (off + 8)
+        t3 = le32 at msg (off + 12)
+        h0 = h_(0) + (t0 % 67108864)
+        h1 = h_(1) + (((t0 / 67108864) + ((t1 % 1048576) * 64)) % 67108864)
+        h2 = h_(2) + (((t1 / 1048576) + ((t2 % 16384) * 4096)) % 67108864)
+        h3 = h_(3) + (((t2 / 16384) + ((t3 % 256) * 262144)) % 67108864)
+        h4 = h_(4) + ((t3 / 256) + 16777216)
+        r0 = r_(0)
+        r1 = r_(1)
+        r2 = r_(2)
+        r3 = r_(3)
+        r4 = r_(4)
         s1 = r1 * 5
         s2 = r2 * 5
         s3 = r3 * 5
@@ -939,34 +912,37 @@ fn :: poly1305 step [Int] [Int] [Int] => [Int]
         n4 = e4 % 67108864
         f0 = n0 + (c4 * 5)
         cf = f0 / 67108864
-        [f0 % 67108864, n1 + cf, n2, n3, n4]
+        h_(0) = f0 % 67108864
+        h_(1) = n1 + cf
+        h_(2) = n2
+        h_(3) = n3
+        h_(4) = n4
+        h
 
-fn :: poly1305 blocks loop [Int] [Int] [Int] => [Int]
-      poly1305 blocks loop h _ [] = h
-      poly1305 blocks loop h r msg =
-        blk  = c take ints msg 16
-        rest = c drop ints msg 16
-        poly1305 blocks loop (poly1305 step h r blk) r rest
+fn :: poly1305 blocks loop Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int Int => Tensor[Int * 5]
+      poly1305 blocks loop h r msg off n =
+        | off >= n  = h
+        | otherwise = poly1305 blocks loop (poly1305 step h r msg off) r msg (off + 16) n
 
-fn :: select reduced limbs Int [Int] [Int] => [Int]
-      select reduced limbs g4 g_set h_set =
-        | g4 >= 0   = g_set
-        | otherwise = h_set
+fn :: c pick Bool Int Int => Int
+      c pick use_a a   b   =
+        | use_a     = a
+        | otherwise = b
 
-fn :: poly1305 finalize [Int] [Int] => [Int]
-      poly1305 finalize h     otk   =
-        c1   = (c nth int h 1) / 67108864
-        h1   = (c nth int h 1) % 67108864
-        t2   = (c nth int h 2) + c1
+fn :: poly1305 finalize Tensor[Int * 5] Tensor[U8] => Tensor[U8]
+      poly1305 finalize h                otk        =
+        c1   = h_(1) / 67108864
+        h1   = h_(1) % 67108864
+        t2   = h_(2) + c1
         c2   = t2 / 67108864
         h2   = t2 % 67108864
-        t3   = (c nth int h 3) + c2
+        t3   = h_(3) + c2
         c3   = t3 / 67108864
         h3   = t3 % 67108864
-        t4   = (c nth int h 4) + c3
+        t4   = h_(4) + c3
         c4   = t4 / 67108864
         h4   = t4 % 67108864
-        t0   = (c nth int h 0) + (c4 * 5)
+        t0   = h_(0) + (c4 * 5)
         c0   = t0 / 67108864
         h0   = t0 % 67108864
         h1_f = h1 + c0
@@ -985,12 +961,12 @@ fn :: poly1305 finalize [Int] [Int] => [Int]
         g3   = g3_t % 67108864
         g4   = (h4 + gc3) - 67108864
 
-        fin  = select reduced limbs g4 [g0, g1, g2, g3, g4] [h0, h1_f, h2, h3, h4]
-        f0   = c nth int fin 0
-        f1   = c nth int fin 1
-        f2   = c nth int fin 2
-        f3   = c nth int fin 3
-        f4   = c nth int fin 4
+        use_g = g4 >= 0
+        f0   = c pick use_g g0 h0
+        f1   = c pick use_g g1 h1_f
+        f2   = c pick use_g g2 h2
+        f3   = c pick use_g g3 h3
+        f4   = c pick use_g g4 h4
 
         w0   = (f0 + ((f1 % 64) * 67108864)) % 4294967296
         w1   = ((f1 / 64) + ((f2 % 4096) * 1048576)) % 4294967296
@@ -1006,24 +982,39 @@ fn :: poly1305 finalize [Int] [Int] => [Int]
         sum1 = w1 + s1 + (sum0 / 4294967296)
         sum2 = w2 + s2 + (sum1 / 4294967296)
         sum3 = w3 + s3 + (sum2 / 4294967296)
-        (u32 to le4 (sum0 % 4294967296)) :: (u32 to le4 (sum1 % 4294967296)) :: (u32 to le4 (sum2 % 4294967296)) :: (u32 to le4 (sum3 % 4294967296))
+        tag  = Tensor[U8 * 16]
+        o1   = c put le32 tag 0 (sum0 % 4294967296)
+        o2   = c put le32 tag o1 (sum1 % 4294967296)
+        o3   = c put le32 tag o2 (sum2 % 4294967296)
+        _    = c put le32 tag o3 (sum3 % 4294967296)
+        tag
 
-fn :: pad16 zeroes Int => [Int]
-      pad16 zeroes len =
-        | (len % 16) == 0 = []
-        | otherwise       = pad zeroes (16 - (len % 16))
+fn :: pad16 len Int => Int
+      pad16 len len =
+        | (len % 16) == 0 = 0
+        | otherwise       = 16 - (len % 16)
 
-fn :: u64 le8 Int => [Int]
-      u64 le8 n   =
-        (u32 to le4 (n % 4294967296)) :: (u32 to le4 (n / 4294967296))
+-- Writes `n` as 8 little-endian bytes at `off`; returns `off + 8`.
+fn :: c put le64 Tensor[U8] Int Int => Int
+      c put le64 t          off n   =
+        o1 = c put le32 t off (n % 4294967296)
+        c put le32 t o1 (n / 4294967296)
 
-fn :: poly1305 aead mac [Int] [Int] [Int] => [Int]
-      poly1305 aead mac otk aad_b ct_b =
-        aad_b c list len -> alen
-        ct_b c list len -> clen
-        aad_b :: (pad16 zeroes alen) :: ct_b :: (pad16 zeroes clen) :: (u64 le8 alen) :: (u64 le8 clen) -> msg
-        otk poly1305 clamp r -> poly1305 r limbs -> r
-        poly1305 blocks loop [0, 0, 0, 0, 0] r msg -> h_fin
+-- RFC 8439 §2.8 MAC input: aad || pad16 || ct || pad16 || le64(len aad) || le64(len ct).
+fn :: poly1305 aead mac Tensor[U8] Tensor[U8] Tensor[U8] => Tensor[U8]
+      poly1305 aead mac otk        aad_b      ct_b       =
+        alen  = c u8 len aad_b
+        clen  = c u8 len ct_b
+        apad  = pad16 len alen
+        cpad  = pad16 len clen
+        total = alen + apad + clen + cpad + 16
+        msg   = Tensor[U8 * total]
+        o1    = c copy bytes msg 0 aad_b 0 alen
+        o2    = c copy bytes msg (o1 + apad) ct_b 0 clen
+        o3    = c put le64 msg (o2 + cpad) alen
+        _     = c put le64 msg o3 clen
+        r     = poly1305 r limbs otk
+        h_fin = poly1305 blocks loop (Tensor[Int * 5]) r msg 0 total
         poly1305 finalize h_fin otk
 
 -- @implements FR-CRYPTO-004
@@ -1034,20 +1025,18 @@ fn :: aead seal String String String String => String
       aead seal key nonce aad plaintext =
         | (str len key) != 32 or (str len nonce) != 12 = ""
         | otherwise                                    =
-          key_bs   = bytes to list key
-          nonce_bs = bytes to list nonce
-          aad_bs   = bytes to list aad
-          pt_bs    = bytes to list plaintext
-          otk      = c take ints (chacha20 block key_bs nonce_bs 0) 32
-          ct_bs    = chacha20 bitxor loop key_bs nonce_bs 1 pt_bs [] [] [] 0
-          tag_bs   = poly1305 aead mac otk aad_bs ct_bs
-          bytes from list (ct_bs :: tag_bs)
+          key_bs   = tensor from str key
+          nonce_bs = tensor from str nonce
+          otk      = chacha20 block key_bs nonce_bs 0
+          ct_bs    = chacha20 bitxor key_bs nonce_bs 1 (tensor from str plaintext)
+          tag_bs   = poly1305 aead mac otk (tensor from str aad) ct_bs
+          (tensor to str ct_bs) + (tensor to str tag_bs)
 
-fn :: decrypt verified aead Bool [Int] [Int] [Int] => Int String
-      decrypt verified aead False _ _ _ = (0 - 12, "")
-      decrypt verified aead True key_bs nonce_bs ct_bs =
-        chacha20 bitxor loop key_bs nonce_bs 1 ct_bs [] [] [] 0 -> pt_bs
-        (0, bytes from list pt_bs)
+fn :: decrypt verified aead Bool Tensor[U8] Tensor[U8] Tensor[U8] => Int String
+      decrypt verified aead False _          _          _          =  (0 - 12, "")
+      decrypt verified aead True  key_bs     nonce_bs   ct_bs      =
+        chacha20 bitxor key_bs nonce_bs 1 ct_bs -> pt_bs
+        (0, tensor to str pt_bs)
 
 -- @implements FR-CRYPTO-004
 -- @implements API-CRYPTO-001
@@ -1061,12 +1050,11 @@ fn :: aead open String String String String => Int String
           ct_len    = total_len - 16
           ct_str    = byte slice ciphertext_and_tag 0 ct_len
           tag_str   = byte slice ciphertext_and_tag ct_len total_len
-          key_bs    = bytes to list key
-          nonce_bs  = bytes to list nonce
-          aad_bs    = bytes to list aad
-          ct_bs     = bytes to list ct_str
-          otk       = c take ints (chacha20 block key_bs nonce_bs 0) 32
-          exp_tag   = bytes from list (poly1305 aead mac otk aad_bs ct_bs)
+          key_bs    = tensor from str key
+          nonce_bs  = tensor from str nonce
+          ct_bs     = tensor from str ct_str
+          otk       = chacha20 block key_bs nonce_bs 0
+          exp_tag   = tensor to str (poly1305 aead mac otk (tensor from str aad) ct_bs)
           decrypt verified aead (ct equal tag_str exp_tag) key_bs nonce_bs ct_bs
 -- ── FIPS 180-4 SHA-512 (`sha512 bytes`, `sha512 hex`) ────────
 
@@ -2184,7 +2172,7 @@ fn :: minisign trusted comment String       => String
 fn :: minisign payload for alg String String => Bool String
       minisign payload for alg alg msg =
         | alg == "Ed" = (True, msg)
-        | alg == "ED" = (True, bytes from list (argon2id.a2 blake2b (bytes to list msg) 64))
+        | alg == "ED" = (True, tensor to str (argon2id.a2 blake2b (tensor from str msg) 64))
         | otherwise   = (False, "")
 
 fn :: minisign check sigs Bool String String String String String String => Bool
@@ -2272,25 +2260,16 @@ fn :: sha384 hex String => String
       sha384 hex msg    =
         msg sha384 bytes -> bytes to hex str
 
-fn :: raw hmac384 key bytes String => [Int]
-      raw hmac384 key bytes key    =
-        | (str len key) > 128 = bytes to list (sha384 bytes key)
-        | otherwise           = bytes to list key
-
-fn :: normalize hmac384 key String => [Int]
+fn :: normalize hmac384 key String => Tensor[U8]
       normalize hmac384 key key    =
-        raw  = raw hmac384 key bytes key
-        rlen = c list len raw
-        raw :: (pad zeroes (128 - rlen))
+        | (str len key) > 128 = c hmac key block (sha384 bytes key) 128
+        | otherwise           = c hmac key block key 128
 
--- @implements FR-CRYPTO-006
--- @implements API-CRYPTO-001
--- @mitigates VUL-AUTHN-001
 fn :: hmac sha384 String String => String
       hmac sha384 key    msg    =
         k_block = normalize hmac384 key key
-        ipad_s  = c list to raw short (bitxor key pad k_block 54)
-        opad_s  = c list to raw short (bitxor key pad k_block 92)
+        ipad_s  = tensor to str (bitxor key pad k_block 54)
+        opad_s  = tensor to str (bitxor key pad k_block 92)
         inner   = sha384 bytes (ipad_s + msg)
         sha384 bytes (opad_s + inner)
 

@@ -3,6 +3,7 @@ id: API-IO-001
 title: Public lib contract for io (io.rglib / libio.so)
 status: approved
 implements: [FR-IO-001, FR-IO-002]
+related: [ADR-0010]
 auth: none
 ---
 # API-IO-001 — Public lib contract for `io` (`io.rg`)
@@ -22,7 +23,7 @@ auth: none
   - `io exec timeout String Int => IoResult` / `exec with timeout String Int => IoResult`
 - High-Level File, Metadata & Stream Operations (`RG-010`):
   - `read_file String => String`, `write_file String String => Int`, `append_file String String => Int`
-  - `read_bytes String => [Int]`, `write_bytes String [Int] => Int`, `list_dir String => [String]`
+  - `read bytes String => Tensor[U8]` and `write bytes String Tensor[U8] => ()` (compiler built-ins since ridgunc 0.9.48; `write bytes` still accepts a `[Int]` of values `0..255`; `ADR-0010`), `list_dir String => [String]`
   - `file_exists String => Bool`, `is_file String => Bool`, `is_dir String => Bool`, `is_symlink String => Bool`
   - `file_size String => Int`, `file_mtime String => Int`, `file_mode String => Int`
   - `io read file safe String => IoResult`, `io read lines String => [String]`, `io write lines String [String] => Int`

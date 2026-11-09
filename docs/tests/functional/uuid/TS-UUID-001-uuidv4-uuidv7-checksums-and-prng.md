@@ -13,12 +13,12 @@ automated_in: [src/test/ridgun/test uuid.rg]
 
 ## Steps / inputs
 1. Call `uuid v4`, `uuid v7`, `uuid v7 at`, `uuid is valid`, and `uuid version` on valid and malformed UUIDs.
-2. Call `fnv1a 32 "foobar"`, `adler32 "Wikipedia"`, and `crc32 "123456789"`.
+2. Call `fnv1a 32 "foobar"`, `adler32 "Wikipedia"`, and `crc32` on `""`, `"a"`, `"123456789"`, `"The quick brown fox jumps over the lazy dog"` and the slice `str slice "x123456789" 1 10`.
 3. Call `prng next` and `prng range` and verify determinism and `[lo, hi]` bounds.
 
 ## Expected results (map to acceptance criteria)
 - AC1 → Generated UUIDv4/UUIDv7 strings pass `uuid is valid` with version `4`/`7` and chronological ordering for UUIDv7.
-- AC2 → Checksums match standard reference test vectors (`3214735752`, `300286872`, `3421780262`).
+- AC2 → Checksums match standard reference test vectors (`3214735752`, `300286872`; CRC-32 `0`, `3904355907`, `3421780262`, `1095738169`, and `3421780262` for the slice).
 - AC3 → Seeded PRNG is deterministic and stays within `[lo, hi]`.
 
 ## Not covered here (to avoid duplication)

@@ -69,6 +69,8 @@ fn :: test checksums and prng => ()
         _ = assert int equals (crc32 "") 0 "AC2: CRC-32 '' == 0"
         _ = assert int equals (crc32 "a") 3904355907 "AC2: CRC-32 'a' == 0xe8b7be43"
         _ = assert int equals (crc32 "123456789") 3421780262 "AC2: CRC-32 '123456789' == 0xcbf43926"
+        _ = assert int equals (crc32 "The quick brown fox jumps over the lazy dog") 1095738169 "AC2: CRC-32 pangram == 0x414fa339"
+        _ = assert int equals (crc32 (str slice "x123456789" 1 10)) 3421780262 "AC2: CRC-32 of a slice matches the whole-string vector"
 
         -- Deterministic 31-bit LCG PRNG
         s1 = prng next 42

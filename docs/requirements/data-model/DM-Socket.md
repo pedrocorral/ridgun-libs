@@ -2,7 +2,7 @@
 id: DM-Socket
 title: Socket handle, address, options, and poll readiness models
 status: approved
-related: [FR-SOCK-001, FR-SOCK-002, FR-SOCK-003, FR-SOCK-004, ADR-0001, ADR-0002]
+related: [FR-SOCK-001, FR-SOCK-002, FR-SOCK-003, FR-SOCK-004, ADR-0001, ADR-0002, ADR-0010]
 ---
 # DM-Socket — Socket handle, address, options, and poll readiness models
 
@@ -31,6 +31,8 @@ related: [FR-SOCK-001, FR-SOCK-002, FR-SOCK-003, FR-SOCK-004, ADR-0001, ADR-0002
 | readable | Bool | `True` / `False` | Poll readiness for read/accept |
 | writable | Bool | `True` / `False` | Poll readiness for write |
 | has_error | Bool | `True` / `False` | Poll error or closed state |
+| rx_buf | Tensor[U8] | Bytes `0..255` | In-memory receive buffer of the high-level `Socket` (`ADR-0010`) |
+| tx_buf | Tensor[U8] | Bytes `0..255` | In-memory send buffer of the high-level `Socket` (`ADR-0010`) |
 | status_code | Int | `0`, `-1`..`-8`, `-99` | Solstice `RGF-001` status tuple code |
 
 ## Relations

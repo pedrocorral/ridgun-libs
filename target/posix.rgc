@@ -183,45 +183,40 @@ fn :: lstat mtime sec (Bool String Int Int Int String String Int String) => Int
 fn :: lstat symlink target (Bool String Int Int Int String String Int String) => String
       lstat symlink target (_, _, _, _, _, _, _, _, target) = target
 
--- ── Kernel Memory Bridge Helpers (mmap + memfd_create + eventfd2) ──
+-- ── Byte Buffer Helpers (Tensor[U8], ADR-0010) ──────────────
 
-fn :: px raw byte ub Int => String
-      px raw byte ub ub  =
-        | ub >= 1 and ub <= 127 = char from code ub
-        | ub == 0 = str slice (sha256 raw "00679") 0 1
-        | otherwise =
-          idx = (ub - 128) * 5
-          lut = "0056400101002080010000179000010024100109003430040100361007870009100353001870030400471000870020200071002360012501171004140236900275001810016001398004440080400017005250027000314001400024700004006350015700183005940027600207007720028400601003400038000839006850084900617003060113500277000320006900483000580019200151008700008500193000100057000070002880002600326006460038800018009190028900103006000043900073011700038900628007210077300074004740006000041001410019900066003680001900383001730005700558000670024500065002030031900000008250001100128001360034900030003750039600228002380008400618005900031800062001770087900076002570009600034002200001600161"
-          str slice (sha256 raw (str slice lut idx (idx + 5))) 0 1
-
+-- One byte `b` (taken modulo 256) as a 1-byte String.
 fn :: px raw byte Int => String
-      px raw byte b   =  px raw byte ub (((b % 256) + 256) % 256)
+      px raw byte b   =
+        t = Tensor[U8 * 1]
+        t_(0) = ((b % 256) + 256) % 256
+        tensor to str t
+
+-- Writes `val` as 8 little-endian bytes at `off` and returns the same tensor.
+fn :: px put u64 le Tensor[U8] Int Int => Tensor[U8]
+      px put u64 le t          off val =
+        t_(off)     = val and 255
+        t_(off + 1) = (val shr 8) and 255
+        t_(off + 2) = (val shr 16) and 255
+        t_(off + 3) = (val shr 24) and 255
+        t_(off + 4) = (val shr 32) and 255
+        t_(off + 5) = (val shr 40) and 255
+        t_(off + 6) = (val shr 48) and 255
+        t_(off + 7) = (val shr 56) and 255
+        t
 
 fn :: px u64 le Int => String
-      px u64 le val =
-        b0 = px raw byte (val and 255)
-        b1 = px raw byte ((val shr 8) and 255)
-        b2 = px raw byte ((val shr 16) and 255)
-        b3 = px raw byte ((val shr 24) and 255)
-        b4 = px raw byte ((val shr 32) and 255)
-        b5 = px raw byte ((val shr 40) and 255)
-        b6 = px raw byte ((val shr 48) and 255)
-        b7 = px raw byte ((val shr 56) and 255)
-        ((b0 + b1) + (b2 + b3)) + ((b4 + b5) + (b6 + b7))
+      px u64 le val =  tensor to str (px put u64 le (Tensor[U8 * 8]) 0 val)
 
-fn :: px decode u32 le String Int => Int
-      px decode u32 le s off =
-        b0 = str char at s off
-        b1 = str char at s (off + 1)
-        b2 = str char at s (off + 2)
-        b3 = str char at s (off + 3)
-        b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
+fn :: px get u32 le Tensor[U8] Int => Int
+      px get u32 le t          off =  t_(off) + (t_(off + 1) shl 8) + (t_(off + 2) shl 16) + (t_(off + 3) shl 24)
 
-fn :: px decode u64 le String Int => Int
-      px decode u64 le s off =
-        lo = px decode u32 le s off
-        hi = px decode u32 le s (off + 4)
-        lo + (hi * 4294967296)
+fn :: px get u64 le Tensor[U8] Int => Int
+      px get u64 le t          off =  (px get u32 le t off) + ((px get u32 le t (off + 4)) shl 32)
+
+-- A NUL-terminated copy of `s` for the kernel.
+fn :: px cstr String => Tensor[U8]
+      px cstr s      =  tensor from str (s + (px raw byte 0))
 
 -- ── Per-Architecture Syscall Numbers (FR-POSIX-003 AC1) ──────
 -- x86_64 numbers from arch/x86/entry/syscalls/syscall_64.tbl;
@@ -351,6 +346,8 @@ fn :: nr memfd create => Int
 fn :: at fdcwd => Int
       at fdcwd =  0 - 100
 
+-- Kernel buffers are `Tensor[U8]` passed to `sys call` (ADR-0010). The memfd helpers below stay
+-- for `posix execve` (pointer tables need a known address) and existing callers; new code must not call them.
 fn :: px alloc page Int => Int
       px alloc page sz  =
         neg1 = 0 - 1
@@ -379,45 +376,19 @@ fn :: px peek Int Int Int => String
         _ = sys call (nr lseek) mfd 0 0 0 0 0
         sys read fd mfd len
 
--- ── Monotonic & Wall-Clock Time (RGF-017 / RG-010) ───────────
-
-fn :: px clock gettime Int    => Int Int
-      px clock gettime clk_id =
-        ptr  = px alloc page 4096
-        mfd  = px alloc mfd ptr
-        _    = sys call (nr clock gettime) clk_id ptr 0 0 0 0
-        raw  = px peek mfd ptr 16
-        _    = px free page mfd ptr 4096
-        sec  = px decode u64 le raw 0
-        nsec = px decode u64 le raw 8
-        (sec, nsec)
-
-fn :: px pair fst (Int Int) => Int
-      px pair fst (a, _)    =  a
-
-fn :: px pair snd (Int Int) => Int
-      px pair snd (_, b)    =  b
+-- ── Monotonic Clock (RGF-017 / RG-010) ───────────────────────
+-- Thin names over the vDSO built-ins `sys time ms` / `sys time ns` (ADR-0010).
+-- The wall clock is the built-in `sys wall time ms`.
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys monotonic ms => Int
-      sys monotonic ms =
-        ts = px clock gettime 1
-        ((px pair fst ts) * 1000) + ((px pair snd ts) / 1000000)
+      sys monotonic ms =  sys time ms
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys monotonic ns => Int
-      sys monotonic ns =
-        ts = px clock gettime 1
-        ((px pair fst ts) * 1000000000) + (px pair snd ts)
-
--- @implements FR-POSIX-002
--- @implements API-POSIX-001
-fn :: sys wall time ms => Int
-      sys wall time ms =
-        ts = px clock gettime 0
-        ((px pair fst ts) * 1000) + ((px pair snd ts) / 1000000)
+      sys monotonic ns =  sys time ns
 
 -- ── Descriptor Waiting & Typed POSIX Wrappers (FR-POSIX-001) ─
 
@@ -492,14 +463,9 @@ fn :: pack pipe fds Int Int Int => Int Int Int
 -- @implements API-POSIX-001
 fn :: posix pipe flags Int => Int Int Int
       posix pipe flags flags =
-        ptr = px alloc page 4096
-        mfd = px alloc mfd ptr
-        rc  = sys call (nr pipe2) ptr flags 0 0 0 0
-        raw = px peek mfd ptr 8
-        _   = px free page mfd ptr 4096
-        rfd = px decode u32 le raw 0
-        wfd = px decode u32 le raw 4
-        pack pipe fds rc rfd wfd
+        buf = Tensor[U8 * 8]
+        rc  = sys call (nr pipe2) buf flags 0 0 0 0
+        pack pipe fds rc (px get u32 le buf 0) (px get u32 le buf 4)
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
@@ -567,6 +533,9 @@ fn :: px cstr table [String] Int  => String
       px cstr table []       _    =  px u64 le 0
       px cstr table (x:rest) addr =  (px u64 le addr) + (px cstr table rest (addr + (str len x) + 1))
 
+-- execve needs a table of absolute pointers, so the block lives in a page whose
+-- address is known, filled through a memfd. The built-in `sys execve` always passes
+-- `path` as argv[0], so it cannot keep a caller's argv[0] (ADR-0010).
 -- Page layout: argv pointers, NULL, envp pointers, NULL, path, argv strings, envp strings.
 fn :: px execve raw String [String] [String] => Int
       px execve raw path   argv     envp     =
@@ -590,20 +559,17 @@ fn :: px execve raw String [String] [String] => Int
 -- @implements API-POSIX-001
 fn :: posix waitpid Int Int => Int Int
       posix waitpid pid options =
-        ptr = px alloc page 4096
-        mfd = px alloc mfd ptr
-        rc  = px wait4 retry pid ptr options
-        raw = px peek mfd ptr 4
-        _   = px free page mfd ptr 4096
-        px wait4 result rc (px decode u32 le raw 0)
+        st = Tensor[U8 * 4]
+        rc = px wait4 retry pid st options
+        px wait4 result rc (px get u32 le st 0)
 
 -- `wait4(pid, &status, options, NULL)`, retried on `EINTR`.
-fn :: px wait4 retry Int Int Int     => Int
-      px wait4 retry pid ptr options =  px wait4 again pid ptr options (sys call (nr wait4) pid ptr options 0 0 0)
+fn :: px wait4 retry Int Tensor[U8] Int     => Int
+      px wait4 retry pid st         options =  px wait4 again pid st options (sys call (nr wait4) pid st options 0 0 0)
 
-fn :: px wait4 again Int Int Int     Int => Int
-      px wait4 again pid ptr options rc  =
-        | rc == (0 - 4) = px wait4 retry pid ptr options
+fn :: px wait4 again Int Tensor[U8] Int     Int => Int
+      px wait4 again pid st         options rc  =
+        | rc == (0 - 4) = px wait4 retry pid st options
         | otherwise     = rc
 
 -- `(ret_pid, raw wait status)`; the status is `0` when `wait4` failed or `WNOHANG` found nothing.
@@ -646,30 +612,15 @@ fn :: posix chdir String => Bool
 -- `unlinkat(AT_FDCWD, path, flags)`; flags `512` (`AT_REMOVEDIR`) removes a directory.
 fn :: px unlinkat path String Int   => Int
       px unlinkat path path   flags =
-        ptr = px alloc page 4096
-        mfd = px alloc mfd ptr
-        b0  = px raw byte 0
-        _   = px poke mfd ptr (path + b0)
-        rc  = sys call (nr unlinkat) (at fdcwd) ptr flags 0 0 0
-        _   = px free page mfd ptr 4096
-        rc
+        sys call (nr unlinkat) (at fdcwd) (px cstr path) flags 0 0 0
 
 -- kind `0`: `renameat2(AT_FDCWD, p1, AT_FDCWD, p2, 0)`; kind `1`: `symlinkat(p1, AT_FDCWD, p2)`.
-fn :: px path pair sys Int Int Int => Int
-      px path pair sys 0    a   b   =  sys call (nr renameat2) (at fdcwd) a (at fdcwd) b 0
-      px path pair sys _    a   b   =  sys call (nr symlinkat) a (at fdcwd) b 0 0 0
+fn :: px path pair sys Int Tensor[U8] Tensor[U8] => Int
+      px path pair sys 0    a          b          =  sys call (nr renameat2) (at fdcwd) a (at fdcwd) b 0
+      px path pair sys _    a          b          =  sys call (nr symlinkat) a (at fdcwd) b 0 0 0
 
 fn :: px path pair call Int String String => Int
-      px path pair call kind p1 p2 =
-        ptr   = px alloc page 4096
-        mfd   = px alloc mfd ptr
-        b0    = px raw byte 0
-        p2048 = ptr + 2048
-        _     = px poke mfd ptr (p1 + b0)
-        _     = px poke mfd p2048 (p2 + b0)
-        rc    = px path pair sys kind ptr p2048
-        _     = px free page mfd ptr 4096
-        rc
+      px path pair call kind p1 p2 =  px path pair sys kind (px cstr p1) (px cstr p2)
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
@@ -740,32 +691,23 @@ fn :: sys signal watch [Int] => Int Int
       sys signal watch sigs  =
         | not (valid signal list sigs) = (0 - 7, 0 - 1)
         | otherwise                    =
-          ptr  = px alloc page 4096
-          mfd  = px alloc mfd ptr
-          mask = px sig mask sigs
+          mask = px put u64 le (Tensor[U8 * 8]) 0 (px sig mask sigs)
           neg1 = 0 - 1
-          _    = px poke mfd ptr (px u64 le mask)
-          _    = sys call (nr rt sigprocmask) 0 ptr 0 8 0 0
-          sfd  = sys call (nr signalfd4) neg1 ptr 8 526336 0 0
-          _    = px free page mfd ptr 4096
-          px finish sig watch sfd
+          _    = sys call (nr rt sigprocmask) 0 mask 0 8 0 0
+          px finish sig watch (sys call (nr signalfd4) neg1 mask 8 526336 0 0)
 
-fn :: px finish sig read Int String => Int Int
-      px finish sig read n raw =
+fn :: px finish sig read Int Tensor[U8] => Int Int
+      px finish sig read n   info       =
         | n < 128   = (0 - 7, 0)
-        | otherwise = (0, px decode u32 le raw 0)
+        | otherwise = (0, px get u32 le info 0)
 
 fn :: px wait sig after poll Int Int => Int Int
       px wait sig after poll handle prc =
         | prc == 0 = (0 - 2, 0)
         | prc < 0  = (0 - 7, 0)
         | otherwise =
-          ptr = px alloc page 4096
-          mfd = px alloc mfd ptr
-          n   = sys call (nr read) handle ptr 128 0 0 0
-          raw = px peek mfd ptr 16
-          _   = px free page mfd ptr 4096
-          px finish sig read n raw
+          info = Tensor[U8 * 128]
+          px finish sig read (sys read into handle info 0 128) info
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
@@ -781,43 +723,32 @@ fn :: posix notify signal Int    Int    => Int
 
 -- ── RGF-014 Cryptographic Random Bytes (getrandom __NR_getrandom = 318) ──
 
-fn :: px bytes to list loop String Int Int => [Int]
-      px bytes to list loop s idx slen =
-        | idx >= slen = []
-        | otherwise   =
-          b = ((str char at s idx) % 256 + 256) % 256
-          [b] :: (px bytes to list loop s (idx + 1) slen)
+fn :: px no bytes => Tensor[U8]
+      px no bytes =  Tensor[U8 * 0]
 
-fn :: px getrandom call Int Int Int => Int
-      px getrandom call ptr rem rc =
-        | rc == (0 - 4) = px getrandom loop ptr rem
-        | otherwise     = rc
+-- `getrandom` into a fresh `n`-byte tensor, retried on `EINTR`. A short read (only possible
+-- above 256 bytes when a signal arrives) keeps the bytes received and asks for the rest.
+fn :: px getrandom tensor Int => Int Tensor[U8]
+      px getrandom tensor n   =
+        t = Tensor[U8 * n]
+        px getrandom got n t (sys call (nr getrandom) t n 0 0 0 0)
 
-fn :: px getrandom step Int Int Int => Int
-      px getrandom step ptr rem rc =
-        | rc <= 0   = rc
-        | rc >= rem = 0
-        | otherwise = px getrandom loop (ptr + rc) (rem - rc)
+fn :: px getrandom got Int Tensor[U8] Int => Int Tensor[U8]
+      px getrandom got n   t          rc  =
+        | rc == (0 - 4) = px getrandom tensor n
+        | rc < 0        = (0 - 99, px no bytes)
+        | rc >= n       = (0, t)
+        | otherwise     = px getrandom join (str slice (tensor to str t) 0 rc) (px getrandom tensor (n - rc))
 
-fn :: px getrandom loop Int Int => Int
-      px getrandom loop ptr rem =
-        | rem <= 0  = 0
-        | otherwise = px getrandom step ptr rem (px getrandom call ptr rem (sys call (nr getrandom) ptr rem 0 0 0 0))
+fn :: px getrandom join String (Int Tensor[U8]) => Int Tensor[U8]
+      px getrandom join head   (rc, rest)       =
+        | rc != 0   = (rc, px no bytes)
+        | otherwise = (0, tensor from str (head + (tensor to str rest)))
 
-fn :: px finish getrandom Int String Int => Int String
-      px finish getrandom rc raw n =
-        | rc < 0 or (str len raw) != n = (0 - 99, "")
-        | otherwise                    = (0, raw)
-
-fn :: px getrandom checked Int => Int String
-      px getrandom checked n   =
-        ((n / 4096) + 2) * 4096 -> psz
-        px alloc page psz -> ptr
-        px alloc mfd ptr -> mfd
-        px getrandom loop ptr n -> rc
-        px peek mfd ptr n -> raw
-        px free page mfd ptr psz -> ()
-        px finish getrandom rc raw n
+fn :: px random as str (Int Tensor[U8]) => Int String
+      px random as str (rc, t)          =
+        | rc != 0   = (rc, "")
+        | otherwise = (0, tensor to str t)
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
@@ -827,19 +758,17 @@ fn :: sys random bytes Int => Int String
         | n < 0     = (0 - 7, "")
         | n == 0    = (0, "")
         | n > 65536 = (0 - 7, "")
-        | otherwise = px getrandom checked n
+        | otherwise = px random as str (px getrandom tensor n)
 
-fn :: px finish random list (Int String) => Int [Int]
-      px finish random list (rc, raw)    =
-        | rc != 0   = (rc, [])
-        | otherwise = (0, px bytes to list loop raw 0 (str len raw))
-
-fn :: sys random bytes list Int => Int [Int]
-      sys random bytes list n   =
-        | n < 0     = (0 - 7, [])
-        | n == 0    = (0, [])
-        | n > 65536 = (0 - 7, [])
-        | otherwise = px finish random list (px getrandom checked n)
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+-- @mitigates VUL-INPUT-001
+fn :: sys random tensor Int => Int Tensor[U8]
+      sys random tensor n   =
+        | n < 0     = (0 - 7, px no bytes)
+        | n == 0    = (0, px no bytes)
+        | n > 65536 = (0 - 7, px no bytes)
+        | otherwise = px getrandom tensor n
 
 -- ── Ridgun v0.9.5 Target OS / Arch & Process Probe Helpers ───
 
@@ -929,36 +858,16 @@ fn :: posix unlock Int => Int
 fn :: posix pread max => Int
       posix pread max =  16777216
 
-fn :: px pread data Int Int Int => String
-      px pread data mfd ptr n   =
-        | n > 0     = px peek mfd ptr n
-        | otherwise = ""
+fn :: px pread result Int Tensor[U8] Int => Int String
+      px pread result n   buf        len =
+        | n <= 0    = (n, "")
+        | n >= len  = (n, tensor to str buf)
+        | otherwise = (n, str slice (tensor to str buf) 0 n)
 
-fn :: px pread result Int String => Int String
-      px pread result n   data   =
-        | n < 0     = (n, "")
-        | otherwise = (n, data)
-
-fn :: px pread finish Int Int Int Int => Int String
-      px pread finish mfd ptr sz  n   =
-        data = px pread data mfd ptr n
-        _    = px free page mfd ptr sz
-        px pread result n data
-
-fn :: px pread fail Int Int Int Int => Int String
-      px pread fail mfd ptr sz  rc  =
-        _ = px free page mfd ptr sz
-        (rc, "")
-
-fn :: px pread with mfd Int Int    Int Int Int Int => Int String
-      px pread with mfd fd  offset len sz  ptr mfd =
-        | mfd < 0   = px pread fail mfd ptr sz mfd
-        | otherwise = px pread finish mfd ptr sz (sys call (nr pread64) fd ptr len offset 0 0)
-
-fn :: px pread mapped Int Int    Int Int Int => Int String
-      px pread mapped fd  offset len sz  ptr =
-        | ptr < 0   = (ptr, "")
-        | otherwise = px pread with mfd fd offset len sz ptr (px alloc mfd ptr)
+fn :: px pread into Int Int    Int => Int String
+      px pread into fd  offset len =
+        buf = Tensor[U8 * len]
+        px pread result (sys call (nr pread64) fd buf len offset 0 0) buf len
 
 -- @implements FR-POSIX-003
 -- @implements API-POSIX-001
@@ -968,4 +877,4 @@ fn :: posix pread Int Int    Int => Int String
         | fd < 0                                         = (0 - errno ebadf, "")
         | offset < 0 or len < 0 or len > posix pread max = (0 - errno einval, "")
         | len == 0                                       = (0, "")
-        | otherwise                                      = px pread mapped fd offset len (((len + 4095) / 4096) * 4096) (px alloc page (((len + 4095) / 4096) * 4096))
+        | otherwise                                      = px pread into fd offset len

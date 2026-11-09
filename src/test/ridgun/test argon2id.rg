@@ -18,9 +18,25 @@ fn :: is key ok Argon2KeyRes     => Bool
       is key ok (Argon2KeyOk  _) =  True
       is key ok (Argon2KeyErr _) =  False
 
-fn :: unwrap key bytes Argon2KeyRes     => [Int]
-      unwrap key bytes (Argon2KeyOk  bytes) = bytes
-      unwrap key bytes (Argon2KeyErr _) =  []
+fn :: unwrap key bytes Argon2KeyRes         => Tensor[U8]
+      unwrap key bytes (Argon2KeyOk  bytes) =  bytes
+      unwrap key bytes (Argon2KeyErr _)     =  Tensor[U8 * 0]
+
+fn :: u8 fill Tensor[U8] [Int]    Int => Tensor[U8]
+      u8 fill t          []       _   =  t
+      u8 fill t          (b:rest) i   =
+        t_(i) = b
+        u8 fill t rest (i + 1)
+
+fn :: int list len [Int]    => Int
+      int list len []       =  0
+      int list len (_:rest) =  1 + (int list len rest)
+
+fn :: u8 of list [Int] => Tensor[U8]
+      u8 of list bs    =
+        n = int list len bs
+        t = Tensor[U8 * n]
+        u8 fill t bs 0
 
 fn :: is phc parsed ok Argon2PhcRes     => Bool
       is phc parsed ok (Argon2PhcOk  _) =  True
@@ -38,12 +54,24 @@ fn :: test argon2id phc hashing and verification => ()
         _  = assert str eq v3 "8f65ef99a71b1e98450f2c80d78604af3644276f965db52045bbed139b03b5fd" "LIB-1 vector m=256,t=2,p=1"
 
         -- LIB-1: RFC 9106 §5.3 official test vector (pwd=32*0x01, salt=16*0x02, secret=8*0x03, ad=12*0x04, m=32, t=3, p=4, tag=32)
-        pwd32  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-        salt16 = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
-        sec8   = a2 bytes to str [3, 3, 3, 3, 3, 3, 3, 3]
-        ad12   = a2 bytes to str [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+        pwd32  = u8 of list [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        salt16 = u8 of list [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+        sec8   = tensor to str (u8 of list [3, 3, 3, 3, 3, 3, 3, 3])
+        ad12   = tensor to str (u8 of list [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4])
         rfc_h  = bytes to hex (derive raw tag ctx pwd32 salt16 sec8 ad12 (argon2 params 32 3 4 32))
         _      = assert str eq rfc_h "0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659" "RFC 9106 §5.3 official vector"
+
+        -- ADR-0010: byte sequences are Tensor[U8] (hex, unpadded Base64, constant-time compare)
+        hi_bytes = u8 of list [0, 15, 128, 200, 255]
+        _        = assert str eq (bytes to hex hi_bytes) "000f80c8ff" "bytes to hex Tensor[U8]"
+        _        = assert str eq (b64 encode nopad hi_bytes) "AA+AyP8" "b64 encode nopad Tensor[U8]"
+        _        = assert str eq (b64 encode nopad (u8 of list [102, 111, 111, 98])) "Zm9vYg" "b64 encode nopad 4 bytes"
+        _        = assert str eq (b64 encode nopad (u8 of list [102, 111, 111, 98, 97])) "Zm9vYmE" "b64 encode nopad 5 bytes"
+        _        = assert str eq (bytes to hex (b64 decode nopad "AA+AyP8")) "000f80c8ff" "b64 decode nopad round-trip"
+        _        = assert ok (constant time bytes eq hi_bytes (b64 decode nopad "AA+AyP8"))
+        _        = assert eq (constant time bytes eq hi_bytes (u8 of list [0, 15, 128, 200, 254])) False
+        _        = assert eq (constant time bytes eq hi_bytes (u8 of list [0, 15, 128, 200])) False
+        _        = assert str eq (bytes to hex (derive raw tag (tensor from str "correct horse") (tensor from str "saltsaltsaltsalt") (argon2 params 8 1 1 32))) "b7940bccc95f48f2cc7b36f55ff851c356ca4d3a6bc8cd4986a0692f2aac78ec" "derive raw tag Tensor[U8]"
 
         params   = argon2 params 32 2 2 16
         res1     = argon2id hash params "correct-horse-battery-staple" "somesalt1234" params
@@ -133,7 +161,7 @@ fn :: test argon2id key derivation salting and rehash => ()
         _         = assert ok (is a2 ok kh_res)
         _         = assert eq (is key ok k_bad) False
         _         = assert eq (is a2 ok kh_bad) False
-        _         = assert eq (a2 list len (unwrap key bytes k_res)) 32
+        _         = assert eq (a2 u8 len (unwrap key bytes k_res)) 32
         _         = assert eq (str len (unwrap a2 phc kh_res)) 64
         ctx_res   = argon2id hash ctx "user-password" "1234567890abcdef" "app-pepper-key" "tenant:42" p_fast
         ctx_bad   = argon2id hash ctx "user-password" "short" "app-pepper-key" "tenant:42" p_fast

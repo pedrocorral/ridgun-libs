@@ -1,6 +1,7 @@
 -- ============================================================
 -- src/main/ridgun/lib/ws.rg
 -- Pure-Ridgun RFC 6455 WebSocket Handshake, Framing & Masking Library (WS)
+-- Bytes are Tensor[U8] (ADR-0010).
 -- @implements FR-WS-001
 -- @implements API-WS-001
 -- @implements DM-WebSocket
@@ -9,7 +10,7 @@
 
 module :: ws
 
-type WsFrame = is_fin: Bool, ws_opcode: Int, is_masked: Bool, payload_bytes: [Int], payload_text: String
+type WsFrame = is_fin: Bool, ws_opcode: Int, is_masked: Bool, payload_bytes: Tensor[U8], payload_text: String
 
 type WsRes = WsOk WsFrame Int | WsErr String
 
@@ -21,8 +22,8 @@ fn :: ws u32 Int => Int
       ws u32 x = ((x % 4294967296) + 4294967296) % 4294967296
 
 fn :: ws u32 bxor loop Int Int Int Int => Int
-      ws u32 bxor loop _ _ 0 acc = acc
       ws u32 bxor loop a b bit acc =
+        | a == 0 and b == 0 = acc
         | (a % 2) != (b % 2) = ws u32 bxor loop (a / 2) (b / 2) (bit * 2) (acc + bit)
         | otherwise = ws u32 bxor loop (a / 2) (b / 2) (bit * 2) acc
 
@@ -30,8 +31,8 @@ fn :: ws u32 bxor Int Int => Int
       ws u32 bxor a b = ws u32 bxor loop (ws u32 a) (ws u32 b) 1 0
 
 fn :: ws u32 band loop Int Int Int Int => Int
-      ws u32 band loop _ _ 0 acc = acc
       ws u32 band loop a b bit acc =
+        | a == 0 or b == 0 = acc
         | (a % 2) == 1 and (b % 2) == 1 = ws u32 band loop (a / 2) (b / 2) (bit * 2) (acc + bit)
         | otherwise = ws u32 band loop (a / 2) (b / 2) (bit * 2) acc
 
@@ -39,8 +40,8 @@ fn :: ws u32 band Int Int => Int
       ws u32 band a b = ws u32 band loop (ws u32 a) (ws u32 b) 1 0
 
 fn :: ws u32 bor loop Int Int Int Int => Int
-      ws u32 bor loop _ _ 0 acc = acc
       ws u32 bor loop a b bit acc =
+        | a == 0 and b == 0 = acc
         | (a % 2) == 1 or (b % 2) == 1 = ws u32 bor loop (a / 2) (b / 2) (bit * 2) (acc + bit)
         | otherwise = ws u32 bor loop (a / 2) (b / 2) (bit * 2) acc
 
@@ -62,80 +63,80 @@ fn :: ws rotl32 Int Int => Int
         ws u32 ((ux * p_shl) + (ux / p_shr))
 
 fn :: ws byte bxor Int Int => Int
-      ws byte bxor a b = (ws u32 bxor (a % 256) (b % 256)) % 256
+      ws byte bxor a b = ws u32 bxor (a % 256) (b % 256)
 
--- ── List & String Byte Conversion Helpers ────────────────────
+-- ── Tensor[U8] Byte Helpers ──────────────────────────────────
 
-fn :: ws list len [Int] => Int
-      ws list len [] = 0
-      ws list len (_:rest) = 1 + (ws list len rest)
+fn :: ws blen Tensor[U8] => Int
+      ws blen (Tensor[U8 * n] t) = n
 
-fn :: ws nth [Int] Int => Int
-      ws nth [] _ = 0
-      ws nth (x:_) 0 = x
-      ws nth (_:rest) idx = ws nth rest (idx - 1)
+-- Copies n bytes of src (from index from) into dst (from index at); returns dst.
+fn :: ws copy range Tensor[U8] Int Tensor[U8] Int Int => Tensor[U8]
+      ws copy range src from dst at n =
+        | n <= 0 = dst
+        | otherwise = ws copy range step src from dst at n
 
-fn :: ws take [Int] Int => [Int]
-      ws take [] _ = []
-      ws take (x:rest) n =
-        | n <= 0 = []
-        | otherwise = [x] :: (ws take rest (n - 1))
+fn :: ws copy range step Tensor[U8] Int Tensor[U8] Int Int => Tensor[U8]
+      ws copy range step src from dst at n =
+        dst_(at) = src_(from)
+        ws copy range src (from + 1) dst (at + 1) (n - 1)
 
-fn :: ws drop [Int] Int => [Int]
-      ws drop [] _ = []
-      ws drop (x:rest) n =
-        | n <= 0 = [x] :: rest
-        | otherwise = ws drop rest (n - 1)
+-- Writes n bytes of src (from index from) xor mask_t[moff + (i % 4)] into dst (from index at); returns dst.
+fn :: ws mask range Tensor[U8] Int Tensor[U8] Int Int Tensor[U8] Int Int => Tensor[U8]
+      ws mask range src from dst at n mask_t moff i =
+        | i >= n = dst
+        | otherwise = ws mask range step src from dst at n mask_t moff i
 
-fn :: ws str to bytes loop String Int Int [Int] => [Int]
-      ws str to bytes loop s pos len acc =
-        | pos >= len = acc
-        | otherwise = ws str to bytes loop s (pos + 1) len (acc :: [((str char at s pos) % 256 + 256) % 256])
+fn :: ws mask range step Tensor[U8] Int Tensor[U8] Int Int Tensor[U8] Int Int => Tensor[U8]
+      ws mask range step src from dst at n mask_t moff i =
+        dst_(at + i) = ws byte bxor src_(from + i) mask_t_(moff + (i % 4))
+        ws mask range src from dst at n mask_t moff (i + 1)
 
-fn :: ws str to bytes String => [Int]
-      ws str to bytes s = ws str to bytes loop s 0 (str len s) []
+fn :: ws put be32 Tensor[U8] Int Int => Tensor[U8]
+      ws put be32 t off w =
+        uw = ws u32 w
+        t_(off) = (uw / 16777216) % 256
+        t_(off + 1) = (uw / 65536) % 256
+        t_(off + 2) = (uw / 256) % 256
+        t_(off + 3) = uw % 256
+        t
 
-fn :: ws bytes to str [Int] => String
-      ws bytes to str [] = ""
-      ws bytes to str (b:rest) = (char from code b) + (ws bytes to str rest)
+fn :: ws be32 at Tensor[U8] Int => Int
+      ws be32 at t off = (t_(off) * 16777216) + (t_(off + 1) * 65536) + (t_(off + 2) * 256) + t_(off + 3)
 
 -- ── Pure-Ridgun SHA-1 & Base64 for RFC 6455 Handshake ────────
 
-fn :: ws zeroes Int => [Int]
-      ws zeroes n =
-        | n <= 0 = []
-        | otherwise = [0] :: (ws zeroes (n - 1))
+fn :: ws sha1 padded len Int => Int
+      ws sha1 padded len mlen = (((mlen + 8) / 64) + 1) * 64
 
-fn :: ws u32 be4 Int => [Int]
-      ws u32 be4 w =
-        uw = ws u32 w
-        [(uw / 16777216) % 256, (uw / 65536) % 256, (uw / 256) % 256, uw % 256]
+fn :: ws sha1 pad Tensor[U8] => Tensor[U8]
+      ws sha1 pad msg =
+        mlen = ws blen msg
+        plen = ws sha1 padded len mlen
+        p = Tensor[U8 * plen]
+        p_(mlen) = 128
+        ws copy range msg 0 p 0 mlen -> ws put be32 (plen - 4) (mlen * 8)
 
-fn :: ws sha1 pad [Int] => [Int]
-      ws sha1 pad bs =
-        mlen = ws list len bs
-        bit_len = mlen * 8
-        rem = (mlen + 1) % 64
-        z_count = ((56 - rem) + 64) % 64
-        ((bs :: [128]) :: (ws zeroes z_count)) :: ((ws u32 be4 0) :: (ws u32 be4 bit_len))
+fn :: ws sha1 w16 loop Tensor[U8] Int Tensor[Int] Int => Tensor[Int]
+      ws sha1 w16 loop blk off w idx =
+        | idx >= 16 = w
+        | otherwise = ws sha1 w16 step blk off w idx
 
-fn :: ws be32 at [Int] Int => Int
-      ws be32 at bs off = ((ws nth bs off) * 16777216) + ((ws nth bs (off + 1)) * 65536) + ((ws nth bs (off + 2)) * 256) + (ws nth bs (off + 3))
+fn :: ws sha1 w16 step Tensor[U8] Int Tensor[Int] Int => Tensor[Int]
+      ws sha1 w16 step blk off w idx =
+        w_(idx) = ws be32 at blk (off + (idx * 4))
+        ws sha1 w16 loop blk off w (idx + 1)
 
-fn :: ws sha1 w16 loop [Int] Int [Int] => [Int]
-      ws sha1 w16 loop blk idx acc =
-        | idx >= 16 = acc
-        | otherwise = ws sha1 w16 loop blk (idx + 1) (acc :: [ws be32 at blk (idx * 4)])
-
-fn :: ws sha1 expand loop [Int] Int => [Int]
+fn :: ws sha1 expand loop Tensor[Int] Int => Tensor[Int]
       ws sha1 expand loop w t =
         | t >= 80 = w
         | otherwise = ws sha1 expand step w t
 
-fn :: ws sha1 expand step [Int] Int => [Int]
+fn :: ws sha1 expand step Tensor[Int] Int => Tensor[Int]
       ws sha1 expand step w t =
-        x = ws u32 bxor (ws u32 bxor (ws u32 bxor (ws nth w (t - 3)) (ws nth w (t - 8))) (ws nth w (t - 14))) (ws nth w (t - 16))
-        ws sha1 expand loop (w :: [ws rotl32 x 1]) (t + 1)
+        x = ws u32 bxor (ws u32 bxor (ws u32 bxor w_(t - 3) w_(t - 8)) w_(t - 14)) w_(t - 16)
+        w_(t) = ws rotl32 x 1
+        ws sha1 expand loop w (t + 1)
 
 fn :: ws sha1 f Int Int Int Int => Int
       ws sha1 f t b c d =
@@ -151,12 +152,12 @@ fn :: ws sha1 k Int => Int
         | t < 60 = 2400959708
         | otherwise = 3395469782
 
-fn :: ws sha1 rounds Sha1State [Int] Int => Sha1State
+fn :: ws sha1 rounds Sha1State Tensor[Int] Int => Sha1State
       ws sha1 rounds st w t =
         | t >= 80 = st
         | otherwise = ws sha1 round step st w t
 
-fn :: ws sha1 round step Sha1State [Int] Int => Sha1State
+fn :: ws sha1 round step Sha1State Tensor[Int] Int => Sha1State
       ws sha1 round step st w t =
         a = h0 st
         b = h1 st
@@ -165,44 +166,78 @@ fn :: ws sha1 round step Sha1State [Int] Int => Sha1State
         e = h4 st
         f = ws sha1 f t b c d
         k = ws sha1 k t
-        wt = ws nth w t
+        wt = w_(t)
         temp = ws u32 ((ws rotl32 a 5) + f + e + k + wt)
         ws sha1 rounds (Sha1State temp a (ws rotl32 b 30) c d) w (t + 1)
 
-fn :: ws sha1 blocks Sha1State [Int] => Sha1State
-      ws sha1 blocks st [] = st
-      ws sha1 blocks st padded =
-        blk = ws take padded 64
-        rest = ws drop padded 64
-        w80 = ws sha1 expand loop (ws sha1 w16 loop blk 0 []) 16
+fn :: ws sha1 blocks Sha1State Tensor[U8] Tensor[Int] Int Int => Sha1State
+      ws sha1 blocks st padded w off total =
+        | off >= total = st
+        | otherwise = ws sha1 block step st padded w off total
+
+fn :: ws sha1 block step Sha1State Tensor[U8] Tensor[Int] Int Int => Sha1State
+      ws sha1 block step st padded w off total =
+        w80 = ws sha1 w16 loop padded off w 0 -> ws sha1 expand loop 16
         r = ws sha1 rounds st w80 0
         next_st = Sha1State (ws u32 ((h0 st) + (h0 r))) (ws u32 ((h1 st) + (h1 r))) (ws u32 ((h2 st) + (h2 r))) (ws u32 ((h3 st) + (h3 r))) (ws u32 ((h4 st) + (h4 r)))
-        ws sha1 blocks next_st rest
+        ws sha1 blocks next_st padded w (off + 64) total
 
-fn :: ws sha1 bytes String => [Int]
+-- SHA-1 digest (20 bytes) of the bytes of s.
+fn :: ws sha1 bytes String => Tensor[U8]
       ws sha1 bytes s =
         init_st = Sha1State 1732584193 4023233417 2562383102 271733878 3285377520
-        fin = ws sha1 blocks init_st (ws sha1 pad (ws str to bytes s))
-        ((((ws u32 be4 (h0 fin)) :: (ws u32 be4 (h1 fin))) :: (ws u32 be4 (h2 fin))) :: (ws u32 be4 (h3 fin))) :: (ws u32 be4 (h4 fin))
+        padded = ws sha1 pad (tensor from str s)
+        w = Tensor[Int * 80]
+        fin = ws sha1 blocks init_st padded w 0 (ws blen padded)
+        out = Tensor[U8 * 20]
+        out -> ws put be32 0 (h0 fin) -> ws put be32 4 (h1 fin) -> ws put be32 8 (h2 fin) -> ws put be32 12 (h3 fin) -> ws put be32 16 (h4 fin)
 
 fn :: ws b64 lut Int => String
       ws b64 lut _ = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
-fn :: ws b64 c Int => String
-      ws b64 c idx =
-        ws b64 lut 0 -> tbl
-        ((idx % 64) + 64) % 64 -> i
-        str slice tbl i (i + 1)
+fn :: ws b64 code String Int => Int
+      ws b64 code tbl idx = str char at tbl (((idx % 64) + 64) % 64)
 
-fn :: ws b64 enc [Int] => String
-      ws b64 enc [] = ""
-      ws b64 enc (b0:[]) = (ws b64 c (b0 / 4)) + (ws b64 c ((b0 % 4) * 16)) + "=="
-      ws b64 enc (b0:b1:[]) =
-        (b0 * 256) + b1 -> n
-        (ws b64 c (n / 1024)) + (ws b64 c ((n / 16) % 64)) + (ws b64 c ((n % 16) * 4)) + "="
-      ws b64 enc (b0:b1:b2:rs) =
-        (b0 * 65536) + (b1 * 256) + b2 -> n
-        (ws b64 c (n / 262144)) + (ws b64 c ((n / 4096) % 64)) + (ws b64 c ((n / 64) % 64)) + (ws b64 c (n % 64)) + (ws b64 enc rs)
+-- Standard Base64 (RFC 4648 §4) with '=' padding.
+fn :: ws b64 enc Tensor[U8] => String
+      ws b64 enc bs =
+        n = ws blen bs
+        out = Tensor[U8 * (((n + 2) / 3) * 4)]
+        ws b64 enc loop bs n out (ws b64 lut 0) 0 0 -> tensor to str
+
+fn :: ws b64 enc loop Tensor[U8] Int Tensor[U8] String Int Int => Tensor[U8]
+      ws b64 enc loop bs n out tbl i o =
+        | i >= n = out
+        | (n - i) == 1 = ws b64 enc tail1 bs out tbl i o
+        | (n - i) == 2 = ws b64 enc tail2 bs out tbl i o
+        | otherwise = ws b64 enc group bs n out tbl i o
+
+fn :: ws b64 enc group Tensor[U8] Int Tensor[U8] String Int Int => Tensor[U8]
+      ws b64 enc group bs n out tbl i o =
+        v = (bs_(i) * 65536) + (bs_(i + 1) * 256) + bs_(i + 2)
+        out_(o) = ws b64 code tbl (v / 262144)
+        out_(o + 1) = ws b64 code tbl ((v / 4096) % 64)
+        out_(o + 2) = ws b64 code tbl ((v / 64) % 64)
+        out_(o + 3) = ws b64 code tbl (v % 64)
+        ws b64 enc loop bs n out tbl (i + 3) (o + 4)
+
+fn :: ws b64 enc tail1 Tensor[U8] Tensor[U8] String Int Int => Tensor[U8]
+      ws b64 enc tail1 bs out tbl i o =
+        b0 = bs_(i)
+        out_(o) = ws b64 code tbl (b0 / 4)
+        out_(o + 1) = ws b64 code tbl ((b0 % 4) * 16)
+        out_(o + 2) = 61
+        out_(o + 3) = 61
+        out
+
+fn :: ws b64 enc tail2 Tensor[U8] Tensor[U8] String Int Int => Tensor[U8]
+      ws b64 enc tail2 bs out tbl i o =
+        v = (bs_(i) * 256) + bs_(i + 1)
+        out_(o) = ws b64 code tbl (v / 1024)
+        out_(o + 1) = ws b64 code tbl ((v / 16) % 64)
+        out_(o + 2) = ws b64 code tbl ((v % 16) * 4)
+        out_(o + 3) = 61
+        out
 
 -- @implements FR-WS-001
 -- @implements API-WS-001
@@ -227,80 +262,123 @@ fn :: ws build upgrade response String => String
 
 -- ── RFC 6455 XOR Masking & Frame Encoding / Decoding ─────────
 
-fn :: ws mask loop [Int] [Int] Int => [Int]
-      ws mask loop [] _ _ = []
-      ws mask loop (b:rest) mask_key idx = [ws byte bxor b (ws nth mask_key (idx % 4))] :: (ws mask loop rest mask_key (idx + 1))
-
 -- @implements FR-WS-001
 -- @implements API-WS-001
-fn :: ws mask bytes [Int] [Int] => [Int]
+fn :: ws mask bytes Tensor[U8] Tensor[U8] => Tensor[U8]
       ws mask bytes payload mask_key =
-        | (ws list len mask_key) < 4 = payload
-        | otherwise = ws mask loop payload mask_key 0
+        n = ws blen payload
+        out = Tensor[U8 * n]
+        ws mask bytes into payload mask_key out n
+
+fn :: ws mask bytes into Tensor[U8] Tensor[U8] Tensor[U8] Int => Tensor[U8]
+      ws mask bytes into payload mask_key out n =
+        | (ws blen mask_key) < 4 = ws copy range payload 0 out 0 n
+        | otherwise = ws mask range payload 0 out 0 n mask_key 0 0
 
 fn :: ws fin bit Bool => Int
       ws fin bit True = 128
       ws fin bit False = 0
 
-fn :: ws len header Int Int => [Int]
-      ws len header plen mask_bit =
-        | plen < 126 = [mask_bit + plen]
-        | otherwise = [mask_bit + 126, (plen / 256) % 256, plen % 256]
+-- Bytes of the extended payload length field: 0 (7-bit), 2 (16-bit) or 8 (64-bit).
+fn :: ws len ext size Int => Int
+      ws len ext size plen =
+        | plen < 126 = 0
+        | plen < 65536 = 2
+        | otherwise = 8
+
+-- Writes byte 1 (mask bit + length code) and the extended length field.
+fn :: ws put len Tensor[U8] Int Int Int => Tensor[U8]
+      ws put len out plen mask_bit ext =
+        | ext == 0 = ws put len7 out (mask_bit + plen)
+        | ext == 2 = ws put len16 out plen mask_bit
+        | otherwise = ws put len64 out plen mask_bit
+
+fn :: ws put len7 Tensor[U8] Int => Tensor[U8]
+      ws put len7 out b1 =
+        out_(1) = b1
+        out
+
+fn :: ws put len16 Tensor[U8] Int Int => Tensor[U8]
+      ws put len16 out plen mask_bit =
+        out_(1) = mask_bit + 126
+        out_(2) = (plen / 256) % 256
+        out_(3) = plen % 256
+        out
+
+fn :: ws put len64 Tensor[U8] Int Int => Tensor[U8]
+      ws put len64 out plen mask_bit =
+        out_(1) = mask_bit + 127
+        out -> ws put be32 2 (plen / 4294967296) -> ws put be32 6 (plen % 4294967296)
 
 -- @implements FR-WS-001
 -- @implements API-WS-001
-fn :: ws encode frame Bool Int [Int] [Int] => [Int]
+fn :: ws encode frame Bool Int Tensor[U8] Tensor[U8] => Tensor[U8]
       ws encode frame fin opcode mask_key payload =
-        b0 = (ws fin bit fin) + (opcode % 16)
-        has_mask = (ws list len mask_key) >= 4
+        b0 = (ws fin bit fin) + (((opcode % 16) + 16) % 16)
+        has_mask = (ws blen mask_key) >= 4
         ws encode frame with mask b0 has_mask mask_key payload
 
-fn :: ws encode frame with mask Int Bool [Int] [Int] => [Int]
-      ws encode frame with mask b0 False _ payload = ([b0] :: (ws len header (ws list len payload) 0)) :: payload
+fn :: ws encode frame with mask Int Bool Tensor[U8] Tensor[U8] => Tensor[U8]
+      ws encode frame with mask b0 False _ payload =
+        plen = ws blen payload
+        ext = ws len ext size plen
+        out = Tensor[U8 * (2 + ext + plen)]
+        out_(0) = b0
+        with_len = ws put len out plen 0 ext
+        ws copy range payload 0 with_len (2 + ext) plen
       ws encode frame with mask b0 True mask_key payload =
-        m4 = ws take mask_key 4
-        masked_pay = ws mask bytes payload m4
-        (([b0] :: (ws len header (ws list len payload) 128)) :: m4) :: masked_pay
+        plen = ws blen payload
+        ext = ws len ext size plen
+        hdr = 2 + ext
+        out = Tensor[U8 * (hdr + 4 + plen)]
+        out_(0) = b0
+        with_len = ws put len out plen 128 ext
+        with_mask = ws copy range mask_key 0 with_len hdr 4
+        ws mask range payload 0 with_mask (hdr + 4) plen mask_key 0 0
 
 -- @implements FR-WS-001
 -- @implements API-WS-001
-fn :: ws encode text String => [Int]
-      ws encode text text = ws encode frame True 1 [] (ws str to bytes text)
+fn :: ws encode text String => Tensor[U8]
+      ws encode text text = ws encode frame True 1 (Tensor[U8 * 0]) (tensor from str text)
 
 -- @implements FR-WS-001
 -- @implements API-WS-001
-fn :: ws encode masked text String [Int] => [Int]
-      ws encode masked text text mask_key = ws encode frame True 1 mask_key (ws str to bytes text)
+fn :: ws encode masked text String Tensor[U8] => Tensor[U8]
+      ws encode masked text text mask_key = ws encode frame True 1 mask_key (tensor from str text)
 
 -- @implements FR-WS-001
 -- @implements API-WS-001
-fn :: ws encode ping [Int] => [Int]
-      ws encode ping payload = ws encode frame True 9 [] payload
+fn :: ws encode ping Tensor[U8] => Tensor[U8]
+      ws encode ping payload = ws encode frame True 9 (Tensor[U8 * 0]) payload
 
 -- @implements FR-WS-001
 -- @implements API-WS-001
-fn :: ws encode pong [Int] => [Int]
-      ws encode pong payload = ws encode frame True 10 [] payload
+fn :: ws encode pong Tensor[U8] => Tensor[U8]
+      ws encode pong payload = ws encode frame True 10 (Tensor[U8 * 0]) payload
 
 -- @implements FR-WS-001
 -- @implements API-WS-001
-fn :: ws encode close Int => [Int]
-      ws encode close code = ws encode frame True 8 [] [(code / 256) % 256, code % 256]
+fn :: ws encode close Int => Tensor[U8]
+      ws encode close code =
+        payload = Tensor[U8 * 2]
+        payload_(0) = (((code / 256) % 256) + 256) % 256
+        payload_(1) = ((code % 256) + 256) % 256
+        ws encode frame True 8 (Tensor[U8 * 0]) payload
 
 -- @implements FR-WS-001
 -- @implements API-WS-001
 -- @mitigates VUL-INPUT-001
-fn :: ws decode frame [Int] => WsRes
+fn :: ws decode frame Tensor[U8] => WsRes
       ws decode frame wire =
-        total = ws list len wire
+        total = ws blen wire
         ws decode check min wire total
 
-fn :: ws decode check min [Int] Int => WsRes
+fn :: ws decode check min Tensor[U8] Int => WsRes
       ws decode check min wire total =
         | total < 2 = WsErr "truncated WebSocket frame header (< 2 bytes)"
-        | otherwise = ws decode len wire total (ws nth wire 0) (ws nth wire 1)
+        | otherwise = ws decode len wire total wire_(0) wire_(1)
 
-fn :: ws decode len [Int] Int Int Int => WsRes
+fn :: ws decode len Tensor[U8] Int Int Int => WsRes
       ws decode len wire total b0 b1 =
         fin = (b0 / 128) == 1
         opcode = b0 % 16
@@ -308,22 +386,24 @@ fn :: ws decode len [Int] Int Int Int => WsRes
         len7 = b1 % 128
         ws decode ext len wire total fin opcode masked len7
 
-fn :: ws decode ext len [Int] Int Bool Int Bool Int => WsRes
+fn :: ws decode ext len Tensor[U8] Int Bool Int Bool Int => WsRes
       ws decode ext len wire total fin opcode masked len7 =
         | len7 < 126 = ws decode body wire total fin opcode masked len7 2
         | len7 == 126 and total < 4 = WsErr "truncated 16-bit extended payload length"
-        | len7 == 126 = ws decode body wire total fin opcode masked (((ws nth wire 2) * 256) + (ws nth wire 3)) 4
-        | otherwise = WsErr "unsupported 64-bit extended length"
+        | len7 == 126 = ws decode body wire total fin opcode masked ((wire_(2) * 256) + wire_(3)) 4
+        | total < 10 = WsErr "truncated 64-bit extended payload length"
+        | wire_(2) >= 128 = WsErr "invalid 64-bit extended payload length (most significant bit set)"
+        | otherwise = ws decode body wire total fin opcode masked (((ws be32 at wire 2) * 4294967296) + (ws be32 at wire 6)) 10
 
-fn :: ws decode body [Int] Int Bool Int Bool Int Int => WsRes
+fn :: ws decode body Tensor[U8] Int Bool Int Bool Int Int => WsRes
       ws decode body wire total fin opcode True plen hdr_off =
-        | total < (hdr_off + 4 + plen) = WsErr "truncated masked WebSocket frame payload"
-        | otherwise = ws finish frame fin opcode True (ws mask bytes (ws take (ws drop wire (hdr_off + 4)) plen) (ws take (ws drop wire hdr_off) 4)) (hdr_off + 4 + plen)
+        | (total - hdr_off - 4) < plen = WsErr "truncated masked WebSocket frame payload"
+        | otherwise = ws finish frame fin opcode True (ws mask range wire (hdr_off + 4) (Tensor[U8 * plen]) 0 plen wire hdr_off 0) (hdr_off + 4 + plen)
       ws decode body wire total fin opcode False plen hdr_off =
-        | total < (hdr_off + plen) = WsErr "truncated unmasked WebSocket frame payload"
-        | otherwise = ws finish frame fin opcode False (ws take (ws drop wire hdr_off) plen) (hdr_off + plen)
+        | (total - hdr_off) < plen = WsErr "truncated unmasked WebSocket frame payload"
+        | otherwise = ws finish frame fin opcode False (ws copy range wire hdr_off (Tensor[U8 * plen]) 0 plen) (hdr_off + plen)
 
-fn :: ws finish frame Bool Int Bool [Int] Int => WsRes
+fn :: ws finish frame Bool Int Bool Tensor[U8] Int => WsRes
       ws finish frame fin opcode masked unmasked consumed =
-        | opcode == 1 = WsOk (WsFrame fin opcode masked unmasked (ws bytes to str unmasked)) consumed
+        | opcode == 1 = WsOk (WsFrame fin opcode masked unmasked (tensor to str unmasked)) consumed
         | otherwise = WsOk (WsFrame fin opcode masked unmasked "") consumed

@@ -6,7 +6,7 @@ status: implemented
 priority: must
 domain: UUID
 depends_on: []
-related: [ADR-0002, VUL-INPUT-001]
+related: [ADR-0002, ADR-0010, VUL-INPUT-001]
 tests: [TS-UUID-001]
 ---
 # FR-UUID-001 — Provide pure-Ridgun RFC 9562 UUIDv4/UUIDv7, FNV-1a/Adler-32/CRC-32 checksums, and seeded deterministic PRNG
@@ -26,6 +26,8 @@ Distributed services, databases, and network framing require RFC 9562 UUIDv4/UUI
 - Any Ridgun program or lib importing `uuid`.
 
 ## Constraints & edge cases
+- `crc32 s` is the built-in `crc32 range s 0 (str len s) 0` (CRC-32 of zlib, `ADR-0010`).
+- `uuid v4` and `uuid v7` read 16 random bytes with `getrandom` into a `Tensor[U8]`; `uuid v7` takes its timestamp from the built-in `sys wall time ms` (`ADR-0010`).
 - `uuid is valid` rejects strings whose length is not `36`, where hyphens are not at indices `8, 13, 18, 23`, or where any hex digit or RFC 9562 variant nibble is invalid.
 
 ## Data & privacy

@@ -13,6 +13,10 @@ Conventions: `snake_case`; ids end in `_id`; timestamps end in `_at` (UTC ISO-86
 |---|---|---|---|---|
 | sock_id | Int | Socket handle identifier | SOCK | `socket.rg` |
 | family | String | Socket address family (`inet`, `inet6`, `unix`) | SOCK | `socket.rg` |
+| rx_buf | Tensor[U8] | Receive buffer of the high-level `Socket` | SOCK | `socket.rg` |
+| tx_buf | Tensor[U8] | Send buffer of the high-level `Socket` | SOCK | `socket.rg` |
+| payload_bytes | Tensor[U8] | Raw payload of a WebSocket frame | WS | `ws.rg` |
+| payload_text | String | Payload of a WebSocket text frame | WS | `ws.rg` |
 | sock_type | String | Socket transport type (`stream`, `dgram`) | SOCK | `socket.rg` |
 | host | String | IPv4/IPv6 address or hostname | SOCK | `socket.rg` |
 | port | Int | TCP/UDP port number (`0..65535`) | SOCK | `socket.rg` |

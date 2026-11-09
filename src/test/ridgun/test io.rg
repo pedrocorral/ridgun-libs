@@ -19,9 +19,8 @@ fn :: pipe rfd3 (Int Int Int) => Int
 fn :: pipe wfd3 (Int Int Int) => Int
       pipe wfd3 (_, _, wfd)   =  wfd
 
-fn :: int list len [Int]    => Int
-      int list len []       =  0
-      int list len (_:rest) =  1 + (int list len rest)
+fn :: bytes len Tensor[U8]         => Int
+      bytes len (Tensor[U8 * n] t) =  n
 
 fn :: str list len [String] => Int
       str list len []       =  0
@@ -49,9 +48,9 @@ fn :: test io pipe timeout and eof => ()
         _      = assert eq rc 0
 
         -- 1. Empty pipe read with 50 ms timeout must time out within [40, 300) ms (TS-PERF-001 AC2)
-        t3     = sys monotonic ms
+        t3     = sys time ms
         r_to   = read fd rfd max 32 timeout 50
-        t4     = sys monotonic ms
+        t4     = sys time ms
         dt     = t4 - t3
         _      = assert str eq (format io result r_to) "err:timeout after 50 ms" "empty pipe read Timeout 50"
         _      = assert true (dt >= 40 and dt < 300) "dt in [40, 300): {dt}"
@@ -109,10 +108,14 @@ fn :: test io file and metadata => ()
         _     = assert eq w2 0
         _     = assert str eq (read file fpath) "hello world" "write_file + append_file content"
 
-        -- 2. write_bytes + read_bytes
+        -- 2. write_bytes + read_bytes (`read bytes` returns Tensor[U8], ADR-0010)
         _     = write bytes bpath [65, 66, 67, 0, 255]
         rb    = read bytes bpath
-        _     = assert eq (int list len rb) 5
+        _     = assert eq (bytes len rb) 5
+        _     = assert eq (tensor to list rb) [65, 66, 67, 0, 255]
+        _     = assert eq rb_(4) 255
+        _     = write bytes bpath (tensor from str "A\nB")
+        _     = assert str eq (tensor to str (read bytes bpath)) "A\nB" "write bytes Tensor[U8] round trip"
 
         -- 3. symlink + metadata predicates
         _     = assert true (sys symlink fpath spath) "sys symlink fpath spath"

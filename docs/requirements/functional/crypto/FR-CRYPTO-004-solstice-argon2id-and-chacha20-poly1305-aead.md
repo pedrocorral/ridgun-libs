@@ -6,7 +6,7 @@ status: implemented
 priority: must
 domain: CRYPTO
 depends_on: [FR-CRYPTO-001, FR-CRYPTO-002, FR-CRYPTO-003]
-related: [ADR-0002, VUL-AUTHN-001, VUL-INPUT-001]
+related: [ADR-0002, ADR-0010, VUL-AUTHN-001, VUL-INPUT-001]
 tests: [TS-CRYPTO-004]
 ---
 # FR-CRYPTO-004 — Provide Solstice RGF-015 RFC 9106 Argon2id 5-arg API and RFC 8439 ChaCha20-Poly1305 AEAD
@@ -28,6 +28,7 @@ Applications need both RFC 9106 Argon2id with the exact 5-argument `(password, s
 ## Constraints & edge cases
 - `aead_open` must never return partial or unauthenticated plaintext when the Poly1305 tag check fails (`(-12, "")`).
 - Invalid key/nonce lengths in `aead_seal` return `""` and in `aead_open` return `(-7, "")`.
+- Inside the library, ChaCha20 and Poly1305 work on `Tensor[U8]` (`ADR-0010`): `le32 at Tensor[U8] Int => Int`, `chacha20 block Tensor[U8] Tensor[U8] Int => Tensor[U8]` (64 bytes), `chacha20 bitxor Tensor[U8] Tensor[U8] Int Tensor[U8] => Tensor[U8]`, and `poly1305 aead mac Tensor[U8] Tensor[U8] Tensor[U8] => Tensor[U8]` (16 bytes). Poly1305 limbs are a `Tensor[Int * 5]`. The public `aead_seal` and `aead_open` keep their `String` signatures.
 
 ## Data & privacy
 - Plaintext is zeroed/discarded on authentication failure; keys and nonces are never logged.

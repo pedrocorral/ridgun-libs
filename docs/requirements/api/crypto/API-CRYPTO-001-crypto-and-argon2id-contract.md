@@ -10,8 +10,11 @@ auth: none
 ## Request
 - Imported via `import argon2id` and/or `import crypto`.
 - Inputs (see `DM-Argon2`): `m_cost` (`Int`), `t_cost` (`Int`), `lanes` (`Int`), `tag_len` (`Int`), `key_bytes` (`String`), `nonce_bytes` (`String`), `aad_bytes` (`String`).
+- Byte data (`ADR-0010`): a byte sequence that is not a whole `String` is a `Tensor[U8]` (one byte per element, values `0..255`). Lists of `Int` are only used to convert list literals.
 - Raw Byte & Bitwise API (`RGF-019` in `crypto.rg`):
-  - `byte_str Int => String`, `bytes_from_list [Int] => String`, `bytes_to_list String => [Int]`
+  - `byte_str Int => String`, `bytes_from_list [Int] => String` (values taken modulo 256), `bytes_to_list String => [Int]`: built on `Tensor[U8]` with `tensor to str`, `tensor from str` and `tensor to list`
+  - `bytes to hex str String => String`, `hex to byte str String => String`, `bitxor byte strings String String => String`, `byte slice String Int Int => String`
+  - `bytes list to hex Tensor[U8] => String`, `hex str to bytes String => Tensor[U8]`, `bitxor byte lists Tensor[U8] Tensor[U8] => Tensor[U8]`
   - `band Int Int => Int`, `bor Int Int => Int`, `bxor Int Int => Int`, `shl Int Int => Int`, `shr Int Int => Int`
 - Digest, MAC, Constant-Time & PBKDF2 API (`RGF-015` in `crypto.rg`):
   - `sha256_bytes String => String`, `sha256_hex String => String`
@@ -25,15 +28,18 @@ auth: none
   - `argon2id verify String String => Bool` (natural-space alias)
   - `argon2id generate salt Int => String`, `argon2id hash password String Argon2Params => Argon2Res`
   - `argon2id parse phc String => Argon2PhcRes`, `argon2id needs rehash String Argon2Params => Bool`
-  - `argon2id derive key String String Argon2Params => Argon2BytesRes`, `argon2id derive key hex String String Argon2Params => Argon2Res`
-  - `argon2id hash with context String String [Int] [Int] Argon2Params => Argon2Res`, `argon2id verify with context String [Int] [Int] String => Bool`
+  - `argon2id derive key String String Argon2Params => Argon2KeyRes` (`Argon2KeyOk Tensor[U8] | Argon2KeyErr String`), `argon2id derive key hex String String Argon2Params => Argon2Res`
+  - `argon2id hash ctx String String String String Argon2Params => Argon2Res` (`pwd salt secret ad params`), `argon2id verify ctx String String String String => Bool` (`pwd phc secret ad`)
+  - `argon2id hash bytes String Tensor[U8] Argon2Params => Argon2Res` (raw salt bytes)
+  - `derive raw tag Tensor[U8] Tensor[U8] Argon2Params => Tensor[U8]`, `derive raw tag ctx Tensor[U8] Tensor[U8] String String Argon2Params => Tensor[U8]` (raw password, raw salt → raw tag)
+  - `bytes to hex Tensor[U8] => String`, `b64 encode nopad Tensor[U8] => String`, `b64 decode nopad String => Tensor[U8]`, `constant time bytes eq Tensor[U8] Tensor[U8] => Bool`, `constant time eq String String => Bool`
   - `argon2 default params () => Argon2Params`, `argon2 interactive params () => Argon2Params`, `argon2 moderate params () => Argon2Params`, `argon2 sensitive params () => Argon2Params`
 - Argon2id & Blake2b `BlaMka` Tensor Block Compression API (`crypto.rg`):
   - `f blamka U64 U64 => U64`
   - `blamka g U64 U64 U64 U64 => U64 U64 U64 U64`
   - `blamka p16 Tensor[U64 * 16] => ()`
   - `compress block Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16] => Tensor[U64 * 8 * 16]`
-- ChaCha20-Poly1305 AEAD API (`RGF-015` in `crypto.rg`):
+- ChaCha20-Poly1305 AEAD API (`RGF-015` in `crypto.rg`; the building blocks `le32 at Tensor[U8] Int => Int`, `chacha20 block Tensor[U8] Tensor[U8] Int => Tensor[U8]`, `chacha20 bitxor Tensor[U8] Tensor[U8] Int Tensor[U8] => Tensor[U8]` and `poly1305 aead mac Tensor[U8] Tensor[U8] Tensor[U8] => Tensor[U8]` work on `Tensor[U8]`):
   - `aead_seal String String String String => String` (`key` 32 B, `nonce` 12 B, `aad`, `plaintext` → `ciphertext || 16-byte tag`)
   - `aead_open String String String String => (Int, String)` (`(0, plaintext)` on valid tag, `(-12, "")` on tag mismatch, `(-7, "")` on invalid key/nonce length)
 - FIPS 180-4 SHA-512, RFC 8032 §5.1 Ed25519 & Minisign API (`FR-CRYPTO-005` in `crypto.rg`):

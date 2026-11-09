@@ -17,7 +17,7 @@ import posix
 type Argon2Params = m_cost: Int, t_cost: Int, lanes: Int, tag_len: Int, version: Int
 type Argon2Phc    = params: Argon2Params, salt_b64: String, tag_b64: String
 type Argon2Res    = Argon2Ok String | Argon2Err String
-type Argon2KeyRes = Argon2KeyOk [Int] | Argon2KeyErr String
+type Argon2KeyRes = Argon2KeyOk Tensor[U8] | Argon2KeyErr String
 type Argon2PhcRes = Argon2PhcOk Argon2Phc | Argon2PhcErr String
 
 type A2M16   = mb0: Tensor[U64 * 256], mb1: Tensor[U64 * 256], mb2: Tensor[U64 * 256], mb3: Tensor[U64 * 256], mb4: Tensor[U64 * 256], mb5: Tensor[U64 * 256], mb6: Tensor[U64 * 256], mb7: Tensor[U64 * 256], mb8: Tensor[U64 * 256], mb9: Tensor[U64 * 256], mb10: Tensor[U64 * 256], mb11: Tensor[U64 * 256], mb12: Tensor[U64 * 256], mb13: Tensor[U64 * 256], mb14: Tensor[U64 * 256], mb15: Tensor[U64 * 256]
@@ -27,22 +27,12 @@ type A2Mem   = mt0: A2M4096, mt1: A2M4096, mt2: A2M4096, mt3: A2M4096, mt4: A2M4
 type A2Ctx   = r_pass: Int, s_slice: Int, l_lane: Int, p_lanes: Int, q_cols: Int, seg_len: Int, t_iters: Int
 
 -- ============================================================
--- List, String & 32/64-bit Modular Arithmetic Helpers (Internal)
+-- Byte (Tensor[U8], ADR-0010), String & 32/64-bit Modular Arithmetic Helpers (Internal)
 -- ============================================================
-
-fn :: a2 list len [Int]    => Int
-      a2 list len []       =  0
-      a2 list len (_:rest) =  1 + (a2 list len rest)
 
 fn :: a2 str list len [String] => Int
       a2 str list len []       =  0
       a2 str list len (_:rest) =  1 + (a2 str list len rest)
-
-fn :: a2 nth int [Int]    Int => Int
-      a2 nth int []       _   =  0
-      a2 nth int (x:rest) idx =
-        | idx <= 0  = x
-        | otherwise = a2 nth int rest (idx - 1)
 
 fn :: a2 nth str [String] Int => String
       a2 nth str []       _   =  ""
@@ -50,68 +40,37 @@ fn :: a2 nth str [String] Int => String
         | idx <= 0  = x
         | otherwise = a2 nth str rest (idx - 1)
 
-fn :: a2 take ints [Int]    Int => [Int]
-      a2 take ints []       _   =  []
-      a2 take ints (x:rest) n   =
-        | n <= 0    = []
-        | otherwise = [x] :: (a2 take ints rest (n - 1))
+-- The tensor is bound to a name: with `_` ridgunc 0.9.49 binds a wrong `n`.
+fn :: a2 u8 len Tensor[U8]          => Int
+      a2 u8 len (Tensor[U8 * n] bs) =  n
 
-fn :: a2 drop ints [Int]    Int => [Int]
-      a2 drop ints []       _   =  []
-      a2 drop ints (x:rest) n   =
-        | n <= 0    = [x] :: rest
-        | otherwise = a2 drop ints rest (n - 1)
-
-fn :: a2 pad zeroes Int => [Int]
-      a2 pad zeroes n   =
-        | n <= 0    = []
-        | otherwise = [0] :: (a2 pad zeroes (n - 1))
-
-fn :: a2 raw byte ub Int => String
-      a2 raw byte ub ub  =
-        | ub >= 1 and ub <= 127 = char from code ub
-        | ub == 0 = str slice (sha256 raw "00679") 0 1
+fn :: a2 copy loop Tensor[U8] Int Tensor[U8] Int Int Int => Int
+      a2 copy loop dst doff src soff i n =
+        | i >= n    = doff + n
         | otherwise =
-          idx = (ub - 128) * 5
-          lut = "0056400101002080010000179000010024100109003430040100361007870009100353001870030400471000870020200071002360012501171004140236900275001810016001398004440080400017005250027000314001400024700004006350015700183005940027600207007720028400601003400038000839006850084900617003060113500277000320006900483000580019200151008700008500193000100057000070002880002600326006460038800018009190028900103006000043900073011700038900628007210077300074004740006000041001410019900066003680001900383001730005700558000670024500065002030031900000008250001100128001360034900030003750039600228002380008400618005900031800062001770087900076002570009600034002200001600161"
-          str slice (sha256 raw (str slice lut idx (idx + 5))) 0 1
+          dst_(doff + i) = src_(soff + i)
+          a2 copy loop dst doff src soff (i + 1) n
 
-fn :: a2 raw byte Int => String
-      a2 raw byte b   =  a2 raw byte ub (((b % 256) + 256) % 256)
+-- Copies `n` bytes of `src` from `soff` into `dst` at `doff`; returns `doff + n`.
+fn :: a2 copy bytes Tensor[U8] Int Tensor[U8] Int Int => Int
+      a2 copy bytes dst doff src soff n =  a2 copy loop dst doff src soff 0 n
 
-fn :: a2 lb append2 [Int] [Int] Int => [Int] [Int] [Int] Int
-      a2 lb append2 n1 l2 cnt =
-        | (cnt % 1024) == 0 = ([], [], l2 :: n1, cnt)
-        | otherwise         = ([], n1, l2, cnt)
+-- Writes `w` as 4 little-endian bytes at `off`; returns `off + 4`.
+fn :: a2 put u32 Tensor[U8] Int Int => Int
+      a2 put u32 t off w =
+        uw          = w and 0xFFFFFFFF
+        t_(off)     = uw and 255
+        t_(off + 1) = (uw shr 8) and 255
+        t_(off + 2) = (uw shr 16) and 255
+        t_(off + 3) = (uw shr 24) and 255
+        off + 4
 
-fn :: a2 lb append1 [Int] [Int] [Int] Int => [Int] [Int] [Int] Int
-      a2 lb append1 n0 l1 l2 cnt =
-        | (cnt % 32) == 0 = a2 lb append2 (l1 :: n0) l2 cnt
-        | otherwise       = (n0, l1, l2, cnt)
-
-fn :: a2 lb append Int [Int] [Int] [Int] Int => [Int] [Int] [Int] Int
-      a2 lb append item l0 l1 l2 cnt =
-        a2 lb append1 (l0 :: [item]) l1 l2 (cnt + 1)
-
-fn :: a2 lb finish [Int] [Int] [Int] => [Int]
-      a2 lb finish l0 l1 l2 =  l2 :: (l1 :: l0)
-
-fn :: a2 str to bytes loop String Int Int [Int] [Int] [Int] Int => [Int]
-      a2 str to bytes loop s idx len l0 l1 l2 cnt =
-        | idx >= len = a2 lb finish l0 l1 l2
-        | otherwise  =
-          n0, n1, n2, ncnt = a2 lb append ((((str char at s idx) % 256) + 256) % 256) l0 l1 l2 cnt
-          a2 str to bytes loop s (idx + 1) len n0 n1 n2 ncnt
-
-fn :: a2 str to bytes String => [Int]
-      a2 str to bytes s      =  a2 str to bytes loop s 0 (str len s) [] [] [] 0
-
-fn :: a2 bytes to str loop [Int] String => String
-      a2 bytes to str loop []       acc = acc
-      a2 bytes to str loop (b:rest) acc = a2 bytes to str loop rest (acc + (a2 raw byte b))
-
-fn :: a2 bytes to str [Int] => String
-      a2 bytes to str bs    =  a2 bytes to str loop bs ""
+-- Writes `le32(len src) || src` at `off` (RFC 9106 H0 field); returns the next offset.
+fn :: a2 put field Tensor[U8] Int Tensor[U8] => Int
+      a2 put field t off src =
+        n  = a2 u8 len src
+        o1 = a2 put u32 t off n
+        a2 copy bytes t o1 src 0 n
 
 fn :: hex digits => String
       hex digits =  "0123456789abcdef"
@@ -123,9 +82,26 @@ fn :: byte to hex Int => String
         lo = ub % 16
         (str slice (hex digits) hi (hi + 1)) + (str slice (hex digits) lo (lo + 1))
 
-fn :: bytes to hex [Int]    => String
-      bytes to hex []       =  ""
-      bytes to hex (b:rest) =  (byte to hex b) + (bytes to hex rest)
+fn :: a2 hex code Int => Int
+      a2 hex code v   =
+        | v < 10    = v + 48
+        | otherwise = v + 87
+
+fn :: bytes to hex loop Tensor[U8] Tensor[U8] Int Int => Tensor[U8]
+      bytes to hex loop bs out i n =
+        | i >= n    = out
+        | otherwise =
+          b                 = bs_(i)
+          out_(2 * i)       = a2 hex code (b shr 4)
+          out_((2 * i) + 1) = a2 hex code (b and 15)
+          bytes to hex loop bs out (i + 1) n
+
+fn :: bytes to hex Tensor[U8] => String
+      bytes to hex bs         =
+        n   = a2 u8 len bs
+        m   = 2 * n
+        out = Tensor[U8 * m]
+        tensor to str (bytes to hex loop bs out 0 n)
 
 fn :: byte bitxor Int Int => Int
       byte bitxor a   b   =
@@ -147,14 +123,9 @@ fn :: a2 u64 lh Int Int => U64
 fn :: a2 f blamka U64 U64 => U64
       a2 f blamka x   y   =  x + y + 2 * ((x and 0xFFFFFFFF) * (y and 0xFFFFFFFF))
 
-fn :: a2 u32 to le4 Int => [Int]
-      a2 u32 to le4 w   =
-        uw = u32 norm w
-        [uw and 255, (uw shr 8) and 255, (uw shr 16) and 255, (uw shr 24) and 255]
-
-fn :: a2 bytes to u32 le [Int] Int => Int
-      a2 bytes to u32 le bs off =
-        (a2 nth int bs off) or ((a2 nth int bs (off + 1)) shl 8) or ((a2 nth int bs (off + 2)) shl 16) or ((a2 nth int bs (off + 3)) shl 24)
+fn :: a2 bytes to u32 le Tensor[U8] Int => Int
+      a2 bytes to u32 le bs         off =
+        bs_(off) or (bs_(off + 1) shl 8) or (bs_(off + 2) shl 16) or (bs_(off + 3) shl 24)
 
 -- ============================================================
 -- Pure-Ridgun RFC 7693 BLAKE2b-512 & Variable-Length H' (`blake2b_long`)
@@ -199,22 +170,18 @@ fn :: a2 b2b g4 U64 U64 U64 U64 U64 U64 => U64 U64 U64 U64
         b = (b xor c) rotr 63
         (a, b, c, d)
 
-fn :: a2 b2b sigma Int => [Int]
-      a2 b2b sigma r   =
-        | (r % 10) == 0 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-        | (r % 10) == 1 = [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3]
-        | (r % 10) == 2 = [11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4]
-        | (r % 10) == 3 = [7, 9, 3, 1, 13, 12, 11, 14, 2, 6, 5, 10, 4, 0, 15, 8]
-        | (r % 10) == 4 = [9, 0, 5, 7, 2, 4, 10, 15, 14, 1, 11, 12, 6, 8, 3, 13]
-        | (r % 10) == 5 = [2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9]
-        | (r % 10) == 6 = [12, 5, 1, 15, 14, 13, 4, 10, 0, 7, 6, 3, 9, 2, 8, 11]
-        | (r % 10) == 7 = [13, 11, 7, 14, 12, 1, 3, 9, 5, 0, 15, 4, 8, 6, 2, 10]
-        | (r % 10) == 8 = [6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5]
-        | otherwise     = [10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0]
+-- RFC 7693 SIGMA: 10 rows of 16 message-word indices, one hex digit each.
+fn :: a2 b2b sigma table => String
+      a2 b2b sigma table =  "0123456789abcdefea489fd61c02b753b8c052fdae3671947931dcbe265a40f8905724afe1bc683d2c6a0b834d75fe19c51fed4a0763928bdb7ec13950f4862a6fe9b308c2d714a5a2847615fb9e3cd0"
+
+fn :: a2 sig Int Int => Int
+      a2 sig base i   =
+        c = str char at (a2 b2b sigma table) (base + i)
+        (c and 15) + ((c shr 6) * 9)
 
 fn :: a2 b2b round Tensor[U64 * 32] Tensor[U64 * 32] Int => Tensor[U64 * 32]
       a2 b2b round v m r =
-        s       = a2 b2b sigma r
+        s       = (r % 10) * 16
         mut v0  = a2 w16 get v 0
         mut v1  = a2 w16 get v 1
         mut v2  = a2 w16 get v 2
@@ -231,14 +198,14 @@ fn :: a2 b2b round Tensor[U64 * 32] Tensor[U64 * 32] Int => Tensor[U64 * 32]
         mut v13 = a2 w16 get v 13
         mut v14 = a2 w16 get v 14
         mut v15 = a2 w16 get v 15
-        v0, v4, v8,  v12 = a2 b2b g4 v0 v4 v8  v12 (a2 w16 get m (a2 nth int s 0))  (a2 w16 get m (a2 nth int s 1))
-        v1, v5, v9,  v13 = a2 b2b g4 v1 v5 v9  v13 (a2 w16 get m (a2 nth int s 2))  (a2 w16 get m (a2 nth int s 3))
-        v2, v6, v10, v14 = a2 b2b g4 v2 v6 v10 v14 (a2 w16 get m (a2 nth int s 4))  (a2 w16 get m (a2 nth int s 5))
-        v3, v7, v11, v15 = a2 b2b g4 v3 v7 v11 v15 (a2 w16 get m (a2 nth int s 6))  (a2 w16 get m (a2 nth int s 7))
-        v0, v5, v10, v15 = a2 b2b g4 v0 v5 v10 v15 (a2 w16 get m (a2 nth int s 8))  (a2 w16 get m (a2 nth int s 9))
-        v1, v6, v11, v12 = a2 b2b g4 v1 v6 v11 v12 (a2 w16 get m (a2 nth int s 10)) (a2 w16 get m (a2 nth int s 11))
-        v2, v7, v8,  v13 = a2 b2b g4 v2 v7 v8  v13 (a2 w16 get m (a2 nth int s 12)) (a2 w16 get m (a2 nth int s 13))
-        v3, v4, v9,  v14 = a2 b2b g4 v3 v4 v9  v14 (a2 w16 get m (a2 nth int s 14)) (a2 w16 get m (a2 nth int s 15))
+        v0, v4, v8,  v12 = a2 b2b g4 v0 v4 v8  v12 (a2 w16 get m (a2 sig s 0))  (a2 w16 get m (a2 sig s 1))
+        v1, v5, v9,  v13 = a2 b2b g4 v1 v5 v9  v13 (a2 w16 get m (a2 sig s 2))  (a2 w16 get m (a2 sig s 3))
+        v2, v6, v10, v14 = a2 b2b g4 v2 v6 v10 v14 (a2 w16 get m (a2 sig s 4))  (a2 w16 get m (a2 sig s 5))
+        v3, v7, v11, v15 = a2 b2b g4 v3 v7 v11 v15 (a2 w16 get m (a2 sig s 6))  (a2 w16 get m (a2 sig s 7))
+        v0, v5, v10, v15 = a2 b2b g4 v0 v5 v10 v15 (a2 w16 get m (a2 sig s 8))  (a2 w16 get m (a2 sig s 9))
+        v1, v6, v11, v12 = a2 b2b g4 v1 v6 v11 v12 (a2 w16 get m (a2 sig s 10)) (a2 w16 get m (a2 sig s 11))
+        v2, v7, v8,  v13 = a2 b2b g4 v2 v7 v8  v13 (a2 w16 get m (a2 sig s 12)) (a2 w16 get m (a2 sig s 13))
+        v3, v4, v9,  v14 = a2 b2b g4 v3 v4 v9  v14 (a2 w16 get m (a2 sig s 14)) (a2 w16 get m (a2 sig s 15))
         _ = a2 w16 set v 0  v0
         _ = a2 w16 set v 1  v1
         _ = a2 w16 set v 2  v2
@@ -296,11 +263,11 @@ fn :: a2 b2b compress Tensor[U64 * 32] Tensor[U64 * 32] Int Bool => Tensor[U64 *
         _   = a2 w16 set out 6 (((a2 w16 get h 6) xor (a2 w16 get vf 6)) xor (a2 w16 get vf 14))
         a2 w16 set out 7 (((a2 w16 get h 7) xor (a2 w16 get vf 7)) xor (a2 w16 get vf 15))
 
-fn :: a2 bytes to u64 [Int] Int => U64
+fn :: a2 bytes to u64 Tensor[U8] Int => U64
       a2 bytes to u64 bs off =
         a2 u64 lh (a2 bytes to u32 le bs off) (a2 bytes to u32 le bs (off + 4))
 
-fn :: a2 bytes to w16 [Int] Int => Tensor[U64 * 32]
+fn :: a2 bytes to w16 Tensor[U8] Int => Tensor[U64 * 32]
       a2 bytes to w16 bs off =
         w = Tensor[U64 * 32]
         _ = a2 w16 set w 0  (a2 bytes to u64 bs off)
@@ -320,49 +287,67 @@ fn :: a2 bytes to w16 [Int] Int => Tensor[U64 * 32]
         _ = a2 w16 set w 14 (a2 bytes to u64 bs (off + 112))
         a2 w16 set w 15 (a2 bytes to u64 bs (off + 120))
 
-fn :: a2 u64 to le8 U64 => [Int]
-      a2 u64 to le8 x   =
-        (a2 u32 to le4 (x and 0xFFFFFFFF)) :: (a2 u32 to le4 ((x shr 32) and 0xFFFFFFFF))
-
-fn :: a2 h8 to bytes Tensor[U64 * 32] => [Int]
-      a2 h8 to bytes h                =
-        (a2 u64 to le8 (a2 w16 get h 0)) :: (a2 u64 to le8 (a2 w16 get h 1)) :: (a2 u64 to le8 (a2 w16 get h 2)) :: (a2 u64 to le8 (a2 w16 get h 3)) :: (a2 u64 to le8 (a2 w16 get h 4)) :: (a2 u64 to le8 (a2 w16 get h 5)) :: (a2 u64 to le8 (a2 w16 get h 6)) :: (a2 u64 to le8 (a2 w16 get h 7))
-
-fn :: a2 b2b loop Tensor[U64 * 32] [Int] Int => Tensor[U64 * 32]
-      a2 b2b loop h rem t =
-        | (a2 list len rem) <= 128 =
-          rlen   = a2 list len rem
-          padded = rem :: (a2 pad zeroes (128 - rlen))
-          a2 b2b compress h (a2 bytes to w16 padded 0) (t + rlen) True
+fn :: a2 h8 bytes loop Tensor[U64 * 32] Tensor[U8] Int Int => Tensor[U8]
+      a2 h8 bytes loop h out i n =
+        | i >= n    = out
         | otherwise =
-          blk  = a2 take ints rem 128
-          rest = a2 drop ints rem 128
-          h1   = a2 b2b compress h (a2 bytes to w16 blk 0) (t + 128) False
-          a2 b2b loop h1 rest (t + 128)
+          out_(i) = (h_(i shr 2) shr (8 * (i and 3))) and 255
+          a2 h8 bytes loop h out (i + 1) n
 
-fn :: a2 blake2b [Int] Int    => [Int]
-      a2 blake2b msg   outlen =
+-- The first `outlen` bytes of the little-endian state words (h holds 32-bit halves, low first).
+fn :: a2 h8 to bytes Tensor[U64 * 32] Int    => Tensor[U8]
+      a2 h8 to bytes h                outlen =
+        out = Tensor[U8 * outlen]
+        a2 h8 bytes loop h out 0 outlen
+
+fn :: a2 b2b loop Tensor[U64 * 32] Tensor[U8] Int Int => Tensor[U64 * 32]
+      a2 b2b loop h msg off len =
+        | (len - off) <= 128 =
+          blk = Tensor[U8 * 128]
+          _   = a2 copy bytes blk 0 msg off (len - off)
+          a2 b2b compress h (a2 bytes to w16 blk 0) len True
+        | otherwise =
+          h1 = a2 b2b compress h (a2 bytes to w16 msg off) (off + 128) False
+          a2 b2b loop h1 msg (off + 128) len
+
+fn :: a2 blake2b Tensor[U8] Int    => Tensor[U8]
+      a2 blake2b msg        outlen =
         h_in = a2 b2b iv w16
         _    = a2 w16 set h_in 0 ((a2 w16 get h_in 0) xor ((16842752 + outlen) and 0xFFFFFFFF))
-        h_fi = a2 b2b loop h_in msg 0
-        a2 take ints (a2 h8 to bytes h_fi) outlen
+        h_fi = a2 b2b loop h_in msg 0 (a2 u8 len msg)
+        a2 h8 to bytes h_fi outlen
 
-fn :: a2 b2b long loop [Int] Int Int Int => [Int]
-      a2 b2b long loop v idx r outlen =
+-- `le32(outlen) || data`, the input of H' (RFC 9106 §3.3).
+fn :: a2 b2b prefixed Tensor[U8] Int    => Tensor[U8]
+      a2 b2b prefixed data       outlen =
+        n   = a2 u8 len data
+        m   = n + 4
+        buf = Tensor[U8 * m]
+        o1  = a2 put u32 buf 0 outlen
+        _   = a2 copy bytes buf o1 data 0 n
+        buf
+
+fn :: a2 b2b long loop Tensor[U8] Tensor[U8] Int Int Int => Tensor[U8]
+      a2 b2b long loop out v idx r outlen =
         | idx > r =
-          rem = outlen - (32 * r)
-          a2 blake2b v rem
+          rem  = outlen - (32 * r)
+          last = a2 blake2b v rem
+          _    = a2 copy bytes out (32 * r) last 0 rem
+          out
         | otherwise =
           v_next = a2 blake2b v 64
-          (a2 take ints v_next 32) :: (a2 b2b long loop v_next (idx + 1) r outlen)
+          _      = a2 copy bytes out (32 * (idx - 1)) v_next 0 32
+          a2 b2b long loop out v_next (idx + 1) r outlen
 
-fn :: a2 blake2b long [Int] Int    => [Int]
-      a2 blake2b long data  outlen =
-        | outlen <= 64 = a2 blake2b ((a2 u32 to le4 outlen) :: data) outlen
+fn :: a2 blake2b long Tensor[U8] Int    => Tensor[U8]
+      a2 blake2b long data       outlen =
+        | outlen <= 64 = a2 blake2b (a2 b2b prefixed data outlen) outlen
         | otherwise =
-          r  = ((outlen + 31) / 32) - 2
-          v1 = a2 blake2b ((a2 u32 to le4 outlen) :: data) 64
-          (a2 take ints v1 32) :: (a2 b2b long loop v1 2 r outlen)
+          r   = ((outlen + 31) / 32) - 2
+          v1  = a2 blake2b (a2 b2b prefixed data outlen) 64
+          out = Tensor[U8 * outlen]
+          _   = a2 copy bytes out 0 v1 0 32
+          a2 b2b long loop out v1 2 r outlen
 
 -- ============================================================
 -- Pure-Ridgun RFC 9106 v0x13 Argon2id Block Compression & Memory Engine
@@ -470,7 +455,7 @@ fn :: a2 compress blk8 bxor Tensor[U64 * 256] Tensor[U64 * 256] Tensor[U64 * 256
         z2    = a2 blamka cols loop z1 0
         z2_ij xor ro_ij
 
-fn :: a2 bytes to blk8 loop Tensor[U64 * 256] [Int] Int => Tensor[U64 * 256]
+fn :: a2 bytes to blk8 loop Tensor[U64 * 256] Tensor[U8] Int => Tensor[U64 * 256]
       a2 bytes to blk8 loop blk bs c =
         | c >= 128  = blk
         | otherwise =
@@ -478,18 +463,20 @@ fn :: a2 bytes to blk8 loop Tensor[U64 * 256] [Int] Int => Tensor[U64 * 256]
           blk_((2 * c) + 1) = a2 bytes to u32 le bs ((c * 8) + 4)
           a2 bytes to blk8 loop blk bs (c + 1)
 
-fn :: a2 bytes to blk8 [Int] => Tensor[U64 * 256]
-      a2 bytes to blk8 bs    =
+fn :: a2 bytes to blk8 Tensor[U8] => Tensor[U64 * 256]
+      a2 bytes to blk8 bs         =
         a2 bytes to blk8 loop (Tensor[U64 * 256]) bs 0
 
-fn :: a2 blk8 to bytes loop Tensor[U64 * 256] Int => [Int]
-      a2 blk8 to bytes loop b c =
-        | c >= 128  = []
-        | otherwise = (a2 u32 to le4 b_(2 * c)) :: (a2 u32 to le4 b_((2 * c) + 1)) :: (a2 blk8 to bytes loop b (c + 1))
+fn :: a2 blk8 to bytes loop Tensor[U64 * 256] Tensor[U8] Int => Tensor[U8]
+      a2 blk8 to bytes loop b out i =
+        | i >= 1024 = out
+        | otherwise =
+          out_(i) = (b_(i shr 2) shr (8 * (i and 3))) and 255
+          a2 blk8 to bytes loop b out (i + 1)
 
-fn :: a2 blk8 to bytes Tensor[U64 * 256] => [Int]
+fn :: a2 blk8 to bytes Tensor[U64 * 256] => Tensor[U8]
       a2 blk8 to bytes b                 =
-        a2 blk8 to bytes loop b 0
+        a2 blk8 to bytes loop b (Tensor[U8 * 1024]) 0
 
 fn :: a2 zero mem => A2Mem
       a2 zero mem =
@@ -707,17 +694,26 @@ fn :: a2 set blk A2Mem Int Tensor[U64 * 256] => A2Mem
       a2 set blk m idx val =
         a2 set mem m ((idx shr 12) and 15) ((idx shr 8) and 15) ((idx shr 4) and 15) (idx and 15) val
 
-fn :: a2 init all lanes loop A2Mem [Int] Int Int Int => A2Mem
+-- `H0 || le32(j) || le32(l)`, the seed of block j of lane l (RFC 9106 §3.2 step 5-6).
+fn :: a2 lane seed Tensor[U8] Int Int => Tensor[U8]
+      a2 lane seed h0         j   l   =
+        buf = Tensor[U8 * 72]
+        o1  = a2 copy bytes buf 0 h0 0 64
+        o2  = a2 put u32 buf o1 j
+        _   = a2 put u32 buf o2 l
+        buf
+
+fn :: a2 init all lanes loop A2Mem Tensor[U8] Int Int Int => A2Mem
       a2 init all lanes loop mem h0 l lanes q =
         | l >= lanes = mem
         | otherwise  =
-          b0   = a2 bytes to blk8 (a2 blake2b long (h0 :: (a2 u32 to le4 0) :: (a2 u32 to le4 l)) 1024)
-          b1   = a2 bytes to blk8 (a2 blake2b long (h0 :: (a2 u32 to le4 1) :: (a2 u32 to le4 l)) 1024)
+          b0   = a2 bytes to blk8 (a2 blake2b long (a2 lane seed h0 0 l) 1024)
+          b1   = a2 bytes to blk8 (a2 blake2b long (a2 lane seed h0 1 l) 1024)
           mem1 = a2 set blk mem (l * q) b0
           mem2 = a2 set blk mem1 ((l * q) + 1) b1
           a2 init all lanes loop mem2 h0 (l + 1) lanes q
 
-fn :: a2 init all lanes [Int] Int Int Int => A2Mem
+fn :: a2 init all lanes Tensor[U8] Int Int Int => A2Mem
       a2 init all lanes h0 l lanes q =
         a2 init all lanes loop (a2 zero mem) h0 l lanes q
 
@@ -881,21 +877,35 @@ fn :: a2 bitxor final lanes A2Mem Int Int Int Tensor[U64 * 256] => Tensor[U64 * 
           blk = a2 nth blk mem ((l * q) + (q - 1))
           a2 bitxor final lanes mem (l + 1) lanes q (a2 bitxor blk8 acc blk)
 
+-- H0 input (RFC 9106 §3.2 step 1): p, T, m, t, v, y as le32, then pwd, salt, secret, ad each prefixed by le32 length.
+fn :: a2 h0 input Argon2Params Tensor[U8] Tensor[U8] Tensor[U8] Tensor[U8] => Tensor[U8]
+      a2 h0 input params       pwd        salt       sec        ad         =
+        total = 40 + (a2 u8 len pwd) + (a2 u8 len salt) + (a2 u8 len sec) + (a2 u8 len ad)
+        buf   = Tensor[U8 * total]
+        o1    = a2 put u32 buf 0 (lanes params)
+        o2    = a2 put u32 buf o1 (tag_len params)
+        o3    = a2 put u32 buf o2 (m_cost params)
+        o4    = a2 put u32 buf o3 (t_cost params)
+        o5    = a2 put u32 buf o4 19
+        o6    = a2 put u32 buf o5 2
+        o7    = a2 put field buf o6 pwd
+        o8    = a2 put field buf o7 salt
+        o9    = a2 put field buf o8 sec
+        _     = a2 put field buf o9 ad
+        buf
+
 -- @implements FR-CRYPTO-001
 -- @implements FR-CRYPTO-004
 -- @implements NFR-PERF-001
 -- @mitigates VUL-AUTHN-001
 -- @mitigates VUL-INPUT-001
-fn :: derive raw tag ctx [Int] [Int] String String Argon2Params => [Int]
+fn :: derive raw tag ctx Tensor[U8] Tensor[U8] String String Argon2Params => Tensor[U8]
       derive raw tag ctx pwd_raw salt_bytes secret ad params =
-        sec_b = a2 str to bytes secret
-        ad_b  = a2 str to bytes ad
         m     = m_cost params
         t     = t_cost params
         p     = lanes params
         tlen  = tag_len params
-        h0_in = (a2 u32 to le4 p) :: (a2 u32 to le4 tlen) :: (a2 u32 to le4 m) :: (a2 u32 to le4 t) :: (a2 u32 to le4 19) :: (a2 u32 to le4 2) :: (a2 u32 to le4 (a2 list len pwd_raw)) :: pwd_raw :: (a2 u32 to le4 (a2 list len salt_bytes)) :: salt_bytes :: (a2 u32 to le4 (a2 list len sec_b)) :: sec_b :: (a2 u32 to le4 (a2 list len ad_b)) :: ad_b
-        h0    = a2 blake2b h0_in 64
+        h0    = a2 blake2b (a2 h0 input params pwd_raw salt_bytes (tensor from str secret) (tensor from str ad)) 64
         sl    = m / (4 * p)
         q     = sl * 4
         mem0  = a2 init all lanes h0 0 p q
@@ -905,8 +915,8 @@ fn :: derive raw tag ctx [Int] [Int] String String Argon2Params => [Int]
         c_fin = a2 bitxor final lanes memf 1 p q c0
         a2 blake2b long (a2 blk8 to bytes c_fin) tlen
 
-fn :: derive raw tag [Int] [Int] Argon2Params => [Int]
-      derive raw tag pwd_raw salt_bytes params = derive raw tag ctx pwd_raw salt_bytes "" "" params
+fn :: derive raw tag Tensor[U8] Tensor[U8] Argon2Params => Tensor[U8]
+      derive raw tag pwd_raw    salt_bytes params       =  derive raw tag ctx pwd_raw salt_bytes "" "" params
 
 -- ============================================================
 -- Unpadded Base64 Encoding & Decoding (PHC Specification)
@@ -915,26 +925,50 @@ fn :: derive raw tag [Int] [Int] Argon2Params => [Int]
 fn :: b64 alphabet => String
       b64 alphabet =  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
-fn :: b64 char Int => String
-      b64 char idx =  str slice (b64 alphabet) (idx % 64) ((idx % 64) + 1)
+fn :: b64 code Int => Int
+      b64 code idx =  str char at (b64 alphabet) (idx and 63)
 
-fn :: b64 encode nopad [Int]           => String
-      b64 encode nopad []              =  ""
-      b64 encode nopad (b0:[])         =
-        c0 = b0 / 4
-        c1 = (b0 % 4) * 16
-        (b64 char c0) + (b64 char c1)
-      b64 encode nopad (b0:b1:[])      =
-        c0 = b0 / 4
-        c1 = ((b0 % 4) * 16) + (b1 / 16)
-        c2 = (b1 % 16) * 4
-        (b64 char c0) + (b64 char c1) + (b64 char c2)
-      b64 encode nopad (b0:b1:b2:rest) =
-        c0 = b0 / 4
-        c1 = ((b0 % 4) * 16) + (b1 / 16)
-        c2 = ((b1 % 16) * 4) + (b2 / 64)
-        c3 = b2 % 64
-        (b64 char c0) + (b64 char c1) + (b64 char c2) + (b64 char c3) + (b64 encode nopad rest)
+fn :: b64 enc tail Tensor[U8] Tensor[U8] Int Int Int => Tensor[U8]
+      b64 enc tail bs out i o rem =
+        | rem == 2 =
+          b0          = bs_(i)
+          b1          = bs_(i + 1)
+          out_(o)     = b64 code (b0 shr 2)
+          out_(o + 1) = b64 code (((b0 and 3) shl 4) or (b1 shr 4))
+          out_(o + 2) = b64 code ((b1 and 15) shl 2)
+          out
+        | rem == 1 =
+          b0          = bs_(i)
+          out_(o)     = b64 code (b0 shr 2)
+          out_(o + 1) = b64 code ((b0 and 3) shl 4)
+          out
+        | otherwise = out
+
+fn :: b64 enc loop Tensor[U8] Tensor[U8] Int Int Int => Tensor[U8]
+      b64 enc loop bs out i o n =
+        | (n - i) < 3 = b64 enc tail bs out i o (n - i)
+        | otherwise   =
+          b0          = bs_(i)
+          b1          = bs_(i + 1)
+          b2          = bs_(i + 2)
+          out_(o)     = b64 code (b0 shr 2)
+          out_(o + 1) = b64 code (((b0 and 3) shl 4) or (b1 shr 4))
+          out_(o + 2) = b64 code (((b1 and 15) shl 2) or (b2 shr 6))
+          out_(o + 3) = b64 code (b2 and 63)
+          b64 enc loop bs out (i + 3) (o + 4) n
+
+fn :: b64 tail len Int => Int
+      b64 tail len rem =
+        | rem == 2  = 3
+        | rem == 1  = 2
+        | otherwise = 0
+
+fn :: b64 encode nopad Tensor[U8] => String
+      b64 encode nopad bs         =
+        n   = a2 u8 len bs
+        m   = ((n / 3) * 4) + (b64 tail len (n % 3))
+        out = Tensor[U8 * m]
+        tensor to str (b64 enc loop bs out 0 0 n)
 
 fn :: b64 char val Int => Int
       b64 char val c   =
@@ -957,33 +991,50 @@ fn :: is valid b64 nopad String => Bool
         | str contains s "="                         = False
         | otherwise                                  = valid b64 chars s 0 (str len s)
 
-fn :: b64 decode rem String Int Int Int => [Int]
-      b64 decode rem s idx len rem =
-        | rem <= 0 = []
-        | rem == 2 =
-          v0 = b64 char val (str char at s idx)
-          v1 = b64 char val (str char at s (idx + 1))
-          [((v0 * 4) + (v1 / 16)) % 256]
+fn :: b64 val at String Int => Int
+      b64 val at s      idx =  b64 char val (str char at s idx)
+
+fn :: b64 dec tail String Tensor[U8] Int Int Int => Tensor[U8]
+      b64 dec tail s out i o rem =
         | rem == 3 =
-          v0 = b64 char val (str char at s idx)
-          v1 = b64 char val (str char at s (idx + 1))
-          v2 = b64 char val (str char at s (idx + 2))
-          [((v0 * 4) + (v1 / 16)) % 256, (((v1 % 16) * 16) + (v2 / 4)) % 256]
-        | otherwise =
-          v0 = b64 char val (str char at s idx)
-          v1 = b64 char val (str char at s (idx + 1))
-          v2 = b64 char val (str char at s (idx + 2))
-          v3 = b64 char val (str char at s (idx + 3))
-          b0 = ((v0 * 4) + (v1 / 16)) % 256
-          b1 = (((v1 % 16) * 16) + (v2 / 4)) % 256
-          b2 = (((v2 % 4) * 64) + v3) % 256
-          [b0, b1, b2] :: (b64 decode loop s (idx + 4) len)
+          v0          = b64 val at s i
+          v1          = b64 val at s (i + 1)
+          v2          = b64 val at s (i + 2)
+          out_(o)     = ((v0 * 4) + (v1 / 16)) and 255
+          out_(o + 1) = (((v1 % 16) * 16) + (v2 / 4)) and 255
+          out
+        | rem == 2 =
+          v0      = b64 val at s i
+          v1      = b64 val at s (i + 1)
+          out_(o) = ((v0 * 4) + (v1 / 16)) and 255
+          out
+        | otherwise = out
 
-fn :: b64 decode loop String Int Int => [Int]
-      b64 decode loop s idx len = b64 decode rem s idx len (len - idx)
+fn :: b64 dec loop String Tensor[U8] Int Int Int => Tensor[U8]
+      b64 dec loop s out i o len =
+        | (len - i) < 4 = b64 dec tail s out i o (len - i)
+        | otherwise     =
+          v0          = b64 val at s i
+          v1          = b64 val at s (i + 1)
+          v2          = b64 val at s (i + 2)
+          v3          = b64 val at s (i + 3)
+          out_(o)     = ((v0 * 4) + (v1 / 16)) and 255
+          out_(o + 1) = (((v1 % 16) * 16) + (v2 / 4)) and 255
+          out_(o + 2) = (((v2 % 4) * 64) + v3) and 255
+          b64 dec loop s out (i + 4) (o + 3) len
 
-fn :: b64 decode nopad String => [Int]
-      b64 decode nopad s      =  b64 decode loop s 0 (str len s)
+fn :: b64 dec len Int => Int
+      b64 dec len rem =
+        | rem == 3  = 2
+        | rem == 2  = 1
+        | otherwise = 0
+
+fn :: b64 decode nopad String => Tensor[U8]
+      b64 decode nopad s      =
+        len = str len s
+        m   = ((len / 4) * 3) + (b64 dec len (len % 4))
+        out = Tensor[U8 * m]
+        b64 dec loop s out 0 0 len
 
 -- ============================================================
 -- Presets, Salt Generation, Key Derivation, PHC & Rehash API
@@ -1016,57 +1067,53 @@ fn :: clamp salt len Int => Int
         | n > 64    = 64
         | otherwise = n
 
-fn :: a2 getrandom call Int Int Int => Int
-      a2 getrandom call ptr rem rc =
-        | rc == (0 - 4) = a2 getrandom loop ptr rem
-        | otherwise     = rc
+fn :: a2 random next Tensor[U8] Int Int Tensor[U8] Int => Int
+      a2 random next buf        off n   tmp        rc  =
+        | rc == (0 - 4) = a2 random fill buf off n
+        | rc <= 0       = rc
+        | otherwise     = a2 random fill buf (a2 copy bytes buf off tmp 0 rc) n
 
-fn :: a2 getrandom step Int Int Int => Int
-      a2 getrandom step ptr rem rc =
-        | rc <= 0   = rc
-        | rc >= rem = 0
-        | otherwise = a2 getrandom loop (ptr + rc) (rem - rc)
-
-fn :: a2 getrandom loop Int Int => Int
-      a2 getrandom loop ptr rem =
-        | rem <= 0  = 0
-        | otherwise = a2 getrandom step ptr rem (a2 getrandom call ptr rem (sys call (nr getrandom) ptr rem 0 0 0 0))
+-- Fills `buf[off..n)` from getrandom(2); retries on EINTR and on short reads.
+fn :: a2 random fill Tensor[U8] Int Int => Int
+      a2 random fill buf        off n   =
+        | off >= n  = 0
+        | otherwise =
+          rem = n - off
+          tmp = Tensor[U8 * rem]
+          a2 random next buf off n tmp (sys call (nr getrandom) tmp rem 0 0 0 0)
 
 fn :: argon2id generate salt Int => String
       argon2id generate salt n   =
         eff_n = clamp salt len n
-        ptr   = px alloc page 4096
-        mfd   = px alloc mfd ptr
-        _     = a2 getrandom loop ptr eff_n
-        raw   = px peek mfd ptr eff_n
-        _     = px free page mfd ptr 4096
-        raw
+        buf   = Tensor[U8 * eff_n]
+        _     = a2 random fill buf 0 eff_n
+        tensor to str buf
 
-fn :: validate argon2 params Argon2Params [Int]      => String
+fn :: validate argon2 params Argon2Params Tensor[U8] => String
       validate argon2 params params       salt_bytes =
         | (version params) != 19                        = "unsupported Argon2 version (expected 19)"
         | (t_cost params) < 1                           = "t_cost must be >= 1"
         | (lanes params) < 1 or (lanes params) > 255    = "lanes must be in 1..255"
         | (m_cost params) < (8 * (lanes params))        = "m_cost must be >= 8 * lanes"
         | (tag_len params) < 4 or (tag_len params) > 64 = "tag_len must be in 4..64"
-        | (a2 list len salt_bytes) < 8                  = "salt must be at least 8 bytes"
+        | (a2 u8 len salt_bytes) < 8                    = "salt must be at least 8 bytes"
         | otherwise                                     = ""
 
-fn :: finish derive key checked [Int] Int => Argon2KeyRes
+fn :: finish derive key checked Tensor[U8] Int => Argon2KeyRes
       finish derive key checked tag_raw exp_len =
-        | (a2 list len tag_raw) != exp_len = Argon2KeyErr "tag derivation failed"
-        | otherwise                        = Argon2KeyOk tag_raw
+        | (a2 u8 len tag_raw) != exp_len = Argon2KeyErr "tag derivation failed"
+        | otherwise                      = Argon2KeyOk tag_raw
 
-fn :: finish derive key String [Int] Argon2Params String => Argon2KeyRes
+fn :: finish derive key String Tensor[U8] Argon2Params String => Argon2KeyRes
       finish derive key pwd salt_bytes params err =
         | (str len err) > 0 = Argon2KeyErr err
         | otherwise         =
-          tag_raw = derive raw tag (a2 str to bytes pwd) salt_bytes params
+          tag_raw = derive raw tag (tensor from str pwd) salt_bytes params
           finish derive key checked tag_raw (tag_len params)
 
 fn :: argon2id derive key String String Argon2Params => Argon2KeyRes
       argon2id derive key pwd salt params =
-        salt_bytes = a2 str to bytes salt
+        salt_bytes = tensor from str salt
         finish derive key pwd salt_bytes params (validate argon2 params params salt_bytes)
 
 fn :: key res to hex Argon2KeyRes       => Argon2Res
@@ -1076,9 +1123,9 @@ fn :: key res to hex Argon2KeyRes       => Argon2Res
 fn :: argon2id derive key hex String String Argon2Params => Argon2Res
       argon2id derive key hex pwd salt params = key res to hex (argon2id derive key pwd salt params)
 
-fn :: build phc from tag [Int] [Int] Argon2Params => Argon2Res
+fn :: build phc from tag Tensor[U8] Tensor[U8] Argon2Params => Argon2Res
       build phc from tag salt_bytes tag_raw params =
-        | (a2 list len tag_raw) != (tag_len params) = Argon2Err "tag derivation failed"
+        | (a2 u8 len tag_raw) != (tag_len params) = Argon2Err "tag derivation failed"
         | otherwise =
           salt_b64 = b64 encode nopad salt_bytes
           tag_b64  = b64 encode nopad tag_raw
@@ -1087,45 +1134,47 @@ fn :: build phc from tag [Int] [Int] Argon2Params => Argon2Res
           p        = lanes params
           Argon2Ok "$argon2id$v=19$m={m},t={t},p={p}${salt_b64}${tag_b64}"
 
-fn :: finish argon2id hash ctx String [Int] String String Argon2Params String => Argon2Res
+fn :: finish argon2id hash ctx String Tensor[U8] String String Argon2Params String => Argon2Res
       finish argon2id hash ctx pwd salt_bytes secret ad params err =
         | (str len err) > 0 = Argon2Err err
         | otherwise =
-          pwd_raw = a2 str to bytes pwd
+          pwd_raw = tensor from str pwd
           tag_raw = derive raw tag ctx pwd_raw salt_bytes secret ad params
           build phc from tag salt_bytes tag_raw params
 
 fn :: argon2id hash ctx String String String String Argon2Params => Argon2Res
       argon2id hash ctx pwd salt secret ad params =
-        salt_bytes = a2 str to bytes salt
+        salt_bytes = tensor from str salt
         finish argon2id hash ctx pwd salt_bytes secret ad params (validate argon2 params params salt_bytes)
 
-fn :: argon2id hash bytes String [Int] Argon2Params => Argon2Res
+fn :: argon2id hash bytes String Tensor[U8] Argon2Params => Argon2Res
       argon2id hash bytes pwd salt_bytes params =
         finish argon2id hash ctx pwd salt_bytes "" "" params (validate argon2 params params salt_bytes)
 
 fn :: argon2id hash params String String Argon2Params => Argon2Res
-      argon2id hash params pwd salt params = argon2id hash bytes pwd (a2 str to bytes salt) params
+      argon2id hash params pwd salt params = argon2id hash bytes pwd (tensor from str salt) params
 
 fn :: argon2id hash password String Argon2Params => Argon2Res
       argon2id hash password pwd    params       =  argon2id hash params pwd (argon2id generate salt 16) params
 
-fn :: ct diff loop [Int] [Int] Int => Int
-      ct diff loop [] [] acc = acc
-      ct diff loop (a:ar) (b:br) acc =
-        d = byte bitxor a b
-        ct diff loop ar br (acc + d)
-      ct diff loop _ _ acc = acc + 1
+fn :: ct diff loop Tensor[U8] Tensor[U8] Int Int Int => Int
+      ct diff loop a          b          i   n   acc =
+        | i >= n    = acc
+        | otherwise = ct diff loop a b (i + 1) n (acc or (byte bitxor a_(i) b_(i)))
 
-fn :: constant time bytes eq [Int] [Int] => Bool
-      constant time bytes eq a b =
-        la   = a2 list len a
-        lb   = a2 list len b
-        diff = ct diff loop a b 0
+-- Compares every byte of the common prefix without early exit; equal only when lengths match too.
+fn :: constant time bytes eq Tensor[U8] Tensor[U8] => Bool
+      constant time bytes eq a          b          =
+        la   = a2 u8 len a
+        lb   = a2 u8 len b
+        n    =
+          | la < lb   = la
+          | otherwise = lb
+        diff = ct diff loop a b 0 n 0
         (la == lb) and (diff == 0)
 
 fn :: constant time eq String String => Bool
-      constant time eq a      b      =  constant time bytes eq (a2 str to bytes a) (a2 str to bytes b)
+      constant time eq a      b      =  constant time bytes eq (tensor from str a) (tensor from str b)
 
 fn :: split str loop String Int Int Int Int => [String]
       split str loop s ch start idx len =
@@ -1158,7 +1207,7 @@ fn :: decode phc fields String String Int Int Int => Argon2PhcRes
         | otherwise =
           salt_bytes = b64 decode nopad s_b64
           tag_bytes  = b64 decode nopad t_b64
-          params     = Argon2Params m t p (a2 list len tag_bytes) 19
+          params     = Argon2Params m t p (a2 u8 len tag_bytes) 19
           build parsed phc s_b64 t_b64 params (validate argon2 params params salt_bytes)
 
 fn :: parse phc mtp Int Int Int [String] => Argon2PhcRes
@@ -1202,7 +1251,7 @@ fn :: verify parsed ctx Argon2PhcRes String String String => Bool
       verify parsed ctx (Argon2PhcOk parsed) pwd secret ad =
         parsed salt_b64 -> b64 decode nopad -> salt_bytes
         parsed tag_b64 -> b64 decode nopad -> tag_bytes
-        pwd a2 str to bytes -> pwd_bytes
+        tensor from str pwd -> pwd_bytes
         derive raw tag ctx pwd_bytes salt_bytes secret ad (params parsed) -> computed
         constant time bytes eq computed tag_bytes
 

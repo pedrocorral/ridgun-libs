@@ -38,6 +38,26 @@ fn :: pair fst (A B)  => A
 fn :: pair snd (A B)  => B
       pair snd (_, b) =  b
 
+fn :: bytes len Tensor[U8] => Int
+      bytes len (Tensor[U8 * n] t) =  n
+
+-- Seconds of `CLOCK_REALTIME` read straight from the kernel (`clock_gettime(0, &ts)`).
+fn :: kernel wall sec => Int
+      kernel wall sec =
+        ts = Tensor[U8 * 16]
+        _  = sys call (nr clock gettime) 0 ts 0 0 0 0
+        px get u64 le ts 0
+
+fn :: ns increasing Int Int Int => Bool
+      ns increasing prev i   n   =
+        | i >= n = True
+        | otherwise = ns increasing step prev i n (sys time ns)
+
+fn :: ns increasing step Int Int Int Int => Bool
+      ns increasing step prev i   n   cur =
+        | cur < prev = False
+        | otherwise  = ns increasing cur (i + 1) n
+
 -- @tests TS-POSIX-001
 fn :: test posix constants descriptors and poll => ()
       test posix constants descriptors and poll =
@@ -93,19 +113,24 @@ fn :: test posix filesystem clocks signals and random => ()
         _       = assert true ((sys getpid) > 0) "sys_getpid > 0"
         _       = assert true ((str len (sys getcwd)) > 0) "sys_getcwd non-empty"
         t1      = sys monotonic ms
-        n1      = sys monotonic ns
+        n1      = sys time ns
+        m1      = sys monotonic ns
         w1      = sys wall time ms
         _       = sys sleep ms 25
         t2      = sys monotonic ms
-        n2      = sys monotonic ns
+        n2      = sys time ns
+        m2      = sys monotonic ns
         w2      = sys wall time ms
         _       = assert true ((t2 - t1) >= 20) "monotonic ms elapsed >= 20"
-        _       = assert true (n2 > n1) "monotonic ns non-decreasing"
-        _       = assert true ((n2 - n1) >= 20000000) "monotonic ns elapsed >= 20ms (20,000,000 ns)"
+        _       = assert true (n2 > n1) "sys time ns increases"
+        _       = assert true ((n2 - n1) >= 20000000) "sys time ns elapsed >= 20ms (20,000,000 ns)"
+        _       = assert true ((m2 - m1) >= 20000000) "sys monotonic ns elapsed >= 20ms"
+        _       = assert true (ns increasing (sys time ns) 0 10000) "sys time ns never goes back over 10000 reads"
         _       = assert true (w1 > 1700000000000) "wall time > 1700000000000"
-        k_sec   = px pair fst (px clock gettime 0)
+        _       = assert true (w1 < 4102444800000) "wall time < 2100-01-01"
+        k_sec   = kernel wall sec
         w_sec   = w2 / 1000
-        _       = assert true (((w_sec - k_sec) <= 2) and ((k_sec - w_sec) <= 2)) "sys_wall_time_ms matches kernel time(0) within 2s"
+        _       = assert true (((w_sec - k_sec) <= 2) and ((k_sec - w_sec) <= 2)) "sys wall time ms matches kernel clock_gettime(REALTIME) within 2s"
         _       = assert true ((w2 - w1) >= 20) "wall time ms elapsed >= 20"
         sw_bad  = sys signal watch [9]
         _       = assert equals (pair fst sw_bad) (0 - 7) "SIGKILL watch rejected with -7"
@@ -132,10 +157,14 @@ fn :: test posix filesystem clocks signals and random => ()
         _       = assert equals (pair snd r_zero) "" "0 random bytes -> empty"
         r1      = sys random bytes 32
         r2      = sys random bytes 32
-        rl      = sys random bytes list 256
+        rt      = sys random tensor 256
         _       = assert equals (pair fst r1) 0 "random 32 status 0"
         _       = assert equals (str len (pair snd r1)) 32 "random 32 length == 32"
-        _       = assert equals (pair fst rl) 0 "random list 256 status 0"
+        _       = assert equals (pair fst rt) 0 "random tensor 256 status 0"
+        _       = assert equals (bytes len (pair snd rt)) 256 "random tensor 256 length == 256"
+        _       = assert equals (bytes len (pair snd (sys random tensor 0))) 0 "random tensor 0 is empty"
+        _       = assert equals (pair fst (sys random tensor (0 - 1))) (0 - 7) "random tensor -1 -> -7"
+        _       = assert equals (pair fst (sys random tensor 65537)) (0 - 7) "random tensor over 64 KiB -> -7"
         _       = assert equals (path separator Linux) "/" "path separator Linux"
         _       = assert equals (path separator Windows) "\\" "path separator Windows"
         _       = assert equals (null device for Linux) "/dev/null" "null device Linux"

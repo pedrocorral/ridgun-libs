@@ -19,22 +19,18 @@ import posix
 type SockAddr = family: String, host: String, port: Int, path: String
 type SockOpts = reuse_addr: Bool, keep_alive: Bool, non_blocking: Bool, tcp_nodelay: Bool, broadcast: Bool, timeout_ms: Int, rcvbuf: Int, sndbuf: Int
 type SockPoll = readable: Bool, writable: Bool, has_error: Bool
-type Socket   = family: String, sock_id: Int, sock_type: String, local_addr: SockAddr, remote_addr: SockAddr, opts: SockOpts, is_open: Bool, is_listening: Bool, is_connected: Bool, can_read: Bool, can_write: Bool, rx_buf: [Int], tx_buf: [Int], dgram_sender: SockAddr
+type Socket   = family: String, sock_id: Int, sock_type: String, local_addr: SockAddr, remote_addr: SockAddr, opts: SockOpts, is_open: Bool, is_listening: Bool, is_connected: Bool, can_read: Bool, can_write: Bool, rx_buf: Tensor[U8], tx_buf: Tensor[U8], dgram_sender: SockAddr
 
 type SockAddrRes      = SockAddrOk SockAddr | SockAddrErr String
 type SockRes          = SockOk Socket | SockErr String
 type SockPairRes      = SockPairOk Socket Socket | SockPairErr String
-type SockRecvBytesRes = SockBytesOk Socket [Int] | SockBytesErr String
+type SockRecvBytesRes = SockBytesOk Socket Tensor[U8] | SockBytesErr String
 type SockRecvStrRes   = SockStrOk Socket String | SockStrErr String
-type SockRecvFromRes  = SockFromOk Socket [Int] SockAddr | SockFromErr String
+type SockRecvFromRes  = SockFromOk Socket Tensor[U8] SockAddr | SockFromErr String
 
 -- ============================================================
 -- List, String & Byte Helpers
 -- ============================================================
-
-fn :: int list len [Int]    => Int
-      int list len []       =  0
-      int list len (_:rest) =  1 + (int list len rest)
 
 fn :: str list len [String] => Int
       str list len []       =  0
@@ -46,35 +42,40 @@ fn :: nth str [String] Int => String
         | idx <= 0  = x
         | otherwise = nth str rest (idx - 1)
 
-fn :: take ints [Int]    Int => [Int]
-      take ints []       _   =  []
-      take ints (x:rest) n   =
-        | n <= 0    = []
-        | otherwise = [x] :: (take ints rest (n - 1))
+-- Byte buffers are `Tensor[U8]` (ADR-0010).
+fn :: sk no bytes => Tensor[U8]
+      sk no bytes =  Tensor[U8 * 0]
 
-fn :: drop ints [Int]    Int => [Int]
-      drop ints []       _   =  []
-      drop ints (x:rest) n   =
-        | n <= 0    = [x] :: rest
-        | otherwise = drop ints rest (n - 1)
+fn :: sk bytes len Tensor[U8]       => Int
+      sk bytes len (Tensor[U8 * n] t) =  n
 
-fn :: all valid bytes [Int]    => Bool
-      all valid bytes []       =  True
-      all valid bytes (b:rest) =
-        | b < 0 or b > 255 = False
-        | otherwise        = all valid bytes rest
+fn :: sk bytes join Tensor[U8] Tensor[U8] => Tensor[U8]
+      sk bytes join a          b          =
+        | (sk bytes len a) == 0 = b
+        | (sk bytes len b) == 0 = a
+        | otherwise             = tensor from str ((tensor to str a) + (tensor to str b))
 
-fn :: str to bytes loop String Int Int => [Int]
-      str to bytes loop s idx len =
-        | idx >= len = []
-        | otherwise  = [(str char at s idx)] :: (str to bytes loop s (idx + 1) len)
+-- Bytes `from .. to - 1` of `t`, clamped to its length.
+fn :: sk bytes range Tensor[U8] Int  Int => Tensor[U8]
+      sk bytes range t          from to  =  sk bytes cut t (sk clamp to from 0 (sk bytes len t)) (sk clamp to to 0 (sk bytes len t))
 
-fn :: str to byte list String => [Int]
-      str to byte list s      =  str to bytes loop s 0 (str len s)
+fn :: sk bytes cut Tensor[U8] Int  Int => Tensor[U8]
+      sk bytes cut t          from to  =
+        | to <= from                           = sk no bytes
+        | from == 0 and to == (sk bytes len t) = t
+        | otherwise                            = tensor from str (str slice (tensor to str t) from to)
 
-fn :: byte list to str [Int]    => String
-      byte list to str []       =  ""
-      byte list to str (b:rest) =  (char from code b) + (byte list to str rest)
+fn :: sk clamp to Int Int Int => Int
+      sk clamp to v   lo  hi  =
+        | v < lo    = lo
+        | v > hi    = hi
+        | otherwise = v
+
+fn :: sk bytes take Tensor[U8] Int => Tensor[U8]
+      sk bytes take t          n   =  sk bytes range t 0 n
+
+fn :: sk bytes drop Tensor[U8] Int => Tensor[U8]
+      sk bytes drop t          n   =  sk bytes range t n (sk bytes len t)
 
 fn :: find sub at String String Int Int Int => Int
       find sub at s sub idx slen nlen =
@@ -358,17 +359,10 @@ fn :: sk udp dns query String String Int => String
       sk udp dns query ns_ip host timeout_ms =
         | not (is valid ipv4 ns_ip) or not (is valid hostname host) = ""
         | otherwise =
-          ptr  = px alloc page 4096
-          mfd  = px alloc mfd ptr
           ufd  = sys call (nr socket) 2 2 0 0 0 0
-          sin  = sk build sockaddr in ns_ip 53 True
-          _    = px poke mfd ptr sin
-          _    = sys call (nr connect) ufd ptr 16 0 0 0
+          _    = sys call (nr connect) ufd (tensor from str (sk build sockaddr in ns_ip 53 True)) 16 0 0 0
           q    = sk build dns query host
-          qlen = str len q
-          _    = px poke mfd ptr q
-          _    = sys call (nr sendto) ufd ptr qlen 16384 0 0
-          _    = px free page mfd ptr 4096
+          _    = sys call (nr sendto) ufd (tensor from str q) (str len q) 16384 0 0
           prc  = sys poll ufd 1 timeout_ms
           sk read dns after poll ufd prc
 
@@ -529,7 +523,7 @@ fn :: new socket Int String String    => Socket
       new socket id  fam    sock_kind =
         addr = empty addr
         opts = default sock opts
-        Socket fam id sock_kind addr addr opts True False False True True [] [] addr
+        Socket fam id sock_kind addr addr opts True False False True True (sk no bytes) (sk no bytes) addr
 
 fn :: sock tcp => Socket
       sock tcp =  new socket 1 "inet" "stream"
@@ -605,7 +599,7 @@ fn :: sock poll Socket => SockPoll
       sock poll s      =
         | not (is_open s) = SockPoll False False True
         | otherwise =
-          rd_ok = (can_read s) and (((int list len (rx_buf s)) > 0) or (is_listening s))
+          rd_ok = (can_read s) and (((sk bytes len (rx_buf s)) > 0) or (is_listening s))
           wr_ok = (can_write s) and ((is_connected s) or ((sock_type s) == "dgram"))
           SockPoll rd_ok wr_ok False
 
@@ -656,7 +650,7 @@ fn :: sock connect pair Socket Socket => SockPairRes
 fn :: sock close Socket => SockRes
       sock close s      =
         | not (is_open s) = SockErr "socket already closed"
-        | otherwise       = SockOk (s with is_open = False, is_listening = False, is_connected = False, can_read = False, can_write = False, rx_buf = [], tx_buf = [])
+        | otherwise       = SockOk (s with is_open = False, is_listening = False, is_connected = False, can_read = False, can_write = False, rx_buf = (sk no bytes), tx_buf = (sk no bytes))
 
 -- ============================================================
 -- Stream, Datagram, Exact & Framed Data Transfer (FR-SOCK-002, FR-SOCK-003)
@@ -665,23 +659,22 @@ fn :: sock close Socket => SockRes
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
-fn :: sock send bytes Socket [Int] => SockRes
-      sock send bytes s      data  =
-        | not (is_open s)            = SockErr "socket is closed"
-        | not (is_connected s)       = SockErr "socket is not connected"
-        | not (can_write s)          = SockErr "socket write half is shut down"
-        | not (all valid bytes data) = SockErr "invalid byte value outside 0..255"
-        | otherwise                  = SockOk (s with tx_buf = ((tx_buf s) :: data))
+fn :: sock send bytes Socket Tensor[U8] => SockRes
+      sock send bytes s      data       =
+        | not (is_open s)      = SockErr "socket is closed"
+        | not (is_connected s) = SockErr "socket is not connected"
+        | not (can_write s)    = SockErr "socket write half is shut down"
+        | otherwise            = SockOk (s with tx_buf = (sk bytes join (tx_buf s) data))
 
-fn :: sock send all Socket [Int] => SockRes
-      sock send all s      data  =  sock send bytes s data
+fn :: sock send all Socket Tensor[U8] => SockRes
+      sock send all s      data       =  sock send bytes s data
 
 fn :: sock pipe transfer Socket Socket => SockPairRes
       sock pipe transfer sender rcvr   =
         | not (is_open sender) or not (is_open rcvr) = SockPairErr "socket is closed"
         | otherwise =
-          s_clean   = sender with tx_buf = []
-          r_updated = rcvr with rx_buf = ((rx_buf rcvr) :: (tx_buf sender))
+          s_clean   = sender with tx_buf = (sk no bytes)
+          r_updated = rcvr with rx_buf = (sk bytes join (rx_buf rcvr) (tx_buf sender))
           SockPairOk s_clean r_updated
 
 fn :: sock recv bytes Socket Int       => SockRecvBytesRes
@@ -692,38 +685,37 @@ fn :: sock recv bytes Socket Int       => SockRecvBytesRes
         | max_bytes < 1        = SockBytesErr "max_bytes must be >= 1"
         | otherwise =
           buf = rx_buf s
-          s2  = s with rx_buf = (drop ints buf max_bytes)
-          SockBytesOk s2 (take ints buf max_bytes)
+          s2  = s with rx_buf = (sk bytes drop buf max_bytes)
+          SockBytesOk s2 (sk bytes take buf max_bytes)
 
 fn :: sock recv exact Socket Int       => SockRecvBytesRes
       sock recv exact s      exact_len =
-        | not (is_open s)                      = SockBytesErr "socket is closed"
-        | not (is_connected s)                 = SockBytesErr "socket is not connected"
-        | not (can_read s)                     = SockBytesErr "socket read half is shut down"
-        | exact_len < 1                        = SockBytesErr "exact_len must be >= 1"
-        | (int list len (rx_buf s)) < exact_len = SockBytesErr "insufficient bytes for sock_recv_exact"
+        | not (is_open s)                          = SockBytesErr "socket is closed"
+        | not (is_connected s)                     = SockBytesErr "socket is not connected"
+        | not (can_read s)                         = SockBytesErr "socket read half is shut down"
+        | exact_len < 1                            = SockBytesErr "exact_len must be >= 1"
+        | (sk bytes len (rx_buf s)) < exact_len    = SockBytesErr "insufficient bytes for sock_recv_exact"
         | otherwise =
           buf = rx_buf s
-          s2  = s with rx_buf = (drop ints buf exact_len)
-          SockBytesOk s2 (take ints buf exact_len)
+          s2  = s with rx_buf = (sk bytes drop buf exact_len)
+          SockBytesOk s2 (sk bytes take buf exact_len)
 
 fn :: sock send str Socket String => SockRes
-      sock send str s      text   =  sock send bytes s (str to byte list text)
+      sock send str s      text   =  sock send bytes s (tensor from str text)
 
 fn :: sock recv str from SockRecvBytesRes   => SockRecvStrRes
       sock recv str from (SockBytesErr msg) =  SockStrErr msg
-      sock recv str from (SockBytesOk s2 bytes) = SockStrOk s2 (byte list to str bytes)
+      sock recv str from (SockBytesOk s2 bytes) = SockStrOk s2 (tensor to str bytes)
 
 fn :: sock recv str Socket Int       => SockRecvStrRes
       sock recv str s      max_bytes =  sock recv str from (sock recv bytes s max_bytes)
 
-fn :: sock send to Socket [Int] SockAddr => SockRes
+fn :: sock send to Socket Tensor[U8] SockAddr => SockRes
       sock send to s payload target =
         | not (is_open s)               = SockErr "socket is closed"
         | not (can_write s)             = SockErr "socket write half is shut down"
         | (sock_type s) != "dgram"      = SockErr "sock send to requires dgram socket"
         | (family s) != (family target) = SockErr "socket family mismatch"
-        | not (all valid bytes payload) = SockErr "invalid byte value outside 0..255"
         | otherwise                     = SockOk (s with remote_addr = target, tx_buf = payload)
 
 fn :: sock deliver dgram Socket Socket => SockPairRes
@@ -731,7 +723,7 @@ fn :: sock deliver dgram Socket Socket => SockPairRes
         | not (is_open sender) or not (is_open rcvr)                  = SockPairErr "socket is closed"
         | (sock_type sender) != "dgram" or (sock_type rcvr) != "dgram" = SockPairErr "requires dgram sockets"
         | otherwise =
-          s_clean = sender with tx_buf = []
+          s_clean = sender with tx_buf = (sk no bytes)
           r_dgram = rcvr with rx_buf = (tx_buf sender), dgram_sender = (local_addr sender)
           SockPairOk s_clean r_dgram
 
@@ -741,28 +733,36 @@ fn :: sock recv from Socket Int       => SockRecvFromRes
         | not (can_read s)         = SockFromErr "socket read half is shut down"
         | (sock_type s) != "dgram" = SockFromErr "sock recv from requires dgram socket"
         | max_bytes < 1            = SockFromErr "max_bytes must be >= 1"
-        | otherwise                = SockFromOk (s with rx_buf = []) (take ints (rx_buf s) max_bytes) (dgram_sender s)
+        | otherwise                = SockFromOk (s with rx_buf = (sk no bytes)) (sk bytes take (rx_buf s) max_bytes) (dgram_sender s)
 
-fn :: encode be32 Int => [Int]
-      encode be32 n   =  [(n / 16777216) % 256, (n / 65536) % 256, (n / 256) % 256, n % 256]
+-- The 4-byte big-endian length prefix of a frame.
+fn :: encode be32 Int => Tensor[U8]
+      encode be32 n   =
+        t = Tensor[U8 * 4]
+        t_(0) = (n shr 24) and 255
+        t_(1) = (n shr 16) and 255
+        t_(2) = (n shr 8) and 255
+        t_(3) = n and 255
+        t
 
-fn :: decode be32 [Int]           => Int
-      decode be32 (b3:b2:b1:b0:_) =  (b3 * 16777216) + (b2 * 65536) + (b1 * 256) + b0
-      decode be32 _               =  -1
+fn :: decode be32 Tensor[U8] => Int
+      decode be32 t          =
+        | (sk bytes len t) < 4 = -1
+        | otherwise            = (t_(0) * 16777216) + (t_(1) * 65536) + (t_(2) * 256) + t_(3)
 
-fn :: sock send frame Socket [Int]   => SockRes
-      sock send frame s      payload =  sock send bytes s ((encode be32 (int list len payload)) :: payload)
+fn :: sock send frame Socket Tensor[U8] => SockRes
+      sock send frame s      payload    =  sock send bytes s (sk bytes join (encode be32 (sk bytes len payload)) payload)
 
-fn :: unpack frame body Socket [Int] Int Int => SockRecvBytesRes
-      unpack frame body s rem flen max_bytes =
-        | flen < 0 or flen > max_bytes = SockBytesErr "frame exceeds max_bytes limit"
-        | (int list len rem) < flen    = SockBytesErr "incomplete frame payload"
-        | otherwise                    = SockBytesOk (s with rx_buf = (drop ints rem flen)) (take ints rem flen)
+fn :: unpack frame body Socket Tensor[U8] Int Int => SockRecvBytesRes
+      unpack frame body s buf flen max_bytes =
+        | flen < 0 or flen > max_bytes       = SockBytesErr "frame exceeds max_bytes limit"
+        | ((sk bytes len buf) - 4) < flen    = SockBytesErr "incomplete frame payload"
+        | otherwise                          = SockBytesOk (s with rx_buf = (sk bytes drop buf (4 + flen))) (sk bytes range buf 4 (4 + flen))
 
-fn :: unpack frame buf Socket [Int] Int => SockRecvBytesRes
+fn :: unpack frame buf Socket Tensor[U8] Int => SockRecvBytesRes
       unpack frame buf s buf max_bytes =
-        | (int list len buf) < 4 = SockBytesErr "incomplete frame header"
-        | otherwise              = unpack frame body s (drop ints buf 4) (decode be32 (take ints buf 4)) max_bytes
+        | (sk bytes len buf) < 4 = SockBytesErr "incomplete frame header"
+        | otherwise              = unpack frame body s buf (decode be32 buf) max_bytes
 
 fn :: sock recv frame Socket Int       => SockRecvBytesRes
       sock recv frame s      max_bytes =
@@ -772,20 +772,21 @@ fn :: sock recv frame Socket Int       => SockRecvBytesRes
         | max_bytes < 1        = SockBytesErr "max_bytes must be >= 1"
         | otherwise            = unpack frame buf s (rx_buf s) max_bytes
 
-fn :: find newline idx [Int]    Int => Int
-      find newline idx []       _   =  -1
-      find newline idx (b:rest) idx =
-        | b == 10   = idx
-        | otherwise = find newline idx rest (idx + 1)
+-- Index of the first byte 10 (`\n`) at or after `idx`, or -1.
+fn :: find newline idx Tensor[U8] Int Int => Int
+      find newline idx buf        idx len =
+        | idx >= len      = -1
+        | buf_(idx) == 10 = idx
+        | otherwise       = find newline idx buf (idx + 1) len
 
 fn :: sock send line Socket String => SockRes
       sock send line s      line   =  sock send str s (line + "\n")
 
-fn :: unpack line buf Socket [Int] Int Int => SockRecvStrRes
+fn :: unpack line buf Socket Tensor[U8] Int Int => SockRecvStrRes
       unpack line buf s buf nl_idx max_bytes =
         | nl_idx < 0         = SockStrErr "newline delimiter not found"
         | nl_idx > max_bytes = SockStrErr "line exceeds max_bytes limit"
-        | otherwise          = SockStrOk (s with rx_buf = (drop ints buf (nl_idx + 1))) (byte list to str (take ints buf nl_idx))
+        | otherwise          = SockStrOk (s with rx_buf = (sk bytes drop buf (nl_idx + 1))) (tensor to str (sk bytes take buf nl_idx))
 
 fn :: sock recv line Socket Int       => SockRecvStrRes
       sock recv line s      max_bytes =
@@ -793,7 +794,7 @@ fn :: sock recv line Socket Int       => SockRecvStrRes
         | not (is_connected s) = SockStrErr "socket is not connected"
         | not (can_read s)     = SockStrErr "socket read half is shut down"
         | max_bytes < 1        = SockStrErr "max_bytes must be >= 1"
-        | otherwise            = unpack line buf s (rx_buf s) (find newline idx (rx_buf s) 0) max_bytes
+        | otherwise            = unpack line buf s (rx_buf s) (find newline idx (rx_buf s) 0 (sk bytes len (rx_buf s))) max_bytes
 
 -- ============================================================
 -- Solstice RGF-001 Descriptor-Based TCP & Unix Socket API (FR-SOCK-004)
@@ -803,46 +804,33 @@ fn :: sock recv line Socket Int       => SockRecvStrRes
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
-fn :: sk raw byte ub Int => String
-      sk raw byte ub ub  =
-        | ub >= 1 and ub <= 127 = char from code ub
-        | otherwise =
-          efd = sys call (nr eventfd2) (256 + ub) 526336 0 0 0 0
-          s   = sys read fd efd 8
-          _   = sys close efd
-          str slice s 0 1
-
 fn :: sk raw byte Int => String
-      sk raw byte b   =  sk raw byte ub (((b % 256) + 256) % 256)
+      sk raw byte b   =  px raw byte b
 
 fn :: sk u64 le Int => String
-      sk u64 le val =
-        | val <= 0 =
-          b0 = sk raw byte 0
-          b0 + b0 + b0 + b0 + b0 + b0 + b0 + b0
-        | otherwise =
-          efd = sys call (nr eventfd2) val 526336 0 0 0 0
-          s   = sys read fd efd 8
-          _   = sys close efd
-          s
-
-fn :: sk decode u16 le String Int => Int
-      sk decode u16 le s off =
-        (str char at s off) + ((str char at s (off + 1)) * 256)
+      sk u64 le val =  px u64 le val
 
 fn :: sk decode u16 be String Int => Int
       sk decode u16 be s off =
         ((str char at s off) * 256) + (str char at s (off + 1))
 
-fn :: sk decode u32 le String Int => Int
-      sk decode u32 le s off =
-        b0 = str char at s off
-        b1 = str char at s (off + 1)
-        b2 = str char at s (off + 2)
-        b3 = str char at s (off + 3)
-        b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
+fn :: sk get u16 le Tensor[U8] Int => Int
+      sk get u16 le t          off =  t_(off) + (t_(off + 1) * 256)
 
--- Buffer helpers come from `posix` (`px alloc page`, `px alloc mfd`, `px poke`, `px peek`, `px free page`; ADR-0007).
+fn :: sk get u16 be Tensor[U8] Int => Int
+      sk get u16 be t          off =  (t_(off) * 256) + t_(off + 1)
+
+-- A 4-byte native-endian `int` for `setsockopt` / `getsockopt`.
+fn :: sk int opt Int => Tensor[U8]
+      sk int opt v   =
+        t = Tensor[U8 * 4]
+        t_(0) = v and 255
+        t_(1) = (v shr 8) and 255
+        t_(2) = (v shr 16) and 255
+        t_(3) = (v shr 24) and 255
+        t
+
+-- Kernel buffers are `Tensor[U8]` passed to `sys call` (ADR-0010).
 
 fn :: is valid listen host String => Bool
       is valid listen host host   =
@@ -884,26 +872,18 @@ fn :: sk finish tcp listen Int Int Int => Int Int
           (0 - 7, 0 - 1)
         | otherwise = (0, lfd)
 
-fn :: sk apply reuseport Int Int Int Bool => Int
-      sk apply reuseport lfd mfd ptr reuseport =
+fn :: sk apply reuseport Int Bool      => Int
+      sk apply reuseport lfd reuseport =
         | not reuseport = 0
-        | otherwise     =
-          _ = px poke mfd ptr (sk u64 le 1)
-          sys call (nr setsockopt) lfd 1 15 ptr 4 0
+        | otherwise     = sys call (nr setsockopt) lfd 1 15 (sk int opt 1) 4 0
 
 fn :: sk exec tcp listen opt String Int Int Bool => Int Int
       sk exec tcp listen opt host port backlog reuseport =
-        ptr  = px alloc page 4096
-        mfd  = px alloc mfd ptr
         lfd  = sys call (nr socket) 2 1 0 0 0 0
-        _    = px poke mfd ptr (sk u64 le 1)
-        _    = sys call (nr setsockopt) lfd 1 2 ptr 4 0
-        _    = sk apply reuseport lfd mfd ptr reuseport
-        sin  = sk build sockaddr in host port False
-        _    = px poke mfd ptr sin
-        rc_b = sys call (nr bind) lfd ptr 16 0 0 0
+        _    = sys call (nr setsockopt) lfd 1 2 (sk int opt 1) 4 0
+        _    = sk apply reuseport lfd reuseport
+        rc_b = sys call (nr bind) lfd (tensor from str (sk build sockaddr in host port False)) 16 0 0 0
         rc_l = sys call (nr listen) lfd backlog 0 0 0 0
-        _    = px free page mfd ptr 4096
         sk finish tcp listen lfd rc_b rc_l
 
 fn :: sk exec tcp listen String Int Int => Int Int
@@ -922,14 +902,10 @@ fn :: sys set reuseport Int Bool    => Int
       sys set reuseport fd  enabled =
         | fd < 0 = 0 - 7
         | otherwise =
-          ptr = px alloc page 4096
-          mfd = px alloc mfd ptr
           val =
             | enabled   = 1
             | otherwise = 0
-          _   = px poke mfd ptr (sk u64 le val)
-          rc  = sys call (nr setsockopt) fd 1 15 ptr 4 0
-          _   = px free page mfd ptr 4096
+          rc  = sys call (nr setsockopt) fd 1 15 (sk int opt val) 4 0
           sk map setsockopt rc rc
 
 -- @implements FR-SOCK-004
@@ -964,19 +940,18 @@ fn :: sk finish unix listen Int Int Int => Int Int
 
 fn :: sk exec unix listen String Int => Int Int
       sk exec unix listen path backlog =
-        ptr  = px alloc page 4096
-        mfd  = px alloc mfd ptr
-        b0   = sk raw byte 0
-        _    = px poke mfd ptr (path + b0)
-        _    = sys call (nr unlinkat) (at fdcwd) ptr 0 0 0 0
+        _    = sys call (nr unlinkat) (at fdcwd) (px cstr path) 0 0 0 0
         lfd  = sys call (nr socket) 1 1 0 0 0 0
-        sun  = (sk raw byte 1) + b0 + path + b0
-        ulen = str len sun
-        _    = px poke mfd ptr sun
-        rc_b = sys call (nr bind) lfd ptr ulen 0 0 0
+        sun  = sk build sockaddr un path
+        rc_b = sys call (nr bind) lfd sun (sk bytes len sun) 0 0 0
         rc_l = sys call (nr listen) lfd backlog 0 0 0 0
-        _    = px free page mfd ptr 4096
         sk finish unix listen lfd rc_b rc_l
+
+-- `struct sockaddr_un`: family `AF_UNIX` (1), then the NUL-terminated path.
+fn :: sk build sockaddr un String => Tensor[U8]
+      sk build sockaddr un path   =
+        b0 = sk raw byte 0
+        tensor from str ((sk raw byte 1) + b0 + path + b0)
 
 -- @implements FR-SOCK-004
 -- @implements API-SOCK-001
@@ -987,12 +962,16 @@ fn :: sys unix listen String Int     => Int Int
         | backlog < 1 or (not (is safe unix path path)) = (0 - 7, 0 - 1)
         | otherwise                                     = sk exec unix listen path backlog
 
-fn :: sk extract local port Int String => Int
-      sk extract local port rc sa =
-        | rc < 0                       = 0 - 7
-        | (sk decode u16 le sa 0) == 2 = sk decode u16 be sa 2
-        | (sk decode u16 le sa 0) == 1 = 0
-        | otherwise                    = 0 - 7
+fn :: sk extract local port Int Tensor[U8] => Int
+      sk extract local port rc  sa         =
+        | rc < 0                    = 0 - 7
+        | (sk get u16 le sa 0) == 2 = sk get u16 be sa 2
+        | (sk get u16 le sa 0) == 1 = 0
+        | otherwise                 = 0 - 7
+
+-- `socklen_t` in/out argument for `getsockname` / `accept` / `getsockopt`.
+fn :: sk socklen Int => Tensor[U8]
+      sk socklen n   =  sk int opt n
 
 -- @implements FR-SOCK-004
 -- @implements API-SOCK-001
@@ -1000,13 +979,8 @@ fn :: sys local port Int => Int
       sys local port lfd =
         | lfd < 0 = 0 - 7
         | otherwise =
-          ptr = px alloc page 4096
-          mfd = px alloc mfd ptr
-          p64 = ptr + 64
-          _   = px poke mfd p64 (sk u64 le 112)
-          rc  = sys call (nr getsockname) lfd ptr p64 0 0 0
-          sa  = px peek mfd ptr 16
-          _   = px free page mfd ptr 4096
+          sa = Tensor[U8 * 112]
+          rc = sys call (nr getsockname) lfd sa (sk socklen 112) 0 0 0
           sk extract local port rc sa
 
 fn :: sk finish connect Int Int => Int Int
@@ -1024,13 +998,8 @@ fn :: sk finish connect Int Int => Int Int
 
 fn :: sk exec tcp connect ip String Int => Int Int
       sk exec tcp connect ip ip_addr port =
-        ptr = px alloc page 4096
-        mfd = px alloc mfd ptr
         cfd = sys call (nr socket) 2 1 0 0 0 0
-        sin = sk build sockaddr in ip_addr port True
-        _   = px poke mfd ptr sin
-        rc  = sys call (nr connect) cfd ptr 16 0 0 0
-        _   = px free page mfd ptr 4096
+        rc  = sys call (nr connect) cfd (tensor from str (sk build sockaddr in ip_addr port True)) 16 0 0 0
         sk finish connect cfd rc
 
 fn :: sk connect resolved (Int String)    Int  => Int Int
@@ -1056,43 +1025,30 @@ fn :: sys unix connect String Int        => Int Int
       sys unix connect path   timeout_ms =
         | not (is safe unix path path) or timeout_ms < (0 - 1) = (0 - 7, 0 - 1)
         | otherwise =
-          ptr  = px alloc page 4096
-          mfd  = px alloc mfd ptr
-          b0   = sk raw byte 0
-          cfd  = sys call (nr socket) 1 1 0 0 0 0
-          sun  = (sk raw byte 1) + b0 + path + b0
-          ulen = str len sun
-          _    = px poke mfd ptr sun
-          rc   = sys call (nr connect) cfd ptr ulen 0 0 0
-          _    = px free page mfd ptr 4096
+          cfd = sys call (nr socket) 1 1 0 0 0 0
+          sun = sk build sockaddr un path
+          rc  = sys call (nr connect) cfd sun (sk bytes len sun) 0 0 0
           sk finish connect cfd rc
 
-fn :: sk decode acceptconn Int String => Int
-      sk decode acceptconn rc  raw    =
+fn :: sk decode acceptconn Int Tensor[U8] => Int
+      sk decode acceptconn rc  val        =
         | rc < 0    = 0 - 1
-        | otherwise = sk decode u32 le raw 0
+        | otherwise = px get u32 le val 0
 
 fn :: sk sock acceptconn Int => Int
       sk sock acceptconn fd  =
         | fd < 0 = 0 - 1
         | otherwise =
-          ptr = px alloc page 4096
-          mfd = px alloc mfd ptr
-          p64 = ptr + 64
-          _   = px poke mfd ptr (sk u64 le 0)
-          _   = px poke mfd p64 (sk u64 le 4)
-          rc  = sys call (nr getsockopt) fd 1 30 ptr p64 0
-          raw = px peek mfd ptr 4
-          _   = px free page mfd ptr 4096
-          sk decode acceptconn rc raw
+          val = Tensor[U8 * 4]
+          rc  = sys call (nr getsockopt) fd 1 30 val (sk socklen 4) 0
+          sk decode acceptconn rc val
 
-fn :: sk format peer ip String => String
-      sk format peer ip sa     =
-        | (sk decode u16 le sa 0) == 2 =
-          (int to str (str char at sa 4)) + "." + (int to str (str char at sa 5)) + "." + (int to str (str char at sa 6)) + "." + (int to str (str char at sa 7))
-        | otherwise = "127.0.0.1"
+fn :: sk format peer ip Tensor[U8] => String
+      sk format peer ip sa         =
+        | (sk get u16 le sa 0) == 2 = "{sa_(4)}.{sa_(5)}.{sa_(6)}.{sa_(7)}"
+        | otherwise                 = "127.0.0.1"
 
-fn :: sk finish accept Int String => Int Int String
+fn :: sk finish accept Int Tensor[U8] => Int Int String
       sk finish accept sfd sa     =
         | sfd < 0   = (0 - 7, 0 - 1, "")
         | otherwise = (0, sfd, sk format peer ip sa)
@@ -1102,13 +1058,8 @@ fn :: sk accept after poll Int Int => Int Int String
         | prc == 0 = (0 - 2, 0 - 1, "")
         | prc < 0  = (0 - 7, 0 - 1, "")
         | otherwise =
-          ptr = px alloc page 4096
-          mfd = px alloc mfd ptr
-          p64 = ptr + 64
-          _   = px poke mfd p64 (sk u64 le 112)
-          sfd = sys call (nr accept) lfd ptr p64 0 0 0
-          sa  = px peek mfd ptr 16
-          _   = px free page mfd ptr 4096
+          sa  = Tensor[U8 * 112]
+          sfd = sys call (nr accept) lfd sa (sk socklen 112) 0 0 0
           sk finish accept sfd sa
 
 -- @implements FR-SOCK-004
@@ -1131,49 +1082,34 @@ fn :: sk send rem ms Int Int => Int
         | timeout_ms == 0 = 0
         | otherwise       = sk clamp nonneg (deadline - (sys time ms))
 
-fn :: sk send after rc Int Int Int Int Int Int Int => Int Int
-      sk send after rc fd ptr dlen sent timeout_ms deadline rc =
+-- `buf` holds the bytes of `data` from `sent` on; after a partial send it is rebuilt from the rest.
+fn :: sk send after rc Int Tensor[U8] String Int Int Int Int Int => Int Int
+      sk send after rc fd  buf        data   dlen sent timeout_ms deadline rc =
         | rc > 0 =
           | (sent + rc) >= dlen = (0, sent + rc)
           | timeout_ms >= 0 and (sys time ms) >= deadline = (0 - 2, sent + rc)
-          | otherwise = sk send loop fd ptr dlen (sent + rc) timeout_ms deadline |.
+          | otherwise = sk send loop fd (tensor from str (str slice data (sent + rc) dlen)) data dlen (sent + rc) timeout_ms deadline |.
         | rc == (0 - 11) or rc == (0 - 4) =
           | timeout_ms >= 0 and (sys time ms) >= deadline = (0 - 2, sent)
-          | otherwise = sk send loop fd ptr dlen sent timeout_ms deadline |.
+          | otherwise = sk send loop fd buf data dlen sent timeout_ms deadline |.
         | rc == (0 - 32) or rc == (0 - 104) = (0 - 4, 0 - 1)
         | otherwise                         = (0 - 7, 0 - 1)
 
-fn :: sk send after poll Int Int Int Int Int Int Int => Int Int
-      sk send after poll fd ptr dlen sent timeout_ms deadline prc =
+fn :: sk send after poll Int Tensor[U8] String Int Int Int Int Int => Int Int
+      sk send after poll fd  buf        data   dlen sent timeout_ms deadline prc =
         | prc == 0  = (0 - 2, sent)
         | prc < 0   = (0 - 7, sent)
-        | otherwise =
-          rc = sys call (nr sendto) fd (ptr + sent) (dlen - sent) 16448 0 0
-          sk send after rc fd ptr dlen sent timeout_ms deadline rc
+        | otherwise = sk send after rc fd buf data dlen sent timeout_ms deadline (sys call (nr sendto) fd buf (dlen - sent) 16448 0 0)
 
-fn :: sk send loop Int Int Int Int Int Int => Int Int
-      sk send loop fd ptr dlen sent timeout_ms deadline =
+fn :: sk send loop Int Tensor[U8] String Int Int Int Int => Int Int
+      sk send loop fd  buf        data   dlen sent timeout_ms deadline =
         | sent >= dlen = (0, sent)
-        | otherwise    =
-          rem = sk send rem ms timeout_ms deadline
-          prc = sys poll fd 4 rem
-          sk send after poll fd ptr dlen sent timeout_ms deadline prc
-
-fn :: sk exec send step Int String Int Int => Int Int
-      sk exec send step fd data timeout_ms dlen =
-        ((dlen / 4096) + 2) * 4096 -> psz
-        px alloc page psz -> ptr
-        px alloc mfd ptr -> mfd
-        px poke mfd ptr data -> ()
-        (sys time ms) + timeout_ms -> deadline
-        sk send loop fd ptr dlen 0 timeout_ms deadline -> res
-        px free page mfd ptr psz -> ()
-        res
+        | otherwise    = sk send after poll fd buf data dlen sent timeout_ms deadline (sys poll fd 4 (sk send rem ms timeout_ms deadline))
 
 fn :: sk exec send Int String Int => Int Int
       sk exec send fd data timeout_ms =
         | (str len data) == 0 = (0, 0)
-        | otherwise           = sk exec send step fd data timeout_ms (str len data)
+        | otherwise           = sk send loop fd (tensor from str data) data (str len data) 0 timeout_ms ((sys time ms) + timeout_ms)
 
 -- @implements FR-SOCK-004
 -- @implements API-SOCK-001

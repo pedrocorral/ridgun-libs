@@ -2,7 +2,7 @@
 id: DM-Argon2
 title: Argon2id parameters, PHC representation, and AEAD cryptographic material
 status: approved
-related: [FR-CRYPTO-001, FR-CRYPTO-002, FR-CRYPTO-003, FR-CRYPTO-004, ADR-0001, ADR-0002]
+related: [FR-CRYPTO-001, FR-CRYPTO-002, FR-CRYPTO-003, FR-CRYPTO-004, ADR-0001, ADR-0002, ADR-0010]
 ---
 # DM-Argon2 — Argon2id parameters, PHC representation, and AEAD cryptographic material
 
@@ -20,9 +20,12 @@ related: [FR-CRYPTO-001, FR-CRYPTO-002, FR-CRYPTO-003, FR-CRYPTO-004, ADR-0001, 
 | nonce_bytes | String | Raw byte string (`12` bytes for ChaCha20-Poly1305) | RFC 8439 96-bit AEAD nonce |
 | aad_bytes | String | Arbitrary raw byte string | Authenticated additional data (AAD) |
 | status_code | Int | `0` (OK), `-7` (`INVALID`), `-12` (`AUTH_FAILED`) | Returned by `aead_open` |
+| raw key (`Argon2KeyOk`) | Tensor[U8] | `tag_len` bytes, each `0..255` | Raw derived key returned by `argon2id derive key` (`ADR-0010`) |
+| raw salt / tag bytes | Tensor[U8] | Salt `>= 8` bytes; tag `tag_len` bytes | Inputs and output of `derive raw tag`, `argon2id hash bytes`, `b64 encode nopad` / `b64 decode nopad` (`ADR-0010`) |
 
 ## Relations
-- Used across `argon2id.rg` (`Argon2Params`, `Argon2Res`, `Argon2BytesRes`, `Argon2Phc`, `Argon2PhcRes`) and `crypto.rg` (`argon2id_hash`, `argon2id_verify`, `aead_seal`, `aead_open`).
+- Used across `argon2id.rg` (`Argon2Params`, `Argon2Res`, `Argon2KeyRes = Argon2KeyOk Tensor[U8] | Argon2KeyErr String`, `Argon2Phc`, `Argon2PhcRes`) and `crypto.rg` (`argon2id_hash`, `argon2id_verify`, `aead_seal`, `aead_open`).
+- Byte sequences that are not a whole `String` are `Tensor[U8]`, never `[Int]` (`ADR-0010`).
 
 ## Invariants
 - `m_cost >= 8 * lanes`, `t_cost >= 1`, `lanes >= 1`, `tag_len >= 4`, and decoded salt length `>= 8` bytes.

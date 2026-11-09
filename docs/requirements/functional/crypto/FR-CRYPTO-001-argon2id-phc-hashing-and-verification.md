@@ -6,7 +6,7 @@ status: implemented
 priority: must
 domain: CRYPTO
 depends_on: []
-related: [ADR-0001, VUL-AUTHN-001, VUL-INPUT-001]
+related: [ADR-0001, ADR-0010, VUL-AUTHN-001, VUL-INPUT-001]
 tests: [TS-CRYPTO-001]
 ---
 # FR-CRYPTO-001 — Hash and verify passwords with Argon2id PHC strings
@@ -28,6 +28,7 @@ Applications need memory-hard password hashing and constant-time password verifi
 ## Constraints & edge cases
 - PHC Base64 encoding and decoding must use standard RFC 4648 alphabet without `=` padding characters, as required by the PHC string format specification, and must never emit or accept a PHC string with an empty `<tag_b64>` segment (`RG-051`).
 - Internal Blake2b and 64-bit word arithmetic remain 100% in-process pure-Ridgun implementation details of `argon2id` (`RG-050`, zero external subprocesses).
+- Byte sequences are `Tensor[U8]` (`ADR-0010`): the BLAKE2b input and output, the `H0` and `H'` buffers, the 1024-byte block conversions, `derive raw tag` (password, salt and tag), `b64 encode nopad Tensor[U8] => String`, `b64 decode nopad String => Tensor[U8]`, `bytes to hex Tensor[U8] => String` and `constant time bytes eq Tensor[U8] Tensor[U8] => Bool`.
 
 ## Data & privacy
 - Password and derived tag bytes are processed in-memory and never logged (`VUL-LOG-001` / `VUL-SECRET-001`).

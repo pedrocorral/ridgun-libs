@@ -6,7 +6,7 @@ status: implemented
 priority: must
 domain: JWT
 depends_on: []
-related: [ADR-0002, DM-Jwt, API-JWT-001, VUL-AUTHN-001, VUL-INPUT-001]
+related: [ADR-0002, ADR-0010, ADR-0011, DM-Jwt, API-JWT-001, VUL-AUTHN-001, VUL-INPUT-001]
 tests: [TS-JWT-001]
 ---
 # FR-JWT-001 — Provide RFC 7519 HS256 JWT and ChaCha20-Poly1305 encrypted token signing, constant-time verification, and claim validation
@@ -27,6 +27,8 @@ HTTP services and distributed agents require standard stateless authentication t
 
 ## Constraints & edge cases
 - Rejects any token that does not have exactly 3 `.`-separated non-empty Base64url segments or whose `alg` is not `"HS256"`.
+- HMAC-SHA256 and ChaCha20-Poly1305 come from the `crypto` lib (ADR-0011). Sealed tokens are `RGAEAD2.<nonce>.<ciphertext>.<tag>`; the AAD is `RGAEAD2.<nonce>`.
+- Byte data inside the library (Base64url) is `Tensor[U8]` (ADR-0010). Payloads and plaintexts, including UTF-8 text, round-trip byte for byte.
 
 ## Data & privacy
 - Secret keys are never logged or embedded in error strings.

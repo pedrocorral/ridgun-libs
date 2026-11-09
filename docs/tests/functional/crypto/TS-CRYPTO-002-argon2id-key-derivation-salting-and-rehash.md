@@ -14,7 +14,7 @@ automated_in: [src/test/ridgun/test argon2id.rg]
 ## Steps / inputs
 1. Generate salts with `argon2id generate salt 16`, hash a password with `argon2id hash password`, and verify the resulting PHC string with `argon2id verify`.
 2. Parse the PHC string with `argon2id parse phc` and check `argon2id needs rehash` against the same `Argon2Params` (`False`) and upgraded `Argon2Params` (`True`), plus malformed PHC input (`True`).
-3. Derive raw keys with `argon2id derive key` and `argon2id derive key hex`, check preset constructors (`argon2 interactive params`, `argon2 moderate params`, `argon2 sensitive params`), and hash/verify with `secret` (pepper) and `associated_data` (`argon2id hash with context`, `argon2id verify with context`), verifying that wrong pepper or wrong AD fails verification.
+3. Derive raw keys with `argon2id derive key` (raw key as `Argon2KeyOk Tensor[U8]` of `tag_len` bytes, `ADR-0010`) and `argon2id derive key hex`, check preset constructors (`argon2 interactive params`, `argon2 moderate params`, `argon2 sensitive params`), and hash/verify with `secret` (pepper) and `associated_data` (`argon2id hash with context`, `argon2id verify with context`), verifying that wrong pepper or wrong AD fails verification.
 
 ## Expected results (map to acceptance criteria)
 - AC1 → `argon2id generate salt` returns `>= 16` bytes and `argon2id hash password` produces a valid PHC hash that verifies with `argon2id verify`.

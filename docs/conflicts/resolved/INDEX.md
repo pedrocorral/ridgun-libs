@@ -5,3 +5,4 @@
 | `CONFLICT-0002-x509cert-field-names-vs-the-crypto-contract.md` | `X509Cert` field names in `crypto.rg` aligned to `API-CRYPTO-001` (`ADR-0004`) | `CRYPTO` |
 | `CONFLICT-0003-rfc8448-1024-bit-rsa-vs-2048-bit-floor.md` | RFC 8448 1024-bit RSA `CertificateVerify` vs the 2048-bit RSA floor (`ADR-0005`) | `TLS`, `CRYPTO` |
 | `CONFLICT-0004-tensor-bitwise-names-use-operator-keywords.md` | Tensor bitwise names contain operator keywords; renamed to `bit*` (`ADR-0006`) | `TENSOR` |
+| `CONFLICT-0005-jwt-hmac-and-aead-are-not-the-standard-algorithms.md` | jwt's HS256 was not RFC 2104 HMAC and its AEAD was not ChaCha20-Poly1305 (`ADR-0011`) | `JWT` |

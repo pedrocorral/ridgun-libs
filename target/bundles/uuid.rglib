@@ -56,23 +56,11 @@ fn :: uu adler loop String Int Int Int Int => Int
 fn :: adler32 String => Int
       adler32 s      =  uu adler loop s 0 (str len s) 1 0
 
-fn :: uu crc bit loop Int Int => Int
-      uu crc bit loop crc rem =
-        | rem <= 0       = crc
-        | (crc % 2) == 1 = uu crc bit loop (uu bxor32 (crc / 2) 3988292384) (rem - 1)
-        | otherwise      = uu crc bit loop (crc / 2) (rem - 1)
-
-fn :: uu crc byte loop String Int Int Int => Int
-      uu crc byte loop s idx len crc =
-        | idx >= len = uu bxor32 crc 4294967295
-        | otherwise =
-          c1 = uu bxor32 crc (str char at s idx)
-          uu crc byte loop s (idx + 1) len (uu crc bit loop c1 8)
-
+-- CRC-32 (IEEE 802.3, as zlib) through the built-in `crc32 range` (ADR-0010).
 -- @implements FR-UUID-001
 -- @implements API-UUID-001
 fn :: crc32 String => Int
-      crc32 s      =  uu crc byte loop s 0 (str len s) 4294967295
+      crc32 s      =  crc32 range s 0 (str len s) 0
 
 -- ── Deterministic Seeded 31-Bit PRNG (`prng_next`, `prng_range`) ─
 
@@ -99,52 +87,23 @@ fn :: uu prng range step Int Int Int => Int Int
 fn :: prng range Int  Int Int => Int Int
       prng range seed lo  hi  =  uu prng range step (prng next seed) lo hi
 
--- ── RFC 9562 UUIDv4 & UUIDv7 Generation & Validation (CSPRNG + clock_gettime) ──
+-- ── RFC 9562 UUIDv4 & UUIDv7 Generation & Validation (CSPRNG + wall clock) ──
+-- Random bytes go through `getrandom` into a `Tensor[U8]`; the clock is the built-in `sys wall time ms` (ADR-0010).
 
--- Buffer helpers come from `posix` (`px alloc page`, `px alloc mfd`, `px peek`, `px free page`; ADR-0007).
-
-fn :: uu decode u32 le String Int => Int
-      uu decode u32 le s off =
-        b0 = str char at s off
-        b1 = str char at s (off + 1)
-        b2 = str char at s (off + 2)
-        b3 = str char at s (off + 3)
-        b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
-
-fn :: uu decode u64 le String Int => Int
-      uu decode u64 le s off =
-        uu decode u32 le s off -> lo
-        uu decode u32 le s (off + 4) -> hi
-        lo + (hi * 4294967296)
-
-fn :: uu wall time ms => Int
-      uu wall time ms =
-        px alloc page 4096 -> ptr
-        px alloc mfd ptr -> mfd
-        sys call (nr clock gettime) 0 ptr 0 0 0 0 -> ()
-        px peek mfd ptr 16 -> raw
-        px free page mfd ptr 4096 -> ()
-        uu decode u64 le raw 0 -> sec
-        uu decode u64 le raw 8 -> nsec
-        (sec * 1000) + (nsec / 1000000)
-
-fn :: uu bytes to hex loop String Int Int => String
-      uu bytes to hex loop s idx len =
+fn :: uu bytes to hex loop Tensor[U8] Int Int => String
+      uu bytes to hex loop t          idx len =
         | idx >= len = ""
         | otherwise =
-          b   = ((str char at s idx) % 256 + 256) % 256
+          b   = t_(idx)
           hi  = b / 16
           lo  = b % 16
           tbl = uu hex lut 0
-          (str slice tbl hi (hi + 1)) + (str slice tbl lo (lo + 1)) + (uu bytes to hex loop s (idx + 1) len)
+          (str slice tbl hi (hi + 1)) + (str slice tbl lo (lo + 1)) + (uu bytes to hex loop t (idx + 1) len)
 
 fn :: uu random hex16 => String
       uu random hex16 =
-        px alloc page 4096 -> ptr
-        px alloc mfd ptr -> mfd
-        sys call (nr getrandom) ptr 16 0 0 0 0 -> ()
-        px peek mfd ptr 16 -> raw
-        px free page mfd ptr 4096 -> ()
+        raw = Tensor[U8 * 16]
+        _   = sys call (nr getrandom) raw 16 0 0 0 0
         uu bytes to hex loop raw 0 16
 
 fn :: uu hex val Int => Int
@@ -198,7 +157,7 @@ fn :: uuid v7 at Int   => String
 -- @implements FR-UUID-001
 -- @implements API-UUID-001
 fn :: uuid v7 => String
-      uuid v7 =  uuid v7 at (uu wall time ms)
+      uuid v7 =  uuid v7 at (sys wall time ms)
 
 fn :: uu is hex range String Int Int => Bool
       uu is hex range s idx end_idx =

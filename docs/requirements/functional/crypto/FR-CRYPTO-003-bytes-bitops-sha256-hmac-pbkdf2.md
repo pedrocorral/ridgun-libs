@@ -6,7 +6,7 @@ status: implemented
 priority: must
 domain: CRYPTO
 depends_on: [FR-CRYPTO-001, FR-CRYPTO-002]
-related: [ADR-0002, ADR-0003, NFR-PERF-001, VUL-AUTHN-001, VUL-INPUT-001]
+related: [ADR-0002, ADR-0003, ADR-0010, NFR-PERF-001, VUL-AUTHN-001, VUL-INPUT-001]
 tests: [TS-CRYPTO-003, TS-PERF-001]
 ---
 # FR-CRYPTO-003 — Provide raw byte manipulation, 32-bit bitwise operations, SHA-256, HMAC-SHA-256, constant-time equality, and PBKDF2-HMAC-SHA-256
@@ -27,6 +27,9 @@ Cryptographic protocols, binary wire framing, and password-based key derivation 
 
 ## Constraints & edge cases
 - `ct_equal` returns `False` immediately only when lengths differ, and otherwise XOR-accumulates every byte without early exit.
+- Byte sequences inside the library are `Tensor[U8]` (`ADR-0010`). `byte_str` and `bytes_from_list` build a `Tensor[U8]` and convert it with `tensor to str`; `bytes_to_list` uses `tensor from str` and `tensor to list`. No lookup table and no SHA-256 call per byte.
+- `bytes_from_list` takes each value modulo 256 (`-1` gives `255`, `256` gives `0`), as `byte_str` does.
+- The internal byte helpers take and return `Tensor[U8]`: `bytes list to hex Tensor[U8] => String`, `hex str to bytes String => Tensor[U8]`, `bitxor byte lists Tensor[U8] Tensor[U8] => Tensor[U8]` (XOR over the shorter length), and the HMAC key block (`normalize hmac key`, `normalize hmac384 key`, `bitxor key pad`). The String forms (`bytes to hex str`, `hex to byte str`, `bitxor byte strings`, `byte slice`) keep their signatures.
 - `pbkdf2_hmac_sha256` supports arbitrary `dk_len` across multiple 32-byte SHA-256 blocks and executes 100% in-process in pure Ridgun (`RG-050`, `RG-043`, zero external subprocesses).
 
 ## Data & privacy

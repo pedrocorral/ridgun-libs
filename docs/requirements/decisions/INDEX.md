@@ -12,3 +12,5 @@ Accepted ADRs are settled: do not re-open a decision ("should we switch to Mongo
 | `ADR-0007-libs-reach-the-kernel-only-through-the-posix-bridge.md` | Libs reach the kernel only through the posix per-architecture bridge | accepted |
 | `ADR-0008-linalg-computes-with-real.md` | linalg computes with Real, not with integers in Real tensors | accepted |
 | `ADR-0009-hashmap-is-updated-in-place.md` | hashmap is updated in place and lists keys in insertion order | accepted |
+| `ADR-0010-bytes-are-tensor-u8.md` | Byte sequences in libs are Tensor[U8], not lists of Int or memfd buffers | accepted |
+| `ADR-0011-jwt-uses-the-standard-hmac-and-aead.md` | jwt uses the crypto lib's HMAC-SHA256 and ChaCha20-Poly1305 | accepted |
