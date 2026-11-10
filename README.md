@@ -47,7 +47,7 @@ Pure-Ridgun (`v0.9.16`) standard and system library suite. Every lib compiles to
 
 ## Requirements & Toolchain
 
-- **Compiler**: `ridgunc` (`v0.9.5+`, pure-Ridgun self-hosted ELF64 compiler)
+- **Compiler**: `ridgunc` (`v0.9.55+`, pure-Ridgun self-hosted ELF64 compiler)
 - **Build & Test Runner**: `stable` (`build.rg`)
 - **Supported Targets**: `Linux` (`X86_64`, `Arm64`) with cross-platform PAL dispatch (`Linux | MacOS | Windows`)
 

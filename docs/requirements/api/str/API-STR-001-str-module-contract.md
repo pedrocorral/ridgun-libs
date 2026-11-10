@@ -16,7 +16,7 @@ auth: none
   - `str_split String String => [String]` / `str split String String => [String]`
   - `str_to_upper String => String` / `str to upper String => String`
   - `str_to_lower String => String` / `str to lower String => String`
-  - `str join [String] String => String`, `str repeat String Int => String`, `str pad left String Int String => String`, `str pad right String Int String => String`, `str is empty String => Bool`, `str is blank String => Bool`
+  - `str join [String] String => String` (from the compiler prelude, `ADR-0012`), `str repeat String Int => String`, `str pad left String Int String => String`, `str pad right String Int String => String`, `str is empty String => Bool`, `str is blank String => Bool`
 
 ## Responses
 | Code | When | Body |

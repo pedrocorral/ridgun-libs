@@ -23,24 +23,9 @@ fn :: ws repeat str String Int => String
       ws repeat str _      0   =  ""
       ws repeat str s      n   =  s + (ws repeat str s (n - 1))
 
-fn :: ws int list len [Int] Int => Int
-      ws int list len []     acc = acc
-      ws int list len (_:xs) acc = ws int list len xs (acc + 1)
-
 -- Builds a Tensor[U8] from a list literal of bytes (ADR-0010).
 fn :: ws bytes of [Int] => Tensor[U8]
-      ws bytes of xs =
-        t = Tensor[U8 * (ws int list len xs 0)]
-        ws bytes fill t 0 xs
-
-fn :: ws bytes fill Tensor[U8] Int [Int] => Tensor[U8]
-      ws bytes fill t _ []      = t
-      ws bytes fill t i (x:xs)  = ws bytes fill step t i x xs
-
-fn :: ws bytes fill step Tensor[U8] Int Int [Int] => Tensor[U8]
-      ws bytes fill step t i x xs =
-        t_(i) = x
-        ws bytes fill t (i + 1) xs
+      ws bytes of xs =  tensor u8 from list xs
 
 -- Byte i of the large payload is i % 256, so it holds 0, 128 and 255.
 fn :: ws big payload Int => Tensor[U8]

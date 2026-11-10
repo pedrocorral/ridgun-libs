@@ -10,12 +10,13 @@ auth: none
 ## Request
 - Imported via `import list`.
 - List Inspection, Slicing & Generation:
-  - `list len [Int] => Int`, `list str len [String] => Int`, `list is empty [Int] => Bool`, `list str is empty [String] => Bool`
-  - `list nth [Int] Int => Int`, `list nth or [Int] Int Int => Int`, `list str nth [String] Int => String`, `list str nth or [String] Int String => String`, `list head [Int] Int => Int`, `list last [Int] Int => Int`
-  - `list take [Int] Int => [Int]`, `list str take [String] Int => [String]`, `list drop [Int] Int => [Int]`, `list str drop [String] Int => [String]`, `list slice [Int] Int Int => [Int]`, `list str slice [String] Int Int => [String]`
-  - `list reverse [Int] => [Int]`, `list str reverse [String] => [String]`, `list range Int Int => [Int]`, `list range step Int Int Int => [Int]`, `list replicate Int Int => [Int]`
+  - Generic, from the compiler prelude (`ADR-0012`): `list len [A] => Int`, `list nth or [A] Int A => A`, `list last or [A] A => A`, `list take [A] Int => [A]`, `list drop [A] Int => [A]`, `list reverse [A] => [A]`, `list contains [A] A => Bool`
+  - `list str len [String] => Int`, `list is empty [Int] => Bool`, `list str is empty [String] => Bool`
+  - `list nth [Int] Int => Int`, `list str nth [String] Int => String`, `list str nth or [String] Int String => String`, `list head [Int] Int => Int`, `list last [Int] Int => Int`
+  - `list str take [String] Int => [String]`, `list str drop [String] Int => [String]`, `list slice [Int] Int Int => [Int]`, `list str slice [String] Int Int => [String]`
+  - `list str reverse [String] => [String]`, `list range Int Int => [Int]`, `list range step Int Int Int => [Int]`, `list replicate Int Int => [Int]`
 - Search, Deduplication & Sorting:
-  - `list contains [Int] Int => Bool`, `list str contains [String] String => Bool`, `list index of [Int] Int => Int`, `list str index of [String] String => Int`, `list count [Int] Int => Int`, `list str count [String] String => Int`
+  - `list str contains [String] String => Bool`, `list index of [Int] Int => Int`, `list str index of [String] String => Int`, `list count [Int] Int => Int`, `list str count [String] String => Int`
   - `list dedup [Int] => [Int]`, `list str dedup [String] => [String]`, `list sort [Int] => [Int]`, `list str sort [String] => [String]`, `list is sorted [Int] => Bool`
 - Sorting, Counting & Grouping by Key (`FR-LIST-002`):
   - `list sort ints [Int] => [Int]`, `list sort texts [String] => [String]` (byte order)
@@ -32,5 +33,6 @@ auth: none
 | `-1` / `0` / `""` | Element or key not found | `-1` for `index_of`, `0`/`""` (or `default_val`) for `nth`/`list_kv_get` |
 
 ## Rules
+- The `list str` versions of the prelude functions are one-line aliases kept for compatibility (`ADR-0012`).
 - All exported functions start with `list ` (`RG-066`) so `import list` and `import agent` never collide.
 - All operations are pure, non-mutating, and safe on empty lists or out-of-range indices.

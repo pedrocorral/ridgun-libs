@@ -36,7 +36,7 @@ Ridgun builds for x86_64 and arm64. Literal x86_64 numbers call the wrong syscal
 - `AT_FDCWD` is `-100` on both architectures.
 - `dup3` rejects equal descriptors with `EINVAL`, so `posix dup2 fd fd` checks `fd` with `fcntl(F_GETFD)` instead.
 - Flag values passed with the calls (`O_CLOEXEC`, `O_NONBLOCK`, `MSG_*`, `SOL_SOCKET`, `SO_*`, `AT_REMOVEDIR`, `mmap` and `memfd` flags) are the same on both architectures. `O_DIRECTORY` is not, and stays in `o directory`.
-- `execve` needs absolute pointers inside its argument buffer. `px tensor addr` gets the address of a `Tensor[U8]` with `set_robust_list` / `get_robust_list` and restores the previous robust-list head before it returns.
+- `posix execve` uses the built-in `sys execve`, which builds the pointer tables itself.
 
 ## Data & privacy
 - None.

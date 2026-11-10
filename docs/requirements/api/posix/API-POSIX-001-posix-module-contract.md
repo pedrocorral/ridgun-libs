@@ -36,8 +36,8 @@ auth: none
   - `posix pread Int Int Int => Int String` (`fd offset len` → `(bytes_read, data)` or `(-errno, "")`; `len <= 16777216`)
   - `o directory => Int` (`65536` on x86_64, `16384` on arm64)
 - Kernel Bridge (`FR-POSIX-004`, `ADR-0007`): `nr <name> => Int` returns the syscall number for `sys arch` for `read`, `lseek`, `mmap`, `munmap`, `rt sigprocmask`, `pread64`, `pwrite64`, `socket`, `connect`, `accept`, `sendto`, `shutdown`, `bind`, `listen`, `getsockname`, `setsockopt`, `getsockopt`, `clone`, `execve`, `exit`, `wait4`, `fcntl`, `flock`, `fsync`, `fdatasync`, `ftruncate`, `clock gettime`, `unlinkat`, `symlinkat`, `signalfd4`, `eventfd2`, `dup3`, `pipe2`, `renameat2`, `getrandom`, `memfd create`; `at fdcwd => Int` (`-100`).
-  - Kernel buffers are `Tensor[U8]` values passed straight to `sys call` (`ADR-0010`). Byte helpers for other libs: `px raw byte Int => String`, `px u64 le Int => String`, `px put u64 le Tensor[U8] Int Int => Tensor[U8]`, `px get u32 le Tensor[U8] Int => Int`, `px get u64 le Tensor[U8] Int => Int`, `px cstr String => Tensor[U8]` (NUL-terminated copy), `px tensor addr Tensor[U8] => Int` (address of byte 0, for kernel structures that hold pointers).
-  - The memfd helpers `px alloc page`, `px alloc mfd`, `px poke`, `px peek` and `px free page` are deprecated. Only `posix execve` uses them (a pointer table needs a known address); they are removed once the compiler offers an execve that keeps the caller's argv[0] (`ADR-0010`).
+  - Kernel buffers are `Tensor[U8]` values passed straight to `sys call` (`ADR-0010`). Byte helpers for other libs: `px raw byte Int => String`, `px u64 le Int => String`, `px put u64 le Tensor[U8] Int Int => Tensor[U8]`, `px get u32 le Tensor[U8] Int => Int`, `px get u64 le Tensor[U8] Int => Int`, `px cstr String => Tensor[U8]` (NUL-terminated copy).
+  - `posix execve` calls the built-in `sys execve` (ridgunc 0.9.50 or later), which passes `argv` unchanged, argv[0] included. The memfd helpers (`px alloc page`, `px alloc mfd`, `px poke`, `px peek`, `px free page`) are removed (`ADR-0010`).
   - `errno eio => Int` (`5`), `errno ebadf => Int` (`9`), `errno ewouldblock => Int` (`11`), `errno enotdir => Int` (`20`), `errno einval => Int` (`22`), `errno enospc => Int` (`28`)
 
 ## Responses
@@ -51,6 +51,6 @@ auth: none
 ## Rules
 - `wait fd` delegates directly to the compiler's `sys poll` (`ppoll`) primitive.
 - `sys random bytes` and `sys random tensor` read cryptographic entropy with the `getrandom` syscall into a `Tensor[U8]`, retried on `EINTR`.
-- `posix pread` reads into a `Tensor[U8 * len]` with `pread64`; `posix execve` builds argv/envp in one `Tensor[U8]` and takes its address with `px tensor addr`.
+- `posix pread` reads into a `Tensor[U8 * len]` with `pread64`; `posix execve` is the built-in `sys execve`.
 - `FR-POSIX-003` functions return the raw negative kernel error number; callers compare it with `0 - errno <name>`.
 - Lib code never passes a literal syscall number to `sys call`; it uses `nr <name>` (`ADR-0007`).

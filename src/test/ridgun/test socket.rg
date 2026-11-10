@@ -70,19 +70,9 @@ fn :: unwrap dgram payload SockRecvFromRes => [Int]
       unwrap dgram payload (SockFromOk _ bytes _) = byte list bytes
       unwrap dgram payload (SockFromErr _) =  []
 
-fn :: tb count [Int]    => Int
-      tb count []       =  0
-      tb count (_:rest) =  1 + (tb count rest)
-
-fn :: tb fill Tensor[U8] Int [Int]    => Tensor[U8]
-      tb fill t          _   []       =  t
-      tb fill t          i   (x:rest) =
-        t_(i) = x
-        tb fill t (i + 1) rest
-
 -- A Tensor[U8] from a list literal of byte values (0..255).
 fn :: tb [Int] => Tensor[U8]
-      tb xs     =  tb fill (Tensor[U8 * (tb count xs)]) 0 xs
+      tb xs     =  tensor u8 from list xs
 
 fn :: unwrap dgram sender SockRecvFromRes => SockAddr
       unwrap dgram sender (SockFromOk _ _ sender) = sender

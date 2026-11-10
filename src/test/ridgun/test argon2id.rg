@@ -22,21 +22,8 @@ fn :: unwrap key bytes Argon2KeyRes         => Tensor[U8]
       unwrap key bytes (Argon2KeyOk  bytes) =  bytes
       unwrap key bytes (Argon2KeyErr _)     =  Tensor[U8 * 0]
 
-fn :: u8 fill Tensor[U8] [Int]    Int => Tensor[U8]
-      u8 fill t          []       _   =  t
-      u8 fill t          (b:rest) i   =
-        t_(i) = b
-        u8 fill t rest (i + 1)
-
-fn :: int list len [Int]    => Int
-      int list len []       =  0
-      int list len (_:rest) =  1 + (int list len rest)
-
 fn :: u8 of list [Int] => Tensor[U8]
-      u8 of list bs    =
-        n = int list len bs
-        t = Tensor[U8 * n]
-        u8 fill t bs 0
+      u8 of list bs    =  tensor u8 from list bs
 
 fn :: is phc parsed ok Argon2PhcRes     => Bool
       is phc parsed ok (Argon2PhcOk  _) =  True
