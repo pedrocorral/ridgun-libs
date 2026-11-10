@@ -306,10 +306,22 @@ fn :: srv main [String] => ()
 -- Client-side helpers
 -- ============================================================
 
+-- `s` as one shell word: the test binary of `stable test` has spaces in its path.
+fn :: sh quote String => String
+      sh quote s      =
+        q = char from code 39
+        q + (sh quote loop s 0 "") + q
+
+fn :: sh quote loop String Int String => String
+      sh quote loop s      i   acc    =
+        | i >= (str len s)           = acc
+        | (str char at s i) == 39    = sh quote loop s (i + 1) (acc + (char from code 39) + (char from code 92) + (char from code 39) + (char from code 39))
+        | otherwise                  = sh quote loop s (i + 1) (acc + (str slice s i (i + 1)))
+
 fn :: start smtp String Int String => Bool
       start smtp dir    port mode   =
         exe = sys readlink "/proc/self/exe"
-        shell exec ("(timeout 60 " + exe + " --smtp-server " + (int to str port) + " " + mode + " " + dir + " > /dev/null 2>&1 &)") -> ()
+        shell exec ("(timeout 60 " + (sh quote exe) + " --smtp-server " + (int to str port) + " " + mode + " " + (sh quote dir) + " > /dev/null 2>&1 &)") -> ()
         wait for (dir + "/smtp-" + (int to str port) + ".log") "READY" 100
 
 fn :: smtp log String Int => String
