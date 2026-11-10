@@ -151,21 +151,7 @@ fn :: str split String String => [String]
       str split s      delim  =
         str split step s delim (str len s) (str len delim)
 
-fn :: str join pair step [String] String [String] => [String]
-      str join pair step []         _   acc =  acc
-      str join pair step (a:[])     _   acc =  acc :: [a]
-      str join pair step (a:b:rest) sep acc =
-        str join pair step rest sep (acc :: [a + sep + b])
-
-fn :: str join pairs [String] String => String
-      str join pairs []       _   =  ""
-      str join pairs (x:[])   _   =  x
-      str join pairs (x:y:[]) sep =  x + sep + y
-      str join pairs xs       sep =
-        str join pairs (str join pair step xs sep []) sep
-
-fn :: str join [String] String => String
-      str join xs       sep    =  str join pairs xs sep
+-- `str join [String] String => String` is the compiler prelude's (ridgunc 0.9.55).
 
 -- ── ASCII Case Conversion ────────────────────────────────────
 

@@ -12,18 +12,14 @@ module :: list
 import hashmap
 
 -- ── List Length & Emptiness ──────────────────────────────────
-
--- @implements FR-LIST-001
--- @implements API-LIST-001
-fn :: list len [Int]    => Int
-      list len []       =  0
-      list len (_:rest) =  1 + (list len rest)
+-- `list len`, `list nth or`, `list last or`, `list take`, `list drop`, `list reverse` and
+-- `list contains` are the generic ones of the compiler prelude (ridgunc 0.9.55).
+-- The `list str` names stay as one-line aliases.
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
 fn :: list str len [String] => Int
-      list str len []       =  0
-      list str len (_:rest) =  1 + (list str len rest)
+      list str len xs       =  list len xs
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
@@ -41,16 +37,6 @@ fn :: list str is empty [String] => Bool
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
--- @mitigates VUL-INPUT-001
-fn :: list nth or [Int] Int Int => Int
-      list nth or [] _ fallback = fallback
-      list nth or (x:rest) idx fallback =
-        | idx < 0   = fallback
-        | idx == 0  = x
-        | otherwise = list nth or rest (idx - 1) fallback
-
--- @implements FR-LIST-001
--- @implements API-LIST-001
 fn :: list nth [Int] Int => Int
       list nth xs    idx =  list nth or xs idx 0
 
@@ -58,11 +44,7 @@ fn :: list nth [Int] Int => Int
 -- @implements API-LIST-001
 -- @mitigates VUL-INPUT-001
 fn :: list str nth or [String] Int String => String
-      list str nth or [] _ fallback = fallback
-      list str nth or (x:rest) idx fallback =
-        | idx < 0   = fallback
-        | idx == 0  = x
-        | otherwise = list str nth or rest (idx - 1) fallback
+      list str nth or xs       idx fallback =  list nth or xs idx fallback
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
@@ -87,38 +69,14 @@ fn :: list last [Int]    Int      => Int
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
 -- @mitigates VUL-INPUT-001
-fn :: list take [Int]    Int => [Int]
-      list take []       _   =  []
-      list take (x:rest) n   =
-        | n <= 0    = []
-        | otherwise = [x] :: (list take rest (n - 1))
-
--- @implements FR-LIST-001
--- @implements API-LIST-001
--- @mitigates VUL-INPUT-001
 fn :: list str take [String] Int => [String]
-      list str take []       _   =  []
-      list str take (x:rest) n   =
-        | n <= 0    = []
-        | otherwise = [x] :: (list str take rest (n - 1))
-
--- @implements FR-LIST-001
--- @implements API-LIST-001
--- @mitigates VUL-INPUT-001
-fn :: list drop [Int]    Int => [Int]
-      list drop []       _   =  []
-      list drop (x:rest) n   =
-        | n <= 0    = [x] :: rest
-        | otherwise = list drop rest (n - 1)
+      list str take xs       n   =  list take xs n
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
 -- @mitigates VUL-INPUT-001
 fn :: list str drop [String] Int => [String]
-      list str drop []       _   =  []
-      list str drop (x:rest) n   =
-        | n <= 0    = [x] :: rest
-        | otherwise = list str drop rest (n - 1)
+      list str drop xs       n   =  list drop xs n
 
 fn :: l clamp nonneg Int => Int
       l clamp nonneg x   =
@@ -149,23 +107,10 @@ fn :: list str slice [String] Int Int => [String]
         start l clamp nonneg -> s0
         l slice strs from xs s0 end_idx
 
-fn :: l rev ints [Int]    [Int] => [Int]
-      l rev ints []       acc   =  acc
-      l rev ints (x:rest) acc   =  l rev ints rest ([x] :: acc)
-
--- @implements FR-LIST-001
--- @implements API-LIST-001
-fn :: list reverse [Int] => [Int]
-      list reverse xs    =  l rev ints xs []
-
-fn :: l rev strs [String] [String] => [String]
-      l rev strs []       acc      =  acc
-      l rev strs (x:rest) acc      =  l rev strs rest ([x] :: acc)
-
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
 fn :: list str reverse [String] => [String]
-      list str reverse xs       =  l rev strs xs []
+      list str reverse xs       =  list reverse xs
 
 -- ── Range & Replication ──────────────────────────────────────
 
@@ -207,11 +152,6 @@ fn :: l idx int [Int] Int Int => Int
 fn :: list index of [Int] Int => Int
       list index of xs    tgt =  l idx int xs tgt 0
 
--- @implements FR-LIST-001
--- @implements API-LIST-001
-fn :: list contains [Int] Int => Bool
-      list contains xs    tgt =  (list index of xs tgt) >= 0
-
 fn :: l idx str [String] String Int => Int
       l idx str [] _ _ = 0 - 1
       l idx str (x:rest) tgt idx =
@@ -226,7 +166,7 @@ fn :: list str index of [String] String => Int
 -- @implements FR-LIST-001
 -- @implements API-LIST-001
 fn :: list str contains [String] String => Bool
-      list str contains xs       tgt    =  (list str index of xs tgt) >= 0
+      list str contains xs       tgt    =  list contains xs tgt
 
 -- @implements FR-LIST-001
 -- @implements API-LIST-001

@@ -346,35 +346,7 @@ fn :: nr memfd create => Int
 fn :: at fdcwd => Int
       at fdcwd =  0 - 100
 
--- Kernel buffers are `Tensor[U8]` passed to `sys call` (ADR-0010). The memfd helpers below stay
--- for `posix execve` (pointer tables need a known address) and existing callers; new code must not call them.
-fn :: px alloc page Int => Int
-      px alloc page sz  =
-        neg1 = 0 - 1
-        sys call (nr mmap) 0 sz 3 34 neg1 0
-
-fn :: px free page Int Int Int => Int
-      px free page mfd ptr sz =
-        _ = sys close mfd
-        sys call (nr munmap) ptr sz 0 0 0 0
-
--- `name_ptr` must point at a fresh anonymous mmap page: its first byte is 0, so the
--- memfd name is "". This works in an executable and in a .so at any load address.
-fn :: px alloc mfd Int      => Int
-      px alloc mfd name_ptr =  sys call (nr memfd create) name_ptr 1 0 0 0 0
-
-fn :: px poke Int Int String => Int
-      px poke mfd ptr s      =
-        slen = str len s
-        _    = sys call (nr lseek) mfd 0 0 0 0 0
-        _    = sys write fd mfd s
-        sys call (nr pread64) mfd ptr slen 0 0 0
-
-fn :: px peek Int Int Int => String
-      px peek mfd ptr len =
-        _ = sys call (nr pwrite64) mfd ptr len 0 0 0
-        _ = sys call (nr lseek) mfd 0 0 0 0 0
-        sys read fd mfd len
+-- Kernel buffers are `Tensor[U8]` passed to `sys call` (ADR-0010).
 
 -- ── Monotonic Clock (RGF-017 / RG-010) ───────────────────────
 -- Thin names over the vDSO built-ins `sys time ms` / `sys time ns` (ADR-0010).
@@ -513,47 +485,7 @@ fn :: posix exit Int => Int
 fn :: posix execve String [String] [String] => Int
       posix execve path argv envp =
         | (str len path) == 0 or (str len path) > 4096 = 0 - 22
-        | otherwise                                    = px execve raw path argv envp
-
-fn :: px count [A]      => Int
-      px count []       =  0
-      px count (_:rest) =  1 + (px count rest)
-
--- Bytes of the NUL-terminated strings.
-fn :: px cstr size [String] => Int
-      px cstr size []       =  0
-      px cstr size (x:rest) =  (str len x) + 1 + (px cstr size rest)
-
-fn :: px cstr blob [String] => String
-      px cstr blob []       =  ""
-      px cstr blob (x:rest) =  x + (px raw byte 0) + (px cstr blob rest)
-
--- u64 pointers to consecutive strings starting at `addr`, then a NULL pointer.
-fn :: px cstr table [String] Int  => String
-      px cstr table []       _    =  px u64 le 0
-      px cstr table (x:rest) addr =  (px u64 le addr) + (px cstr table rest (addr + (str len x) + 1))
-
--- execve needs a table of absolute pointers, so the block lives in a page whose
--- address is known, filled through a memfd. The built-in `sys execve` always passes
--- `path` as argv[0], so it cannot keep a caller's argv[0] (ADR-0010).
--- Page layout: argv pointers, NULL, envp pointers, NULL, path, argv strings, envp strings.
-fn :: px execve raw String [String] [String] => Int
-      px execve raw path   argv     envp     =
-        na     = px count argv
-        ne     = px count envp
-        tbl_sz = 8 * (na + ne + 2)
-        total  = tbl_sz + (str len path) + 1 + (px cstr size argv) + (px cstr size envp)
-        sz     = ((total + 4095) / 4096) * 4096
-        ptr    = px alloc page sz
-        mfd    = px alloc mfd ptr
-        p_path = ptr + tbl_sz
-        p_argv = p_path + (str len path) + 1
-        p_envp = p_argv + (px cstr size argv)
-        blob   = (px cstr table argv p_argv) + (px cstr table envp p_envp) + path + (px raw byte 0) + (px cstr blob argv) + (px cstr blob envp)
-        _      = px poke mfd ptr blob
-        rc     = sys call (nr execve) p_path ptr (ptr + (8 * (na + 1))) 0 0 0
-        _      = px free page mfd ptr sz
-        rc
+        | otherwise                                    = sys execve path argv envp
 
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
