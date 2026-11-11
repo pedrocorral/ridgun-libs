@@ -7,7 +7,7 @@ fn :: project kind => String
       project kind =  "lib"
 
 fn :: project version => String
-      project version =  "0.2.0"
+      project version =  "0.3.0"
 
 fn :: main entry => String
       main entry =  "src/main/ridgun/lib/socket.rg"
