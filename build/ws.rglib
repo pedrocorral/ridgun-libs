@@ -10,60 +10,20 @@
 
 module :: ws
 
+import crypto
+
 type WsFrame = is_fin: Bool, ws_opcode: Int, is_masked: Bool, payload_bytes: Tensor[U8], payload_text: String
 
 type WsRes = WsOk WsFrame Int | WsErr String
 
-type Sha1State = h0: Int, h1: Int, h2: Int, h3: Int, h4: Int
 
--- ── 32-Bit Unsigned Bitwise Helpers for RFC 3174 SHA-1 ───────
+-- ── Byte Helpers ────────────────────────────────────────────
 
 fn :: ws u32 Int => Int
       ws u32 x = ((x % 4294967296) + 4294967296) % 4294967296
 
-fn :: ws u32 bxor loop Int Int Int Int => Int
-      ws u32 bxor loop a b bit acc =
-        | a == 0 and b == 0 = acc
-        | (a % 2) != (b % 2) = ws u32 bxor loop (a / 2) (b / 2) (bit * 2) (acc + bit)
-        | otherwise = ws u32 bxor loop (a / 2) (b / 2) (bit * 2) acc
-
-fn :: ws u32 bxor Int Int => Int
-      ws u32 bxor a b = ws u32 bxor loop (ws u32 a) (ws u32 b) 1 0
-
-fn :: ws u32 band loop Int Int Int Int => Int
-      ws u32 band loop a b bit acc =
-        | a == 0 or b == 0 = acc
-        | (a % 2) == 1 and (b % 2) == 1 = ws u32 band loop (a / 2) (b / 2) (bit * 2) (acc + bit)
-        | otherwise = ws u32 band loop (a / 2) (b / 2) (bit * 2) acc
-
-fn :: ws u32 band Int Int => Int
-      ws u32 band a b = ws u32 band loop (ws u32 a) (ws u32 b) 1 0
-
-fn :: ws u32 bor loop Int Int Int Int => Int
-      ws u32 bor loop a b bit acc =
-        | a == 0 and b == 0 = acc
-        | (a % 2) == 1 or (b % 2) == 1 = ws u32 bor loop (a / 2) (b / 2) (bit * 2) (acc + bit)
-        | otherwise = ws u32 bor loop (a / 2) (b / 2) (bit * 2) acc
-
-fn :: ws u32 bor Int Int => Int
-      ws u32 bor a b = ws u32 bor loop (ws u32 a) (ws u32 b) 1 0
-
-fn :: ws u32 bnot Int => Int
-      ws u32 bnot a = 4294967295 - (ws u32 a)
-
-fn :: ws pow2 Int => Int
-      ws pow2 0 = 1
-      ws pow2 n = 2 * (ws pow2 (n - 1))
-
-fn :: ws rotl32 Int Int => Int
-      ws rotl32 x n =
-        ux = ws u32 x
-        p_shl = ws pow2 n
-        p_shr = ws pow2 (32 - n)
-        ws u32 ((ux * p_shl) + (ux / p_shr))
-
 fn :: ws byte bxor Int Int => Int
-      ws byte bxor a b = ws u32 bxor (a % 256) (b % 256)
+      ws byte bxor a b = (a xor b) and 255
 
 -- ── Tensor[U8] Byte Helpers ──────────────────────────────────
 
@@ -104,93 +64,7 @@ fn :: ws put be32 Tensor[U8] Int Int => Tensor[U8]
 fn :: ws be32 at Tensor[U8] Int => Int
       ws be32 at t off = (t_(off) * 16777216) + (t_(off + 1) * 65536) + (t_(off + 2) * 256) + t_(off + 3)
 
--- ── Pure-Ridgun SHA-1 & Base64 for RFC 6455 Handshake ────────
-
-fn :: ws sha1 padded len Int => Int
-      ws sha1 padded len mlen = (((mlen + 8) / 64) + 1) * 64
-
-fn :: ws sha1 pad Tensor[U8] => Tensor[U8]
-      ws sha1 pad msg =
-        mlen = ws blen msg
-        plen = ws sha1 padded len mlen
-        p = Tensor[U8 * plen]
-        p_(mlen) = 128
-        ws copy range msg 0 p 0 mlen -> ws put be32 (plen - 4) (mlen * 8)
-
-fn :: ws sha1 w16 loop Tensor[U8] Int Tensor[Int] Int => Tensor[Int]
-      ws sha1 w16 loop blk off w idx =
-        | idx >= 16 = w
-        | otherwise = ws sha1 w16 step blk off w idx
-
-fn :: ws sha1 w16 step Tensor[U8] Int Tensor[Int] Int => Tensor[Int]
-      ws sha1 w16 step blk off w idx =
-        w_(idx) = ws be32 at blk (off + (idx * 4))
-        ws sha1 w16 loop blk off w (idx + 1)
-
-fn :: ws sha1 expand loop Tensor[Int] Int => Tensor[Int]
-      ws sha1 expand loop w t =
-        | t >= 80 = w
-        | otherwise = ws sha1 expand step w t
-
-fn :: ws sha1 expand step Tensor[Int] Int => Tensor[Int]
-      ws sha1 expand step w t =
-        x = ws u32 bxor (ws u32 bxor (ws u32 bxor w_(t - 3) w_(t - 8)) w_(t - 14)) w_(t - 16)
-        w_(t) = ws rotl32 x 1
-        ws sha1 expand loop w (t + 1)
-
-fn :: ws sha1 f Int Int Int Int => Int
-      ws sha1 f t b c d =
-        | t < 20 = ws u32 bor (ws u32 band b c) (ws u32 band (ws u32 bnot b) d)
-        | t < 40 = ws u32 bxor (ws u32 bxor b c) d
-        | t < 60 = ws u32 bor (ws u32 bor (ws u32 band b c) (ws u32 band b d)) (ws u32 band c d)
-        | otherwise = ws u32 bxor (ws u32 bxor b c) d
-
-fn :: ws sha1 k Int => Int
-      ws sha1 k t =
-        | t < 20 = 1518500249
-        | t < 40 = 1859775393
-        | t < 60 = 2400959708
-        | otherwise = 3395469782
-
-fn :: ws sha1 rounds Sha1State Tensor[Int] Int => Sha1State
-      ws sha1 rounds st w t =
-        | t >= 80 = st
-        | otherwise = ws sha1 round step st w t
-
-fn :: ws sha1 round step Sha1State Tensor[Int] Int => Sha1State
-      ws sha1 round step st w t =
-        a = h0 st
-        b = h1 st
-        c = h2 st
-        d = h3 st
-        e = h4 st
-        f = ws sha1 f t b c d
-        k = ws sha1 k t
-        wt = w_(t)
-        temp = ws u32 ((ws rotl32 a 5) + f + e + k + wt)
-        ws sha1 rounds (Sha1State temp a (ws rotl32 b 30) c d) w (t + 1)
-
-fn :: ws sha1 blocks Sha1State Tensor[U8] Tensor[Int] Int Int => Sha1State
-      ws sha1 blocks st padded w off total =
-        | off >= total = st
-        | otherwise = ws sha1 block step st padded w off total
-
-fn :: ws sha1 block step Sha1State Tensor[U8] Tensor[Int] Int Int => Sha1State
-      ws sha1 block step st padded w off total =
-        w80 = ws sha1 w16 loop padded off w 0 -> ws sha1 expand loop 16
-        r = ws sha1 rounds st w80 0
-        next_st = Sha1State (ws u32 ((h0 st) + (h0 r))) (ws u32 ((h1 st) + (h1 r))) (ws u32 ((h2 st) + (h2 r))) (ws u32 ((h3 st) + (h3 r))) (ws u32 ((h4 st) + (h4 r)))
-        ws sha1 blocks next_st padded w (off + 64) total
-
--- SHA-1 digest (20 bytes) of the bytes of s.
-fn :: ws sha1 bytes String => Tensor[U8]
-      ws sha1 bytes s =
-        init_st = Sha1State 1732584193 4023233417 2562383102 271733878 3285377520
-        padded = ws sha1 pad (tensor from str s)
-        w = Tensor[Int * 80]
-        fin = ws sha1 blocks init_st padded w 0 (ws blen padded)
-        out = Tensor[U8 * 20]
-        out -> ws put be32 0 (h0 fin) -> ws put be32 4 (h1 fin) -> ws put be32 8 (h2 fin) -> ws put be32 12 (h3 fin) -> ws put be32 16 (h4 fin)
+-- ── Base64 for the RFC 6455 Handshake (SHA-1 is crypto's `sha1 bytes`) ──
 
 fn :: ws b64 lut Int => String
       ws b64 lut _ = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
@@ -243,7 +117,7 @@ fn :: ws b64 enc tail2 Tensor[U8] Tensor[U8] String Int Int => Tensor[U8]
 -- @implements API-WS-001
 fn :: ws accept key String => String
       ws accept key client_key =
-        (client_key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11") -> ws sha1 bytes -> ws b64 enc
+        (client_key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11") -> sha1 bytes -> tensor from str -> ws b64 enc
 
 -- @implements FR-WS-001
 -- @implements API-WS-001
