@@ -348,11 +348,11 @@ fn :: sk extract dns ipv4 String => String
 fn :: sk read dns after poll Int Int => String
       sk read dns after poll ufd prc =
         | prc <= 0 =
-          _ = sys close ufd
+          sys close ufd
           ""
         | otherwise =
           resp = sys read fd ufd 512
-          _    = sys close ufd
+          sys close ufd
           sk extract dns ipv4 resp
 
 fn :: sk udp dns query String String Int => String
@@ -360,9 +360,9 @@ fn :: sk udp dns query String String Int => String
         | not (is valid ipv4 ns_ip) or not (is valid hostname host) = ""
         | otherwise =
           ufd  = sys call (nr socket) 2 2 0 0 0 0
-          _    = sys call (nr connect) ufd (tensor from str (sk build sockaddr in ns_ip 53 True)) 16 0 0 0
+          sys call (nr connect) ufd (tensor from str (sk build sockaddr in ns_ip 53 True)) 16 0 0 0
           q    = sk build dns query host
-          _    = sys call (nr sendto) ufd (tensor from str q) (str len q) 16384 0 0
+          sys call (nr sendto) ufd (tensor from str q) (str len q) 16384 0 0
           prc  = sys poll ufd 1 timeout_ms
           sk read dns after poll ufd prc
 
@@ -624,7 +624,7 @@ fn :: sock bind Socket SockAddr => SockRes
         | not (is_open s)             = SockErr "socket is closed"
         | (family s) != (family addr) = SockErr "socket family mismatch on bind"
         | otherwise =
-          _  = bind unix marker addr
+          bind unix marker addr
           s2 = s with local_addr = addr
           SockOk s2
 
@@ -875,13 +875,13 @@ fn :: sk build sockaddr in String Int Bool => String
 fn :: sk finish tcp listen Int Int Int => Int Int
       sk finish tcp listen lfd rc_b rc_l =
         | rc_b == (0 - 13) =
-          _ = sys close lfd
+          sys close lfd
           (0 - 6, 0 - 1)
         | rc_b == (0 - 98) =
-          _ = sys close lfd
+          sys close lfd
           (0 - 5, 0 - 1)
         | rc_b < 0 or rc_l < 0 =
-          _ = sys close lfd
+          sys close lfd
           (0 - 7, 0 - 1)
         | otherwise = (0, lfd)
 
@@ -912,8 +912,8 @@ fn :: sk exec tcp listen opt String Int Int Bool => Int Int
 fn :: sk kernel tcp listen String Int Int Bool => Int Int
       sk kernel tcp listen host port backlog reuseport =
         lfd  = sys call (nr socket) 2 1 0 0 0 0
-        _    = sys call (nr setsockopt) lfd 1 2 (sk int opt 1) 4 0
-        _    = sk apply reuseport lfd reuseport
+        sys call (nr setsockopt) lfd 1 2 (sk int opt 1) 4 0
+        sk apply reuseport lfd reuseport
         rc_b = sys call (nr bind) lfd (tensor from str (sk build sockaddr in host port False)) 16 0 0 0
         rc_l = sys call (nr listen) lfd backlog 0 0 0 0
         sk finish tcp listen lfd rc_b rc_l
@@ -968,13 +968,13 @@ fn :: sys tcp listen String Int Int => Int Int
 fn :: sk finish unix listen Int Int Int => Int Int
       sk finish unix listen lfd rc_b rc_l =
         | rc_b < 0 or rc_l < 0 =
-          _ = sys close lfd
+          sys close lfd
           (0 - 7, 0 - 1)
         | otherwise = (0, lfd)
 
 fn :: sk exec unix listen String Int => Int Int
       sk exec unix listen path backlog =
-        _    = sys call (nr unlinkat) (at fdcwd) (px cstr path) 0 0 0 0
+        sys call (nr unlinkat) (at fdcwd) (px cstr path) 0 0 0 0
         lfd  = sys call (nr socket) 1 1 0 0 0 0
         sun  = sk build sockaddr un path
         rc_b = sys call (nr bind) lfd sun (sk bytes len sun) 0 0 0
@@ -1029,13 +1029,13 @@ fn :: sk finish connect Int Int => Int Int
       sk finish connect cfd rc  =
         | rc == 0 = (0, cfd)
         | rc == (0 - 110) =
-          _ = sys close cfd
+          sys close cfd
           (0 - 2, 0 - 1)
         | rc == (0 - 13) =
-          _ = sys close cfd
+          sys close cfd
           (0 - 6, 0 - 1)
         | otherwise =
-          _ = sys close cfd
+          sys close cfd
           (0 - 3, 0 - 1)
 
 fn :: sk exec tcp connect ip String Int => Int Int

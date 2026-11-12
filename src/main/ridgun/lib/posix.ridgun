@@ -633,7 +633,7 @@ fn :: sys signal watch [Int] => Int Int
         | otherwise                    =
           mask = px put u64 le (Tensor[U8 * 8]) 0 (px sig mask sigs)
           neg1 = 0 - 1
-          _    = sys call (nr rt sigprocmask) 0 mask 0 8 0 0
+          sys call (nr rt sigprocmask) 0 mask 0 8 0 0
           px finish sig watch (sys call (nr signalfd4) neg1 mask 8 526336 0 0)
 
 fn :: px finish sig read Int Tensor[U8] => Int Int
@@ -764,7 +764,7 @@ fn :: posix ftruncate Int Int    => Int
 
 fn :: px close keep rc Int Int => Int
       px close keep rc fd  rc  =
-        _ = sys close fd
+        sys close fd
         rc
 
 fn :: px fsync opened dir Int => Int

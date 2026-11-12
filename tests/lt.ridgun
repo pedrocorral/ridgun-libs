@@ -32,7 +32,7 @@ fn :: lt text byte Int => Bool
 fn :: lt report Bool String String String => Bool
       lt report True  _     _      _        =  True
       lt report False label actual expected =
-        _ = echo ("FAIL " + label + "\n       got:      " + actual + "\n       expected: " + expected)
+        echo ("FAIL " + label + "\n       got:      " + actual + "\n       expected: " + expected)
         False
 
 -- Text equality.

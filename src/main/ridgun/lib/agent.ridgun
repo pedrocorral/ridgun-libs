@@ -149,7 +149,7 @@ fn :: ask int (Agent Int Int) Int => AgentReply
       ask int ag              msg =
         | not (agent alive ag) = ReplyStopped
         | otherwise            =
-          _ = send msg to ag
+          send msg to ag
           ReplyInt (receive from ag)
 
 -- @implements FR-AGENT-001
@@ -159,7 +159,7 @@ fn :: ask str (Agent String String) String => AgentReply
       ask str ag                    msg    =
         | not (agent alive ag) = ReplyStopped
         | otherwise            =
-          _ = send msg to ag
+          send msg to ag
           ReplyStr (receive from ag)
 
 -- @implements FR-AGENT-001
@@ -181,7 +181,7 @@ fn :: ag poll int step (Agent Int Int) (Option Int) Int Int => AgentReply
       ag poll int step ag None deadline timeout_ms =
         | (sys time ms) >= deadline = ReplyTimeout timeout_ms
         | otherwise                 =
-          _ = sys sleep ms 1
+          sys sleep ms 1
           ag wait int loop ag deadline timeout_ms
 
 fn :: ag wait int loop (Agent Int Int) Int Int => AgentReply
@@ -196,10 +196,10 @@ fn :: ask int with timeout (Agent Int Int) Int Int => AgentReply
       ask int with timeout ag msg timeout_ms =
         | not (agent alive ag) = ReplyStopped
         | timeout_ms <= 0      =
-          _ = send msg to ag
+          send msg to ag
           ag poll int step ag (try receive from ag) (sys time ms) 0
         | otherwise            =
-          _ = send msg to ag
+          send msg to ag
           ag wait int loop ag ((sys time ms) + timeout_ms) timeout_ms
 
 fn :: ag poll str step (Agent String String) (Option String) Int Int => AgentReply
@@ -207,7 +207,7 @@ fn :: ag poll str step (Agent String String) (Option String) Int Int => AgentRep
       ag poll str step ag None deadline timeout_ms =
         | (sys time ms) >= deadline = ReplyTimeout timeout_ms
         | otherwise                 =
-          _ = sys sleep ms 1
+          sys sleep ms 1
           ag wait str loop ag deadline timeout_ms
 
 fn :: ag wait str loop (Agent String String) Int Int => AgentReply
@@ -222,10 +222,10 @@ fn :: ask str with timeout (Agent String String) String Int => AgentReply
       ask str with timeout ag msg timeout_ms =
         | not (agent alive ag) = ReplyStopped
         | timeout_ms <= 0      =
-          _ = send msg to ag
+          send msg to ag
           ag poll str step ag (try receive from ag) (sys time ms) 0
         | otherwise            =
-          _ = send msg to ag
+          send msg to ag
           ag wait str loop ag ((sys time ms) + timeout_ms) timeout_ms
 
 -- ── Batch Dispatch & Pipeline Relay (`ask batch *`, `relay *`) ──
@@ -237,7 +237,7 @@ fn :: ask batch int (Agent Int Int) [Int]    => [Int]
       ask batch int ag              (m:rest) =
         | not (agent alive ag) = []
         | otherwise            =
-          _ = send m to ag
+          send m to ag
           r = receive from ag
           [r] :: (ask batch int ag rest)
 
@@ -248,7 +248,7 @@ fn :: ask batch str (Agent String String) [String] => [String]
       ask batch str ag                    (m:rest) =
         | not (agent alive ag) = []
         | otherwise            =
-          _ = send m to ag
+          send m to ag
           r = receive from ag
           [r] :: (ask batch str ag rest)
 
@@ -258,9 +258,9 @@ fn :: relay int (Agent Int Int) (Agent Int Int) Int => AgentReply
       relay int ag1             ag2             msg =
         | not (agent alive ag1) or not (agent alive ag2) = ReplyStopped
         | otherwise =
-          _   = send msg to ag1
+          send msg to ag1
           mid = receive from ag1
-          _   = send mid to ag2
+          send mid to ag2
           ReplyInt (receive from ag2)
 
 -- @implements FR-AGENT-001
@@ -269,9 +269,9 @@ fn :: relay str (Agent String String) (Agent String String) String => AgentReply
       relay str ag1                   ag2                   msg    =
         | not (agent alive ag1) or not (agent alive ag2) = ReplyStopped
         | otherwise =
-          _   = send msg to ag1
+          send msg to ag1
           mid = receive from ag1
-          _   = send mid to ag2
+          send mid to ag2
           ReplyStr (receive from ag2)
 
 -- ── Stateful Counter Agent (`new counter agent`, `counter add`, `counter get`, `counter reset`) ──
@@ -294,7 +294,7 @@ fn :: counter add (Agent Int Int) Int   => Int
       counter add ag              delta =
         | not (agent alive ag) = 0
         | otherwise            =
-          _ = send delta to ag
+          send delta to ag
           receive from ag
 
 -- @implements FR-AGENT-001
@@ -336,7 +336,7 @@ fn :: log append (Agent String String) String => String
       log append ag                    entry  =
         | not (agent alive ag) = ""
         | otherwise            =
-          _ = send entry to ag
+          send entry to ag
           receive from ag
 
 -- @implements FR-AGENT-001
@@ -429,7 +429,7 @@ fn :: ag kv call (Agent KvCmd String) KvCmd => String
       ag kv call ag                   cmd   =
         | not (agent alive ag) = ""
         | otherwise            =
-          _ = send cmd to ag
+          send cmd to ag
           receive from ag
 
 -- @implements FR-AGENT-001

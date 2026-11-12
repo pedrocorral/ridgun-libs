@@ -29,31 +29,31 @@ fn :: re str count [String] => Int
 -- @tests TS-REGEX-001
 fn :: test regex operators and classes => ()
       test regex operators and classes =
-        _ = assert true (regex match "" "") "AC1: empty pattern matches empty string"
-        _ = assert false (regex match "" "nonempty") "AC1: empty pattern rejects non-empty on full match"
-        _ = assert true (regex match 'a(b|c)+d?e*' "abcbdeee") "AC1: alternation group plus opt star"
-        _ = assert true (regex match 'a(b|c)+d?e*' "ac") "AC1: opt and star match zero occurrences"
-        _ = assert false (regex match 'a(b|c)+d?e*' "ade") "AC1: plus requires at least one"
-        _ = assert true (regex match '(foo|bar|baz)+' "barfoobazbar") "AC1: multi-branch alternation with plus"
-        _ = assert false (regex match '(foo|bar|baz)+' "barquxfoo") "AC1: multi-branch alternation rejects unknown"
-        _ = assert true (regex match '[a-zA-Z_][a-zA-Z0-9_]*' "_valid_Identifier_99") "AC1: identifier character class"
-        _ = assert false (regex match '[a-zA-Z_][a-zA-Z0-9_]*' "9invalid") "AC1: identifier rejects leading digit"
-        _ = assert true (regex match '[^0-9]+' "hello_world") "AC1: negated char class"
-        _ = assert false (regex match '[^0-9]+' "hello42") "AC1: negated char class rejects digits"
-        _ = assert true (regex match '\w+\s+\d+' "agent   007") "AC1: shorthand escapes \\w \\s \\d"
-        _ = assert true (regex match '\D+\S+' "abc_123") "AC1: negated shorthand escapes \\D \\S"
-        _ = assert true (regex match 'v\d+\.\d+\.\d+' "v0.9.16") "AC1: escaped dot literal"
-        _ = assert false (regex match 'v\d+\.\d+\.\d+' "v0X9Y16") "AC1: escaped dot rejects non-dot"
-        _ = assert true (regex is match '^hello' "hello world") "AC1: bol anchor matches start"
-        _ = assert false (regex is match '^world' "hello world") "AC1: bol anchor rejects middle"
-        _ = assert true (regex is match 'world$' "hello world") "AC1: eol anchor matches end"
-        _ = assert false (regex is match 'hello$' "hello world") "AC1: eol anchor rejects prefix"
-        _ = assert true (regex is match '^exact$' "exact") "AC1: anchored ^exact$ matches full string"
-        _ = assert false (regex is match '^exact$' "not exact") "AC1: anchored ^exact$ rejects extra chars"
+        regex match "" "" -> assert true "AC1: empty pattern matches empty string"
+        regex match "" "nonempty" -> assert false "AC1: empty pattern rejects non-empty on full match"
+        regex match 'a(b|c)+d?e*' "abcbdeee" -> assert true "AC1: alternation group plus opt star"
+        regex match 'a(b|c)+d?e*' "ac" -> assert true "AC1: opt and star match zero occurrences"
+        regex match 'a(b|c)+d?e*' "ade" -> assert false "AC1: plus requires at least one"
+        regex match '(foo|bar|baz)+' "barfoobazbar" -> assert true "AC1: multi-branch alternation with plus"
+        regex match '(foo|bar|baz)+' "barquxfoo" -> assert false "AC1: multi-branch alternation rejects unknown"
+        regex match '[a-zA-Z_][a-zA-Z0-9_]*' "_valid_Identifier_99" -> assert true "AC1: identifier character class"
+        regex match '[a-zA-Z_][a-zA-Z0-9_]*' "9invalid" -> assert false "AC1: identifier rejects leading digit"
+        regex match '[^0-9]+' "hello_world" -> assert true "AC1: negated char class"
+        regex match '[^0-9]+' "hello42" -> assert false "AC1: negated char class rejects digits"
+        regex match '\w+\s+\d+' "agent   007" -> assert true "AC1: shorthand escapes \\w \\s \\d"
+        regex match '\D+\S+' "abc_123" -> assert true "AC1: negated shorthand escapes \\D \\S"
+        regex match 'v\d+\.\d+\.\d+' "v0.9.16" -> assert true "AC1: escaped dot literal"
+        regex match 'v\d+\.\d+\.\d+' "v0X9Y16" -> assert false "AC1: escaped dot rejects non-dot"
+        regex is match '^hello' "hello world" -> assert true "AC1: bol anchor matches start"
+        regex is match '^world' "hello world" -> assert false "AC1: bol anchor rejects middle"
+        regex is match 'world$' "hello world" -> assert true "AC1: eol anchor matches end"
+        regex is match 'hello$' "hello world" -> assert false "AC1: eol anchor rejects prefix"
+        regex is match '^exact$' "exact" -> assert true "AC1: anchored ^exact$ matches full string"
+        regex is match '^exact$' "not exact" -> assert false "AC1: anchored ^exact$ rejects extra chars"
         -- Russ Cox pathological backtracking benchmarks (exponential in backtracking engines, O(N*M) in Thompson NFA)
-        _ = assert false (regex match '(a+)+b' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac") "AC1: Thompson NFA immune to (a+)+b ReDoS"
-        _ = assert false (regex match '(a|aa)+b' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac") "AC1: Thompson NFA immune to (a|aa)+b ReDoS"
-        _ = assert true (regex match 'a?a?a?a?a?a?a?a?aaaaaaaa' "aaaaaaaa") "AC1: Russ Cox a?^n a^n vector"
+        regex match '(a+)+b' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac" -> assert false "AC1: Thompson NFA immune to (a+)+b ReDoS"
+        regex match '(a|aa)+b' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac" -> assert false "AC1: Thompson NFA immune to (a|aa)+b ReDoS"
+        regex match 'a?a?a?a?a?a?a?a?aaaaaaaa' "aaaaaaaa" -> assert true "AC1: Russ Cox a?^n a^n vector"
         ()
 
 -- 2. Substring find, find all, replace first, replace all, and split
@@ -61,38 +61,38 @@ fn :: test regex operators and classes => ()
 fn :: test regex find replace split => ()
       test regex find replace split =
         m1 = regex find '\d+' "item #42 and #99"
-        _ = assert true (matched m1) "AC2: find matched"
-        _ = assert int equals (match_start m1) 6 "AC2: find start"
-        _ = assert int equals (match_end m1) 8 "AC2: find end"
-        _ = assert str eq (text m1) "42" "AC2: find text"
+        matched m1 -> assert true "AC2: find matched"
+        match_start m1 -> assert int equals 6 "AC2: find start"
+        match_end m1 -> assert int equals 8 "AC2: find end"
+        text m1 -> assert str eq "42" "AC2: find text"
 
         m_none = regex find '\d+' "no digits here"
-        _ = assert false (matched m_none) "AC2: find returns matched=False when absent"
+        matched m_none -> assert false "AC2: find returns matched=False when absent"
 
         all_m = regex find all '[a-z]+=\d+' "id=10, port=8080, ttl=60"
-        _ = assert int equals (re match count all_m) 3 "AC2: find all key=val count"
-        _ = assert str eq (text (re match at all_m 0)) "id=10" "AC2: find all first match"
-        _ = assert str eq (text (re match at all_m 1)) "port=8080" "AC2: find all second match"
-        _ = assert str eq (text (re match at all_m 2)) "ttl=60" "AC2: find all third match"
+        re match count all_m -> assert int equals 3 "AC2: find all key=val count"
+        text (re match at all_m 0) -> assert str eq "id=10" "AC2: find all first match"
+        text (re match at all_m 1) -> assert str eq "port=8080" "AC2: find all second match"
+        text (re match at all_m 2) -> assert str eq "ttl=60" "AC2: find all third match"
 
         r1 = regex replace '\d+' "X" "v1.2.3"
-        _ = assert str eq r1 "vX.2.3" "AC3: replace first"
+        r1 -> assert str eq "vX.2.3" "AC3: replace first"
         r_no = regex replace '\d+' "X" "abc"
-        _ = assert str eq r_no "abc" "AC3: replace with no match returns original"
+        r_no -> assert str eq "abc" "AC3: replace with no match returns original"
         r2 = regex replace all '\d+' "X" "v1.22.333"
-        _ = assert str eq r2 "vX.X.X" "AC3: replace all"
+        r2 -> assert str eq "vX.X.X" "AC3: replace all"
 
         parts = regex split '\s*[,;]\s*' "alpha, beta ;  gamma,delta"
-        _ = assert int equals (re str count parts) 4 "AC3: split count"
-        _ = assert str eq (re str at parts 0) "alpha" "AC3: split[0]"
-        _ = assert str eq (re str at parts 1) "beta" "AC3: split[1]"
-        _ = assert str eq (re str at parts 2) "gamma" "AC3: split[2]"
-        _ = assert str eq (re str at parts 3) "delta" "AC3: split[3]"
+        re str count parts -> assert int equals 4 "AC3: split count"
+        re str at parts 0 -> assert str eq "alpha" "AC3: split[0]"
+        re str at parts 1 -> assert str eq "beta" "AC3: split[1]"
+        re str at parts 2 -> assert str eq "gamma" "AC3: split[2]"
+        re str at parts 3 -> assert str eq "delta" "AC3: split[3]"
         ()
 
 -- @tests TS-REGEX-001
 fn :: main => ()
       main =
-        _ = test regex operators and classes
-        _ = test regex find replace split
+        test regex operators and classes
+        test regex find replace split
         echo "[PASS] test regex: TS-REGEX-001 passed"

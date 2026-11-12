@@ -27,12 +27,12 @@ fn :: conn handle event Int Agent Int => StepOutcome
       conn handle event fd ag ev
         | ev < 0 =
           -- Poll error: close descriptor and stop agent
-          _ = sys close fd
+          sys close fd
           stop ag
           ConnClosed
         | ev >= 8 =
           -- POLLERR (8) or POLLHUP (16): peer disconnected
-          _ = sys close fd
+          sys close fd
           stop ag
           ConnClosed
         | ev == 0 =

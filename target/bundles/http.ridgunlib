@@ -401,11 +401,11 @@ fn :: ht finish tcp resp String => Int Int String
 fn :: ht send read step Int Int (Int Int) => Int Int String
       ht send read step cfd timeout_ms (s_rc, _) =
         | s_rc != 0 =
-          _ = sys close cfd
+          sys close cfd
           (s_rc, 0, "")
         | otherwise =
           raw = ht read tcp loop cfd timeout_ms ""
-          _   = sys close cfd
+          sys close cfd
           ht finish tcp resp raw
 
 fn :: ht connect send tcp Int Int String Int => Int Int String

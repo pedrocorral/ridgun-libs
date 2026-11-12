@@ -116,21 +116,21 @@ fn :: main => ()
         small_query_string_decode = "title=x&body=" + small_url_decode
         big_query_string_decode = "title=x&body=" + big_url_decode
         s0 = sys_monotonic_ms
-        _ = codec_t_touch (url_encode small_url_encode)
+        codec_t_touch (url_encode small_url_encode)
         m0 = sys_monotonic_ms
-        _ = codec_t_touch (url_encode big_url_encode)
+        codec_t_touch (url_encode big_url_encode)
         e0 = sys_monotonic_ms
         t0 = lt_linear "url_encode: 20 KB then 200 KB in linear time, 200 KB under 2 s" (m0 - s0) (e0 - m0) 10 2000
         s1 = sys_monotonic_ms
-        _ = codec_t_touch (url_decode small_url_decode)
+        codec_t_touch (url_decode small_url_decode)
         m1 = sys_monotonic_ms
-        _ = codec_t_touch (url_decode big_url_decode)
+        codec_t_touch (url_decode big_url_decode)
         e1 = sys_monotonic_ms
         t1 = lt_linear "url_decode: 20 KB then 200 KB in linear time, 200 KB under 2 s" (m1 - s1) (e1 - m1) 10 2000
         s2 = sys_monotonic_ms
-        _ = codec_t_touch (codec_t_qs_len small_query_string_decode)
+        codec_t_touch (codec_t_qs_len small_query_string_decode)
         m2 = sys_monotonic_ms
-        _ = codec_t_touch (codec_t_qs_len big_query_string_decode)
+        codec_t_touch (codec_t_qs_len big_query_string_decode)
         e2 = sys_monotonic_ms
         t2 = lt_linear "query_string_decode: 20 KB then 200 KB in linear time, 200 KB under 2 s" (m2 - s2) (e2 - m2) 10 2000
         lt_done "codec" [c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37, c38, c39, c40, c41, c42, c43, c44, c45, c46, c47, c48, c49, c50, c51, c52, c53, c54, c55, c56, c57, c58, c59, c60, c61, c62, c63, c64, t0, t1, t2]

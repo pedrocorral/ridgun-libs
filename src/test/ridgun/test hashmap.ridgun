@@ -51,32 +51,32 @@ fn :: first keys [String Int] Int [String] => [String]
 fn :: test hashmap basics => ()
       test hashmap basics =
         e = hashmap empty
-        _ = assert int equals (hashmap get e "a" 7) 7 "AC1: get on empty gives the default"
-        _ = assert false (hashmap has e "a") "AC1: has on empty"
-        _ = assert int equals (hashmap size e) 0 "AC1: size of empty"
-        _ = assert eq (hashmap pairs e) []
+        hashmap get e "a" 7 -> assert int equals 7 "AC1: get on empty gives the default"
+        hashmap has e "a" -> assert false "AC1: has on empty"
+        hashmap size e -> assert int equals 0 "AC1: size of empty"
+        hashmap pairs e -> assert eq []
 
         m = hashmap put (hashmap put (hashmap put hashmap empty "b" 2) "a" 1) "c" 3
         m2 = hashmap put m "a" 10
-        _ = assert int equals (hashmap get m2 "a" 0) 10 "AC1: put replaces the value"
-        _ = assert int equals (hashmap get m2 "b" 0) 2 "AC1: get b"
-        _ = assert int equals (hashmap get m2 "zz" (0 - 1)) (0 - 1) "AC1: missing key gives the default"
-        _ = assert true (hashmap has m2 "c") "AC1: has c"
-        _ = assert false (hashmap has m2 "zz") "AC1: has missing"
-        _ = assert int equals (hashmap size m2) 3 "AC1: replacing does not add a key"
-        _ = assert eq (hashmap pairs m2) [("b", 2), ("a", 10), ("c", 3)]
+        hashmap get m2 "a" 0 -> assert int equals 10 "AC1: put replaces the value"
+        hashmap get m2 "b" 0 -> assert int equals 2 "AC1: get b"
+        hashmap get m2 "zz" (0 - 1) -> assert int equals (0 - 1) "AC1: missing key gives the default"
+        hashmap has m2 "c" -> assert true "AC1: has c"
+        hashmap has m2 "zz" -> assert false "AC1: has missing"
+        hashmap size m2 -> assert int equals 3 "AC1: replacing does not add a key"
+        hashmap pairs m2 -> assert eq [("b", 2), ("a", 10), ("c", 3)]
         ()
 
 -- @tests TS-HASHMAP-001
 fn :: test hashmap add => ()
       test hashmap add =
         m = hashmap add (hashmap add (hashmap add hashmap empty "x" 2) "y" 5) "x" 3
-        _ = assert int equals (hashmap get m "x" 0) 5 "AC2: add sums"
-        _ = assert int equals (hashmap get m "y" 0) 5 "AC2: a missing key starts at 0"
+        hashmap get m "x" 0 -> assert int equals 5 "AC2: add sums"
+        hashmap get m "y" 0 -> assert int equals 5 "AC2: a missing key starts at 0"
         m2 = hashmap add m "y" (0 - 5)
-        _ = assert int equals (hashmap get m2 "y" 99) 0 "AC2: add can reach 0 and the key stays"
-        _ = assert true (hashmap has m2 "y") "AC2: has after reaching 0"
-        _ = assert eq (hashmap pairs m2) [("x", 5), ("y", 0)]
+        hashmap get m2 "y" 99 -> assert int equals 0 "AC2: add can reach 0 and the key stays"
+        hashmap has m2 "y" -> assert true "AC2: has after reaching 0"
+        hashmap pairs m2 -> assert eq [("x", 5), ("y", 0)]
         ()
 
 -- @tests TS-HASHMAP-001
@@ -86,23 +86,23 @@ fn :: test hashmap unusual keys => ()
         la = kb10 "a"
         lb = kb10 "b"
         m = hashmap put (hashmap put (hashmap put (hashmap put hashmap empty "" 1) hi 2) la 3) lb 4
-        _ = assert int equals (hashmap get m "" 0) 1 "AC3: empty key"
-        _ = assert int equals (hashmap get m hi 0) 2 "AC3: bytes >= 128"
-        _ = assert int equals (hashmap get m la 0) 3 "AC3: 10 KB key"
-        _ = assert int equals (hashmap get m lb 0) 4 "AC3: 10 KB key differing in the last byte"
-        _ = assert false (hashmap has m (kb10 "c")) "AC3: another 10 KB key is missing"
-        _ = assert false (hashmap has m (char from code 200)) "AC3: prefix of a key is missing"
-        _ = assert int equals (hashmap size m) 4 "AC3: four keys"
+        hashmap get m "" 0 -> assert int equals 1 "AC3: empty key"
+        hashmap get m hi 0 -> assert int equals 2 "AC3: bytes >= 128"
+        hashmap get m la 0 -> assert int equals 3 "AC3: 10 KB key"
+        hashmap get m lb 0 -> assert int equals 4 "AC3: 10 KB key differing in the last byte"
+        hashmap has m (kb10 "c") -> assert false "AC3: another 10 KB key is missing"
+        hashmap has m (char from code 200) -> assert false "AC3: prefix of a key is missing"
+        hashmap size m -> assert int equals 4 "AC3: four keys"
         ()
 
 -- @tests TS-HASHMAP-001
 fn :: test hashmap record values => ()
       test hashmap record values =
         m = hashmap put (hashmap put (hashmap put hashmap empty "/a" (Visit "/a" 3)) "/b" (Visit "/b" 7)) "/a" (Visit "/a" 4)
-        _ = assert eq (hashmap get m "/a" (Visit "" 0)) (Visit "/a" 4)
-        _ = assert eq (hashmap get m "/b" (Visit "" 0)) (Visit "/b" 7)
-        _ = assert eq (hashmap get m "/c" (Visit "" 0)) (Visit "" 0)
-        _ = assert int equals (hits (hashmap get m "/a" (Visit "" 0))) 4 "AC4: record field"
+        hashmap get m "/a" (Visit "" 0) -> assert eq (Visit "/a" 4)
+        hashmap get m "/b" (Visit "" 0) -> assert eq (Visit "/b" 7)
+        hashmap get m "/c" (Visit "" 0) -> assert eq (Visit "" 0)
+        hits (hashmap get m "/a" (Visit "" 0)) -> assert int equals 4 "AC4: record field"
         ()
 
 -- @tests TS-HASHMAP-001
@@ -110,20 +110,20 @@ fn :: test hashmap growth => ()
       test hashmap growth =
         n = 20000
         m = put many hashmap empty 0 n
-        _ = assert int equals (hashmap size m) n "AC1: 20000 keys after growing"
-        _ = assert true (all found m 0 n) "AC1: every key found after growing"
+        hashmap size m -> assert int equals n "AC1: 20000 keys after growing"
+        all found m 0 n -> assert true "AC1: every key found after growing"
         ps = hashmap pairs m
-        _ = assert int equals (sum values ps 0) (n * (n - 1) / 2) "AC1: pairs hold every value"
-        _ = assert eq (first keys ps 3 []) ["key 0", "key 1", "key 2"]
-        _ = assert int equals (fill 1 + count [] + str len seed) 7 "Program functions named like fields still work"
+        sum values ps 0 -> assert int equals (n * (n - 1) / 2) "AC1: pairs hold every value"
+        first keys ps 3 [] -> assert eq ["key 0", "key 1", "key 2"]
+        fill 1 + count [] + str len seed -> assert int equals 7 "Program functions named like fields still work"
         ()
 
 -- @tests TS-HASHMAP-001
 fn :: main => ()
       main =
-        _ = test hashmap basics
-        _ = test hashmap add
-        _ = test hashmap unusual keys
-        _ = test hashmap record values
-        _ = test hashmap growth
+        test hashmap basics
+        test hashmap add
+        test hashmap unusual keys
+        test hashmap record values
+        test hashmap growth
         echo "[PASS] test hashmap: TS-HASHMAP-001 passed"

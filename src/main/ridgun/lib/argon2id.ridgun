@@ -149,13 +149,13 @@ fn :: a2 w16 set Tensor[U64 * 32] Int U64 => Tensor[U64 * 32]
 fn :: a2 b2b iv w16 => Tensor[U64 * 32]
       a2 b2b iv w16 =
         iv = Tensor[U64 * 32]
-        _  = a2 w16 set iv 0 (a2 u64 lh 4089235720 1779033703)
-        _  = a2 w16 set iv 1 (a2 u64 lh 2227873595 3144134277)
-        _  = a2 w16 set iv 2 (a2 u64 lh 4271175723 1013904242)
-        _  = a2 w16 set iv 3 (a2 u64 lh 1595750129 2773480762)
-        _  = a2 w16 set iv 4 (a2 u64 lh 2917565137 1359893119)
-        _  = a2 w16 set iv 5 (a2 u64 lh 725511199  2600822924)
-        _  = a2 w16 set iv 6 (a2 u64 lh 4215389547 528734635)
+        a2 w16 set iv 0 (a2 u64 lh 4089235720 1779033703)
+        a2 w16 set iv 1 (a2 u64 lh 2227873595 3144134277)
+        a2 w16 set iv 2 (a2 u64 lh 4271175723 1013904242)
+        a2 w16 set iv 3 (a2 u64 lh 1595750129 2773480762)
+        a2 w16 set iv 4 (a2 u64 lh 2917565137 1359893119)
+        a2 w16 set iv 5 (a2 u64 lh 725511199  2600822924)
+        a2 w16 set iv 6 (a2 u64 lh 4215389547 528734635)
         a2 w16 set iv 7 (a2 u64 lh 327033209  1541459225)
 
 fn :: a2 b2b g4 U64 U64 U64 U64 U64 U64 => U64 U64 U64 U64
@@ -206,21 +206,21 @@ fn :: a2 b2b round Tensor[U64 * 32] Tensor[U64 * 32] Int => Tensor[U64 * 32]
         v1, v6, v11, v12 = a2 b2b g4 v1 v6 v11 v12 (a2 w16 get m (a2 sig s 10)) (a2 w16 get m (a2 sig s 11))
         v2, v7, v8,  v13 = a2 b2b g4 v2 v7 v8  v13 (a2 w16 get m (a2 sig s 12)) (a2 w16 get m (a2 sig s 13))
         v3, v4, v9,  v14 = a2 b2b g4 v3 v4 v9  v14 (a2 w16 get m (a2 sig s 14)) (a2 w16 get m (a2 sig s 15))
-        _ = a2 w16 set v 0  v0
-        _ = a2 w16 set v 1  v1
-        _ = a2 w16 set v 2  v2
-        _ = a2 w16 set v 3  v3
-        _ = a2 w16 set v 4  v4
-        _ = a2 w16 set v 5  v5
-        _ = a2 w16 set v 6  v6
-        _ = a2 w16 set v 7  v7
-        _ = a2 w16 set v 8  v8
-        _ = a2 w16 set v 9  v9
-        _ = a2 w16 set v 10 v10
-        _ = a2 w16 set v 11 v11
-        _ = a2 w16 set v 12 v12
-        _ = a2 w16 set v 13 v13
-        _ = a2 w16 set v 14 v14
+        a2 w16 set v 0  v0
+        a2 w16 set v 1  v1
+        a2 w16 set v 2  v2
+        a2 w16 set v 3  v3
+        a2 w16 set v 4  v4
+        a2 w16 set v 5  v5
+        a2 w16 set v 6  v6
+        a2 w16 set v 7  v7
+        a2 w16 set v 8  v8
+        a2 w16 set v 9  v9
+        a2 w16 set v 10 v10
+        a2 w16 set v 11 v11
+        a2 w16 set v 12 v12
+        a2 w16 set v 13 v13
+        a2 w16 set v 14 v14
         a2 w16 set v 15 v15
 
 fn :: a2 b2b rounds Tensor[U64 * 32] Tensor[U64 * 32] Int => Tensor[U64 * 32]
@@ -236,31 +236,31 @@ fn :: a2 b2b compress Tensor[U64 * 32] Tensor[U64 * 32] Int Bool => Tensor[U64 *
           | is_last   = iv6 xor (not 0)
           | otherwise = iv6
         v0  = Tensor[U64 * 32]
-        _   = a2 w16 set v0 0  (a2 w16 get h 0)
-        _   = a2 w16 set v0 1  (a2 w16 get h 1)
-        _   = a2 w16 set v0 2  (a2 w16 get h 2)
-        _   = a2 w16 set v0 3  (a2 w16 get h 3)
-        _   = a2 w16 set v0 4  (a2 w16 get h 4)
-        _   = a2 w16 set v0 5  (a2 w16 get h 5)
-        _   = a2 w16 set v0 6  (a2 w16 get h 6)
-        _   = a2 w16 set v0 7  (a2 w16 get h 7)
-        _   = a2 w16 set v0 8  (a2 w16 get iv 0)
-        _   = a2 w16 set v0 9  (a2 w16 get iv 1)
-        _   = a2 w16 set v0 10 (a2 w16 get iv 2)
-        _   = a2 w16 set v0 11 (a2 w16 get iv 3)
-        _   = a2 w16 set v0 12 ((a2 w16 get iv 4) xor (t and 0xFFFFFFFF))
-        _   = a2 w16 set v0 13 (a2 w16 get iv 5)
-        _   = a2 w16 set v0 14 v14
-        _   = a2 w16 set v0 15 (a2 w16 get iv 7)
+        a2 w16 set v0 0  (a2 w16 get h 0)
+        a2 w16 set v0 1  (a2 w16 get h 1)
+        a2 w16 set v0 2  (a2 w16 get h 2)
+        a2 w16 set v0 3  (a2 w16 get h 3)
+        a2 w16 set v0 4  (a2 w16 get h 4)
+        a2 w16 set v0 5  (a2 w16 get h 5)
+        a2 w16 set v0 6  (a2 w16 get h 6)
+        a2 w16 set v0 7  (a2 w16 get h 7)
+        a2 w16 set v0 8  (a2 w16 get iv 0)
+        a2 w16 set v0 9  (a2 w16 get iv 1)
+        a2 w16 set v0 10 (a2 w16 get iv 2)
+        a2 w16 set v0 11 (a2 w16 get iv 3)
+        a2 w16 set v0 12 ((a2 w16 get iv 4) xor (t and 0xFFFFFFFF))
+        a2 w16 set v0 13 (a2 w16 get iv 5)
+        a2 w16 set v0 14 v14
+        a2 w16 set v0 15 (a2 w16 get iv 7)
         vf  = a2 b2b rounds v0 m 0
         out = Tensor[U64 * 32]
-        _   = a2 w16 set out 0 (((a2 w16 get h 0) xor (a2 w16 get vf 0)) xor (a2 w16 get vf 8))
-        _   = a2 w16 set out 1 (((a2 w16 get h 1) xor (a2 w16 get vf 1)) xor (a2 w16 get vf 9))
-        _   = a2 w16 set out 2 (((a2 w16 get h 2) xor (a2 w16 get vf 2)) xor (a2 w16 get vf 10))
-        _   = a2 w16 set out 3 (((a2 w16 get h 3) xor (a2 w16 get vf 3)) xor (a2 w16 get vf 11))
-        _   = a2 w16 set out 4 (((a2 w16 get h 4) xor (a2 w16 get vf 4)) xor (a2 w16 get vf 12))
-        _   = a2 w16 set out 5 (((a2 w16 get h 5) xor (a2 w16 get vf 5)) xor (a2 w16 get vf 13))
-        _   = a2 w16 set out 6 (((a2 w16 get h 6) xor (a2 w16 get vf 6)) xor (a2 w16 get vf 14))
+        a2 w16 set out 0 (((a2 w16 get h 0) xor (a2 w16 get vf 0)) xor (a2 w16 get vf 8))
+        a2 w16 set out 1 (((a2 w16 get h 1) xor (a2 w16 get vf 1)) xor (a2 w16 get vf 9))
+        a2 w16 set out 2 (((a2 w16 get h 2) xor (a2 w16 get vf 2)) xor (a2 w16 get vf 10))
+        a2 w16 set out 3 (((a2 w16 get h 3) xor (a2 w16 get vf 3)) xor (a2 w16 get vf 11))
+        a2 w16 set out 4 (((a2 w16 get h 4) xor (a2 w16 get vf 4)) xor (a2 w16 get vf 12))
+        a2 w16 set out 5 (((a2 w16 get h 5) xor (a2 w16 get vf 5)) xor (a2 w16 get vf 13))
+        a2 w16 set out 6 (((a2 w16 get h 6) xor (a2 w16 get vf 6)) xor (a2 w16 get vf 14))
         a2 w16 set out 7 (((a2 w16 get h 7) xor (a2 w16 get vf 7)) xor (a2 w16 get vf 15))
 
 fn :: a2 bytes to u64 Tensor[U8] Int => U64
@@ -270,21 +270,21 @@ fn :: a2 bytes to u64 Tensor[U8] Int => U64
 fn :: a2 bytes to w16 Tensor[U8] Int => Tensor[U64 * 32]
       a2 bytes to w16 bs off =
         w = Tensor[U64 * 32]
-        _ = a2 w16 set w 0  (a2 bytes to u64 bs off)
-        _ = a2 w16 set w 1  (a2 bytes to u64 bs (off + 8))
-        _ = a2 w16 set w 2  (a2 bytes to u64 bs (off + 16))
-        _ = a2 w16 set w 3  (a2 bytes to u64 bs (off + 24))
-        _ = a2 w16 set w 4  (a2 bytes to u64 bs (off + 32))
-        _ = a2 w16 set w 5  (a2 bytes to u64 bs (off + 40))
-        _ = a2 w16 set w 6  (a2 bytes to u64 bs (off + 48))
-        _ = a2 w16 set w 7  (a2 bytes to u64 bs (off + 56))
-        _ = a2 w16 set w 8  (a2 bytes to u64 bs (off + 64))
-        _ = a2 w16 set w 9  (a2 bytes to u64 bs (off + 72))
-        _ = a2 w16 set w 10 (a2 bytes to u64 bs (off + 80))
-        _ = a2 w16 set w 11 (a2 bytes to u64 bs (off + 88))
-        _ = a2 w16 set w 12 (a2 bytes to u64 bs (off + 96))
-        _ = a2 w16 set w 13 (a2 bytes to u64 bs (off + 104))
-        _ = a2 w16 set w 14 (a2 bytes to u64 bs (off + 112))
+        a2 w16 set w 0  (a2 bytes to u64 bs off)
+        a2 w16 set w 1  (a2 bytes to u64 bs (off + 8))
+        a2 w16 set w 2  (a2 bytes to u64 bs (off + 16))
+        a2 w16 set w 3  (a2 bytes to u64 bs (off + 24))
+        a2 w16 set w 4  (a2 bytes to u64 bs (off + 32))
+        a2 w16 set w 5  (a2 bytes to u64 bs (off + 40))
+        a2 w16 set w 6  (a2 bytes to u64 bs (off + 48))
+        a2 w16 set w 7  (a2 bytes to u64 bs (off + 56))
+        a2 w16 set w 8  (a2 bytes to u64 bs (off + 64))
+        a2 w16 set w 9  (a2 bytes to u64 bs (off + 72))
+        a2 w16 set w 10 (a2 bytes to u64 bs (off + 80))
+        a2 w16 set w 11 (a2 bytes to u64 bs (off + 88))
+        a2 w16 set w 12 (a2 bytes to u64 bs (off + 96))
+        a2 w16 set w 13 (a2 bytes to u64 bs (off + 104))
+        a2 w16 set w 14 (a2 bytes to u64 bs (off + 112))
         a2 w16 set w 15 (a2 bytes to u64 bs (off + 120))
 
 fn :: a2 h8 bytes loop Tensor[U64 * 32] Tensor[U8] Int Int => Tensor[U8]
@@ -304,7 +304,7 @@ fn :: a2 b2b loop Tensor[U64 * 32] Tensor[U8] Int Int => Tensor[U64 * 32]
       a2 b2b loop h msg off len =
         | (len - off) <= 128 =
           blk = Tensor[U8 * 128]
-          _   = a2 copy bytes blk 0 msg off (len - off)
+          a2 copy bytes blk 0 msg off (len - off)
           a2 b2b compress h (a2 bytes to w16 blk 0) len True
         | otherwise =
           h1 = a2 b2b compress h (a2 bytes to w16 msg off) (off + 128) False
@@ -313,7 +313,7 @@ fn :: a2 b2b loop Tensor[U64 * 32] Tensor[U8] Int Int => Tensor[U64 * 32]
 fn :: a2 blake2b Tensor[U8] Int    => Tensor[U8]
       a2 blake2b msg        outlen =
         h_in = a2 b2b iv w16
-        _    = a2 w16 set h_in 0 ((a2 w16 get h_in 0) xor ((16842752 + outlen) and 0xFFFFFFFF))
+        a2 w16 set h_in 0 ((a2 w16 get h_in 0) xor ((16842752 + outlen) and 0xFFFFFFFF))
         h_fi = a2 b2b loop h_in msg 0 (a2 u8 len msg)
         a2 h8 to bytes h_fi outlen
 
@@ -324,7 +324,7 @@ fn :: a2 b2b prefixed Tensor[U8] Int    => Tensor[U8]
         m   = n + 4
         buf = Tensor[U8 * m]
         o1  = a2 put u32 buf 0 outlen
-        _   = a2 copy bytes buf o1 data 0 n
+        a2 copy bytes buf o1 data 0 n
         buf
 
 fn :: a2 b2b long loop Tensor[U8] Tensor[U8] Int Int Int => Tensor[U8]
@@ -332,11 +332,11 @@ fn :: a2 b2b long loop Tensor[U8] Tensor[U8] Int Int Int => Tensor[U8]
         | idx > r =
           rem  = outlen - (32 * r)
           last = a2 blake2b v rem
-          _    = a2 copy bytes out (32 * r) last 0 rem
+          a2 copy bytes out (32 * r) last 0 rem
           out
         | otherwise =
           v_next = a2 blake2b v 64
-          _      = a2 copy bytes out (32 * (idx - 1)) v_next 0 32
+          a2 copy bytes out (32 * (idx - 1)) v_next 0 32
           a2 b2b long loop out v_next (idx + 1) r outlen
 
 fn :: a2 blake2b long Tensor[U8] Int    => Tensor[U8]
@@ -346,7 +346,7 @@ fn :: a2 blake2b long Tensor[U8] Int    => Tensor[U8]
           r   = ((outlen + 31) / 32) - 2
           v1  = a2 blake2b (a2 b2b prefixed data outlen) 64
           out = Tensor[U8 * outlen]
-          _   = a2 copy bytes out 0 v1 0 32
+          a2 copy bytes out 0 v1 0 32
           a2 b2b long loop out v1 2 r outlen
 
 -- ============================================================
@@ -700,7 +700,7 @@ fn :: a2 lane seed Tensor[U8] Int Int => Tensor[U8]
         buf = Tensor[U8 * 72]
         o1  = a2 copy bytes buf 0 h0 0 64
         o2  = a2 put u32 buf o1 j
-        _   = a2 put u32 buf o2 l
+        a2 put u32 buf o2 l
         buf
 
 fn :: a2 init all lanes loop A2Mem Tensor[U8] Int Int Int => A2Mem
@@ -891,7 +891,7 @@ fn :: a2 h0 input Argon2Params Tensor[U8] Tensor[U8] Tensor[U8] Tensor[U8] => Te
         o7    = a2 put field buf o6 pwd
         o8    = a2 put field buf o7 salt
         o9    = a2 put field buf o8 sec
-        _     = a2 put field buf o9 ad
+        a2 put field buf o9 ad
         buf
 
 -- @implements FR-CRYPTO-001
@@ -1086,7 +1086,7 @@ fn :: argon2id generate salt Int => String
       argon2id generate salt n   =
         eff_n = clamp salt len n
         buf   = Tensor[U8 * eff_n]
-        _     = a2 random fill buf 0 eff_n
+        a2 random fill buf 0 eff_n
         tensor to str buf
 
 fn :: validate argon2 params Argon2Params Tensor[U8] => String

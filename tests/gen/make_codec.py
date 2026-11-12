@@ -85,9 +85,9 @@ names = ", ".join(f"c{i}" for i in range(len(checks)))
 timing = []
 for i, (label, fn) in enumerate(TIMED):
     timing.append(f'''        s{i} = sys_monotonic_ms
-        _ = codec_t_touch ({fn} small_{label})
+        codec_t_touch ({fn} small_{label})
         m{i} = sys_monotonic_ms
-        _ = codec_t_touch ({fn} big_{label})
+        codec_t_touch ({fn} big_{label})
         e{i} = sys_monotonic_ms
         t{i} = lt_linear "{label}: 20 KB then 200 KB in linear time, 200 KB under 2 s" (m{i} - s{i}) (e{i} - m{i}) 10 2000''')
 setup = '''        small_url_encode = str_repeat "Some text & more: a=1+2 café.\\n" 650

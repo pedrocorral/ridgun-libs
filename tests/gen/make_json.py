@@ -164,17 +164,17 @@ fn :: main => ()
         small = json_t_array 1500
         big = json_t_array 15000
         s0 = sys_monotonic_ms
-        _ = json_t_ok (json_parse_with_limits small 64 10000000)
+        json_t_ok (json_parse_with_limits small 64 10000000)
         m0 = sys_monotonic_ms
-        _ = json_t_ok (json_parse_with_limits big 64 10000000)
+        json_t_ok (json_parse_with_limits big 64 10000000)
         e0 = sys_monotonic_ms
         t0 = lt_linear "json_parse: 20 KB then 200 KB in linear time, 200 KB under 2 s" (m0 - s0) (e0 - m0) 10 2000
         vs = json_t_val small
         vb = json_t_val big
         s1 = sys_monotonic_ms
-        _ = str_len (json_stringify vs)
+        str_len (json_stringify vs)
         m1 = sys_monotonic_ms
-        _ = str_len (json_stringify vb)
+        str_len (json_stringify vb)
         e1 = sys_monotonic_ms
         t1 = lt_linear "json_stringify: 20 KB then 200 KB in linear time, 200 KB under 2 s" (m1 - s1) (e1 - m1) 10 2000
         lt_done "json" [{names}]

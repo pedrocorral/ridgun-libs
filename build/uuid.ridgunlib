@@ -103,7 +103,7 @@ fn :: uu bytes to hex loop Tensor[U8] Int Int => String
 fn :: uu random hex16 => String
       uu random hex16 =
         raw = Tensor[U8 * 16]
-        _   = sys call (nr getrandom) raw 16 0 0 0 0
+        sys call (nr getrandom) raw 16 0 0 0 0
         uu bytes to hex loop raw 0 16
 
 fn :: uu hex val Int => Int

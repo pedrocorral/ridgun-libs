@@ -237,7 +237,7 @@ fn :: byte slice String Int   Int     => String
           | otherwise = end_idx
         n    = en - st
         out  = Tensor[U8 * n]
-        _    = c copy bytes out 0 (tensor from str s) st n
+        c copy bytes out 0 (tensor from str s) st n
         tensor to str out
 
 -- ── SHA-1 (FIPS 180-4 §6.1) ─────────────────────────────────
@@ -382,7 +382,7 @@ fn :: c hmac key block String Int  => Tensor[U8]
       c hmac key block raw    blen =
         k   = tensor from str raw
         out = Tensor[U8 * blen]
-        _   = c copy bytes out 0 k 0 (c u8 len k)
+        c copy bytes out 0 k 0 (c u8 len k)
         out
 
 fn :: normalize hmac key String => Tensor[U8]
@@ -919,7 +919,7 @@ fn :: chacha20 emit loop Tensor[Int * 16] Tensor[Int * 16] Tensor[U8] Int => Ten
       chacha20 emit loop mixed init out w =
         | w >= 16   = out
         | otherwise =
-          _ = c put le32 out (4 * w) ((mixed_(w) + init_(w)) and 0xFFFFFFFF)
+          c put le32 out (4 * w) ((mixed_(w) + init_(w)) and 0xFFFFFFFF)
           chacha20 emit loop mixed init out (w + 1)
 
 -- The 64-byte keystream block `counter` (RFC 8439 §2.3).
@@ -952,7 +952,7 @@ fn :: chacha20 bitxor loop Tensor[Int * 16] Tensor[U8] Tensor[U8] Int Int Int =>
         | otherwise =
           init_(12) = ctr and 0xFFFFFFFF
           mixed     = chacha rounds loop (chacha copy st init (Tensor[Int * 16]) 0) 0
-          _         = chacha20 mix block mixed init msg out off n 0
+          chacha20 mix block mixed init msg out off n 0
           chacha20 bitxor loop init msg out (off + 64) n (ctr + 1)
 
 -- RFC 8439 §2.4 encryption: `msg` XOR the keystream from block `ctr` on.
@@ -1096,7 +1096,7 @@ fn :: poly1305 finalize Tensor[Int * 5] Tensor[U8] => Tensor[U8]
         o1   = c put le32 tag 0 (sum0 % 4294967296)
         o2   = c put le32 tag o1 (sum1 % 4294967296)
         o3   = c put le32 tag o2 (sum2 % 4294967296)
-        _    = c put le32 tag o3 (sum3 % 4294967296)
+        c put le32 tag o3 (sum3 % 4294967296)
         tag
 
 fn :: pad16 len Int => Int
@@ -1122,7 +1122,7 @@ fn :: poly1305 aead mac Tensor[U8] Tensor[U8] Tensor[U8] => Tensor[U8]
         o1    = c copy bytes msg 0 aad_b 0 alen
         o2    = c copy bytes msg (o1 + apad) ct_b 0 clen
         o3    = c put le64 msg (o2 + cpad) alen
-        _     = c put le64 msg o3 clen
+        c put le64 msg o3 clen
         r     = poly1305 r limbs otk
         h_fin = poly1305 blocks loop (Tensor[Int * 5]) r msg 0 total
         poly1305 finalize h_fin otk
@@ -3011,7 +3011,7 @@ fn :: bn sub raw loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int 
 fn :: bn add mod finish Bool Tensor[U64 * 260] Tensor[U64 * 260] Int => Tensor[U64 * 260]
       bn add mod finish False out _ _ = out
       bn add mod finish True out m lim =
-        _ = bn sub raw loop out m out 0 lim 0
+        bn sub raw loop out m out 0 lim 0
         out
 
 fn :: bn add mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int => Tensor[U64 * 260]
@@ -3024,12 +3024,12 @@ fn :: bn sub mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int => Te
       bn sub mod a b m lim =
         | (bn cmp a b lim) >= 0 =
           out = bn zero lim
-          _   = bn sub raw loop a b out 0 lim 0
+          bn sub raw loop a b out 0 lim 0
           out
         | otherwise =
           out = bn zero lim
-          _   = bn add raw loop a m out 0 lim 0
-          _   = bn sub raw loop out b out 0 lim 0
+          bn add raw loop a m out 0 lim 0
+          bn sub raw loop out b out 0 lim 0
           out
 
 fn :: bn mul row loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int U64 => Tensor[U64 * 520]

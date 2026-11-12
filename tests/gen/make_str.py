@@ -98,9 +98,9 @@ TIMED = [("str_replace (nothing to replace)", 'str_replace small "\\r\\n" "\\n"'
 timing = []
 for i, (label, a, b) in enumerate(TIMED):
     timing.append(f'''        s{i} = sys_monotonic_ms
-        _ = str_len ({a})
+        str_len ({a})
         m{i} = sys_monotonic_ms
-        _ = str_len ({b})
+        str_len ({b})
         e{i} = sys_monotonic_ms
         t{i} = lt_linear "{label}: 20 KB then 200 KB in linear time, 200 KB under 0.5 s" (m{i} - s{i}) (e{i} - m{i}) 10 500''')
 
