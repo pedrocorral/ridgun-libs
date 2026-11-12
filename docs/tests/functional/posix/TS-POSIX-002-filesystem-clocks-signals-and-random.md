@@ -4,12 +4,12 @@ title: Verify POSIX filesystem operations, monotonic and wall clocks, signal wat
 level: unit
 covers: [FR-POSIX-002]
 status: automated
-automated_in: [src/test/ridgun/test posix.rg]
+automated_in: [src/test/ridgun/test posix.ridgun]
 ---
 # TS-POSIX-002 — Verify POSIX filesystem operations, monotonic and wall clocks, signal watching, and CSPRNG random bytes
 
 ## Preconditions / fixtures
-- Pure-Ridgun `posix` module (`src/main/ridgun/lib/posix.rg`).
+- Pure-Ridgun `posix` module (`src/main/ridgun/lib/posix.ridgun`).
 
 ## Steps / inputs
 1. Create `/tmp/rg_posix_dir`, write `/tmp/rg_posix_dir/a.txt`, `sys_chmod` to `493` (`0755`), `sys_rename` to `b.txt`, `sys_symlink` to `link.txt`, verify `sys_readlink`, `sys_unlink` files, `sys_rmdir` directory, and verify `sys_getpid () > 0` and `sys_getcwd () != ""`.

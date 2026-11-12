@@ -4,7 +4,7 @@ title: Byte sequences in libs are Tensor[U8], not lists of Int or memfd buffers
 status: accepted
 date: 2026-11-09
 supersedes: []
-affects: [src/main/ridgun/lib/posix.rg, src/main/ridgun/lib/socket.rg, src/main/ridgun/lib/uuid.rg, src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg, src/main/ridgun/lib/jwt.rg, src/main/ridgun/lib/ws.rg]
+affects: [src/main/ridgun/lib/posix.ridgun, src/main/ridgun/lib/socket.ridgun, src/main/ridgun/lib/uuid.ridgun, src/main/ridgun/lib/argon2id.ridgun, src/main/ridgun/lib/crypto.ridgun, src/main/ridgun/lib/jwt.ridgun, src/main/ridgun/lib/ws.ridgun]
 ---
 # ADR-0010 — Byte sequences in libs are Tensor[U8], not lists of Int or memfd buffers
 

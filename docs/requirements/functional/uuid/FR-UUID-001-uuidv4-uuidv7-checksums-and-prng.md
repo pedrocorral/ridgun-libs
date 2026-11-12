@@ -37,4 +37,4 @@ Distributed services, databases, and network framing require RFC 9562 UUIDv4/UUI
 - Mitigates `VUL-INPUT-001` via strict 36-character UUID syntax and variant validation.
 
 ## Out of scope
-- Cryptographic stream ciphers (covered in `crypto.rg`).
+- Cryptographic stream ciphers (covered in `crypto.ridgun`).

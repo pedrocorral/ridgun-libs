@@ -10,7 +10,7 @@ Seamos sinceros: los motores de expresiones regulares con *backtracking* han cau
 
 La lib **`regex`** compila tus expresiones regulares (`.`, `*`, `+`, `?`, `|`, `()`, `[a-z]`, `[^...]`, `^`, `$`, `\d`, `\w`, `\s`) a un **autómata finito no determinista de Thompson (NFA)** y avanza el conjunto de estados paso a paso en tiempo estrictamente lineal **$O(N \cdot M)$**, haciendo que los ataques **ReDoS sean matemáticamente imposibles**.
 
-En un ecosistema tradicional, resolver las tareas del dominio **`REGEX`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`regex`** (`src/main/ridgun/lib/regex.rg`) aborda el problema con cuatro principios innegociables:
+En un ecosistema tradicional, resolver las tareas del dominio **`REGEX`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`regex`** (`src/main/ridgun/lib/regex.ridgun`) aborda el problema con cuatro principios innegociables:
 
 1. **Declara `import regex` (o `import regex as alias`) al inicio del archivo**: cada lib define su espacio de nombres `module :: regex` y en modo `--strict` las funciones multi-palabra se invocan siempre con espacios naturales.
 2. **Encadena tus tuberías de izquierda a derecha con `->`**: escribe `entrada paso uno -> paso dos -> resultado`, usa máscaras `(+ _ _ +)` para desestructurar secuencias y omite `_ =` en sentencias secuenciales (o descarta con `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resolver las tareas del dominio **`REGEX`** implic
 
 ## 11.2. Artefactos nativos, importación y catálogo completo de la API de `regex`
 
-En `ridgun-libs`, **`regex`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/regex.rg` (dominio `REGEX`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
+En `ridgun-libs`, **`regex`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/regex.ridgun` (dominio `REGEX`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/regex.rglib` | Distribución e importación directa con `import regex` |
+| **Bundle Ridgun** | `target/bundles/regex.ridgunlib` | Distribución e importación directa con `import regex` |
 | **Archivo compilado** | `target/regex.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Objeto compartido ELF64** | `target/libregex.so` | Biblioteca dinámica nativa sin dependencias de C ni `libc` |
 
@@ -40,9 +40,9 @@ En `ridgun-libs`, **`regex`** es una **lib** de primera clase ubicada en `src/ma
 | `regex replace / regex replace all` | Reemplaza la primera o todas las coincidencias de la expresión regular |
 | `regex split / regex escape` | Divide texto según un delimitador regex y escapa metacaracteres |
 
-### 11.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/regex.rg`
+### 11.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/regex.ridgun`
 
-A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/regex.rg` (`4` tipos, `0` operadores y `70` funciones):
+A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/regex.ridgun` (`4` tipos, `0` operadores y `70` funciones):
 
 **Tipos algebraicos y registros (`type`) de `regex`:**
 
@@ -130,7 +130,7 @@ type NfaInst = InstChar Int Int | InstAny Int | InstClass Bool [Int] Int | InstS
 
 ## 11.3. Explorando `regex` a fondo: Ejemplos paso a paso de cada funcionalidad
 
-No basta con ver la tabla de firmas: vamos a explorar **cada una de las funcionalidades** de la lib `regex` mediante ejemplos progresivos y ejecutables en Ridgun. Empezaremos por las dos recetas tabulares de uso cotidiano y después recorreremos en detalle todos los escenarios funcionales, transformaciones y casos límite verificados en `src/test/ridgun/test regex.rg`.
+No basta con ver la tabla de firmas: vamos a explorar **cada una de las funcionalidades** de la lib `regex` mediante ejemplos progresivos y ejecutables en Ridgun. Empezaremos por las dos recetas tabulares de uso cotidiano y después recorreremos en detalle todos los escenarios funcionales, transformaciones y casos límite verificados en `src/test/ridgun/test regex.ridgun`.
 
 ### 11.3.1. Ejemplo 1: Flujo principal en estilo tabular con `regex`
 
@@ -248,13 +248,13 @@ fn :: limpiar traza y validar id (usuario_id : String) (linea_log : String) => (
 
 ---
 
-## 11.4. Bajo el capó: cómo está construida `regex` en Ridgun puro (`src/main/ridgun/lib/regex.rg`)
+## 11.4. Bajo el capó: cómo está construida `regex` en Ridgun puro (`src/main/ridgun/lib/regex.ridgun`)
 
-Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**. Puedes abrir `src/main/ridgun/lib/regex.rg` y leer exactamente cómo está implementada cada operación usando *pattern matching*, árboles de guardas `|` / `|.` y recursión de cola (TCO). Veamos las piezas clave de su implementación real:
+Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**. Puedes abrir `src/main/ridgun/lib/regex.ridgun` y leer exactamente cómo está implementada cada operación usando *pattern matching*, árboles de guardas `|` / `|.` y recursión de cola (TCO). Veamos las piezas clave de su implementación real:
 
 ### 11.4.1. Implementación interna: Character Class & Shorthand Helpers
 
-Fíjate en cómo `regex.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `regex.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 module :: regex
@@ -287,7 +287,7 @@ fn :: re in ranges Int [Int] => Bool
 
 ### 11.4.2. Implementación interna: Thompson NFA Compiler (`ReNode` -> `[NfaInst]`)
 
-Fíjate en cómo `regex.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `regex.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 fn :: nfa len [NfaInst] => Int
@@ -350,7 +350,7 @@ fn :: re compile String => [NfaInst]
 
 ### 11.4.3. Implementación interna: Linear-Time Thompson NFA State-Set Simulation
 
-Fíjate en cómo `regex.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `regex.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 fn :: nfa inst at [NfaInst] Int => NfaInst
@@ -449,7 +449,7 @@ fn :: nfa full step [NfaInst] String Int Int [Int] => Bool
 
 ### 11.4.4. Implementación interna: Public Regex API (`API-REGEX-001`)
 
-Fíjate en cómo `regex.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `regex.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 fn :: regex match String String => Bool
@@ -539,9 +539,9 @@ fn :: regex split String String => [String]
 ## 11.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` y las 5 Reglas de Oro de `regex`
 
 - **Garantía algorítmica y de seguridad**: Simulación de conjunto de estados NFA sin recursión descontrolada de pila y tiempo $O(N \cdot M)$ garantizado incluso ante patrones patológicos `(a+)+b`.
-- **Complejidad de pila $O(1)$ con TCO**: Todos los bucles recursivos en `src/main/ridgun/lib/regex.rg` están en posición de cola, por lo que `ridgunc` los compila a saltos nativos sin crecimiento de pila.
+- **Complejidad de pila $O(1)$ con TCO**: Todos los bucles recursivos en `src/main/ridgun/lib/regex.ridgun` están en posición de cola, por lo que `ridgunc` los compila a saltos nativos sin crecimiento de pila.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Cero pausas de recolector de basura; todas las estructuras intermedias se liberan de forma determinista al salir del ámbito.
-- **Verificación continua**: Probada exhaustivamente con `stable check` y la suite automatizada `src/test/ridgun/test regex.rg`.
+- **Verificación continua**: Probada exhaustivamente con `stable check` y la suite automatizada `src/test/ridgun/test regex.ridgun`.
 
 ### Las 5 Reglas de Oro al programar con `regex`
 

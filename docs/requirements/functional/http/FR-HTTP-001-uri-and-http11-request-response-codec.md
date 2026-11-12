@@ -15,7 +15,7 @@ tests: [TS-HTTP-001]
 The `http` library SHALL provide pure-Ridgun RFC 3986 URI parsing (`uri parse`, `uri scheme`, `uri host`, `uri port`, `uri path`, `uri query`) and RFC 9112 HTTP/1.1 message construction, parsing, and inspection (`http status text`, `http build request`, `http build response`, `http parse request`, `http parse response`, `http parse headers`, `http header get`, `http bearer token`).
 
 ## Rationale
-Web servers (`Solstice`), REST clients, and IPC services over `socket.rg` require deterministic HTTP/1.1 wire-format request/response serialization, case-insensitive header lookup, and URI decomposition without external C HTTP parsers.
+Web servers (`Solstice`), REST clients, and IPC services over `socket.ridgun` require deterministic HTTP/1.1 wire-format request/response serialization, case-insensitive header lookup, and URI decomposition without external C HTTP parsers.
 
 ## Acceptance criteria
 - AC1: Given an RFC 3986 URL (`"https://api.example.com:8443/v1/users?active=1"` or `"http://localhost/health"`), when `uri parse` and its accessors are called, then they extract `scheme` (`"https"`), `host` (`"api.example.com"`), `port` (`8443`, or default `80`/`443`), `path` (`"/v1/users"`), and `query` (`"active=1"`).

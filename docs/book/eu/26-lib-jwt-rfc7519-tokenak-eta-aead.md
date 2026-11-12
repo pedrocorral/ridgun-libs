@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: JWT ekosistema ospetsua da erasotzaile batek goiburua `"
 
 **`jwt`** lib-ak bi munduak konpontzen ditu: **RFC 7519 (`HS256`) JWTak** sinatu eta egiaztatzen ditu `alg == "HS256"` esplizituki eskatuz, HMACa denbora konstantean konparatuz eta `exp`/`nbf` baliozkotuz, eta gainera **`token seal` / `token open`** eskaintzen ditu **ChaCha20-Poly1305 AEAD** bidez zifratutako token opakuak jaulkitzeko.
 
-Ekosistema tradizional batean, **`JWT`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`jwt`** lib-ak (`src/main/ridgun/lib/jwt.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`JWT`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`jwt`** lib-ak (`src/main/ridgun/lib/jwt.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import jwt` (edo `import jwt as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: jwt` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`JWT`** domeinuko zereginak ebazteak C-ko kanpo
 
 ## 26.2. Artefaktu natiboak, inportazioa eta `jwt` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`jwt`** lehen mailako **lib** bat da, `src/main/ridgun/lib/jwt.rg` bidean kokatua (`JWT` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`jwt`** lehen mailako **lib** bat da, `src/main/ridgun/lib/jwt.ridgun` bidean kokatua (`JWT` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/jwt.rglib` | Banaketa eta inportazio zuzena `import jwt` bidez |
+| **Ridgun Bundle-a** | `target/bundles/jwt.ridgunlib` | Banaketa eta inportazio zuzena `import jwt` bidez |
 | **Fitxategi konpilatua** | `target/jwt.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libjwt.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`JWT`** domeinuko zereginak ebazteak C-ko kanpo
 | `jwt claims / jwt get str / jwt get int` | `(sub, iss, iat, exp)` claim estandarrak eraiki eta egiaztatutako payload-ak kontsultatzen ditu |
 | `token seal / token open` | JSON token opakuak zifratu eta autentifikatzen ditu ChaCha20-Poly1305 AEAD bidez |
 
-### 26.2.2. `src/main/ridgun/lib/jwt.rg`-eko mota eta sinadura guztien katalogoa
+### 26.2.2. `src/main/ridgun/lib/jwt.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/jwt.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`3` mota, `0` eragile eta `55` funtzio):
+Jarraian duzu `src/main/ridgun/lib/jwt.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`3` mota, `0` eragile eta `55` funtzio):
 
 **`jwt`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -114,7 +114,7 @@ type JwtClaimsRes = JwtClaimsOk JwtClaims | JwtClaimsErr String
 
 ## 26.3. `jwt` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `jwt` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test jwt.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `jwt` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test jwt.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 26.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `jwt` erabiliz
 
@@ -254,13 +254,13 @@ fn :: test jwt aead seal and open => ()
 
 ---
 
-## 26.4. Kaputaren azpian: nola dagoen eraikia `jwt` Ridgun hutsean (`src/main/ridgun/lib/jwt.rg`)
+## 26.4. Kaputaren azpian: nola dagoen eraikia `jwt` Ridgun hutsean (`src/main/ridgun/lib/jwt.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/jwt.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/jwt.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 26.4.1. Barne-inplementazioa: Byte, Hex, Base64url & Constant-Time Helpers
 
-Ikusi nola `jwt.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `jwt.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: jwt
@@ -352,7 +352,7 @@ fn :: jwt b64url decode String => String
 
 ### 26.4.2. Barne-inplementazioa: Constant-Time Equality & Bitwise XOR
 
-Ikusi nola `jwt.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `jwt.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: jwt bxor loop Int Int Int Int => Int
@@ -377,7 +377,7 @@ fn :: jwt ct eq String String => Bool
 
 ### 26.4.3. Barne-inplementazioa: HS256 (HMAC-SHA256) Signing & Verification
 
-Ikusi nola `jwt.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `jwt.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: jwt hex nib Int => Int
@@ -499,7 +499,7 @@ fn :: jwt verify sig ct Bool String => JwtRes
 
 ### 26.4.4. Barne-inplementazioa: Structured Claims Signing & Temporal Validation
 
-Ikusi nola `jwt.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `jwt.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: jwt sign claims JwtClaims String => String
@@ -538,9 +538,9 @@ fn :: jwt check claim times JwtClaims Int => JwtClaimsRes
 ## 26.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `jwt`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: `"alg":"none"` erasoaren aurkako immunitate osoa (`alg` zehazki `"HS256"` ez duen edozein goiburuk `JwtBadSignature` itzultzen du) eta sinaduraren denbora konstanteko konparazioa.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/jwt.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/jwt.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test jwt.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test jwt.ridgun` suite automatizatuaren bidez.
 
 ### `jwt`-ekin programatzeko Urrezko 5 Arauak
 

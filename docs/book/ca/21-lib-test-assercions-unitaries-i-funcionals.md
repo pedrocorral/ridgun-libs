@@ -10,7 +10,7 @@ Siguem sincers: quan un framework de tests requereix macros màgiques, reflexió
 
 La lib **`test`** (`RG-011`) proporciona assercions pures, polimòrfiques i específiques de tipus que emeten diagnòstics clars `[FAIL]` amb els valors esperat i obtingut i acaben amb codi de sortida `1` tan bon punt falla una invariant.
 
-En un ecosistema tradicional, resoldre les tasques del domini **`TST`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`test`** (`src/main/ridgun/lib/test.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`TST`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`test`** (`src/main/ridgun/lib/test.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import test` (o `import test as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: test` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`TST`** implica 
 
 ## 21.2. Artefactes natius, importació i catàleg complet de l'API de `test`
 
-A `ridgun-libs`, **`test`** és una **lib** de primera classe situada a `src/main/ridgun/lib/test.rg` (domini `TST`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`test`** és una **lib** de primera classe situada a `src/main/ridgun/lib/test.ridgun` (domini `TST`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/test.rglib` | Distribució i importació directa amb `import test` |
+| **Bundle Ridgun** | `target/bundles/test.ridgunlib` | Distribució i importació directa amb `import test` |
 | **Fitxer compilat** | `target/test.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libtest.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -40,9 +40,9 @@ A `ridgun-libs`, **`test`** és una **lib** de primera classe situada a `src/mai
 | `assert true / assert false / assert not` | Assercions d'invariants booleanes (`True` / `False`) |
 | `assert ok : Int -> String -> ()` | Verifica que un codi d'estat del sistema o socket sigui `0` (`OK`) |
 
-### 21.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/test.rg`
+### 21.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/test.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/test.rg` (`0` tipus, `0` operadors i `12` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/test.ridgun` (`0` tipus, `0` operadors i `12` funcions):
 
 | # | Funció / Signatura (`fn ::`) | Tipus de Retorn |
 |---|---|---|
@@ -63,7 +63,7 @@ A continuació tens l'inventari complet de tipus algebraics (`type`), operadors 
 
 ## 21.3. Explorant `test` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `test` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test test.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `test` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test test.ridgun`.
 
 ### 21.3.1. Exemple 1: Flux principal en estil tabular amb `test`
 
@@ -136,7 +136,7 @@ fn :: ejecutar suite de ejemplo => ()
         assert true (validar invariantes de dominio 21 "ridgun") "predicado compuesto"
         -- 2. Aserciones anotadas con mensaje diagnóstico (`assert_*`)
         assert int equals (20 + 22) 42 "suma entera exacta"
-        assert str eq "rglib" "rglib" "etiqueta de artefacto"
+        assert str eq "ridgunlib" "ridgunlib" "etiqueta de artefacto"
         -- 3. Aserciones concisas sin etiqueta (`assert ok`, `assert not`, `assert eq`)
         assert ok (10 > 5)
         assert not (10 < 5)
@@ -146,13 +146,13 @@ fn :: ejecutar suite de ejemplo => ()
 
 ---
 
-## 21.4. Sota el capó: com està construïda `test` en Ridgun pur (`src/main/ridgun/lib/test.rg`)
+## 21.4. Sota el capó: com està construïda `test` en Ridgun pur (`src/main/ridgun/lib/test.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/test.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/test.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 21.4.1. Implementació interna: Non-Exiting Predicate Helpers
 
-Fixa't en com `test.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `test.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: test
@@ -169,7 +169,7 @@ fn :: check true Bool => Bool
 
 ### 21.4.2. Implementació interna: RG-011 Message-Annotated Assertions
 
-Fixa't en com `test.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `test.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: assert true Bool String => ()
@@ -200,7 +200,7 @@ fn :: assert int equals Int Int String => ()
 
 ### 21.4.3. Implementació interna: Concise Label-Free Assertion Helpers
 
-Fixa't en com `test.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `test.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: assert ok Bool => ()
@@ -217,10 +217,10 @@ fn :: assert eq A      A        => ()
 
 ## 21.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `test`
 
-- **Garantia algorísmica i de seguretat**: Les 30 suites de proves de `ridgun-libs` (`src/test/ridgun/test_*.rg`, més de 4 000 línies) s'executen amb aquesta mateixa lib mitjançant `stable test`.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/test.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Garantia algorísmica i de seguretat**: Les 30 suites de proves de `ridgun-libs` (`src/test/ridgun/test_*.ridgun`, més de 4 000 línies) s'executen amb aquesta mateixa lib mitjançant `stable test`.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/test.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test test.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test test.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `test`
 

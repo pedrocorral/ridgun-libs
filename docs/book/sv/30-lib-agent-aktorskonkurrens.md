@@ -10,7 +10,7 @@ Låt oss vara ärliga: att dela muterbart minne mellan trådar med `Mutex`, `RwL
 
 Lib:en **`agent`** bygger vidare på Ridguns **inbyggda aktörsmodell** (`agent`, `send ... to`, `receive from`, `try receive from`, `stop`) och erbjuder isolerade brevlådor med Copy-on-Write-meddelanden, en konkurrent nyckel-värde-lagring (`KvStore`), en *token-bucket*-begränsare (`RateBucket`) samt övervakning (`AgentHealth`).
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`AGENT`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`agent`** (`src/main/ridgun/lib/agent.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`AGENT`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`agent`** (`src/main/ridgun/lib/agent.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import agent` (eller `import agent as alias`) överst i filen**: varje lib definierar sin `module :: agent`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`AGENT`** ofta 
 
 ## 30.2. Inbyggda artefakter, import och komplett API-katalog för `agent`
 
-I `ridgun-libs` är **`agent`** en förstklassig **lib** placerad i `src/main/ridgun/lib/agent.rg` (domän `AGENT`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`agent`** en förstklassig **lib** placerad i `src/main/ridgun/lib/agent.ridgun` (domän `AGENT`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/agent.rglib` | Portabel distribution och direkt import med `import agent` |
+| **Ridgun-bundle** | `target/bundles/agent.ridgunlib` | Portabel distribution och direkt import med `import agent` |
 | **Kompilerat arkiv** | `target/agent.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libagent.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -40,9 +40,9 @@ I `ridgun-libs` är **`agent`** en förstklassig **lib** placerad i `src/main/ri
 | `rate bucket new / rate bucket allow` | *Token-bucket*-begränsare som returnerar uppdaterad hink och `(allowed, remaining)` |
 | `sup mark failed / sup should restart` | Övervakningsfunktioner som spårar omstartsbudget (`max_restarts`) |
 
-### 30.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/agent.rg`
+### 30.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/agent.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/agent.rg` (`7` typer, `0` operatorer och `65` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/agent.ridgun` (`7` typer, `0` operatorer och `65` funktioner):
 
 **Algebraiska datatyper och poster (`type`) i `agent`:**
 
@@ -128,7 +128,7 @@ type LogState     = log_sep: String, log_buf: String
 
 ## 30.3. Djupdykning i `agent`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `agent` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test agent.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `agent` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test agent.ridgun`.
 
 ### 30.3.1. Exempel 1: Huvudflöde i tabellform med `agent`
 
@@ -318,13 +318,13 @@ fn :: test log and kv agents => ()
 
 ---
 
-## 30.4. Under huven: hur `agent` är byggd i ren Ridgun (`src/main/ridgun/lib/agent.rg`)
+## 30.4. Under huven: hur `agent` är byggd i ren Ridgun (`src/main/ridgun/lib/agent.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/agent.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/agent.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 30.4.1. Intern implementation: Status & Reply Formatting
 
-Se hur `agent.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `agent.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: agent
@@ -348,7 +348,7 @@ fn :: format agent reply AgentReply        => String
 
 ### 30.4.2. Intern implementation: Core Combinators (`agent ask`, `agent try ask`, `agent send batch`, `agent receive count`, `agent map batch`, `agent drain ready`)
 
-Se hur `agent.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `agent.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: agent ask Agent A   => B
@@ -399,7 +399,7 @@ fn :: agent drain step Agent Option [B] => [B]
 
 ### 30.4.3. Intern implementation: Stateful Counter Agent (`new counter agent`, `counter add`, `counter get`, `counter reset`)
 
-Se hur `agent.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `agent.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: ag counter step CounterState Int   => CounterState Int
@@ -428,7 +428,7 @@ fn :: counter reset (Agent Int Int) => Int
 
 ### 30.4.4. Intern implementation: Stateful In-Memory Key-Value Agent (`new kv agent`, `kv put`, `kv get`, `kv delete`, `kv has`, `kv count`, `kv keys`, `kv clear`)
 
-Se hur `agent.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `agent.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: ag kv lookup [KvEntry] String => String
@@ -478,9 +478,9 @@ fn :: ag kv has str Bool  => String
 ## 30.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `agent`
 
 - **Algoritmisk garanti och säkerhet**: Noll delat muterbart minne mellan aktörer: varje meddelande överförs via värde / Copy-on-Write och `stop` frigör aktörens minnesregion deterministiskt.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/agent.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/agent.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test agent.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test agent.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `agent`
 

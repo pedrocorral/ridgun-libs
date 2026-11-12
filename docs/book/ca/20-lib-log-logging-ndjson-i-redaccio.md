@@ -10,7 +10,7 @@ Siguem sincers: bolcar els camps d'una petició en un fitxer de log i descobrir 
 
 La lib **`log`** proporciona filtratge per severitat (`DEBUG`, `INFO`, `WARN`, `ERROR`), formatat en text humà i **NDJSON estructurat**, i **redacció automàtica de claus sensibles** (`password`, `secret`, `token`, `api_key`, `authorization`, `cookie`, `private_key` $\rightarrow$ `"[REDACTED]"`, mitigant `VUL-LOG-001`).
 
-En un ecosistema tradicional, resoldre les tasques del domini **`LOG`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`log`** (`src/main/ridgun/lib/log.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`LOG`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`log`** (`src/main/ridgun/lib/log.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import log` (o `import log as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: log` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`LOG`** implica 
 
 ## 20.2. Artefactes natius, importació i catàleg complet de l'API de `log`
 
-A `ridgun-libs`, **`log`** és una **lib** de primera classe situada a `src/main/ridgun/lib/log.rg` (domini `LOG`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`log`** és una **lib** de primera classe situada a `src/main/ridgun/lib/log.ridgun` (domini `LOG`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/log.rglib` | Distribució i importació directa amb `import log` |
+| **Bundle Ridgun** | `target/bundles/log.ridgunlib` | Distribució i importació directa amb `import log` |
 | **Fitxer compilat** | `target/log.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/liblog.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -39,9 +39,9 @@ A `ridgun-libs`, **`log`** és una **lib** de primera classe situada a `src/main
 | `log is sensitive key / log redact fields` | Substitueix valors de claus secretes per `"[REDACTED]"` sense importar majúscules |
 | `log format text / log format json` | Formata línies text `clau=valor` o NDJSON RFC 8259 amb redacció automàtica de secrets |
 
-### 20.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/log.rg`
+### 20.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/log.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/log.rg` (`0` tipus, `0` operadors i `21` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/log.ridgun` (`0` tipus, `0` operadors i `21` funcions):
 
 | # | Funció / Signatura (`fn ::`) | Tipus de Retorn |
 |---|---|---|
@@ -71,7 +71,7 @@ A continuació tens l'inventari complet de tipus algebraics (`type`), operadors 
 
 ## 20.3. Explorant `log` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `log` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test log.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `log` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test log.ridgun`.
 
 ### 20.3.1. Exemple 1: Flux principal en estil tabular amb `log`
 
@@ -181,13 +181,13 @@ fn :: test log text and ndjson formatting => ()
 
 ---
 
-## 20.4. Sota el capó: com està construïda `log` en Ridgun pur (`src/main/ridgun/lib/log.rg`)
+## 20.4. Sota el capó: com està construïda `log` en Ridgun pur (`src/main/ridgun/lib/log.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/log.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/log.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 20.4.1. Implementació interna: Severity Levels (`DEBUG`, `INFO`, `WARN`, `ERROR`)
 
-Fixa't en com `log.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `log.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: log
@@ -216,7 +216,7 @@ fn :: log should emit String    String    => Bool
 
 ### 20.4.2. Implementació interna: Sensitive Key Detection & Redaction
 
-Fixa't en com `log.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `log.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: lg check sens lower String => Bool
@@ -250,7 +250,7 @@ fn :: log redact fields [String String] => [String String]
 
 ### 20.4.3. Implementació interna: Escaping & Text / NDJSON Formatting
 
-Fixa't en com `log.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `log.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: lg esc char String Int Int => String
@@ -301,9 +301,9 @@ fn :: log format json String String [String String] => String
 ## 20.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `log`
 
 - **Garantia algorísmica i de seguretat**: Tant `log format text` com `log format json` passen sempre els camps per `log redact fields` abans de serialitzar, garantint que cap secret es filtri per oblit.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/log.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/log.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test log.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test log.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `log`
 

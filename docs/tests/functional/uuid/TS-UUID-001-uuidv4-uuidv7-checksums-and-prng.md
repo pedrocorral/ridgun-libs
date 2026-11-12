@@ -4,12 +4,12 @@ title: Verify RFC 9562 UUIDv4/UUIDv7, FNV-1a/Adler-32/CRC-32 standard vectors, a
 level: unit
 covers: [FR-UUID-001, API-UUID-001]
 status: automated
-automated_in: [src/test/ridgun/test uuid.rg]
+automated_in: [src/test/ridgun/test uuid.ridgun]
 ---
 # TS-UUID-001 — Verify RFC 9562 UUIDv4/UUIDv7, FNV-1a/Adler-32/CRC-32 standard vectors, and seeded PRNG
 
 ## Preconditions / fixtures
-- Pure-Ridgun `uuid` module (`src/main/ridgun/lib/uuid.rg`).
+- Pure-Ridgun `uuid` module (`src/main/ridgun/lib/uuid.ridgun`).
 
 ## Steps / inputs
 1. Call `uuid v4`, `uuid v7`, `uuid v7 at`, `uuid is valid`, and `uuid version` on valid and malformed UUIDs.

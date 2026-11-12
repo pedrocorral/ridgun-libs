@@ -10,7 +10,7 @@ Låt oss vara ärliga: att skriva ut anropsfält till en loggfil och veckor sena
 
 Lib:en **`log`** erbjuder allvarlighetsfiltrering (`DEBUG`, `INFO`, `WARN`, `ERROR`), text- och **NDJSON-formatering** samt **automatisk maskering av känsliga nycklar** (`password`, `secret`, `token`, `api_key`, `authorization`, `cookie`, `private_key` $\rightarrow$ `"[REDACTED]"`, vilket motverkar `VUL-LOG-001`).
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`LOG`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`log`** (`src/main/ridgun/lib/log.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`LOG`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`log`** (`src/main/ridgun/lib/log.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import log` (eller `import log as alias`) överst i filen**: varje lib definierar sin `module :: log`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`LOG`** ofta at
 
 ## 20.2. Inbyggda artefakter, import och komplett API-katalog för `log`
 
-I `ridgun-libs` är **`log`** en förstklassig **lib** placerad i `src/main/ridgun/lib/log.rg` (domän `LOG`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`log`** en förstklassig **lib** placerad i `src/main/ridgun/lib/log.ridgun` (domän `LOG`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/log.rglib` | Portabel distribution och direkt import med `import log` |
+| **Ridgun-bundle** | `target/bundles/log.ridgunlib` | Portabel distribution och direkt import med `import log` |
 | **Kompilerat arkiv** | `target/log.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/liblog.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -39,9 +39,9 @@ I `ridgun-libs` är **`log`** en förstklassig **lib** placerad i `src/main/ridg
 | `log is sensitive key / log redact fields` | Ersätter skiftlägesokänsligt hemliga värden med `"[REDACTED]"` |
 | `log format text / log format json` | Formaterar `nyckel=värde`-text eller RFC 8259 NDJSON med automatisk sekretessmaskering |
 
-### 20.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/log.rg`
+### 20.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/log.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/log.rg` (`0` typer, `0` operatorer och `21` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/log.ridgun` (`0` typer, `0` operatorer och `21` funktioner):
 
 | # | Funktion / Signatur (`fn ::`) | Returtyp |
 |---|---|---|
@@ -71,7 +71,7 @@ Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-o
 
 ## 20.3. Djupdykning i `log`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `log` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test log.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `log` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test log.ridgun`.
 
 ### 20.3.1. Exempel 1: Huvudflöde i tabellform med `log`
 
@@ -181,13 +181,13 @@ fn :: test log text and ndjson formatting => ()
 
 ---
 
-## 20.4. Under huven: hur `log` är byggd i ren Ridgun (`src/main/ridgun/lib/log.rg`)
+## 20.4. Under huven: hur `log` är byggd i ren Ridgun (`src/main/ridgun/lib/log.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/log.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/log.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 20.4.1. Intern implementation: Severity Levels (`DEBUG`, `INFO`, `WARN`, `ERROR`)
 
-Se hur `log.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `log.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: log
@@ -216,7 +216,7 @@ fn :: log should emit String    String    => Bool
 
 ### 20.4.2. Intern implementation: Sensitive Key Detection & Redaction
 
-Se hur `log.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `log.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: lg check sens lower String => Bool
@@ -250,7 +250,7 @@ fn :: log redact fields [String String] => [String String]
 
 ### 20.4.3. Intern implementation: Escaping & Text / NDJSON Formatting
 
-Se hur `log.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `log.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: lg esc char String Int Int => String
@@ -301,9 +301,9 @@ fn :: log format json String String [String String] => String
 ## 20.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `log`
 
 - **Algoritmisk garanti och säkerhet**: Både `log format text` och `log format json` kör alltid fälten genom `log redact fields` före serialisering, vilket garanterar att inga hemligheter läcker av misstag.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/log.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/log.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test log.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test log.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `log`
 

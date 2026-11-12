@@ -4,12 +4,12 @@ title: Verify typed Tensor linear algebra operations, vector/matrix norms, linea
 level: unit
 covers: [FR-LINALG-001, API-LINALG-001]
 status: automated
-automated_in: [src/test/ridgun/test linalg.rg]
+automated_in: [src/test/ridgun/test linalg.ridgun]
 ---
 # TS-LINALG-001 — Verify typed Tensor linear algebra operations, vector/matrix norms, linear solver, and neural activations
 
 ## Preconditions / fixtures
-- Pure-Ridgun `linalg` and `test` modules (`src/main/ridgun/lib/linalg.rg`, `src/main/ridgun/lib/test.rg`).
+- Pure-Ridgun `linalg` and `test` modules (`src/main/ridgun/lib/linalg.ridgun`, `src/main/ridgun/lib/test.ridgun`).
 
 ## Steps / inputs
 0. Compare `linalg sqrt` and `linalg exp` with known IEEE double values (sqrt 2, e, exp(-1), exp(10), exp(-20)) and check the guards (negative sqrt, exp(-800)).
@@ -25,4 +25,4 @@ automated_in: [src/test/ridgun/test linalg.rg]
 - Every `Real` comparison uses a relative tolerance of 1e-12 (`near` in the test).
 
 ## Not covered here (to avoid duplication)
-- Base `tensor.rg` Hadamard and `matmul` operations (`TS-TENSOR-001`).
+- Base `tensor.ridgun` Hadamard and `matmul` operations (`TS-TENSOR-001`).

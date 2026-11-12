@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/cli.rg
+-- src/main/ridgun/lib/cli.ridgun
 -- Pure-Ridgun Command-Line Flag, Option, Positional & Environment Library (CLI)
 -- @implements FR-CLI-001
 -- @implements API-CLI-001

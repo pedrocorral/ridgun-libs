@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/io.rg
+-- src/main/ridgun/lib/io.ridgun
 -- Pure-Ridgun High-Level Timeout-Bounded I/O, Metadata & Streams Library (IO)
 -- @implements FR-IO-001
 -- @implements FR-IO-002

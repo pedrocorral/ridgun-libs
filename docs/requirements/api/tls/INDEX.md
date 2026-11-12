@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-TLS-001-tls-module-contract.md` | `API-TLS-001` | Public API Contract for `tls.rg` | approved |
+| `API-TLS-001-tls-module-contract.md` | `API-TLS-001` | Public API Contract for `tls.ridgun` | approved |

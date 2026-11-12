@@ -10,7 +10,7 @@ Let's be honest: `libc` date functions (`localtime`, `gmtime`, `mktime`) rely on
 
 The **`time`** lib implements **Howard Hinnant's $O(1)$** proleptic Gregorian UTC civil calendar algorithm, strict **ISO-8601 / RFC 3339** formatting and parsing (`YYYY-MM-DDTHH:MM:SSZ`), human-readable durations (`1h 1m 1s 5ms`), and bounded exponential backoff.
 
-In a traditional ecosystem, solving **`TIME`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`time`** lib (`src/main/ridgun/lib/time.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`TIME`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`time`** lib (`src/main/ridgun/lib/time.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import time` (or `import time as alias`) at the top of your file**: every lib defines its `module :: time` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`TIME`** tasks means pulling in external C
 
 ## 18.2. Native Artifacts, Imports, and Complete `time` API Catalog
 
-In `ridgun-libs`, **`time`** is a first-class **lib** located at `src/main/ridgun/lib/time.rg` (domain `TIME`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`time`** is a first-class **lib** located at `src/main/ridgun/lib/time.ridgun` (domain `TIME`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/time.rglib` | Portable distribution and direct `import time` resolution |
+| **Ridgun Bundle** | `target/bundles/time.ridgunlib` | Portable distribution and direct `import time` resolution |
 | **Compiled Archive** | `target/time.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libtime.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -40,9 +40,9 @@ In `ridgun-libs`, **`time`** is a first-class **lib** located at `src/main/ridgu
 | `time format iso8601 / time parse iso8601` | Format and validate `YYYY-MM-DDTHH:MM:SSZ` timestamps (`-1` on invalid dates like Feb 30) |
 | `time format duration ms / time backoff ms` | Human duration strings and capped $base \cdot 2^{attempt}$ retry delays |
 
-### 18.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/time.rg`
+### 18.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/time.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/time.rg` (`0` types, `0` operators, and `26` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/time.ridgun` (`0` types, `0` operators, and `26` functions):
 
 | # | Function / Signature (`fn ::`) | Return Type |
 |---|---|---|
@@ -77,7 +77,7 @@ Below is the complete inventory of algebraic data types (`type`), mixfix operato
 
 ## 18.3. Deep Dive into `time`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `time` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test time.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `time` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test time.ridgun`.
 
 ### 18.3.1. Example 1: Core Tabular Workflow with `time`
 
@@ -217,13 +217,13 @@ fn :: planificar ventana reintentos (iso_inicio : String) => (String, String, In
 
 ---
 
-## 18.4. Under the Hood: How `time` Is Built in Pure Ridgun (`src/main/ridgun/lib/time.rg`)
+## 18.4. Under the Hood: How `time` Is Built in Pure Ridgun (`src/main/ridgun/lib/time.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/time.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/time.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 18.4.1. Internal Implementation: Leap Year, Month Length & Day of Week
 
-Observe how `time.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `time.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: time
@@ -250,7 +250,7 @@ fn :: time days in month Int Int => Int
 
 ### 18.4.2. Internal Implementation: Howard Hinnant Civil Calendar <-> Epoch Days
 
-Observe how `time.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `time.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: tm adj year Int Int => Int
@@ -335,7 +335,7 @@ fn :: time epoch to utc Int       => Int Int Int Int Int Int
 
 ### 18.4.3. Internal Implementation: ISO-8601 / RFC 3339 Formatting & Parsing
 
-Observe how `time.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `time.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: tm pad2 Int => String
@@ -398,7 +398,7 @@ fn :: time parse iso8601 String => Int
 
 ### 18.4.4. Internal Implementation: Human-Readable Duration & Exponential Backoff
 
-Observe how `time.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `time.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: tm join part String Int String => String
@@ -440,9 +440,9 @@ fn :: time backoff ms Int Int Int => Int
 ## 18.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `time`
 
 - **Algorithmic & Safety Guarantee**: $O(1)$ calendar conversion with zero year-by-year loops and strict per-month day validation (rejecting Feb 29 on non-leap years).
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/time.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/time.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test time.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test time.ridgun`.
 
 ### The 5 Golden Rules When Programming with `time`
 

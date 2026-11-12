@@ -10,7 +10,7 @@ Sexamos sinceros: envorcar os campos dunha petición nun ficheiro de log e descu
 
 A lib **`log`** proporciona filtrado por severidade (`DEBUG`, `INFO`, `WARN`, `ERROR`), formatado en texto humano e **NDJSON estruturado**, e **redacción automática de chaves sensibles** (`password`, `secret`, `token`, `api_key`, `authorization`, `cookie`, `private_key` $\rightarrow$ `"[REDACTED]"`, mitigando `VUL-LOG-001`).
 
-Nun ecosistema tradicional, resolver as tarefas do dominio **`LOG`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`log`** (`src/main/ridgun/lib/log.rg`) aborda o problema con catro principios innegociables:
+Nun ecosistema tradicional, resolver as tarefas do dominio **`LOG`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`log`** (`src/main/ridgun/lib/log.ridgun`) aborda o problema con catro principios innegociables:
 
 1. **Declara `import log` (ou `import log as alias`) ao inicio do ficheiro**: cada lib define o seu espazo de nomes `module :: log` e en modo `--strict` as funcións multi-palabra invócanse sempre con espazos naturais.
 2. **Encadea as túas tubaxes de esquerda a dereita con `->`**: escribe `entrada paso un -> paso dous -> resultado`, usa máscaras `(+ _ _ +)` para desestruturar secuencias e omite `_ =` en sentenzas secuenciais (ou descarta con `-> ()`).
@@ -21,11 +21,11 @@ Nun ecosistema tradicional, resolver as tarefas do dominio **`LOG`** implica arr
 
 ## 20.2. Artefactos nativos, importación e catálogo completo da API de `log`
 
-En `ridgun-libs`, **`log`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/log.rg` (dominio `LOG`). Ao compilar con `stable bundle`, empaquétase en tres formatos nativos:
+En `ridgun-libs`, **`log`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/log.ridgun` (dominio `LOG`). Ao compilar con `stable bundle`, empaquétase en tres formatos nativos:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/log.rglib` | Distribución e importación directa con `import log` |
+| **Bundle Ridgun** | `target/bundles/log.ridgunlib` | Distribución e importación directa con `import log` |
 | **Ficheiro compilado** | `target/log.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/liblog.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
@@ -39,9 +39,9 @@ En `ridgun-libs`, **`log`** é unha **lib** de primeira clase situada en `src/ma
 | `log is sensitive key / log redact fields` | Substitúe valores de chaves segredas por `"[REDACTED]"` sen importar maiúsculas |
 | `log format text / log format json` | Formatea liñas texto `chave=valor` ou NDJSON RFC 8259 con redacción automática de segredos |
 
-### 20.2.2. Catálogo exhaustivo de tipos e sinaturas en `src/main/ridgun/lib/log.rg`
+### 20.2.2. Catálogo exhaustivo de tipos e sinaturas en `src/main/ridgun/lib/log.ridgun`
 
-A continuación tes o inventario completo de tipos alxébricos (`type`), operadores (`op ::`) e sinaturas de funcións (`fn ::`) definidos en `src/main/ridgun/lib/log.rg` (`0` tipos, `0` operadores e `21` funcións):
+A continuación tes o inventario completo de tipos alxébricos (`type`), operadores (`op ::`) e sinaturas de funcións (`fn ::`) definidos en `src/main/ridgun/lib/log.ridgun` (`0` tipos, `0` operadores e `21` funcións):
 
 | # | Función / Sinatura (`fn ::`) | Tipo de Retorno |
 |---|---|---|
@@ -71,7 +71,7 @@ A continuación tes o inventario completo de tipos alxébricos (`type`), operado
 
 ## 20.3. Explorando `log` a fondo: Exemplos paso a paso de cada funcionalidade
 
-Non abonda con ver a táboa de sinaturas: imos explorar **cada unha das funcionalidades** da lib `log` mediante exemplos progresivos e executables en Ridgun. Comezaremos polas dúas receitas tabulares de uso cotián e despois percorreremos en detalle todos os escenarios funcionais, transformacións e casos límite verificados en `src/test/ridgun/test log.rg`.
+Non abonda con ver a táboa de sinaturas: imos explorar **cada unha das funcionalidades** da lib `log` mediante exemplos progresivos e executables en Ridgun. Comezaremos polas dúas receitas tabulares de uso cotián e despois percorreremos en detalle todos os escenarios funcionais, transformacións e casos límite verificados en `src/test/ridgun/test log.ridgun`.
 
 ### 20.3.1. Exemplo 1: Fluxo principal en estilo tabular con `log`
 
@@ -181,13 +181,13 @@ fn :: test log text and ndjson formatting => ()
 
 ---
 
-## 20.4. Baixo o capó: como está construída `log` en Ridgun puro (`src/main/ridgun/lib/log.rg`)
+## 20.4. Baixo o capó: como está construída `log` en Ridgun puro (`src/main/ridgun/lib/log.ridgun`)
 
-Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**. Podes abrir `src/main/ridgun/lib/log.rg` e ler exactamente como está implementada cada operación usando *pattern matching*, árbores de gardas `|` / `|.` e recursión de cola (TCO). Vexamos as pezas clave da súa implementación real:
+Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**. Podes abrir `src/main/ridgun/lib/log.ridgun` e ler exactamente como está implementada cada operación usando *pattern matching*, árbores de gardas `|` / `|.` e recursión de cola (TCO). Vexamos as pezas clave da súa implementación real:
 
 ### 20.4.1. Implementación interna: Severity Levels (`DEBUG`, `INFO`, `WARN`, `ERROR`)
 
-Fíxate en como `log.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
+Fíxate en como `log.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 module :: log
@@ -216,7 +216,7 @@ fn :: log should emit String    String    => Bool
 
 ### 20.4.2. Implementación interna: Sensitive Key Detection & Redaction
 
-Fíxate en como `log.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
+Fíxate en como `log.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 fn :: lg check sens lower String => Bool
@@ -250,7 +250,7 @@ fn :: log redact fields [String String] => [String String]
 
 ### 20.4.3. Implementación interna: Escaping & Text / NDJSON Formatting
 
-Fíxate en como `log.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
+Fíxate en como `log.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 fn :: lg esc char String Int Int => String
@@ -301,9 +301,9 @@ fn :: log format json String String [String String] => String
 ## 20.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` e as 5 Regras de Ouro de `log`
 
 - **Garantía algorítmica e de seguridade**: Tanto `log format text` coma `log format json` pasan sempre os campos por `log redact fields` antes de serializar, garantindo que ningún segredo se filtre por esquecemento.
-- **Complexidade de pila $O(1)$ con TCO**: Todos os bucles recursivos en `src/main/ridgun/lib/log.rg` están en posición de cola, polo que `ridgunc` os compila a saltos nativos sen crecemento de pila.
+- **Complexidade de pila $O(1)$ con TCO**: Todos os bucles recursivos en `src/main/ridgun/lib/log.ridgun` están en posición de cola, polo que `ridgunc` os compila a saltos nativos sen crecemento de pila.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Cero pausas de colector de lixo; todas as estruturas intermedias libéranse de forma determinista ao saír do ámbito.
-- **Verificación continua**: Probada exhaustivamente con `stable check` e a suite automatizada `src/test/ridgun/test log.rg`.
+- **Verificación continua**: Probada exhaustivamente con `stable check` e a suite automatizada `src/test/ridgun/test log.ridgun`.
 
 ### As 5 Regras de Ouro ao programar con `log`
 

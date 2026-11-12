@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/str.rg
+-- src/main/ridgun/lib/str.ridgun
 -- Pure-Ridgun String Manipulation Library (STR)
 -- @implements FR-STR-001
 -- @implements API-STR-001

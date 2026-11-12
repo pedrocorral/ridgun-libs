@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: `libc`-ko data-funtzioak (`localtime`, `gmtime`, `mktime
 
 **`time`** lib-ak **Howard Hinnanten $O(1)$** egutegi zibil gregoriano proleptikoaren algoritmoa, **ISO-8601 / RFC 3339** (`YYYY-MM-DDTHH:MM:SSZ`) formateatze eta analisi zorrotza, iraupen irakurgarriak (`1h 1m 1s 5ms`) eta sare-berriro saiatzeetarako *exponential backoff* kalkulua inplementatzen ditu.
 
-Ekosistema tradizional batean, **`TIME`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`time`** lib-ak (`src/main/ridgun/lib/time.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`TIME`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`time`** lib-ak (`src/main/ridgun/lib/time.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import time` (edo `import time as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: time` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`TIME`** domeinuko zereginak ebazteak C-ko kanp
 
 ## 18.2. Artefaktu natiboak, inportazioa eta `time` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`time`** lehen mailako **lib** bat da, `src/main/ridgun/lib/time.rg` bidean kokatua (`TIME` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`time`** lehen mailako **lib** bat da, `src/main/ridgun/lib/time.ridgun` bidean kokatua (`TIME` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/time.rglib` | Banaketa eta inportazio zuzena `import time` bidez |
+| **Ridgun Bundle-a** | `target/bundles/time.ridgunlib` | Banaketa eta inportazio zuzena `import time` bidez |
 | **Fitxategi konpilatua** | `target/time.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libtime.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`TIME`** domeinuko zereginak ebazteak C-ko kanp
 | `time format iso8601 / time parse iso8601` | `YYYY-MM-DDTHH:MM:SSZ` datak formateatu eta baliozkotzen ditu (`-1` otsailak 30 bezalakoetan) |
 | `time format duration ms / time backoff ms` | Iraupen irakurgarriak eta $base \cdot 2^{attempt}$ atzerapen esponentzial mugatuak |
 
-### 18.2.2. `src/main/ridgun/lib/time.rg`-eko mota eta sinadura guztien katalogoa
+### 18.2.2. `src/main/ridgun/lib/time.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/time.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `26` funtzio):
+Jarraian duzu `src/main/ridgun/lib/time.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `26` funtzio):
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
@@ -77,7 +77,7 @@ Jarraian duzu `src/main/ridgun/lib/time.rg` fitxategian definitutako mota aljebr
 
 ## 18.3. `time` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `time` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test time.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `time` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test time.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 18.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `time` erabiliz
 
@@ -217,13 +217,13 @@ fn :: planificar ventana reintentos (iso_inicio : String) => (String, String, In
 
 ---
 
-## 18.4. Kaputaren azpian: nola dagoen eraikia `time` Ridgun hutsean (`src/main/ridgun/lib/time.rg`)
+## 18.4. Kaputaren azpian: nola dagoen eraikia `time` Ridgun hutsean (`src/main/ridgun/lib/time.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/time.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/time.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 18.4.1. Barne-inplementazioa: Leap Year, Month Length & Day of Week
 
-Ikusi nola `time.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `time.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: time
@@ -250,7 +250,7 @@ fn :: time days in month Int Int => Int
 
 ### 18.4.2. Barne-inplementazioa: Howard Hinnant Civil Calendar <-> Epoch Days
 
-Ikusi nola `time.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `time.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: tm adj year Int Int => Int
@@ -335,7 +335,7 @@ fn :: time epoch to utc Int       => Int Int Int Int Int Int
 
 ### 18.4.3. Barne-inplementazioa: ISO-8601 / RFC 3339 Formatting & Parsing
 
-Ikusi nola `time.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `time.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: tm pad2 Int => String
@@ -398,7 +398,7 @@ fn :: time parse iso8601 String => Int
 
 ### 18.4.4. Barne-inplementazioa: Human-Readable Duration & Exponential Backoff
 
-Ikusi nola `time.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `time.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: tm join part String Int String => String
@@ -440,9 +440,9 @@ fn :: time backoff ms Int Int Int => Int
 ## 18.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `time`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: $O(1)$ egutegi-bihurketa urtez urteko begiztarik gabe eta hileko egunen baliozkotze zorrotza (bisurte ez diren urteetako otsailaren 29a ukatuz).
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/time.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/time.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test time.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test time.ridgun` suite automatizatuaren bidez.
 
 ### `time`-ekin programatzeko Urrezko 5 Arauak
 

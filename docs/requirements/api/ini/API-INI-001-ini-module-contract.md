@@ -1,11 +1,11 @@
 ---
 id: API-INI-001
-title: Public lib contract for ini (ini.rglib / libini.so)
+title: Public lib contract for ini (ini.ridgunlib / libini.so)
 status: approved
 implements: [FR-INI-001]
 auth: none
 ---
-# API-INI-001 — Public lib contract for `ini` (`ini.rg`)
+# API-INI-001 — Public lib contract for `ini` (`ini.ridgun`)
 
 ## Request
 - Imported via `import ini`.

@@ -10,7 +10,7 @@ Låt oss vara ärliga: att tolka `argv` för hand börjar alltid som en oskyldig
 
 Lib:en **`cli`** hanterar långa flaggor (`--verbose`), korta flaggor (`-v`), kombinerade kortflaggor (`-la`), värdealternativ (`--port=8080`, `--port 8080`, `-p 8080`), POSIX-barriären `--`, positionella argument, underkommandon och typade miljövariabler.
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`CLI`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`cli`** (`src/main/ridgun/lib/cli.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`CLI`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`cli`** (`src/main/ridgun/lib/cli.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import cli` (eller `import cli as alias`) överst i filen**: varje lib definierar sin `module :: cli`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`CLI`** ofta at
 
 ## 16.2. Inbyggda artefakter, import och komplett API-katalog för `cli`
 
-I `ridgun-libs` är **`cli`** en förstklassig **lib** placerad i `src/main/ridgun/lib/cli.rg` (domän `CLI`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`cli`** en förstklassig **lib** placerad i `src/main/ridgun/lib/cli.ridgun` (domän `CLI`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/cli.rglib` | Portabel distribution och direkt import med `import cli` |
+| **Ridgun-bundle** | `target/bundles/cli.ridgunlib` | Portabel distribution och direkt import med `import cli` |
 | **Kompilerat arkiv** | `target/cli.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libcli.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -40,9 +40,9 @@ I `ridgun-libs` är **`cli`** en förstklassig **lib** placerad i `src/main/ridg
 | `cli positionals / cli subcommand` | Samlar in positionella argument (inklusive allt efter `--`) |
 | `env get or / env get int or / env get bool or` | Läser miljövariabler med typad konvertering och reservvärden |
 
-### 16.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/cli.rg`
+### 16.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/cli.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/cli.rg` (`0` typer, `0` operatorer och `26` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/cli.ridgun` (`0` typer, `0` operatorer och `26` funktioner):
 
 | # | Funktion / Signatur (`fn ::`) | Returtyp |
 |---|---|---|
@@ -77,7 +77,7 @@ Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-o
 
 ## 16.3. Djupdykning i `cli`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `cli` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test cli.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `cli` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test cli.ridgun`.
 
 ### 16.3.1. Exempel 1: Huvudflöde i tabellform med `cli`
 
@@ -116,7 +116,7 @@ I detta praktiska exempel undersöker vi grundligt hur `cli` beter sig inom dett
 ```ridgun
 fn :: test cli flags and options => ()
       test cli flags and options =
-        args = ["serve", "-la", "--verbose", "--port=9090", "-h", "127.0.0.1", "--workers", "-4", "--", "--ignored-flag", "-z", "file.rg"]
+        args = ["serve", "-la", "--verbose", "--port=9090", "-h", "127.0.0.1", "--workers", "-4", "--", "--ignored-flag", "-z", "file.ridgun"]
         assert true (cli has flag args "--verbose" "-v") "AC1: long flag --verbose"
         assert true (cli has flag args "--all" "-a") "AC1: bundled short flag -a in -la"
         assert true (cli has flag args "--list" "-l") "AC1: bundled short flag -l in -la"
@@ -146,14 +146,14 @@ I detta praktiska exempel undersöker vi grundligt hur `cli` beter sig inom dett
 ```ridgun
 fn :: test cli positionals subcommand and env => ()
       test cli positionals subcommand and env =
-        args = ["build", "-v", "--output", "target/app", "-j", "8", "--", "-dashfile.rg", "--another-literal", "main.rg"]
+        args = ["build", "-v", "--output", "target/app", "-j", "8", "--", "-dashfile.ridgun", "--another-literal", "main.ridgun"]
         assert str eq (cli subcommand args) "build" "AC3: cli_subcommand first positional"
         assert str eq (cli subcommand ["-v", "--release", "test"]) "test" "AC3: cli_subcommand skips leading flags"
         assert str eq (cli subcommand ["--help", "-v"]) "" "AC3: cli_subcommand empty when only flags"
         assert str eq (cli subcommand []) "" "AC3: cli_subcommand empty on []"
 
         pos = cli positionals with opts args ["--output", "-j"]
-        assert eq pos ["build", "-dashfile.rg", "--another-literal", "main.rg"]
+        assert eq pos ["build", "-dashfile.ridgun", "--another-literal", "main.ridgun"]
 
         -- Single "-" (stdin/stdout convention) is treated as a positional argument, not a flag!
         stdin_args = ["cat", "-n", "-"]
@@ -187,13 +187,13 @@ fn :: despachar comando (argv : [String]) => (String, String, Int, Bool, [String
 
 ---
 
-## 16.4. Under huven: hur `cli` är byggd i ren Ridgun (`src/main/ridgun/lib/cli.rg`)
+## 16.4. Under huven: hur `cli` är byggd i ren Ridgun (`src/main/ridgun/lib/cli.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/cli.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/cli.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 16.4.1. Intern implementation: Internal String & List Helpers
 
-Se hur `cli.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `cli.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: cli
@@ -253,7 +253,7 @@ fn :: cl trim lower loop String Int Int => String
 
 ### 16.4.2. Intern implementation: Positional Arguments & Subcommand Extraction
 
-Se hur `cli.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `cli.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: cl is flag tok String => Bool
@@ -287,7 +287,7 @@ fn :: cli subcommand [String] => String
 
 ### 16.4.3. Intern implementation: Typed Environment Variable Readers
 
-Se hur `cli.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `cli.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: cl env val or String String => String
@@ -319,9 +319,9 @@ fn :: env get bool or String Bool => Bool
 ## 16.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `cli`
 
 - **Algoritmisk garanti och säkerhet**: Strikt efterlevnad av POSIX-barriären `--`: inget argument till höger om `--` tolkas någonsin som en flagga.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/cli.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/cli.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test cli.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test cli.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `cli`
 

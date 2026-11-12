@@ -10,7 +10,7 @@ Låt oss vara ärliga: flaggor som `O_CREAT` och `O_NONBLOCK` eller syscall-numm
 
 Lib:en **`posix`** implementerar Ridguns tvåskikts **Platform Abstraction Layer (PAL)** med tabulära vakter över `sys os` (`Linux | MacOS | Windows`) och `sys arch` (`X86_64 | Arm64 | RiscV64`), samt deskriptor-polling (`wait fd`), monotona klockor (`RGF-017`), signaler (`RGF-018`) och CSPRNG (`sys random bytes`).
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`POSIX`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`posix`** (`src/main/ridgun/lib/posix.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`POSIX`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`posix`** (`src/main/ridgun/lib/posix.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import posix` (eller `import posix as alias`) överst i filen**: varje lib definierar sin `module :: posix`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`POSIX`** ofta 
 
 ## 22.2. Inbyggda artefakter, import och komplett API-katalog för `posix`
 
-I `ridgun-libs` är **`posix`** en förstklassig **lib** placerad i `src/main/ridgun/lib/posix.rg` (domän `POSIX`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`posix`** en förstklassig **lib** placerad i `src/main/ridgun/lib/posix.ridgun` (domän `POSIX`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/posix.rglib` | Portabel distribution och direkt import med `import posix` |
+| **Ridgun-bundle** | `target/bundles/posix.ridgunlib` | Portabel distribution och direkt import med `import posix` |
 | **Kompilerat arkiv** | `target/posix.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libposix.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -41,9 +41,9 @@ I `ridgun-libs` är **`posix`** en förstklassig **lib** placerad i `src/main/ri
 | `signal watch / signal poll / sys random bytes` | Icke-blockerande signal-polling (`SIGINT`, `SIGTERM`) och CSPRNG-bytes från kärnan |
 | `read text / write text / file exists / run cmd` | Högnivå-fil-I/O, katalogoperationer och barnprocess-wrappers |
 
-### 22.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/posix.rg`
+### 22.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/posix.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/posix.rg` (`2` typer, `0` operatorer och `103` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/posix.ridgun` (`2` typer, `0` operatorer och `103` funktioner):
 
 **Algebraiska datatyper och poster (`type`) i `posix`:**
 
@@ -151,7 +151,7 @@ type ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int
 
 ## 22.3. Djupdykning i `posix`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `posix` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test posix.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `posix` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test posix.ridgun`.
 
 ### 22.3.1. Exempel 1: Huvudflöde i tabellform med `posix`
 
@@ -317,13 +317,13 @@ fn :: medir latencia tuberia => (Int, Int)
 
 ---
 
-## 22.4. Under huven: hur `posix` är byggd i ren Ridgun (`src/main/ridgun/lib/posix.rg`)
+## 22.4. Under huven: hur `posix` är byggd i ren Ridgun (`src/main/ridgun/lib/posix.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/posix.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/posix.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 22.4.1. Intern implementation: Poll & Process Status ADTs
 
-Se hur `posix.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `posix.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: posix
@@ -335,7 +335,7 @@ type ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int
 
 ### 22.4.2. Intern implementation: Path Safety Validation (VUL-INJ-002 / VUL-INPUT-001)
 
-Se hur `posix.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `posix.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: is bad posix code Int => Bool
@@ -360,7 +360,7 @@ fn :: is safe posix path String => Bool
 
 ### 22.4.3. Intern implementation: RG-010 Filesystem & Process Operations
 
-Se hur `posix.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `posix.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: posix mkdir String => Bool
@@ -428,7 +428,7 @@ fn :: sys readlink String => String
 
 ### 22.4.4. Intern implementation: Ridgun v0.9.5 Target OS / Arch & Process Probe Helpers
 
-Se hur `posix.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `posix.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: path separator SysOs   => String
@@ -453,9 +453,9 @@ fn :: process exists Int => Bool
 ## 22.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `posix`
 
 - **Algoritmisk garanti och säkerhet**: Grenar av `sys os` och `sys arch` som inte matchar målplattformen elimineras statiskt vid kompilering (Dead-Code Elimination) av `ridgunc`.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/posix.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/posix.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test posix.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test posix.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `posix`
 

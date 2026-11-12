@@ -18,7 +18,7 @@ The `glob` library SHALL provide pure-Ridgun wildcard and pattern matching funct
 CLI tools (`unix-tools`), build systems (`stable`), and routing/filtering layers require fast, deterministic wildcard pattern matching without external C regex libraries.
 
 ## Acceptance criteria
-- AC1: Given patterns with `*` and `?`, when `glob match pattern text` and `glob match ci pattern text` are called, then `glob match "*.rg" "socket.rg"` returns `True`, `glob match "test_?.rg" "test_a.rg"` returns `True`, and `glob match ci "*.RG" "socket.rg"` returns `True`.
+- AC1: Given patterns with `*` and `?`, when `glob match pattern text` and `glob match ci pattern text` are called, then `glob match "*.ridgun" "socket.ridgun"` returns `True`, `glob match "test_?.ridgun" "test_a.ridgun"` returns `True`, and `glob match ci "*.RIDGUN" "socket.ridgun"` returns `True`.
 - AC2: Given patterns with bracket character classes (`[a-z]`, `[0-9_]`, `[!0-9]`, `[^a-z]`), when `glob match` is called, then positive and negated character ranges match single characters accurately and unclosed `[` brackets are matched literally without crashing.
 - AC3: Given a list of candidate strings `[String]` and one or more patterns, when `glob filter pattern candidates` and `glob any match patterns text` are called, then `glob filter` returns the matching subset in order and `glob any match` returns `True` if any pattern in the list matches `text`.
 

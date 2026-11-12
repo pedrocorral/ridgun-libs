@@ -10,7 +10,7 @@ Let's be honest: `.env` and `.ini` files look trivial until someone writes `expo
 
 The **`ini`** lib parses sectioned `.ini` files (`[database]`) and `export`-prefixed `.env` files, preserving `#` and `;` inside quoted values and resolving variable interpolations in `dotenv parse`.
 
-In a traditional ecosystem, solving **`INI`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`ini`** lib (`src/main/ridgun/lib/ini.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`INI`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`ini`** lib (`src/main/ridgun/lib/ini.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import ini` (or `import ini as alias`) at the top of your file**: every lib defines its `module :: ini` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`INI`** tasks means pulling in external C 
 
 ## 10.2. Native Artifacts, Imports, and Complete `ini` API Catalog
 
-In `ridgun-libs`, **`ini`** is a first-class **lib** located at `src/main/ridgun/lib/ini.rg` (domain `INI`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`ini`** is a first-class **lib** located at `src/main/ridgun/lib/ini.ridgun` (domain `INI`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/ini.rglib` | Portable distribution and direct `import ini` resolution |
+| **Ridgun Bundle** | `target/bundles/ini.ridgunlib` | Portable distribution and direct `import ini` resolution |
 | **Compiled Archive** | `target/ini.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libini.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -40,9 +40,9 @@ In `ridgun-libs`, **`ini`** is a first-class **lib** located at `src/main/ridgun
 | `ini sections / ini section map` | List all section names or extract a section's `[String String]` map |
 | `dotenv parse` | Parse `.env` lines (`export K=V`, quotes, comments, and variable expansion) |
 
-### 10.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/ini.rg`
+### 10.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/ini.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/ini.rg` (`3` types, `0` operators, and `44` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/ini.ridgun` (`3` types, `0` operators, and `44` functions):
 
 **Algebraic Data Types & Records (`type`) in `ini`:**
 
@@ -103,7 +103,7 @@ type IniDoc = sections: [IniSection]
 
 ## 10.3. Deep Dive into `ini`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `ini` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test ini.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `ini` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test ini.ridgun`.
 
 ### 10.3.1. Example 1: Core Tabular Workflow with `ini`
 
@@ -214,13 +214,13 @@ fn :: cargar configuracion servicio (raw_ini : String) (raw_env : String) => (St
 
 ---
 
-## 10.4. Under the Hood: How `ini` Is Built in Pure Ridgun (`src/main/ridgun/lib/ini.rg`)
+## 10.4. Under the Hood: How `ini` Is Built in Pure Ridgun (`src/main/ridgun/lib/ini.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/ini.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/ini.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 10.4.1. Internal Implementation: Whitespace, Comment & Line Helpers
 
-Observe how `ini.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `ini.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: ini
@@ -291,7 +291,7 @@ fn :: ini clean val len String Int => String
 
 ### 10.4.2. Internal Implementation: Key-Value Pair Helpers (`[IniEntry]`)
 
-Observe how `ini.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `ini.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: ini p key IniEntry => String
@@ -315,7 +315,7 @@ fn :: ini kv put [IniEntry] String String => [IniEntry]
 
 ### 10.4.3. Internal Implementation: Sectioned INI Document Helpers
 
-Observe how `ini.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `ini.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: ini sec put [IniSection] String String String => [IniSection]
@@ -394,7 +394,7 @@ fn :: dotenv parse String => [IniEntry]
 
 ### 10.4.4. Internal Implementation: Queries, Updates & Serialization
 
-Observe how `ini.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `ini.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: ini get IniDoc String String String => String
@@ -462,9 +462,9 @@ fn :: ini stringify IniDoc => String
 ## 10.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `ini`
 
 - **Algorithmic & Safety Guarantee**: Full preservation of `#` and `;` characters inside single or double quotes, and flexible boolean parsing (`true/1/yes/on` vs `false/0/no/off`).
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/ini.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/ini.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test ini.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test ini.ridgun`.
 
 ### The 5 Golden Rules When Programming with `ini`
 

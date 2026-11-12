@@ -1,11 +1,11 @@
 ---
 id: API-HASHMAP-001
-title: Public lib contract for hashmap (hashmap.rglib / libhashmap.so)
+title: Public lib contract for hashmap (hashmap.ridgunlib / libhashmap.so)
 status: approved
 implements: [FR-HASHMAP-001]
 auth: none
 ---
-# API-HASHMAP-001 — Public lib contract for `hashmap` (`hashmap.rg`)
+# API-HASHMAP-001 — Public lib contract for `hashmap` (`hashmap.ridgun`)
 
 ## Request
 - Imported via `import hashmap`.

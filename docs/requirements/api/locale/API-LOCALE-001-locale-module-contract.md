@@ -1,15 +1,15 @@
 ---
 id: API-LOCALE-001
-title: Public API Contract for locale.rg
+title: Public API Contract for locale.ridgun
 status: implemented
 domain: LOCALE
 implements: [FR-LOCALE-001]
 verified_by: [TS-LOCALE-001]
 ---
-# API-LOCALE-001 — Public API Contract for `locale.rg`
+# API-LOCALE-001 — Public API Contract for `locale.ridgun`
 
 ## Module
-`src/main/ridgun/lib/locale.rg` (`module :: locale`)
+`src/main/ridgun/lib/locale.ridgun` (`module :: locale`)
 
 ## Types
 - `type LocaleDatePatterns = LocaleDatePatterns String String String String String`

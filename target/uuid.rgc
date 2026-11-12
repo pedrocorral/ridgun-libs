@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/uuid.rg
+-- src/main/ridgun/lib/uuid.ridgun
 -- Pure-Ridgun RFC 9562 UUIDv4/UUIDv7, FNV-1a/Adler-32/CRC-32 Checksums & Seeded PRNG Library (UUID)
 -- @implements FR-UUID-001
 -- @implements API-UUID-001

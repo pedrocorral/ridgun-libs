@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: epemugarik (`timeout`) gabeko `read()` dei bat edo ume-a
 
 **`io`** lib-ak sistemaren eragiketa bakoitza ADT esplizituekin modelatzen du (`IoError`, `IoResult[A]`), blokeatzailea ez den `ppoll` Ridgunen `with timeout wait_ms do` kuota lexikoekin uztartzen du eta `read fd ... timeout` zein `write fd ... timeout` mixfix eragileak eskaintzen ditu.
 
-Ekosistema tradizional batean, **`IO`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`io`** lib-ak (`src/main/ridgun/lib/io.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`IO`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`io`** lib-ak (`src/main/ridgun/lib/io.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import io` (edo `import io as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: io` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`IO`** domeinuko zereginak ebazteak C-ko kanpo-
 
 ## 23.2. Artefaktu natiboak, inportazioa eta `io` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`io`** lehen mailako **lib** bat da, `src/main/ridgun/lib/io.rg` bidean kokatua (`IO` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`io`** lehen mailako **lib** bat da, `src/main/ridgun/lib/io.ridgun` bidean kokatua (`IO` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/io.rglib` | Banaketa eta inportazio zuzena `import io` bidez |
+| **Ridgun Bundle-a** | `target/bundles/io.ridgunlib` | Banaketa eta inportazio zuzena `import io` bidez |
 | **Fitxategi konpilatua** | `target/io.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libio.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -41,9 +41,9 @@ Ekosistema tradizional batean, **`IO`** domeinuko zereginak ebazteak C-ko kanpo-
 | `io read file / io write file / io read lines` | `IoResult` itzultzen duten fitxategi eta lerro-korronteen funtzio seguruak |
 | `exec with timeout : String -> Int -> IoResult[ProcStatus]` | Kanpoko komando bat exekutatzen du `with timeout` kuota lexiko batez mugatuta |
 
-### 23.2.2. `src/main/ridgun/lib/io.rg`-eko mota eta sinadura guztien katalogoa
+### 23.2.2. `src/main/ridgun/lib/io.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/io.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`2` mota, `2` eragile eta `42` funtzio):
+Jarraian duzu `src/main/ridgun/lib/io.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`2` mota, `2` eragile eta `42` funtzio):
 
 **`io`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -103,7 +103,7 @@ op :: write fd Int data String timeout Int => IoResult
 
 ## 23.3. `io` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `io` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test io.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `io` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test io.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 23.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `io` erabiliz
 
@@ -269,13 +269,13 @@ fn :: test io file and metadata => ()
 
 ---
 
-## 23.4. Kaputaren azpian: nola dagoen eraikia `io` Ridgun hutsean (`src/main/ridgun/lib/io.rg`)
+## 23.4. Kaputaren azpian: nola dagoen eraikia `io` Ridgun hutsean (`src/main/ridgun/lib/io.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/io.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/io.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 23.4.1. Barne-inplementazioa: Extensible I/O Error & Result Sum Types (§5.1)
 
-Ikusi nola `io.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `io.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: io
@@ -308,7 +308,7 @@ fn :: format io result IoResult           => String
 
 ### 23.4.2. Barne-inplementazioa: Timeout-Bounded Command Execution (§5.2)
 
-Ikusi nola `io.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `io.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: has null char String Int Int => Bool
@@ -352,7 +352,7 @@ fn :: exec with timeout String Int        => IoResult
 
 ### 23.4.3. Barne-inplementazioa: Safe File Read & Line-Stream Helpers
 
-Ikusi nola `io.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `io.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: io read file safe String => IoResult
@@ -409,7 +409,7 @@ fn :: io write lines String [String] => Int
 
 ### 23.4.4. Barne-inplementazioa: Ridgun v0.9.5 PAL & Ambient Deadline `io read with timeout` (§3.1)
 
-Ikusi nola `io.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `io.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: io wrap chunk String => IoResult
@@ -455,9 +455,9 @@ fn :: io read with timeout String Int => IoResult
 ## 23.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `io`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: `wait_ms` kuotarekin `io` bidez exekutatutako inongo irakurketa, idazketa edo komandok ezin du deitzen duen haria edo aktorea mugagabe blokeatu.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/io.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/io.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test io.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test io.ridgun` suite automatizatuaren bidez.
 
 ### `io`-ekin programatzeko Urrezko 5 Arauak
 

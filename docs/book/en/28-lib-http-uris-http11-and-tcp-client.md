@@ -10,7 +10,7 @@ Let's be honest: failing to strip `\r\n` from HTTP header values invites CRLF he
 
 The **`http`** lib implements **RFC 3986 URI** parsing, **RFC 9112 HTTP/1.1** request/response wire formatting and parsing with automatic CRLF sanitization (`VUL-INJ-002`) and `Content-Length` injection, `Bearer` token extraction, and a **live kernel-TCP HTTP/1.1 client** (`http get`, `http post`, `http request tcp`).
 
-In a traditional ecosystem, solving **`HTTP`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`http`** lib (`src/main/ridgun/lib/http.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`HTTP`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`http`** lib (`src/main/ridgun/lib/http.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import http` (or `import http as alias`) at the top of your file**: every lib defines its `module :: http` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`HTTP`** tasks means pulling in external C
 
 ## 28.2. Native Artifacts, Imports, and Complete `http` API Catalog
 
-In `ridgun-libs`, **`http`** is a first-class **lib** located at `src/main/ridgun/lib/http.rg` (domain `HTTP`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`http`** is a first-class **lib** located at `src/main/ridgun/lib/http.ridgun` (domain `HTTP`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/http.rglib` | Portable distribution and direct `import http` resolution |
+| **Ridgun Bundle** | `target/bundles/http.ridgunlib` | Portable distribution and direct `import http` resolution |
 | **Compiled Archive** | `target/http.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libhttp.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -41,9 +41,9 @@ In `ridgun-libs`, **`http`** is a first-class **lib** located at `src/main/ridgu
 | `http header get / http bearer token` | Case-insensitive header lookup and `Authorization: Bearer <token>` extraction |
 | `http get / http post / http request tcp` | Execute live HTTP/1.1 calls over kernel TCP sockets with `timeout_ms` |
 
-### 28.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/http.rg`
+### 28.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/http.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/http.rg` (`0` types, `0` operators, and `76` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/http.ridgun` (`0` types, `0` operators, and `76` functions):
 
 | # | Function / Signature (`fn ::`) | Return Type |
 |---|---|---|
@@ -128,7 +128,7 @@ Below is the complete inventory of algebraic data types (`type`), mixfix operato
 
 ## 28.3. Deep Dive into `http`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `http` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test http.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `http` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test http.ridgun`.
 
 ### 28.3.1. Example 1: Core Tabular Workflow with `http`
 
@@ -272,13 +272,13 @@ fn :: test http11 live tcp client and server => ()
 
 ---
 
-## 28.4. Under the Hood: How `http` Is Built in Pure Ridgun (`src/main/ridgun/lib/http.rg`)
+## 28.4. Under the Hood: How `http` Is Built in Pure Ridgun (`src/main/ridgun/lib/http.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/http.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/http.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 28.4.1. Internal Implementation: Internal String & Case Helpers
 
-Observe how `http.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `http.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: http
@@ -355,7 +355,7 @@ fn :: ht parse int or String Int => Int
 
 ### 28.4.2. Internal Implementation: RFC 3986 URI Parsing
 
-Observe how `http.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `http.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: ht default port String => Int
@@ -442,7 +442,7 @@ fn :: uri query String => String
 
 ### 28.4.3. Internal Implementation: HTTP/1.1 Request & Response Formatting & Parsing
 
-Observe how `http.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `http.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: ht fmt headers [String String] => String
@@ -570,7 +570,7 @@ fn :: http parse response String => Int String String
 
 ### 28.4.4. Internal Implementation: Live Kernel TCP HTTP/1.1 Client (`http request tcp`, `http get`, `http post`)
 
-Observe how `http.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `http.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: ht ensure hdr [String String] String String => [String String]
@@ -665,9 +665,9 @@ fn :: http resp body (Int Int String) => String
 ## 28.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `http`
 
 - **Algorithmic & Safety Guarantee**: Automatic stripping of `\r` and `\n` across all header keys and values (`http sanitize header`) to prevent HTTP response-splitting attacks.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/http.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/http.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test http.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test http.ridgun`.
 
 ### The 5 Golden Rules When Programming with `http`
 

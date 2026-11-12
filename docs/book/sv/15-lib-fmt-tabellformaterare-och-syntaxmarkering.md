@@ -10,7 +10,7 @@ Låt oss vara ärliga: skönheten i Ridgun-kod ligger i dess perfekt justerade t
 
 Lib:en **`fmt`** är Ridguns officiella 2D-tabellformaterare och syntaxmarkerare: den justerar `fn ::`-signaturer, ekvationer, `|`-vakter och `--`-kommentarer samt exporterar till **9 målformat** (`FmtPlain`, `FmtTty`, `FmtTrueColor`, `FmtHtmlInline`, `FmtHtmlCss`, `FmtMarkdown`, `FmtPango`, `FmtLatex`, `FmtRtf`).
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`FMT`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`fmt`** (`src/main/ridgun/lib/fmt.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`FMT`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`fmt`** (`src/main/ridgun/lib/fmt.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import fmt` (eller `import fmt as alias`) överst i filen**: varje lib definierar sin `module :: fmt`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`FMT`** ofta at
 
 ## 15.2. Inbyggda artefakter, import och komplett API-katalog för `fmt`
 
-I `ridgun-libs` är **`fmt`** en förstklassig **lib** placerad i `src/main/ridgun/lib/fmt.rg` (domän `FMT`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`fmt`** en förstklassig **lib** placerad i `src/main/ridgun/lib/fmt.ridgun` (domän `FMT`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/fmt.rglib` | Portabel distribution och direkt import med `import fmt` |
+| **Ridgun-bundle** | `target/bundles/fmt.ridgunlib` | Portabel distribution och direkt import med `import fmt` |
 | **Kompilerat arkiv** | `target/fmt.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libfmt.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -40,9 +40,9 @@ I `ridgun-libs` är **`fmt`** en förstklassig **lib** placerad i `src/main/ridg
 | `fmt render / fmt render with` | Formaterar och syntaxmarkerar källkod till valfritt av de 9 `FmtTarget`-målen |
 | `fmt tokenize line` | Tokeniserar en rad till `TokKeyword`, `TokType`, `TokOperator`, `TokString`, `TokNumber`, `TokComment` |
 
-### 15.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/fmt.rg`
+### 15.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/fmt.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/fmt.rg` (`7` typer, `0` operatorer och `166` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/fmt.ridgun` (`7` typer, `0` operatorer och `166` funktioner):
 
 **Algebraiska datatyper och poster (`type`) i `fmt`:**
 
@@ -229,7 +229,7 @@ type FmtWhereBind = NoWhereBind | WhereBindInfo String String
 
 ## 15.3. Djupdykning i `fmt`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `fmt` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test fmt.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `fmt` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test fmt.ridgun`.
 
 ### 15.3.1. Exempel 1: Huvudflöde i tabellform med `fmt`
 
@@ -343,7 +343,7 @@ fn :: test fmt enriched document targets => ()
         assert true (str contains css_html "<span class=\"rg-logic\">AND</span>") "AC3: HTML CSS logic operator class"
         sheet_dark = fmt html stylesheet FmtThemeDark
         sheet_light = fmt html stylesheet FmtThemeLight
-        assert true (str contains sheet_dark ".rg-kw") "AC3: Dark CSS stylesheet"
+        assert true (str contains sheet_dark ".ridgun-kw") "AC3: Dark CSS stylesheet"
         assert true (str contains sheet_light "#fafafa") "AC3: Light CSS stylesheet"
 
         -- 3. Markdown
@@ -371,13 +371,13 @@ fn :: test fmt enriched document targets => ()
 
 ---
 
-## 15.4. Under huven: hur `fmt` är byggd i ren Ridgun (`src/main/ridgun/lib/fmt.rg`)
+## 15.4. Under huven: hur `fmt` är byggd i ren Ridgun (`src/main/ridgun/lib/fmt.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/fmt.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/fmt.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 15.4.1. Intern implementation: Configuration Constructors
 
-Se hur `fmt.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `fmt.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: fmt
@@ -392,7 +392,7 @@ fn :: fmt config Int Int Int Bool FmtTarget FmtTheme => FmtConfig
 
 ### 15.4.2. Intern implementation: Signature Parsing (`fn ::` / `op ::`)
 
-Se hur `fmt.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `fmt.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: fmt split sig arrow [FmtToken] [String] => (Bool, [String], String, Int)
@@ -448,7 +448,7 @@ fn :: fmt finish bare sig parse String String (Bool, [String], String, Int) => F
 
 ### 15.4.3. Intern implementation: Lexical Token Classification & Syntax Highlighting
 
-Se hur `fmt.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `fmt.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: fmt is digit Int => Bool
@@ -488,7 +488,7 @@ fn :: fmt classify word String Bool => String
 
 ### 15.4.4. Intern implementation: Public Entry Points
 
-Se hur `fmt.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `fmt.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: fmt source with config String FmtConfig => String
@@ -559,9 +559,9 @@ fn :: fmt to rtf String => String
 ## 15.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `fmt`
 
 - **Algoritmisk garanti och säkerhet**: Strikt idempotens (`fmt source (fmt source s) == fmt source s`) och 100 % bevarande av semantiska tokens.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/fmt.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/fmt.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test fmt.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test fmt.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `fmt`
 

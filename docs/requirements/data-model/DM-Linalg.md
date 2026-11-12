@@ -14,7 +14,7 @@ related: [FR-LINALG-001, API-LINALG-001, DM-Tensor, ADR-0002, ADR-0008]
 | norm_value | Real | `>= 0.0` | Scalar vector/matrix norm ($L_1$, $L_2$, or $L_\infty$) |
 
 ## Relations
-- Extends `DM-Tensor` and `tensor.rg` for `linalg.rg` (`linalg transpose`, `linalg trace`, `linalg norm l1`/`l2`/`linf`, `linalg outer`, `linalg solve`, `linalg relu`, `linalg sigmoid`, `linalg softmax`).
+- Extends `DM-Tensor` and `tensor.ridgun` for `linalg.ridgun` (`linalg transpose`, `linalg trace`, `linalg norm l1`/`l2`/`linf`, `linalg outer`, `linalg solve`, `linalg relu`, `linalg sigmoid`, `linalg softmax`).
 
 ## Invariants
 - `linalg softmax` subtracts `max(x)` before exponentiation for numerical stability and guarantees $\sum_i \text{softmax}(x)_i \approx 1.0$.

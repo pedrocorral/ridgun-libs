@@ -1,11 +1,11 @@
 ---
 id: API-REGEX-001
-title: Public lib contract for regex (regex.rglib / libregex.so)
+title: Public lib contract for regex (regex.ridgunlib / libregex.so)
 status: approved
 implements: [FR-REGEX-001]
 auth: none
 ---
-# API-REGEX-001 — Public lib contract for `regex` (`regex.rg`)
+# API-REGEX-001 — Public lib contract for `regex` (`regex.ridgun`)
 
 ## Request
 - Imported via `import regex`.

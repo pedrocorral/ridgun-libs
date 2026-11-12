@@ -10,7 +10,7 @@ Låt oss vara ärliga: ett `read()`-anrop eller en barnprocess utan tidsgräns (
 
 Lib:en **`io`** modellerar varje systemoperation med explicita ADT:er (`IoError`, `IoResult[A]`), kombinerar icke-blockerande `ppoll` med Ridguns lexikala `with timeout wait_ms do`-kvoter och erbjuder mixfix-operatorerna `read fd ... timeout` och `write fd ... timeout`.
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`IO`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`io`** (`src/main/ridgun/lib/io.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`IO`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`io`** (`src/main/ridgun/lib/io.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import io` (eller `import io as alias`) överst i filen**: varje lib definierar sin `module :: io`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`IO`** ofta att
 
 ## 23.2. Inbyggda artefakter, import och komplett API-katalog för `io`
 
-I `ridgun-libs` är **`io`** en förstklassig **lib** placerad i `src/main/ridgun/lib/io.rg` (domän `IO`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`io`** en förstklassig **lib** placerad i `src/main/ridgun/lib/io.ridgun` (domän `IO`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/io.rglib` | Portabel distribution och direkt import med `import io` |
+| **Ridgun-bundle** | `target/bundles/io.ridgunlib` | Portabel distribution och direkt import med `import io` |
 | **Kompilerat arkiv** | `target/io.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libio.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -41,9 +41,9 @@ I `ridgun-libs` är **`io`** en förstklassig **lib** placerad i `src/main/ridgu
 | `io read file / io write file / io read lines` | Säkra fil- och radströmsfunktioner som returnerar `IoResult` |
 | `exec with timeout : String -> Int -> IoResult[ProcStatus]` | Kör ett externt kommando begränsat av en lexikal `with timeout`-kvot |
 
-### 23.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/io.rg`
+### 23.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/io.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/io.rg` (`2` typer, `2` operatorer och `42` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/io.ridgun` (`2` typer, `2` operatorer och `42` funktioner):
 
 **Algebraiska datatyper och poster (`type`) i `io`:**
 
@@ -103,7 +103,7 @@ op :: write fd Int data String timeout Int => IoResult
 
 ## 23.3. Djupdykning i `io`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `io` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test io.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `io` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test io.ridgun`.
 
 ### 23.3.1. Exempel 1: Huvudflöde i tabellform med `io`
 
@@ -269,13 +269,13 @@ fn :: test io file and metadata => ()
 
 ---
 
-## 23.4. Under huven: hur `io` är byggd i ren Ridgun (`src/main/ridgun/lib/io.rg`)
+## 23.4. Under huven: hur `io` är byggd i ren Ridgun (`src/main/ridgun/lib/io.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/io.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/io.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 23.4.1. Intern implementation: Extensible I/O Error & Result Sum Types (§5.1)
 
-Se hur `io.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `io.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: io
@@ -308,7 +308,7 @@ fn :: format io result IoResult           => String
 
 ### 23.4.2. Intern implementation: Timeout-Bounded Command Execution (§5.2)
 
-Se hur `io.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `io.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: has null char String Int Int => Bool
@@ -352,7 +352,7 @@ fn :: exec with timeout String Int        => IoResult
 
 ### 23.4.3. Intern implementation: Safe File Read & Line-Stream Helpers
 
-Se hur `io.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `io.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: io read file safe String => IoResult
@@ -409,7 +409,7 @@ fn :: io write lines String [String] => Int
 
 ### 23.4.4. Intern implementation: Ridgun v0.9.5 PAL & Ambient Deadline `io read with timeout` (§3.1)
 
-Se hur `io.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `io.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: io wrap chunk String => IoResult
@@ -455,9 +455,9 @@ fn :: io read with timeout String Int => IoResult
 ## 23.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `io`
 
 - **Algoritmisk garanti och säkerhet**: Ingen läsning, skrivning eller barnprocess som körs via `io` med en `wait_ms`-kvot kan någonsin blockera den anropande tråden eller aktören på obestämd tid.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/io.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/io.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test io.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test io.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `io`
 

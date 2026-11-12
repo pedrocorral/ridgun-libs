@@ -10,7 +10,7 @@ Let's be honest: the WebSocket protocol (RFC 6455) combines a SHA-1 + Base64 upg
 
 The **`ws`** lib implements full **RFC 6455** in pure Ridgun: `Sec-WebSocket-Accept` derivation (including a self-contained RFC 3174 SHA-1 solely for the handshake GUID), `101 Switching Protocols` HTTP upgrade builders, 7/16/64-bit `WsFrame` wire encoding/decoding, symmetric 4-byte XOR masking, and text/ping/pong/close frame constructors.
 
-In a traditional ecosystem, solving **`WS`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`ws`** lib (`src/main/ridgun/lib/ws.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`WS`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`ws`** lib (`src/main/ridgun/lib/ws.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import ws` (or `import ws as alias`) at the top of your file**: every lib defines its `module :: ws` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`WS`** tasks means pulling in external C d
 
 ## 29.2. Native Artifacts, Imports, and Complete `ws` API Catalog
 
-In `ridgun-libs`, **`ws`** is a first-class **lib** located at `src/main/ridgun/lib/ws.rg` (domain `WS`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`ws`** is a first-class **lib** located at `src/main/ridgun/lib/ws.ridgun` (domain `WS`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/ws.rglib` | Portable distribution and direct `import ws` resolution |
+| **Ridgun Bundle** | `target/bundles/ws.ridgunlib` | Portable distribution and direct `import ws` resolution |
 | **Compiled Archive** | `target/ws.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libws.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -40,9 +40,9 @@ In `ridgun-libs`, **`ws`** is a first-class **lib** located at `src/main/ridgun/
 | `ws encode frame / ws decode frame` | Encode and decode `WsFrame` (`fin`, `opcode`, `masked`, `mask_key`, `payload`) |
 | `ws text frame / ws ping frame / ws pong frame / ws close frame` | High-level frame constructors and close-code extractors (`1000` normal closure) |
 
-### 29.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/ws.rg`
+### 29.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/ws.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/ws.rg` (`3` types, `0` operators, and `54` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/ws.ridgun` (`3` types, `0` operators, and `54` functions):
 
 **Algebraic Data Types & Records (`type`) in `ws`:**
 
@@ -113,7 +113,7 @@ type Sha1State = h0: Int, h1: Int, h2: Int, h3: Int, h4: Int
 
 ## 29.3. Deep Dive into `ws`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `ws` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test ws.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `ws` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test ws.ridgun`.
 
 ### 29.3.1. Example 1: Core Tabular Workflow with `ws`
 
@@ -246,13 +246,13 @@ fn :: test ws truncated frames => ()
 
 ---
 
-## 29.4. Under the Hood: How `ws` Is Built in Pure Ridgun (`src/main/ridgun/lib/ws.rg`)
+## 29.4. Under the Hood: How `ws` Is Built in Pure Ridgun (`src/main/ridgun/lib/ws.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/ws.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/ws.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 29.4.1. Internal Implementation: 32-Bit Unsigned Bitwise Helpers for RFC 3174 SHA-1
 
-Observe how `ws.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `ws.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: ws
@@ -307,7 +307,7 @@ fn :: ws byte bxor Int Int => Int
 
 ### 29.4.2. Internal Implementation: List & String Byte Conversion Helpers
 
-Observe how `ws.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `ws.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: ws list len [Int] => Int
@@ -346,7 +346,7 @@ fn :: ws bytes to str [Int] => String
 
 ### 29.4.3. Internal Implementation: Pure-Ridgun SHA-1 & Base64 for RFC 6455 Handshake
 
-Observe how `ws.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `ws.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: ws zeroes Int => [Int]
@@ -470,7 +470,7 @@ fn :: ws build upgrade response String => String
 
 ### 29.4.4. Internal Implementation: RFC 6455 XOR Masking & Frame Encoding / Decoding
 
-Observe how `ws.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `ws.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: ws mask loop [Int] [Int] Int => [Int]
@@ -563,9 +563,9 @@ fn :: ws finish frame Bool Int Bool [Int] Int => WsRes
 ## 29.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `ws`
 
 - **Algorithmic & Safety Guarantee**: Exact match with the official RFC 6455 handshake vector (`"dGhlIHNhbXBsZSBub25jZQ=="` $\rightarrow$ `"s3pPLMBiTxaQ9kYGzzhZRbK+xOo="`) and automatic XOR unmasking in `ws decode frame`.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/ws.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/ws.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test ws.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test ws.ridgun`.
 
 ### The 5 Golden Rules When Programming with `ws`
 

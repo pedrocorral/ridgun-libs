@@ -2,7 +2,7 @@
 
 ## 34.1. Por que existe a lib `locale`? (O problema real e a filosofía Ridgun)
 
-A lib **`locale`** (`src/main/ridgun/lib/locale.rg`, dominio `LOCALE`) achega internacionalización determinista en Ridgun puro baseada en **Unicode CLDR 46** e no calendario civil UTC en $O(1)$ de Howard Hinnant:
+A lib **`locale`** (`src/main/ridgun/lib/locale.ridgun`, dominio `LOCALE`) achega internacionalización determinista en Ridgun puro baseada en **Unicode CLDR 46** e no calendario civil UTC en $O(1)$ de Howard Hinnant:
 
 1. **Regras de plurais CLDR en dobre modo (`.po` de 2 formas por defecto + CLDR 46 estrito con `"many"`)**: `plural category`, `plural categories` e `plural index` ofrecen compatibilidade directa con catálogos `.po` (`["one", "other"]`), mentres `plural category cldr` e `plural categories cldr` activan a categoría `"many"` para millóns exactos en `es`, `ca`, `pt`, `it` e `fr`.
 2. **Formatación de datas e marcas temporais UTC (`format date`, `format datetime`, `month name`, `weekday name`)**: converte segundos Unix epoch en $O(1)$ aos estilos `short`, `medium`, `long` e `full`.
@@ -270,4 +270,4 @@ fn :: test locale autonyms normalization and registry => ()
 ## 34.5. Garantías algorítmicas e memoria `RMM1`/`RMM2`
 
 - **Garantía algorítmica e de seguridade**: Funcións 100 % puras sen estado global mutable, calendario UTC en $O(1)$ e fallback determinista a `"en"`.
-- **Verificación continua**: Probada exhaustivamente con `src/test/ridgun/test locale.rg`.
+- **Verificación continua**: Probada exhaustivamente con `src/test/ridgun/test locale.ridgun`.

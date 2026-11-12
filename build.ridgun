@@ -1,0 +1,34 @@
+-- build.ridgun — Ridgun Library Project Definition
+
+fn :: project name => String
+      project name =  "libs"
+
+fn :: project kind => String
+      project kind =  "lib"
+
+fn :: project version => String
+      project version =  "0.3.1"
+
+fn :: main entry => String
+      main entry =  "src/main/ridgun/lib/socket.ridgun"
+
+fn :: source dir => String
+      source dir =  "src/main/ridgun"
+
+fn :: test dir => String
+      test dir =  "src/test/ridgun"
+
+fn :: target dir => String
+      target dir =  "target"
+
+fn :: dependencies => [String]
+      dependencies =  []
+
+fn :: strict mode => Bool
+      strict mode =  True
+
+fn :: task check strict => String
+      task check strict =  "for m in socket argon2id crypto posix io str test math hashmap list codec cli path time log glob uuid http agent pool net_agent tensor fmt json csv ini regex btree jwt ws linalg diff template ai locale tls mail; do ridgunc check --strict src/main/ridgun/lib/$m.ridgun; done"
+
+fn :: task bundle => String
+      task bundle =  "mkdir -p target target/bundles build && rm -f target/socket.ridgunlib target/argon2id.ridgunlib target/crypto.ridgunlib target/posix.ridgunlib target/io.ridgunlib target/str.ridgunlib target/test.ridgunlib target/math.ridgunlib target/hashmap.ridgunlib target/list.ridgunlib target/codec.ridgunlib target/cli.ridgunlib target/path.ridgunlib target/time.ridgunlib target/log.ridgunlib target/glob.ridgunlib target/uuid.ridgunlib target/http.ridgunlib target/agent.ridgunlib target/pool.ridgunlib target/net_agent.ridgunlib target/tensor.ridgunlib target/fmt.ridgunlib target/json.ridgunlib target/csv.ridgunlib target/ini.ridgunlib target/regex.ridgunlib target/btree.ridgunlib target/jwt.ridgunlib target/ws.ridgunlib target/linalg.ridgunlib target/diff.ridgunlib target/template.ridgunlib target/ai.ridgunlib target/locale.ridgunlib target/tls.ridgunlib target/mail.ridgunlib && for m in socket argon2id crypto posix io str test math hashmap list codec cli path time log glob uuid http agent pool net_agent tensor fmt json csv ini regex btree jwt ws linalg diff template ai locale tls mail; do ridgunc check --strict src/main/ridgun/lib/$m.ridgun && cp src/main/ridgun/lib/$m.ridgun target/bundles/$m.ridgunlib && cp target/bundles/$m.ridgunlib target/$m.rgc && cp target/bundles/$m.ridgunlib build/$m.ridgunlib && ridgunc build --strict --so src/main/ridgun/lib/$m.ridgun -o target/lib$m.so; done"

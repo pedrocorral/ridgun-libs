@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/csv.rg
+-- src/main/ridgun/lib/csv.ridgun
 -- Pure-Ridgun RFC 4180 CSV & TSV Parser, Serializer & Header Lookup Library (CSV)
 -- @implements FR-CSV-001
 -- @implements API-CSV-001

@@ -1,12 +1,12 @@
 ---
 id: API-UUID-001
-title: Public lib contract for uuid (uuid.rglib / libuuid.so)
+title: Public lib contract for uuid (uuid.ridgunlib / libuuid.so)
 status: approved
 implements: [FR-UUID-001]
 related: [ADR-0010]
 auth: none
 ---
-# API-UUID-001 — Public lib contract for `uuid` (`uuid.rg`)
+# API-UUID-001 — Public lib contract for `uuid` (`uuid.ridgun`)
 
 ## Request
 - Imported via `import uuid`.

@@ -11,10 +11,10 @@ data_models: [DM-Ai]
 tests: [TS-AI-001]
 security: [VUL-INPUT-001, VUL-INJ-001, VUL-SECRET-001]
 ---
-# FR-AI-001 — AI Agent, Tool Calling, Streaming, Structured Output, ReAct, Guardrails, Mini-RAG & MCP Library (`ai.rg`)
+# FR-AI-001 — AI Agent, Tool Calling, Streaming, Structured Output, ReAct, Guardrails, Mini-RAG & MCP Library (`ai.ridgun`)
 
 ## Statement
-The `ai` library (`src/main/ridgun/lib/ai.rg`, `module :: ai`, imported via `import ai`) **shall** provide a 100% pure-Ridgun toolkit for building deterministic, secure AI agents:
+The `ai` library (`src/main/ridgun/lib/ai.ridgun`, `module :: ai`, imported via `import ai`) **shall** provide a 100% pure-Ridgun toolkit for building deterministic, secure AI agents:
 1. **Conversation, `<think>` Separation & Context Window Management**:
    - Typed messages (`AiMsg`) with roles (`system`, `user`, `assistant`, `tool`), `tool_call_id`, `is_tool_error`, and conversation state (`AiConv`) tracking step count and cumulative token usage (`AiUsage`).
    - Separation of reasoning blocks (`<think>...</think>`) from clean output via `ai split thinking String => String String` and stripping historical `<think>` blocks via `ai strip thinking String => String`.

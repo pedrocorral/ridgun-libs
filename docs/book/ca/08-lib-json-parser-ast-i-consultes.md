@@ -10,7 +10,7 @@ Siguem sincers: navegar un JSON imbricat en molts llenguatges estàtics implica 
 
 La lib **`json`** proporciona un analitzador descendent recursiu complet per a **RFC 8259** sobre l'ADT algebraic `JsonVal` (`JnNull`, `JnBool`, `JnInt`, `JnStr`, `JnArr`, `JnObj`, `JnErr`), serialització compacta i sagnada (`json pretty`) i consultes directes per ruta amb punts (`"server.http.port"`, `"users.0.name"`).
 
-En un ecosistema tradicional, resoldre les tasques del domini **`JSON`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`json`** (`src/main/ridgun/lib/json.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`JSON`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`json`** (`src/main/ridgun/lib/json.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import json` (o `import json as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: json` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`JSON`** implica
 
 ## 08.2. Artefactes natius, importació i catàleg complet de l'API de `json`
 
-A `ridgun-libs`, **`json`** és una **lib** de primera classe situada a `src/main/ridgun/lib/json.rg` (domini `JSON`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`json`** és una **lib** de primera classe situada a `src/main/ridgun/lib/json.ridgun` (domini `JSON`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/json.rglib` | Distribució i importació directa amb `import json` |
+| **Bundle Ridgun** | `target/bundles/json.ridgunlib` | Distribució i importació directa amb `import json` |
 | **Fitxer compilat** | `target/json.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libjson.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -40,9 +40,9 @@ A `ridgun-libs`, **`json`** és una **lib** de primera classe situada a `src/mai
 | `json stringify / json pretty` | Serialitza `JsonVal` a JSON compacte o multilínia sagnat |
 | `json get path / json get str / json get int / json get bool` | Recorre objectes i llistes imbricats mitjançant rutes amb punts (`"a.b.0.c"`) |
 
-### 08.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/json.rg`
+### 08.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/json.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/json.rg` (`7` tipus, `0` operadors i `118` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/json.ridgun` (`7` tipus, `0` operadors i `118` funcions):
 
 **Tipus algebraics i registres (`type`) de `json`:**
 
@@ -119,7 +119,7 @@ type JsonStrStep = JStrOk String Int | JStrErr String
 
 ## 08.3. Explorant `json` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `json` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test json.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `json` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test json.ridgun`.
 
 ### 08.3.1. Exemple 1: Flux principal en estil tabular amb `json`
 
@@ -256,13 +256,13 @@ fn :: test json malformed inputs => ()
 
 ---
 
-## 08.4. Sota el capó: com està construïda `json` en Ridgun pur (`src/main/ridgun/lib/json.rg`)
+## 08.4. Sota el capó: com està construïda `json` en Ridgun pur (`src/main/ridgun/lib/json.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/json.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/json.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 08.4.1. Implementació interna: Whitespace & Character Helpers
 
-Fixa't en com `json.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `json.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: json
@@ -287,7 +287,7 @@ fn :: j spaces Int => String
 
 ### 08.4.2. Implementació interna: Integer Literal Parsing
 
-Fixa't en com `json.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `json.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: j scan digits String Int Int => Int
@@ -314,7 +314,7 @@ fn :: j finish pos num String Int Int     => JsonStep
 
 ### 08.4.3. Implementació interna: Serialization & Pretty-Printing
 
-Fixa't en com `json.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `json.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: j join arr loop [JsonVal] String String String String => String
@@ -404,7 +404,7 @@ fn :: json pretty JsonVal Int => String
 
 ### 08.4.4. Implementació interna: Dot-Path Queries & Field Updates
 
-Fixa't en com `json.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `json.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: j find field [JsonField] String => JsonVal
@@ -495,9 +495,9 @@ fn :: json set field JsonVal String JsonVal => JsonVal
 ## 08.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `json`
 
 - **Garantia algorísmica i de seguretat**: Rebuig estricte de brossa sobrant després del valor arrel (`trailing garbage`), maneig complet d'escapaments i retorn segur de `JnErr` sense excepcions.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/json.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/json.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test json.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test json.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `json`
 

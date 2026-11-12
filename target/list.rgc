@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/list.rg
+-- src/main/ridgun/lib/list.ridgun
 -- Pure-Ridgun List Operations, Sorting, Grouping & Key-Value Map Library (LIST)
 -- @implements FR-LIST-001
 -- @implements FR-LIST-002

@@ -5,12 +5,12 @@ status: automated
 level: functional
 domain: MAIL
 covers: [FR-MAIL-001, API-MAIL-001, DM-Mail]
-automated_in: [src/test/ridgun/test mail.rg]
+automated_in: [src/test/ridgun/test mail.ridgun]
 ---
 # TS-MAIL-001 — Verify RFC 5322 Message Rendering, CRLF Injection Rejection, RFC 2047 Encoding, and SMTP over TLS Conversation
 
 ## Scope
-Verifies `src/main/ridgun/lib/mail.rg` across RFC 5322 composition (`mail message`, `mail with html`, `mail with reply to`, `mail add to`, `mail render`), CRLF header-injection rejection, RFC 2047 UTF-8 `=?UTF-8?B?...?=` subject/name encoding, `CRLF` and dot-stuffing, and `smtp send` against a local Ridgun SMTP test server (full conversation, mandatory `STARTTLS` enforcement, refusal to send `AUTH` in cleartext, and typed `4xx`/`5xx`/auth errors).
+Verifies `src/main/ridgun/lib/mail.ridgun` across RFC 5322 composition (`mail message`, `mail with html`, `mail with reply to`, `mail add to`, `mail render`), CRLF header-injection rejection, RFC 2047 UTF-8 `=?UTF-8?B?...?=` subject/name encoding, `CRLF` and dot-stuffing, and `smtp send` against a local Ridgun SMTP test server (full conversation, mandatory `STARTTLS` enforcement, refusal to send `AUTH` in cleartext, and typed `4xx`/`5xx`/auth errors).
 
 ## Test Cases
 1. **`mail render` Composition, RFC 2047, CRLF & Dot-Stuffing, and CRLF Injection Rejection (`AC1`)**:

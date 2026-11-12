@@ -1,4 +1,4 @@
--- src/main/ridgun/lib/argon2id.rg
+-- src/main/ridgun/lib/argon2id.ridgun
 -- Pure-Ridgun RFC 9106 Argon2id Password Hashing, Key Derivation & PHC Verification Library
 -- @implements FR-CRYPTO-001
 -- @implements FR-CRYPTO-002

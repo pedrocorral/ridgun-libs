@@ -4,12 +4,12 @@ title: Verify Mustache-style text template rendering with HTML/LaTeX auto-escapi
 level: unit
 covers: [FR-TMPL-001, API-TMPL-001]
 status: automated
-automated_in: [src/test/ridgun/test template.rg]
+automated_in: [src/test/ridgun/test template.ridgun]
 ---
 # TS-TMPL-001 — Verify Mustache-style text template rendering with HTML/LaTeX auto-escaping and conditional sections
 
 ## Preconditions / fixtures
-- Pure-Ridgun `template` and `test` modules (`src/main/ridgun/lib/template.rg`, `src/main/ridgun/lib/test.rg`).
+- Pure-Ridgun `template` and `test` modules (`src/main/ridgun/lib/template.ridgun`, `src/main/ridgun/lib/test.ridgun`).
 
 ## Steps / inputs
 1. Render templates containing `{{var}}`, `{{{raw}}}`, and `{{! comment }}` via `tmpl render` and `tmpl render html`; verify HTML characters (`<`, `>`, `&`, `"`, `'`) are escaped in `{{var}}` and unescaped in `{{{raw}}}`.

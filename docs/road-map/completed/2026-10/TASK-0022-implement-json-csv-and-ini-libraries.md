@@ -1,6 +1,6 @@
 ---
 id: TASK-0022
-title: Implement json.rg, csv.rg, and ini.rg structured data and configuration libraries
+title: Implement json.ridgun, csv.ridgun, and ini.ridgun structured data and configuration libraries
 status: completed
 priority: must
 owner: agent-001
@@ -9,13 +9,13 @@ tests: [TS-JSON-001, TS-CSV-001, TS-INI-001]
 mitigates: [VUL-INPUT-001]
 depends_on: []
 scope:
-  - src/main/ridgun/lib/json.rg
-  - src/main/ridgun/lib/csv.rg
-  - src/main/ridgun/lib/ini.rg
-  - src/test/ridgun/test json.rg
-  - src/test/ridgun/test csv.rg
-  - src/test/ridgun/test ini.rg
-  - build.rg
+  - src/main/ridgun/lib/json.ridgun
+  - src/main/ridgun/lib/csv.ridgun
+  - src/main/ridgun/lib/ini.ridgun
+  - src/test/ridgun/test json.ridgun
+  - src/test/ridgun/test csv.ridgun
+  - src/test/ridgun/test ini.ridgun
+  - build.ridgun
 context_files:
   - docs/requirements/functional/json/FR-JSON-001-recursive-json-ast-and-path-queries.md
   - docs/requirements/functional/csv/FR-CSV-001-rfc4180-csv-and-tsv-library.md
@@ -23,7 +23,7 @@ context_files:
 claimed: 2026-10-23T20:13:10Z
 claimed_by: agent gemini@solarfall
 ---
-# TASK-0022 — Implement `json.rg`, `csv.rg`, and `ini.rg` structured data and configuration libraries
+# TASK-0022 — Implement `json.ridgun`, `csv.ridgun`, and `ini.ridgun` structured data and configuration libraries
 
 ## Goal
-Implement pure-Ridgun `json.rg` (recursive RFC 8259 `JsonVal` AST parser, serializer, pretty-printer, dot-path queries), `csv.rg` (RFC 4180 CSV/TSV parser, serializer, header-mapped lookup), and `ini.rg` (`.ini` and `.env` parser, `${VAR}` interpolation, serializer), along with their test suites and `.rglib`/`.so` bundles.
+Implement pure-Ridgun `json.ridgun` (recursive RFC 8259 `JsonVal` AST parser, serializer, pretty-printer, dot-path queries), `csv.ridgun` (RFC 4180 CSV/TSV parser, serializer, header-mapped lookup), and `ini.ridgun` (`.ini` and `.env` parser, `${VAR}` interpolation, serializer), along with their test suites and `.ridgunlib`/`.so` bundles.

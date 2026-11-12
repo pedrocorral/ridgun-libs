@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: sartzen den eskaera bakoitzeko goi-mugarik gabe hari edo
 
 **`pool`** lib-ak **kontrapresio esplizituko** ataza-banatzaile bat (`PoolAccept`, `PoolRejectFull`), sorten $K$ erreietako partizio orekatua (`pool partition`), **lan-lapurreta (*work-stealing*)** bidezko berrorekatzea (`pool steal rebalance`) eta aktore natiboen gaineko exekuzio paraleloa eskaintzen ditu.
 
-Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`pool`** lib-ak (`src/main/ridgun/lib/pool.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`pool`** lib-ak (`src/main/ridgun/lib/pool.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import pool` (edo `import pool as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: pool` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kan
 
 ## 31.2. Artefaktu natiboak, inportazioa eta `pool` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`pool`** lehen mailako **lib** bat da, `src/main/ridgun/lib/pool.rg` bidean kokatua (`AGENT` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`pool`** lehen mailako **lib** bat da, `src/main/ridgun/lib/pool.ridgun` bidean kokatua (`AGENT` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/pool.rglib` | Banaketa eta inportazio zuzena `import pool` bidez |
+| **Ridgun Bundle-a** | `target/bundles/pool.ridgunlib` | Banaketa eta inportazio zuzena `import pool` bidez |
 | **Fitxategi konpilatua** | `target/pool.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libpool.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kan
 | `pool partition / pool steal rebalance` | Sortak $K$ langileren artean banatu eta gainkargatutako ilara baten erdia lapurtzen du langile libre batentzat |
 | `pool map sum / pool parallel sum2` | Lan-kargak paraleloan banatzen ditu `agent` langile natiboen artean |
 
-### 31.2.2. `src/main/ridgun/lib/pool.rg`-eko mota eta sinadura guztien katalogoa
+### 31.2.2. `src/main/ridgun/lib/pool.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/pool.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`1` mota, `0` eragile eta `14` funtzio):
+Jarraian duzu `src/main/ridgun/lib/pool.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`1` mota, `0` eragile eta `14` funtzio):
 
 **`pool`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -71,7 +71,7 @@ type AgentPool = Pool Int [Agent]
 
 ## 31.3. `pool` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `pool` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test pool.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `pool` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test pool.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 31.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `pool` erabiliz
 
@@ -283,13 +283,13 @@ fn :: ejemplo pool completo => (Int, Int, [Int])
 
 ---
 
-## 31.4. Kaputaren azpian: nola dagoen eraikia `pool` Ridgun hutsean (`src/main/ridgun/lib/pool.rg`)
+## 31.4. Kaputaren azpian: nola dagoen eraikia `pool` Ridgun hutsean (`src/main/ridgun/lib/pool.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/pool.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/pool.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 31.4.1. Barne-inplementazioa: Core Implementation Part 1
 
-Ikusi nola `pool.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `pool.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: pool
@@ -323,7 +323,7 @@ fn :: pool broadcast AgentPool       A   => ()
 
 ### 31.4.2. Barne-inplementazioa: Core Implementation Part 2
 
-Ikusi nola `pool.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `pool.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: pool broadcast list [Agent]   A   => ()
@@ -367,9 +367,9 @@ fn :: pool shutdown AgentPool       => ()
 ## 31.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `pool`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Ilara-edukiera zorrozki mugatua (`queued <= max_queue`) gainkargapean memoria babesteko eta langileen arteko banaketa determinista.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/pool.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/pool.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test pool.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test pool.ridgun` suite automatizatuaren bidez.
 
 ### `pool`-ekin programatzeko Urrezko 5 Arauak
 

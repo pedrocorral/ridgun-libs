@@ -18,7 +18,7 @@ related: [FR-AI-001, API-AI-001, ADR-0002]
 | is_tool_error | Bool | `True` or `False` | Indicates whether a tool result reports a recoverable execution error |
 
 ## Relations
-- Used by `ai.rg` (`AiMsg`, `AiConv`, `AiParam`, `AiTool`, `AiToolCall`, `AiUsage`, `AiTurn`, `AiStreamAcc`, `AiPolicy`, `AiStepDecision`, `AiDoc`) to represent multi-turn LLM conversations, tool schemas, streaming SSE deltas, ReAct state transitions, BM25/TF document retrieval, multi-agent handoffs, and MCP JSON-RPC frames.
+- Used by `ai.ridgun` (`AiMsg`, `AiConv`, `AiParam`, `AiTool`, `AiToolCall`, `AiUsage`, `AiTurn`, `AiStreamAcc`, `AiPolicy`, `AiStepDecision`, `AiDoc`) to represent multi-turn LLM conversations, tool schemas, streaming SSE deltas, ReAct state transitions, BM25/TF document retrieval, multi-agent handoffs, and MCP JSON-RPC frames.
 
 ## Invariants
 - `ai trim context` and `ai compact conv` always preserve the leading `system` prompt message.

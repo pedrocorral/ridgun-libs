@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/net_agent.rg
+-- src/main/ridgun/lib/net_agent.ridgun
 -- Pure-Ridgun Per-Connection Stateful Agent Reactor Library (AGENT)
 -- @implements FR-AGENT-001
 -- @implements API-AGENT-001

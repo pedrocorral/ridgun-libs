@@ -10,7 +10,7 @@ Siguem sincers: en un servidor real com **Solstice**, acceptar connexions TCP é
 
 La lib **`net_agent`** tanca el cercle de `ridgun-libs` unint **`posix`**, **`socket`** i **`agent`**: gestiona taules de connexions supervisades (`NetSupervisor`), aplica límits de concurrència (`max_conns`), purga connexions inactives (`net evict idle`) i converteix esdeveniments de descriptors del nucli en esdeveniments tipats (`NetEvReadyRead`, `NetEvReadyWrite`, `NetEvTimeout`, `NetEvError`) a més d'oferir un pas d'eco TCP complet d'extrem a extrem (`net tcp echo step`).
 
-En un ecosistema tradicional, resoldre les tasques del domini **`AGENT`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`net_agent`** (`src/main/ridgun/lib/net_agent.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`AGENT`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`net_agent`** (`src/main/ridgun/lib/net_agent.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import net_agent` (o `import net_agent as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: net agent` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`AGENT`** implic
 
 ## 32.2. Artefactes natius, importació i catàleg complet de l'API de `net_agent`
 
-A `ridgun-libs`, **`net_agent`** és una **lib** de primera classe situada a `src/main/ridgun/lib/net_agent.rg` (domini `AGENT`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`net_agent`** és una **lib** de primera classe situada a `src/main/ridgun/lib/net_agent.ridgun` (domini `AGENT`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/net_agent.rglib` | Distribució i importació directa amb `import net_agent` |
+| **Bundle Ridgun** | `target/bundles/net_agent.ridgunlib` | Distribució i importació directa amb `import net_agent` |
 | **Fitxer compilat** | `target/net_agent.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libnet_agent.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -41,9 +41,9 @@ A `ridgun-libs`, **`net_agent`** és una **lib** de primera classe situada a `sr
 | `net poll fd : Int -> Bool -> Int -> NetEvent` | Pont `wait fd` no bloquejant que emet `NetEvReadyRead`, `NetEvReadyWrite`, `NetEvTimeout` o `NetEvError` |
 | `net tcp echo step : String -> Int -> (Int, String)` | Pas complet d'extrem a extrem TCP loopback (`listen/connect/accept/supervise/echo`) |
 
-### 32.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/net_agent.rg`
+### 32.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/net_agent.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/net_agent.rg` (`2` tipus, `0` operadors i `8` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/net_agent.ridgun` (`2` tipus, `0` operadors i `8` funcions):
 
 **Tipus algebraics i registres (`type`) de `net_agent`:**
 
@@ -67,7 +67,7 @@ type StepOutcome = ConnKeep ConnSlot String | ConnClosed
 
 ## 32.3. Explorant `net_agent` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `net_agent` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test net_agent.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `net_agent` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test net_agent.ridgun`.
 
 ### 32.3.1. Exemple 1: Flux principal en estil tabular amb `net_agent`
 
@@ -273,13 +273,13 @@ fn :: ejemplo reactor conexiones (fd1 : Int) (fd2 : Int) => [ConnSlot]
 
 ---
 
-## 32.4. Sota el capó: com està construïda `net_agent` en Ridgun pur (`src/main/ridgun/lib/net_agent.rg`)
+## 32.4. Sota el capó: com està construïda `net_agent` en Ridgun pur (`src/main/ridgun/lib/net_agent.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/net_agent.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/net_agent.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 32.4.1. Implementació interna: Core Implementation Part 1
 
-Fixa't en com `net_agent.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `net_agent.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: net agent
@@ -321,7 +321,7 @@ fn :: conn feed payload Int Agent String => StepOutcome
 
 ### 32.4.2. Implementació interna: Core Implementation Part 2
 
-Fixa't en com `net_agent.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `net_agent.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: conn cast str A => String
@@ -358,9 +358,9 @@ fn :: reactor shutdown [ConnSlot] => ()
 ## 32.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `net_agent`
 
 - **Garantia algorísmica i de seguretat**: Protecció automàtica enfront d'esgotament de descriptors (`max_conns`), expulsió determinista de connexions inactives i tancament garantit de sockets a `net tcp echo step`.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/net_agent.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/net_agent.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test net_agent.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test net_agent.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `net_agent`
 

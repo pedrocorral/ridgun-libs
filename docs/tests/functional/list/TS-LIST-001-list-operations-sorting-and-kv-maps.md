@@ -4,12 +4,12 @@ title: Verify list indexing, slicing, range generation, deduplication, mergesort
 level: unit
 covers: [FR-LIST-001, API-LIST-001]
 status: automated
-automated_in: [src/test/ridgun/test list.rg]
+automated_in: [src/test/ridgun/test list.ridgun]
 ---
 # TS-LIST-001 — Verify list indexing, slicing, range generation, deduplication, mergesort, and associative key-value map operations
 
 ## Preconditions / fixtures
-- Pure-Ridgun `list` and `agent` modules (`src/main/ridgun/lib/list.rg`, `src/main/ridgun/lib/agent.rg`).
+- Pure-Ridgun `list` and `agent` modules (`src/main/ridgun/lib/list.ridgun`, `src/main/ridgun/lib/agent.ridgun`).
 
 ## Steps / inputs
 1. Call `list len`, `list nth`, `list nth or`, `list take`, `list drop`, `list slice`, `list reverse`, `list range`, `list range step` (positive, negative, and `0` step), `list replicate`, `list contains`, `list index of`, `list count`, and `list dedup` (plus `[String]` variants).

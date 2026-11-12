@@ -10,7 +10,7 @@ Låt oss vara ärliga: indexfel utanför gränserna (`IndexError` / `panic!`) oc
 
 Lib:en **`list`** tillhandahåller säker indexering med standardvärde, skivning (`take`, `drop`, `slice`), intervall, stabil deduplicering, **$O(N \log N)$ mergesort** för `[Int]` och `[String]` samt oföränderliga `[String String]`-nyckel-värde-mappar (`kv get`, `kv put`, `kv merge`).
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`LIST`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`list`** (`src/main/ridgun/lib/list.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`LIST`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`list`** (`src/main/ridgun/lib/list.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import list` (eller `import list as alias`) överst i filen**: varje lib definierar sin `module :: list`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`LIST`** ofta a
 
 ## 03.2. Inbyggda artefakter, import och komplett API-katalog för `list`
 
-I `ridgun-libs` är **`list`** en förstklassig **lib** placerad i `src/main/ridgun/lib/list.rg` (domän `LIST`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`list`** en förstklassig **lib** placerad i `src/main/ridgun/lib/list.ridgun` (domän `LIST`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/list.rglib` | Portabel distribution och direkt import med `import list` |
+| **Ridgun-bundle** | `target/bundles/list.ridgunlib` | Portabel distribution och direkt import med `import list` |
 | **Kompilerat arkiv** | `target/list.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/liblist.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -41,9 +41,9 @@ I `ridgun-libs` är **`list`** en förstklassig **lib** placerad i `src/main/rid
 | `list sort / list str sort / list dedup / list str dedup` | Stabil $O(N \log N)$ mergesort och deduplicering vid första förekomst |
 | `kv empty / kv put / kv get / kv get or / kv remove / kv merge` | Operationer på ordnade associativa `[String String]`-nyckel-värde-mappar |
 
-### 03.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/list.rg`
+### 03.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/list.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/list.rg` (`0` typer, `0` operatorer och `59` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/list.ridgun` (`0` typer, `0` operatorer och `59` funktioner):
 
 | # | Funktion / Signatur (`fn ::`) | Returtyp |
 |---|---|---|
@@ -111,7 +111,7 @@ Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-o
 
 ## 03.3. Djupdykning i `list`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `list` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test list.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `list` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test list.ridgun`.
 
 ### 03.3.1. Exempel 1: Huvudflöde i tabellform med `list`
 
@@ -261,13 +261,13 @@ fn :: test kv associative map => ()
 
 ---
 
-## 03.4. Under huven: hur `list` är byggd i ren Ridgun (`src/main/ridgun/lib/list.rg`)
+## 03.4. Under huven: hur `list` är byggd i ren Ridgun (`src/main/ridgun/lib/list.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/list.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/list.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 03.4.1. Intern implementation: List Length & Emptiness
 
-Se hur `list.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `list.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: list
@@ -291,7 +291,7 @@ fn :: list str is empty [String] => Bool
 
 ### 03.4.2. Intern implementation: Slicing (`take`, `drop`, `slice`) & Reversal
 
-Se hur `list.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `list.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: list take [Int]    Int => [Int]
@@ -360,7 +360,7 @@ fn :: list str reverse [String] => [String]
 
 ### 03.4.3. Intern implementation: Search, Count & Deduplication
 
-Se hur `list.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `list.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: l idx int [Int] Int Int => Int
@@ -420,7 +420,7 @@ fn :: list str dedup [String] => [String]
 
 ### 03.4.4. Intern implementation: Associative Key-Value Map (`[(String, String)]`)
 
-Se hur `list.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `list.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: l kv key (String String) => String
@@ -477,9 +477,9 @@ fn :: kv values [String String] => [String]
 ## 03.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `list`
 
 - **Algoritmisk garanti och säkerhet**: Deterministisk $O(N \log N)$-sortering i värsta fall (immun mot Quicksorts patologiska $O(N^2)$) och bevarad insättningsordning i `kv`-mappar.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/list.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/list.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test list.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test list.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `list`
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Acceptance tests for ridgun-libs, written outside the libraries' own test suites (see README.md).
 
-Usage: python3 tests/run.py [test_name ...]      (default: the import check and every tests/test_*.rg)
+Usage: python3 tests/run.py [test_name ...]      (default: the import check and every tests/test_*.ridgun)
        python3 tests/run.py --no-imports ...     (skip the import check)
 
-Builds against the published bundles (target/bundles/*.rglib), the way a project that depends on ridgun-libs sees
+Builds against the published bundles (target/bundles/*.ridgunlib), the way a project that depends on ridgun-libs sees
 them. The work folder is ~/.cache/ridgun-lib-tests/work: only the bundles are copied, never the repository.
 Every build uses `ridgunc build --strict` (the canonical style the libraries' own builds enforce) and every
 build and run is capped at 4 GB of address space and a time limit.
@@ -50,22 +50,22 @@ def prepare():
     os.makedirs(os.path.join(WORK, ".stable/deps"))
     os.makedirs(os.path.join(WORK, "src/main/ridgun/lib"))
     os.makedirs(os.path.join(WORK, "target"))
-    bundles = sorted(f for f in os.listdir(BUNDLES) if f.endswith(".rglib"))
+    bundles = sorted(f for f in os.listdir(BUNDLES) if f.endswith(".ridgunlib"))
     for b in bundles:
         shutil.copy(os.path.join(BUNDLES, b), os.path.join(WORK, ".stable/deps", b))
-    shutil.copy(os.path.join(TESTS, "lt.rg"), os.path.join(WORK, "src/main/ridgun/lib/lt.rg"))
-    return [b[:-len(".rglib")] for b in bundles]
+    shutil.copy(os.path.join(TESTS, "lt.ridgun"), os.path.join(WORK, "src/main/ridgun/lib/lt.ridgun"))
+    return [b[:-len(".ridgunlib")] for b in bundles]
 
 
 def import_check(modules):
     """Every library alone, then all of them in one program: a duplicate definition anywhere fails here."""
     rows = []
     for m in modules:
-        src = os.path.join(WORK, f"imp_{m}.rg")
+        src = os.path.join(WORK, f"imp_{m}.ridgun")
         open(src, "w").write(f"import {m}\n\nfn :: main => ()\n      main =  echo \"ok\"\n")
         ok, text = build(src, f"imp_{m}")
         rows.append((f"import {m} (alone)", ok, "" if ok else first_errors(text)))
-    src = os.path.join(WORK, "imp_all.rg")
+    src = os.path.join(WORK, "imp_all.ridgun")
     open(src, "w").write("".join(f"import {m}\n" for m in modules) + "\nfn :: main => ()\n      main =  echo \"ok\"\n")
     ok, text = build(src, "imp_all")
     rows.append((f"import all {len(modules)} libraries together", ok, "" if ok else first_errors(text, 12)))
@@ -100,8 +100,8 @@ def main():
         for r in import_check(modules):
             rows.append(r)
             print(("ok   " if r[1] else "FAIL ") + r[0] + ("" if r[1] else "\n       " + r[2]), flush=True)
-    tests = [os.path.join(TESTS, (a if a.endswith(".rg") else a + ".rg")) for a in args] or sorted(
-        os.path.join(TESTS, f) for f in os.listdir(TESTS) if f.startswith("test_") and f.endswith(".rg"))
+    tests = [os.path.join(TESTS, (a if a.endswith(".ridgun") else a + ".ridgun")) for a in args] or sorted(
+        os.path.join(TESTS, f) for f in os.listdir(TESTS) if f.startswith("test_") and f.endswith(".ridgun"))
     for t in tests:
         r = run_test(t)
         rows.append(r)

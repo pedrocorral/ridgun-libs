@@ -1,11 +1,11 @@
 ---
 id: API-MATH-001
-title: Public lib contract for math (math.rglib / libmath.so)
+title: Public lib contract for math (math.ridgunlib / libmath.so)
 status: approved
 implements: [FR-MATH-001]
 auth: none
 ---
-# API-MATH-001 — Public lib contract for `math` (`math.rg`)
+# API-MATH-001 — Public lib contract for `math` (`math.ridgun`)
 
 ## Request
 - Imported via `import math`.

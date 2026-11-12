@@ -4,12 +4,12 @@ title: Verify path normalization, joining, component extraction, and safe subpat
 level: unit
 covers: [FR-PATH-001, API-PATH-001]
 status: automated
-automated_in: [src/test/ridgun/test path.rg]
+automated_in: [src/test/ridgun/test path.ridgun]
 ---
 # TS-PATH-001 — Verify path normalization, joining, component extraction, and safe subpath confinement
 
 ## Preconditions / fixtures
-- Pure-Ridgun `path` module (`src/main/ridgun/lib/path.rg`).
+- Pure-Ridgun `path` module (`src/main/ridgun/lib/path.ridgun`).
 
 ## Steps / inputs
 1. Call `path clean`, `path join`, and `path join list` on absolute, relative, redundant-slash, `.`, and `..` paths.

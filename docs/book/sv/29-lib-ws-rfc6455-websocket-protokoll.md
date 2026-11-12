@@ -10,7 +10,7 @@ Låt oss vara ärliga: WebSocket-protokollet (RFC 6455) kombinerar en SHA-1 + Ba
 
 Lib:en **`ws`** implementerar hela **RFC 6455** i ren Ridgun: beräkning av `Sec-WebSocket-Accept` (med inbyggd RFC 3174 SHA-1 för handskaknings-GUID), `101 Switching Protocols`-headers, kodning och avkodning av 7/16/64-bitars `WsFrame`-ramar, symmetrisk XOR-maskering samt byggare för text-, ping-, pong- och stängningsramar.
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`WS`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`ws`** (`src/main/ridgun/lib/ws.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`WS`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`ws`** (`src/main/ridgun/lib/ws.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import ws` (eller `import ws as alias`) överst i filen**: varje lib definierar sin `module :: ws`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`WS`** ofta att
 
 ## 29.2. Inbyggda artefakter, import och komplett API-katalog för `ws`
 
-I `ridgun-libs` är **`ws`** en förstklassig **lib** placerad i `src/main/ridgun/lib/ws.rg` (domän `WS`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`ws`** en förstklassig **lib** placerad i `src/main/ridgun/lib/ws.ridgun` (domän `WS`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/ws.rglib` | Portabel distribution och direkt import med `import ws` |
+| **Ridgun-bundle** | `target/bundles/ws.ridgunlib` | Portabel distribution och direkt import med `import ws` |
 | **Kompilerat arkiv** | `target/ws.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libws.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -40,9 +40,9 @@ I `ridgun-libs` är **`ws`** en förstklassig **lib** placerad i `src/main/ridgu
 | `ws encode frame / ws decode frame` | Kodar och avkodar `WsFrame`-ramar (`fin`, `opcode`, `masked`, `mask_key`, `payload`) |
 | `ws text frame / ws ping frame / ws pong frame / ws close frame` | Högnivåbyggare för ramar och extraherare för stängningskoder (`1000` normal stängning) |
 
-### 29.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/ws.rg`
+### 29.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/ws.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/ws.rg` (`3` typer, `0` operatorer och `54` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/ws.ridgun` (`3` typer, `0` operatorer och `54` funktioner):
 
 **Algebraiska datatyper och poster (`type`) i `ws`:**
 
@@ -113,7 +113,7 @@ type Sha1State = h0: Int, h1: Int, h2: Int, h3: Int, h4: Int
 
 ## 29.3. Djupdykning i `ws`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `ws` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test ws.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `ws` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test ws.ridgun`.
 
 ### 29.3.1. Exempel 1: Huvudflöde i tabellform med `ws`
 
@@ -246,13 +246,13 @@ fn :: test ws truncated frames => ()
 
 ---
 
-## 29.4. Under huven: hur `ws` är byggd i ren Ridgun (`src/main/ridgun/lib/ws.rg`)
+## 29.4. Under huven: hur `ws` är byggd i ren Ridgun (`src/main/ridgun/lib/ws.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/ws.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/ws.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 29.4.1. Intern implementation: 32-Bit Unsigned Bitwise Helpers for RFC 3174 SHA-1
 
-Se hur `ws.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `ws.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: ws
@@ -307,7 +307,7 @@ fn :: ws byte bxor Int Int => Int
 
 ### 29.4.2. Intern implementation: List & String Byte Conversion Helpers
 
-Se hur `ws.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `ws.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: ws list len [Int] => Int
@@ -346,7 +346,7 @@ fn :: ws bytes to str [Int] => String
 
 ### 29.4.3. Intern implementation: Pure-Ridgun SHA-1 & Base64 for RFC 6455 Handshake
 
-Se hur `ws.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `ws.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: ws zeroes Int => [Int]
@@ -470,7 +470,7 @@ fn :: ws build upgrade response String => String
 
 ### 29.4.4. Intern implementation: RFC 6455 XOR Masking & Frame Encoding / Decoding
 
-Se hur `ws.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `ws.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: ws mask loop [Int] [Int] Int => [Int]
@@ -563,9 +563,9 @@ fn :: ws finish frame Bool Int Bool [Int] Int => WsRes
 ## 29.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `ws`
 
 - **Algoritmisk garanti och säkerhet**: Exakt matchning med den officiella testvektorn i RFC 6455 (`"dGhlIHNhbXBsZSBub25jZQ=="` $\rightarrow$ `"s3pPLMBiTxaQ9kYGzzhZRbK+xOo="`) och automatisk XOR-avmaskering i `ws decode frame`.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/ws.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/ws.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test ws.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test ws.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `ws`
 

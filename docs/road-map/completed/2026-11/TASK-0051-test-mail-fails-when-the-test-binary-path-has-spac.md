@@ -7,8 +7,8 @@ completed: 2026-11-10
 requirements: []
 tests: [TS-MAIL-001]
 security: []                # VUL-* to address
-context_files: [src/test/ridgun/test mail.rg]
-scope: [src/test/ridgun/test mail.rg]
+context_files: [src/test/ridgun/test mail.ridgun]
+scope: [src/test/ridgun/test mail.ridgun]
 owner: agent-001
 claimed: 2026-11-10T19:06:41Z
 claimed_by: claude claude@solarfall
@@ -17,7 +17,7 @@ policy:                     # a cycle for this task only (hotfix, release, ...);
 # TASK-0051 — test mail fails when the test binary path has spaces
 
 ## Goal (one sentence)
-`test mail.rg` passes under `stable test`, whose test binary is `target/.stable_test_test mail.rg_bin`.
+`test mail.ridgun` passes under `stable test`, whose test binary is `target/.stable_test_test mail.rg_bin`.
 
 ## Plan
 - [x] `start smtp` passes the binary path and the work directory to `sh` as quoted words (`sh quote`).
@@ -26,7 +26,7 @@ policy:                     # a cycle for this task only (hotfix, release, ...);
 - 2026-11-10: the compiler team reported 34/35 under `stable test` (compiler notes of 2026-11-10). Cause: the test relaunches itself through `sh` with its path unquoted, and that path has spaces, so the SMTP server never started. Not a compiler fault.
 
 ## Files changed (keep current)
-- src/test/ridgun/test mail.rg
+- src/test/ridgun/test mail.ridgun
 
 ## Verification performed (command → result, newest last)
 - Old binary copied to a path with spaces → `[FAIL] SMTP test server did not start (starttls)` (reproduced).

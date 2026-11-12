@@ -4,12 +4,12 @@ title: Verify socket byte/string transfer, datagrams, and framed messages
 level: unit
 covers: [FR-SOCK-002]
 status: automated
-automated_in: [src/test/ridgun/test socket.rg]
+automated_in: [src/test/ridgun/test socket.ridgun]
 ---
 # TS-SOCK-002 — Verify socket byte/string transfer, datagrams, and framed messages
 
 ## Preconditions / fixtures
-- Connected TCP/Unix stream socket pairs and bound UDP/Unix datagram sockets from `socket.rg`.
+- Connected TCP/Unix stream socket pairs and bound UDP/Unix datagram sockets from `socket.ridgun`.
 
 ## Steps / inputs
 1. Send UTF-8 strings (`"hello ridgun"`) and raw bytes as a `Tensor[U8]` holding `0, 128, 255, 10, 0` over connected stream sockets and read them back with `sock recv str`, `sock recv bytes` (3 bytes) and `sock recv exact` (2 bytes). Check `encode be32` / `decode be32` round trips `4278255360`, `encode be32 258` is `[0, 0, 1, 2]`, and `decode be32` of 2 bytes is `-1` (`ADR-0010`).

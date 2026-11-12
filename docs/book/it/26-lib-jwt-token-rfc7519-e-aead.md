@@ -10,7 +10,7 @@ Siamo sinceri: l'ecosistema JWT è famoso per vulnerabilità in cui un attaccant
 
 La lib **`jwt`** risolve entrambi gli scenari: firma e verifica **JWT RFC 7519 (`HS256`)** richiedendo esplicitamente `alg == "HS256"`, confrontando l'HMAC in tempo costante e convalidando `exp`/`nbf`, e offre inoltre **`token seal` / `token open`** per emettere token opachi autenticati e cifrati con **ChaCha20-Poly1305 AEAD**.
 
-In un ecosistema tradizionale, risolvere i compiti del dominio **`JWT`** comporta trascinare dipendenze esterne in C, gestire puntatori grezzi, conversioni opache di tipo, eccezioni non verificate o pause imprevedibili del garbage collector. In Ridgun, la lib **`jwt`** (`src/main/ridgun/lib/jwt.rg`) affronta il problema con quattro principi non negoziabili:
+In un ecosistema tradizionale, risolvere i compiti del dominio **`JWT`** comporta trascinare dipendenze esterne in C, gestire puntatori grezzi, conversioni opache di tipo, eccezioni non verificate o pause imprevedibili del garbage collector. In Ridgun, la lib **`jwt`** (`src/main/ridgun/lib/jwt.ridgun`) affronta il problema con quattro principi non negoziabili:
 
 1. **Dichiara `import jwt` (o `import jwt as alias`) all'inizio del file**: ogni lib definisce il proprio spazio dei nomi `module :: jwt` e in modalità `--strict` le funzioni multi-parola si invocano sempre con spazi naturali.
 2. **Concatena le tue pipeline da sinistra a destra con `->`**: scrivi `input passo uno -> passo due -> risultato`, usa le maschere `(+ _ _ +)` per destrutturare le sequenze e ometti `_ =` nelle istruzioni sequenziali (o scarta il valore con `-> ()`).
@@ -21,11 +21,11 @@ In un ecosistema tradizionale, risolvere i compiti del dominio **`JWT`** comport
 
 ## 26.2. Artefatti nativi, importazione e catalogo completo dell'API di `jwt`
 
-In `ridgun-libs`, **`jwt`** è una **lib** di prima classe situata in `src/main/ridgun/lib/jwt.rg` (dominio `JWT`). Compilando con `stable bundle`, viene impacchettata in tre artefatti nativi:
+In `ridgun-libs`, **`jwt`** è una **lib** di prima classe situata in `src/main/ridgun/lib/jwt.ridgun` (dominio `JWT`). Compilando con `stable bundle`, viene impacchettata in tre artefatti nativi:
 
 | Artefatto | Percorso | Scopo |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/jwt.rglib` | Distribuzione e importazione diretta con `import jwt` |
+| **Bundle Ridgun** | `target/bundles/jwt.ridgunlib` | Distribuzione e importazione diretta con `import jwt` |
 | **File compilato** | `target/jwt.rgc` | Artefatto intermedio verificato da `ridgunc` |
 | **Oggetto condiviso ELF64** | `target/libjwt.so` | Libreria dinamica nativa senza dipendenze C né `libc` |
 
@@ -40,9 +40,9 @@ In `ridgun-libs`, **`jwt`** è una **lib** di prima classe situata in `src/main/
 | `jwt claims / jwt get str / jwt get int` | Costruisce claim standard `(sub, iss, iat, exp)` e interroga i payload verificati |
 | `token seal / token open` | Cifra e autentica token JSON opachi tramite ChaCha20-Poly1305 AEAD |
 
-### 26.2.2. Catalogo esaustivo dei tipi e delle firme in `src/main/ridgun/lib/jwt.rg`
+### 26.2.2. Catalogo esaustivo dei tipi e delle firme in `src/main/ridgun/lib/jwt.ridgun`
 
-Di seguito trovi l'inventario completo dei tipi algebrici (`type`), degli operatori (`op ::`) e delle firme di funzione (`fn ::`) definiti in `src/main/ridgun/lib/jwt.rg` (`3` tipi, `0` operatori e `55` funzioni):
+Di seguito trovi l'inventario completo dei tipi algebrici (`type`), degli operatori (`op ::`) e delle firme di funzione (`fn ::`) definiti in `src/main/ridgun/lib/jwt.ridgun` (`3` tipi, `0` operatori e `55` funzioni):
 
 **Tipi algebrici e record (`type`) di `jwt`:**
 
@@ -114,7 +114,7 @@ type JwtClaimsRes = JwtClaimsOk JwtClaims | JwtClaimsErr String
 
 ## 26.3. Esplorare `jwt` a fondo: Esempi passo dopo passo di ogni funzionalità
 
-Non basta consultare la tabella delle firme: esploreremo **ciascuna delle funzionalità** della lib `jwt` tramite esempi progressivi ed eseguibili in Ridgun. Inizieremo con due ricette tabulari di uso quotidiano e poi percorreremo nel dettaglio tutti gli scenari funzionali, le trasformazioni e i casi limite verificati in `src/test/ridgun/test jwt.rg`.
+Non basta consultare la tabella delle firme: esploreremo **ciascuna delle funzionalità** della lib `jwt` tramite esempi progressivi ed eseguibili in Ridgun. Inizieremo con due ricette tabulari di uso quotidiano e poi percorreremo nel dettaglio tutti gli scenari funzionali, le trasformazioni e i casi limite verificati in `src/test/ridgun/test jwt.ridgun`.
 
 ### 26.3.1. Esempio 1: Flusso principale in stile tabulare con `jwt`
 
@@ -254,13 +254,13 @@ fn :: test jwt aead seal and open => ()
 
 ---
 
-## 26.4. Sotto il cofano: come è costruita `jwt` in Ridgun puro (`src/main/ridgun/lib/jwt.rg`)
+## 26.4. Sotto il cofano: come è costruita `jwt` in Ridgun puro (`src/main/ridgun/lib/jwt.ridgun`)
 
-Uno dei maggiori vantaggi di `ridgun-libs` è che **non ci sono scatole nere in C**. Puoi aprire `src/main/ridgun/lib/jwt.rg` e leggere esattamente come è implementata ogni operazione usando *pattern matching*, alberi di guardie `|` / `|.` e ricorsione di coda (TCO). Vediamo i pezzi chiave della sua implementazione reale:
+Uno dei maggiori vantaggi di `ridgun-libs` è che **non ci sono scatole nere in C**. Puoi aprire `src/main/ridgun/lib/jwt.ridgun` e leggere esattamente come è implementata ogni operazione usando *pattern matching*, alberi di guardie `|` / `|.` e ricorsione di coda (TCO). Vediamo i pezzi chiave della sua implementazione reale:
 
 ### 26.4.1. Implementazione interna: Byte, Hex, Base64url & Constant-Time Helpers
 
-Nota come `jwt.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+Nota come `jwt.ridgun` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
 
 ```ridgun
 module :: jwt
@@ -352,7 +352,7 @@ fn :: jwt b64url decode String => String
 
 ### 26.4.2. Implementazione interna: Constant-Time Equality & Bitwise XOR
 
-Nota come `jwt.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+Nota come `jwt.ridgun` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
 
 ```ridgun
 fn :: jwt bxor loop Int Int Int Int => Int
@@ -377,7 +377,7 @@ fn :: jwt ct eq String String => Bool
 
 ### 26.4.3. Implementazione interna: HS256 (HMAC-SHA256) Signing & Verification
 
-Nota come `jwt.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+Nota come `jwt.ridgun` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
 
 ```ridgun
 fn :: jwt hex nib Int => Int
@@ -499,7 +499,7 @@ fn :: jwt verify sig ct Bool String => JwtRes
 
 ### 26.4.4. Implementazione interna: Structured Claims Signing & Temporal Validation
 
-Nota come `jwt.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+Nota come `jwt.ridgun` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
 
 ```ridgun
 fn :: jwt sign claims JwtClaims String => String
@@ -538,9 +538,9 @@ fn :: jwt check claim times JwtClaims Int => JwtClaimsRes
 ## 26.5. Garanzie algoritmiche, memoria `RMM1`/`RMM2` e le 5 Regole d'Oro di `jwt`
 
 - **Garanzia algoritmica e di sicurezza**: Immunità totale all'attacco `"alg":"none"` (qualsiasi intestazione il cui `alg` non sia esattamente `"HS256"` restituisce `JwtBadSignature`) e confronto della firma in tempo costante.
-- **Complessità dello stack $O(1)$ con TCO**: Tutti i cicli ricorsivi in `src/main/ridgun/lib/jwt.rg` sono in posizione di coda, perciò `ridgunc` li compila in salti nativi senza crescita dello stack.
+- **Complessità dello stack $O(1)$ con TCO**: Tutti i cicli ricorsivi in `src/main/ridgun/lib/jwt.ridgun` sono in posizione di coda, perciò `ridgunc` li compila in salti nativi senza crescita dello stack.
 - **Memoria deterministica (`RMM1`/`RMM2`)**: Zero pause del garbage collector; tutte le strutture intermedie vengono liberate in modo deterministico all'uscita dallo scope.
-- **Verifica continua**: Testata in modo esaustivo con `stable check` e la suite automatizzata `src/test/ridgun/test jwt.rg`.
+- **Verifica continua**: Testata in modo esaustivo con `stable check` e la suite automatizzata `src/test/ridgun/test jwt.ridgun`.
 
 ### Le 5 Regole d'Oro quando programmi con `jwt`
 

@@ -10,7 +10,7 @@ Seamos sinceros: una división por cero inesperada en producción o el operador 
 
 La lib **`math`** ofrece divisiones totales a prueba de `d == 0` (`div ceil`, `div floor`, `div euclid`, `mod euclid`), exponenciación e inverso modular en $O(\log E)$, raíces y logaritmos enteros exactos, combinatoria, primalidad y el operador mixfix `clamp x between lo and hi`.
 
-En un ecosistema tradicional, resolver las tareas del dominio **`MATH`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`math`** (`src/main/ridgun/lib/math.rg`) aborda el problema con cuatro principios innegociables:
+En un ecosistema tradicional, resolver las tareas del dominio **`MATH`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`math`** (`src/main/ridgun/lib/math.ridgun`) aborda el problema con cuatro principios innegociables:
 
 1. **Declara `import math` (o `import math as alias`) al inicio del archivo**: cada lib define su espacio de nombres `module :: math` y en modo `--strict` las funciones multi-palabra se invocan siempre con espacios naturales.
 2. **Encadena tus tuberías de izquierda a derecha con `->`**: escribe `entrada paso uno -> paso dos -> resultado`, usa máscaras `(+ _ _ +)` para desestructurar secuencias y omite `_ =` en sentencias secuenciales (o descarta con `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resolver las tareas del dominio **`MATH`** implica
 
 ## 02.2. Artefactos nativos, importación y catálogo completo de la API de `math`
 
-En `ridgun-libs`, **`math`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/math.rg` (dominio `MATH`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
+En `ridgun-libs`, **`math`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/math.ridgun` (dominio `MATH`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/math.rglib` | Distribución e importación directa con `import math` |
+| **Bundle Ridgun** | `target/bundles/math.ridgunlib` | Distribución e importación directa con `import math` |
 | **Archivo compilado** | `target/math.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Objeto compartido ELF64** | `target/libmath.so` | Biblioteca dinámica nativa sin dependencias de C ni `libc` |
 
@@ -42,9 +42,9 @@ En `ridgun-libs`, **`math`** es una **lib** de primera clase ubicada en `src/mai
 | `math gcd / math lcm / math mod pow / math mod inv / math is prime` | MCD/MCM de Euclides, aritmética modular y test de primalidad $6k \pm 1$ |
 | `math sum / math mean floor / math median floor / math variance floor` | Combinatoria (`nCr`) sin desbordamiento y estadística entera sobre listas |
 
-### 02.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/math.rg`
+### 02.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/math.ridgun`
 
-A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/math.rg` (`0` tipos, `1` operadores y `56` funciones):
+A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/math.ridgun` (`0` tipos, `1` operadores y `56` funciones):
 
 **Operadores mixfix (`op ::`) de `math`:**
 
@@ -115,7 +115,7 @@ op :: clamp Int between Int and Int => Int
 
 ## 02.3. Explorando `math` a fondo: Ejemplos paso a paso de cada funcionalidad
 
-No basta con ver la tabla de firmas: vamos a explorar **cada una de las funcionalidades** de la lib `math` mediante ejemplos progresivos y ejecutables en Ridgun. Empezaremos por las dos recetas tabulares de uso cotidiano y después recorreremos en detalle todos los escenarios funcionales, transformaciones y casos límite verificados en `src/test/ridgun/test math.rg`.
+No basta con ver la tabla de firmas: vamos a explorar **cada una de las funcionalidades** de la lib `math` mediante ejemplos progresivos y ejecutables en Ridgun. Empezaremos por las dos recetas tabulares de uso cotidiano y después recorreremos en detalle todos los escenarios funcionales, transformaciones y casos límite verificados en `src/test/ridgun/test math.ridgun`.
 
 ### 02.3.1. Ejemplo 1: Flujo principal en estilo tabular con `math`
 
@@ -250,13 +250,13 @@ fn :: test math list statistics => ()
 
 ---
 
-## 02.4. Bajo el capó: cómo está construida `math` en Ridgun puro (`src/main/ridgun/lib/math.rg`)
+## 02.4. Bajo el capó: cómo está construida `math` en Ridgun puro (`src/main/ridgun/lib/math.ridgun`)
 
-Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**. Puedes abrir `src/main/ridgun/lib/math.rg` y leer exactamente cómo está implementada cada operación usando *pattern matching*, árboles de guardas `|` / `|.` y recursión de cola (TCO). Veamos las piezas clave de su implementación real:
+Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**. Puedes abrir `src/main/ridgun/lib/math.ridgun` y leer exactamente cómo está implementada cada operación usando *pattern matching*, árboles de guardas `|` / `|.` y recursión de cola (TCO). Veamos las piezas clave de su implementación real:
 
 ### 02.4.1. Implementación interna: Bounds, Sign & Parity
 
-Fíjate en cómo `math.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `math.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 module :: math
@@ -300,7 +300,7 @@ fn :: math is odd Int => Bool
 
 ### 02.4.2. Implementación interna: Powers, Integer Roots & Logarithms
 
-Fíjate en cómo `math.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `math.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 fn :: m pow loop Int Int Int => Int
@@ -368,7 +368,7 @@ fn :: math is power of two Int => Bool
 
 ### 02.4.3. Implementación interna: Combinatorics & Sequences
 
-Fíjate en cómo `math.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `math.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 fn :: m fact loop Int Int => Int
@@ -407,7 +407,7 @@ fn :: math fibonacci Int => Int
 
 ### 02.4.4. Implementación interna: Integer List Statistics
 
-Fíjate en cómo `math.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `math.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 fn :: m list len [Int]    => Int
@@ -479,9 +479,9 @@ fn :: math median [Int] => Int
 ## 02.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` y las 5 Reglas de Oro de `math`
 
 - **Garantía algorítmica y de seguridad**: Funciones totales (devuelven `0` cuando el divisor o módulo es `<= 0` en lugar de abortar con `SIGFPE`), sin coma flotante imprecisa.
-- **Complejidad de pila $O(1)$ con TCO**: Todos los bucles recursivos en `src/main/ridgun/lib/math.rg` están en posición de cola, por lo que `ridgunc` los compila a saltos nativos sin crecimiento de pila.
+- **Complejidad de pila $O(1)$ con TCO**: Todos los bucles recursivos en `src/main/ridgun/lib/math.ridgun` están en posición de cola, por lo que `ridgunc` los compila a saltos nativos sin crecimiento de pila.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Cero pausas de recolector de basura; todas las estructuras intermedias se liberan de forma determinista al salir del ámbito.
-- **Verificación continua**: Probada exhaustivamente con `stable check` y la suite automatizada `src/test/ridgun/test math.rg`.
+- **Verificación continua**: Probada exhaustivamente con `stable check` y la suite automatizada `src/test/ridgun/test math.ridgun`.
 
 ### Las 5 Reglas de Oro al programar con `math`
 

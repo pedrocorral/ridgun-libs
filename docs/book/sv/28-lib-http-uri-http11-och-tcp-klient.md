@@ -10,7 +10,7 @@ Låt oss vara ärliga: om man inte rensar bort `\r\n` i HTTP-headers kan en angr
 
 Lib:en **`http`** implementerar **RFC 3986 URI**-tolkning, **RFC 9112 HTTP/1.1**-formatering och tolkning med automatisk CRLF-sanering (`VUL-INJ-002`) och automatisk `Content-Length`, extrahering av `Bearer`-tokens samt en **direkt HTTP/1.1-klient över kärnans TCP-sockets** (`http get`, `http post`, `http request tcp`).
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`HTTP`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`http`** (`src/main/ridgun/lib/http.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`HTTP`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`http`** (`src/main/ridgun/lib/http.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import http` (eller `import http as alias`) överst i filen**: varje lib definierar sin `module :: http`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`HTTP`** ofta a
 
 ## 28.2. Inbyggda artefakter, import och komplett API-katalog för `http`
 
-I `ridgun-libs` är **`http`** en förstklassig **lib** placerad i `src/main/ridgun/lib/http.rg` (domän `HTTP`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`http`** en förstklassig **lib** placerad i `src/main/ridgun/lib/http.ridgun` (domän `HTTP`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/http.rglib` | Portabel distribution och direkt import med `import http` |
+| **Ridgun-bundle** | `target/bundles/http.ridgunlib` | Portabel distribution och direkt import med `import http` |
 | **Kompilerat arkiv** | `target/http.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libhttp.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -41,9 +41,9 @@ I `ridgun-libs` är **`http`** en förstklassig **lib** placerad i `src/main/rid
 | `http header get / http bearer token` | Skiftlägesokänslig header-uppslagning och extrahering av `Authorization: Bearer <token>` |
 | `http get / http post / http request tcp` | Kör direkta HTTP/1.1-anrop över kärnans TCP-sockets med `timeout_ms` |
 
-### 28.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/http.rg`
+### 28.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/http.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/http.rg` (`0` typer, `0` operatorer och `76` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/http.ridgun` (`0` typer, `0` operatorer och `76` funktioner):
 
 | # | Funktion / Signatur (`fn ::`) | Returtyp |
 |---|---|---|
@@ -128,7 +128,7 @@ Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-o
 
 ## 28.3. Djupdykning i `http`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `http` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test http.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `http` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test http.ridgun`.
 
 ### 28.3.1. Exempel 1: Huvudflöde i tabellform med `http`
 
@@ -272,13 +272,13 @@ fn :: test http11 live tcp client and server => ()
 
 ---
 
-## 28.4. Under huven: hur `http` är byggd i ren Ridgun (`src/main/ridgun/lib/http.rg`)
+## 28.4. Under huven: hur `http` är byggd i ren Ridgun (`src/main/ridgun/lib/http.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/http.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/http.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 28.4.1. Intern implementation: Internal String & Case Helpers
 
-Se hur `http.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `http.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: http
@@ -355,7 +355,7 @@ fn :: ht parse int or String Int => Int
 
 ### 28.4.2. Intern implementation: RFC 3986 URI Parsing
 
-Se hur `http.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `http.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: ht default port String => Int
@@ -442,7 +442,7 @@ fn :: uri query String => String
 
 ### 28.4.3. Intern implementation: HTTP/1.1 Request & Response Formatting & Parsing
 
-Se hur `http.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `http.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: ht fmt headers [String String] => String
@@ -570,7 +570,7 @@ fn :: http parse response String => Int String String
 
 ### 28.4.4. Intern implementation: Live Kernel TCP HTTP/1.1 Client (`http request tcp`, `http get`, `http post`)
 
-Se hur `http.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `http.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: ht ensure hdr [String String] String String => [String String]
@@ -665,9 +665,9 @@ fn :: http resp body (Int Int String) => String
 ## 28.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `http`
 
 - **Algoritmisk garanti och säkerhet**: Automatisk borttagning av `\r` och `\n` i alla headers (`http sanitize header`) för att förhindra HTTP response-splitting.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/http.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/http.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test http.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test http.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `http`
 

@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/regex.rg
+-- src/main/ridgun/lib/regex.ridgun
 -- Pure-Ridgun Linear-Time Thompson NFA Regular Expression Engine (REGEX)
 -- @implements FR-REGEX-001
 -- @implements API-REGEX-001

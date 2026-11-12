@@ -30,9 +30,9 @@ Remove Chapter `00` from the `ridgun-libs` book across all 7 languages (`es`, `c
 - [x] Delete `00-*` chapter files from `docs/book/{es,ca,gl,eu,en,pt,sv}/`.
 - [x] Expand all 32 lib chapters (`01`–`32`) across all 7 languages (`es`, `ca`, `gl`, `eu`, `en`, `pt`, `sv`) into rich multi-page chapters (~445 lines average per chapter; 14,256 lines per language) covering:
   1. Motivation & architectural problem solved by the lib
-  2. Native build artifacts + full public signature & ADT catalog from `src/main/ridgun/lib/<lib>.rg`
+  2. Native build artifacts + full public signature & ADT catalog from `src/main/ridgun/lib/<lib>.ridgun`
   3. Step-by-step functional exploration with 5–8 runnable Ridgun examples per chapter covering every functional area and boundary case
-  4. Real under-the-hood pure-Ridgun implementation sections from `src/main/ridgun/lib/<lib>.rg`
+  4. Real under-the-hood pure-Ridgun implementation sections from `src/main/ridgun/lib/<lib>.ridgun`
   5. Algorithmic/security guarantees, `RMM1`/`RMM2` memory behavior, and the 5 Golden Rules
 - [x] Update `docs/book/{es,ca,gl,eu,en,pt,sv}/INDEX.md`, `docs/book/INDEX.md`, `README.md`, and `docs/book/build_book.py` to reflect 32 chapters (`01`–`32`, no `00`), and regenerate the interactive HTML books.
 - [x] Run `aix docs validate` and `aix docs coverage`.

@@ -10,7 +10,7 @@ Let's be honest: sharing mutable state across threads with `Mutex`, `RwLock`, an
 
 The **`agent`** lib builds on Ridgun's **Native Agent Model** (`agent`, `send ... to`, `receive from`, `try receive from`, `stop`) to provide isolated message-passing actors, a concurrent key-value store (`KvStore`), a token-bucket rate limiter (`RateBucket`), and supervision state machines (`AgentHealth`).
 
-In a traditional ecosystem, solving **`AGENT`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`agent`** lib (`src/main/ridgun/lib/agent.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`AGENT`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`agent`** lib (`src/main/ridgun/lib/agent.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import agent` (or `import agent as alias`) at the top of your file**: every lib defines its `module :: agent` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`AGENT`** tasks means pulling in external 
 
 ## 30.2. Native Artifacts, Imports, and Complete `agent` API Catalog
 
-In `ridgun-libs`, **`agent`** is a first-class **lib** located at `src/main/ridgun/lib/agent.rg` (domain `AGENT`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`agent`** is a first-class **lib** located at `src/main/ridgun/lib/agent.ridgun` (domain `AGENT`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/agent.rglib` | Portable distribution and direct `import agent` resolution |
+| **Ridgun Bundle** | `target/bundles/agent.ridgunlib` | Portable distribution and direct `import agent` resolution |
 | **Compiled Archive** | `target/agent.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libagent.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -40,9 +40,9 @@ In `ridgun-libs`, **`agent`** is a first-class **lib** located at `src/main/ridg
 | `rate bucket new / rate bucket allow` | Token-bucket rate limiter returning updated bucket and `(allowed, remaining)` |
 | `sup mark failed / sup should restart` | Supervision policy helpers tracking restart budgets (`max_restarts`) |
 
-### 30.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/agent.rg`
+### 30.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/agent.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/agent.rg` (`7` types, `0` operators, and `65` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/agent.ridgun` (`7` types, `0` operators, and `65` functions):
 
 **Algebraic Data Types & Records (`type`) in `agent`:**
 
@@ -128,7 +128,7 @@ type LogState     = log_sep: String, log_buf: String
 
 ## 30.3. Deep Dive into `agent`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `agent` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test agent.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `agent` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test agent.ridgun`.
 
 ### 30.3.1. Example 1: Core Tabular Workflow with `agent`
 
@@ -318,13 +318,13 @@ fn :: test log and kv agents => ()
 
 ---
 
-## 30.4. Under the Hood: How `agent` Is Built in Pure Ridgun (`src/main/ridgun/lib/agent.rg`)
+## 30.4. Under the Hood: How `agent` Is Built in Pure Ridgun (`src/main/ridgun/lib/agent.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/agent.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/agent.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 30.4.1. Internal Implementation: Status & Reply Formatting
 
-Observe how `agent.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `agent.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: agent
@@ -348,7 +348,7 @@ fn :: format agent reply AgentReply        => String
 
 ### 30.4.2. Internal Implementation: Core Combinators (`agent ask`, `agent try ask`, `agent send batch`, `agent receive count`, `agent map batch`, `agent drain ready`)
 
-Observe how `agent.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `agent.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: agent ask Agent A   => B
@@ -399,7 +399,7 @@ fn :: agent drain step Agent Option [B] => [B]
 
 ### 30.4.3. Internal Implementation: Stateful Counter Agent (`new counter agent`, `counter add`, `counter get`, `counter reset`)
 
-Observe how `agent.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `agent.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: ag counter step CounterState Int   => CounterState Int
@@ -428,7 +428,7 @@ fn :: counter reset (Agent Int Int) => Int
 
 ### 30.4.4. Internal Implementation: Stateful In-Memory Key-Value Agent (`new kv agent`, `kv put`, `kv get`, `kv delete`, `kv has`, `kv count`, `kv keys`, `kv clear`)
 
-Observe how `agent.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `agent.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: ag kv lookup [KvEntry] String => String
@@ -478,9 +478,9 @@ fn :: ag kv has str Bool  => String
 ## 30.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `agent`
 
 - **Algorithmic & Safety Guarantee**: Zero shared mutable memory across actors: every message is transferred by value / Copy-on-Write and `stop` deterministically reclaims the actor's region.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/agent.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/agent.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test agent.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test agent.ridgun`.
 
 ### The 5 Golden Rules When Programming with `agent`
 

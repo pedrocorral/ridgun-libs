@@ -10,7 +10,7 @@ Let's be honest: when a testing framework demands compiler-magic macros, runtime
 
 The **`test`** lib (`RG-011`) provides polymorphic and type-specific assertions that emit clear `[FAIL]` diagnostics showing expected vs. actual values and exit with code `1` the moment an invariant fails.
 
-In a traditional ecosystem, solving **`TST`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`test`** lib (`src/main/ridgun/lib/test.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`TST`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`test`** lib (`src/main/ridgun/lib/test.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import test` (or `import test as alias`) at the top of your file**: every lib defines its `module :: test` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`TST`** tasks means pulling in external C 
 
 ## 21.2. Native Artifacts, Imports, and Complete `test` API Catalog
 
-In `ridgun-libs`, **`test`** is a first-class **lib** located at `src/main/ridgun/lib/test.rg` (domain `TST`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`test`** is a first-class **lib** located at `src/main/ridgun/lib/test.ridgun` (domain `TST`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/test.rglib` | Portable distribution and direct `import test` resolution |
+| **Ridgun Bundle** | `target/bundles/test.ridgunlib` | Portable distribution and direct `import test` resolution |
 | **Compiled Archive** | `target/test.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libtest.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -40,9 +40,9 @@ In `ridgun-libs`, **`test`** is a first-class **lib** located at `src/main/ridgu
 | `assert true / assert false / assert not` | Boolean invariant assertions |
 | `assert ok : Int -> String -> ()` | Verify that an OS/socket status code equals `0` (`OK`) |
 
-### 21.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/test.rg`
+### 21.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/test.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/test.rg` (`0` types, `0` operators, and `12` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/test.ridgun` (`0` types, `0` operators, and `12` functions):
 
 | # | Function / Signature (`fn ::`) | Return Type |
 |---|---|---|
@@ -63,7 +63,7 @@ Below is the complete inventory of algebraic data types (`type`), mixfix operato
 
 ## 21.3. Deep Dive into `test`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `test` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test test.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `test` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test test.ridgun`.
 
 ### 21.3.1. Example 1: Core Tabular Workflow with `test`
 
@@ -136,7 +136,7 @@ fn :: ejecutar suite de ejemplo => ()
         assert true (validar invariantes de dominio 21 "ridgun") "predicado compuesto"
         -- 2. Aserciones anotadas con mensaje diagnóstico (`assert_*`)
         assert int equals (20 + 22) 42 "suma entera exacta"
-        assert str eq "rglib" "rglib" "etiqueta de artefacto"
+        assert str eq "ridgunlib" "ridgunlib" "etiqueta de artefacto"
         -- 3. Aserciones concisas sin etiqueta (`assert ok`, `assert not`, `assert eq`)
         assert ok (10 > 5)
         assert not (10 < 5)
@@ -146,13 +146,13 @@ fn :: ejecutar suite de ejemplo => ()
 
 ---
 
-## 21.4. Under the Hood: How `test` Is Built in Pure Ridgun (`src/main/ridgun/lib/test.rg`)
+## 21.4. Under the Hood: How `test` Is Built in Pure Ridgun (`src/main/ridgun/lib/test.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/test.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/test.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 21.4.1. Internal Implementation: Non-Exiting Predicate Helpers
 
-Observe how `test.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `test.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: test
@@ -169,7 +169,7 @@ fn :: check true Bool => Bool
 
 ### 21.4.2. Internal Implementation: RG-011 Message-Annotated Assertions
 
-Observe how `test.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `test.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: assert true Bool String => ()
@@ -200,7 +200,7 @@ fn :: assert int equals Int Int String => ()
 
 ### 21.4.3. Internal Implementation: Concise Label-Free Assertion Helpers
 
-Observe how `test.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `test.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: assert ok Bool => ()
@@ -217,10 +217,10 @@ fn :: assert eq A      A        => ()
 
 ## 21.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `test`
 
-- **Algorithmic & Safety Guarantee**: All 30 automated test suites in `ridgun-libs` (`src/test/ridgun/test_*.rg`, over 4,000 lines of tests) run on this exact lib via `stable test`.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/test.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **Algorithmic & Safety Guarantee**: All 30 automated test suites in `ridgun-libs` (`src/test/ridgun/test_*.ridgun`, over 4,000 lines of tests) run on this exact lib via `stable test`.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/test.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test test.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test test.ridgun`.
 
 ### The 5 Golden Rules When Programming with `test`
 

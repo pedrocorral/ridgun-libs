@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/hashmap.rg
+-- src/main/ridgun/lib/hashmap.ridgun
 -- Hash map from String keys to values of any type, on tensors (HASHMAP)
 -- Compact layout: a slot table of Int (open addressing, linear probing, at most
 -- half full) points into dense key and value tensors kept in insertion order.

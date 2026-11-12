@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: HMAC bat `==`-rekin konparatzeak denbora-erasoei (*timin
 
 **`crypto`** lib-ak % 100ean Ridgun hutsean eta aurrez esleitutako `Tensor[Int]` gainean inplementatzen ditu: byte/bit eragiketak (`RGF-019`), **FIPS 180-4 SHA-256**, **RFC 2104 HMAC-SHA-256**, denbora konstanteko berdintasuna (`ct equal`), **RFC 8018 PBKDF2-HMAC-SHA-256**, 5 argumentuko **Argon2id** fatxada eta **RFC 8439 ChaCha20-Poly1305 AEAD** zifraketa autentifikatua (`aead seal` / `aead open`).
 
-Ekosistema tradizional batean, **`CRYPTO`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`crypto`** lib-ak (`src/main/ridgun/lib/crypto.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`CRYPTO`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`crypto`** lib-ak (`src/main/ridgun/lib/crypto.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import crypto` (edo `import crypto as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: crypto` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`CRYPTO`** domeinuko zereginak ebazteak C-ko ka
 
 ## 24.2. Artefaktu natiboak, inportazioa eta `crypto` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`crypto`** lehen mailako **lib** bat da, `src/main/ridgun/lib/crypto.rg` bidean kokatua (`CRYPTO` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`crypto`** lehen mailako **lib** bat da, `src/main/ridgun/lib/crypto.ridgun` bidean kokatua (`CRYPTO` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/crypto.rglib` | Banaketa eta inportazio zuzena `import crypto` bidez |
+| **Ridgun Bundle-a** | `target/bundles/crypto.ridgunlib` | Banaketa eta inportazio zuzena `import crypto` bidez |
 | **Fitxategi konpilatua** | `target/crypto.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libcrypto.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -44,9 +44,9 @@ Ekosistema tradizional batean, **`CRYPTO`** domeinuko zereginak ebazteak C-ko ka
 | `ed25519 public key / ed25519 sign / ed25519 verify` | Gako publikoa, denbora konstanteko sinadura determinista eta RFC 8032 §5.1 Ed25519 egiaztapen kanonikoa |
 | `minisign sign / minisign verify / minisign trusted comment` | `minisign` tresna estandarrarekin bateragarriak diren gako publikoak eta `.minisig` sinadurak |
 
-### 24.2.2. `src/main/ridgun/lib/crypto.rg`-eko mota eta sinadura guztien katalogoa
+### 24.2.2. `src/main/ridgun/lib/crypto.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/crypto.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`2` mota, `0` eragile eta `109` funtzio):
+Jarraian duzu `src/main/ridgun/lib/crypto.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`2` mota, `0` eragile eta `109` funtzio):
 
 **`crypto`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -234,7 +234,7 @@ type CA2Ctx  = cr_pass: Int, cs_slice: Int, cl_lane: Int, cp_lanes: Int, cq_cols
 
 ## 24.3. `crypto` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `crypto` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test crypto.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `crypto` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test crypto.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 24.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `crypto` erabiliz
 
@@ -489,13 +489,13 @@ fn :: verificar sha512 ed25519 y minisign => ()
 
 ---
 
-## 24.4. Kaputaren azpian: nola dagoen eraikia `crypto` Ridgun hutsean (`src/main/ridgun/lib/crypto.rg`)
+## 24.4. Kaputaren azpian: nola dagoen eraikia `crypto` Ridgun hutsean (`src/main/ridgun/lib/crypto.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/crypto.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/crypto.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 24.4.1. Barne-inplementazioa: RGF-019 Raw Byte Manipulation (`byte str`, `bytes from list`, `bytes to list`)
 
-Ikusi nola `crypto.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `crypto.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: crypto
@@ -586,7 +586,7 @@ fn :: bytes to list String => [Int]
 
 ### 24.4.2. Barne-inplementazioa: Hex & List Utilities
 
-Ikusi nola `crypto.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `crypto.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: hextable Int => String
@@ -684,7 +684,7 @@ fn :: byte slice String Int Int => String
 
 ### 24.4.3. Barne-inplementazioa: RGF-015 Pure-Ridgun RFC 9106 Argon2id (`argon2id hash`, `argon2id verify`)
 
-Ikusi nola `crypto.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `crypto.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: ca2 take ints [Int]    Int => [Int]
@@ -741,7 +741,7 @@ fn :: ca2 b2b iv w16 => Tensor[U64 * 16]
 
 ### 24.4.4. Barne-inplementazioa: RFC 8439 Poly1305 One-Time Authenticator (5 x 26-bit limbs)
 
-Ikusi nola `crypto.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `crypto.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: poly1305 clamp r [Int] => [Int]
@@ -940,9 +940,9 @@ fn :: aead open String String String String => Int String
 ## 24.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `crypto`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: `aead open`-ek 16 byteko Poly1305 etiketa denbora konstantean egiaztatzen du testu lauko byte bakar bat itzuli aurretik (huts egiten badu, `(-1, "")` itzultzen du).
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/crypto.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/crypto.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test crypto.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test crypto.ridgun` suite automatizatuaren bidez.
 
 ### `crypto`-ekin programatzeko Urrezko 5 Arauak
 

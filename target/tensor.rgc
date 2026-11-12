@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/tensor.rg
+-- src/main/ridgun/lib/tensor.ridgun
 -- Pure-Ridgun Typed Tensor Operations, Subscript Views, Hadamard & Linear Algebra Library (TENSOR)
 -- @implements FR-TENSOR-001
 -- @implements API-TENSOR-001

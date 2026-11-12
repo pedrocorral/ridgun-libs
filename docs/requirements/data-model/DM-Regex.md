@@ -14,7 +14,7 @@ related: [FR-REGEX-001, API-REGEX-001, ADR-0002]
 | match_end | Int | `>= match_start` | Exclusive 0-based end offset of a match |
 
 ## Relations
-- Used by `regex.rg` (`RegexMatch`) to execute $O(N \cdot M)$ regular expression matching, search, replacement, and splitting without catastrophic backtracking.
+- Used by `regex.ridgun` (`RegexMatch`) to execute $O(N \cdot M)$ regular expression matching, search, replacement, and splitting without catastrophic backtracking.
 
 ## Invariants
 - Simulation tracks active state sets step-by-step per input character, bounding worst-case time complexity to $O(|pattern| \cdot |input|)$ and preventing ReDoS (`VUL-INPUT-001`).

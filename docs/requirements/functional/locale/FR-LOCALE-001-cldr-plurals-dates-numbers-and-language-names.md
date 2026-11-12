@@ -9,7 +9,7 @@ verified_by: [TS-LOCALE-001]
 # FR-LOCALE-001 — CLDR Locale Data Library for Plurals, UTC Dates, Numbers, and Language Names
 
 ## Summary
-The `locale` library (`src/main/ridgun/lib/locale.rg`) MUST provide a pure-Ridgun, data-driven Unicode CLDR locale data table and formatting functions for Spanish (`es`), Catalan (`ca`), Basque (`eu`), Galician (`gl`), Portuguese (`pt`), Swedish (`sv`), English (`en`), and Italian (`it`), with automatic fallback to `root`/English (`en`) for unknown locales and extensible data-only `LocaleSpec` registration without new code per language.
+The `locale` library (`src/main/ridgun/lib/locale.ridgun`) MUST provide a pure-Ridgun, data-driven Unicode CLDR locale data table and formatting functions for Spanish (`es`), Catalan (`ca`), Basque (`eu`), Galician (`gl`), Portuguese (`pt`), Swedish (`sv`), English (`en`), and Italian (`it`), with automatic fallback to `root`/English (`en`) for unknown locales and extensible data-only `LocaleSpec` registration without new code per language.
 
 ## Acceptance Criteria
 1. **AC1 — Supported Locales, Tag Normalization, and Language Autonyms**:

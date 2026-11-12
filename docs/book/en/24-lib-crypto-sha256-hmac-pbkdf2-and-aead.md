@@ -10,7 +10,7 @@ Let's be honest: comparing an HMAC tag with `==` opens the door to timing side-c
 
 The **`crypto`** lib implements in 100% pure Ridgun over pre-allocated `Tensor[Int]` state: raw byte/bitwise primitives (`RGF-019`), **FIPS 180-4 SHA-256**, **RFC 2104 HMAC-SHA-256**, constant-time equality (`ct equal`), midstate-accelerated **RFC 8018 PBKDF2-HMAC-SHA-256**, 5-argument **Argon2id**, and **RFC 8439 ChaCha20-Poly1305 AEAD** (`aead seal` / `aead open`).
 
-In a traditional ecosystem, solving **`CRYPTO`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`crypto`** lib (`src/main/ridgun/lib/crypto.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`CRYPTO`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`crypto`** lib (`src/main/ridgun/lib/crypto.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import crypto` (or `import crypto as alias`) at the top of your file**: every lib defines its `module :: crypto` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`CRYPTO`** tasks means pulling in external
 
 ## 24.2. Native Artifacts, Imports, and Complete `crypto` API Catalog
 
-In `ridgun-libs`, **`crypto`** is a first-class **lib** located at `src/main/ridgun/lib/crypto.rg` (domain `CRYPTO`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`crypto`** is a first-class **lib** located at `src/main/ridgun/lib/crypto.ridgun` (domain `CRYPTO`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/crypto.rglib` | Portable distribution and direct `import crypto` resolution |
+| **Ridgun Bundle** | `target/bundles/crypto.ridgunlib` | Portable distribution and direct `import crypto` resolution |
 | **Compiled Archive** | `target/crypto.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libcrypto.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -44,9 +44,9 @@ In `ridgun-libs`, **`crypto`** is a first-class **lib** located at `src/main/rid
 | `ed25519 public key / ed25519 sign / ed25519 verify` | RFC 8032 §5.1 pure Ed25519 public-key derivation, constant-time deterministic signing, and canonical verification |
 | `minisign sign / minisign verify / minisign trusted comment` | Public keys and `.minisig` signatures compatible with the standard `minisign` tool |
 
-### 24.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/crypto.rg`
+### 24.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/crypto.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/crypto.rg` (`2` types, `0` operators, and `109` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/crypto.ridgun` (`2` types, `0` operators, and `109` functions):
 
 **Algebraic Data Types & Records (`type`) in `crypto`:**
 
@@ -234,7 +234,7 @@ type CA2Ctx  = cr_pass: Int, cs_slice: Int, cl_lane: Int, cp_lanes: Int, cq_cols
 
 ## 24.3. Deep Dive into `crypto`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `crypto` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test crypto.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `crypto` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test crypto.ridgun`.
 
 ### 24.3.1. Example 1: Core Tabular Workflow with `crypto`
 
@@ -489,13 +489,13 @@ fn :: verificar sha512 ed25519 y minisign => ()
 
 ---
 
-## 24.4. Under the Hood: How `crypto` Is Built in Pure Ridgun (`src/main/ridgun/lib/crypto.rg`)
+## 24.4. Under the Hood: How `crypto` Is Built in Pure Ridgun (`src/main/ridgun/lib/crypto.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/crypto.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/crypto.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 24.4.1. Internal Implementation: RGF-019 Raw Byte Manipulation (`byte str`, `bytes from list`, `bytes to list`)
 
-Observe how `crypto.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `crypto.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: crypto
@@ -586,7 +586,7 @@ fn :: bytes to list String => [Int]
 
 ### 24.4.2. Internal Implementation: Hex & List Utilities
 
-Observe how `crypto.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `crypto.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: hextable Int => String
@@ -684,7 +684,7 @@ fn :: byte slice String Int Int => String
 
 ### 24.4.3. Internal Implementation: RGF-015 Pure-Ridgun RFC 9106 Argon2id (`argon2id hash`, `argon2id verify`)
 
-Observe how `crypto.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `crypto.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: ca2 take ints [Int]    Int => [Int]
@@ -741,7 +741,7 @@ fn :: ca2 b2b iv w16 => Tensor[U64 * 16]
 
 ### 24.4.4. Internal Implementation: RFC 8439 Poly1305 One-Time Authenticator (5 x 26-bit limbs)
 
-Observe how `crypto.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `crypto.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: poly1305 clamp r [Int] => [Int]
@@ -940,9 +940,9 @@ fn :: aead open String String String String => Int String
 ## 24.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `crypto`
 
 - **Algorithmic & Safety Guarantee**: `aead open` verifies the 16-byte Poly1305 authentication tag in constant time before releasing a single byte of plaintext (returning `(-1, "")` on tamper).
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/crypto.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/crypto.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test crypto.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test crypto.ridgun`.
 
 ### The 5 Golden Rules When Programming with `crypto`
 

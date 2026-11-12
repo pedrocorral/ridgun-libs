@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/template.rg
+-- src/main/ridgun/lib/template.ridgun
 -- Pure-Ridgun Safe Mustache-Style Text Template Engine Library (TMPL)
 -- @implements FR-TMPL-001
 -- @implements API-TMPL-001

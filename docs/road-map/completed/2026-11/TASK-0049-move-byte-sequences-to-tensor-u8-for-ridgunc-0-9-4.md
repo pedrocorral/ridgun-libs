@@ -8,7 +8,7 @@ requirements: [FR-JWT-001, ADR-0011, FR-CRYPTO-001, FR-CRYPTO-002, FR-CRYPTO-003
 tests: [TS-CRYPTO-001, TS-CRYPTO-002, TS-CRYPTO-003, TS-IO-002, TS-JWT-001, TS-POSIX-002, TS-POSIX-003, TS-SOCK-002, TS-UUID-001, TS-WS-001]
 security: []                # VUL-* to address
 context_files: [docs/requirements/decisions/ADR-0010-bytes-are-tensor-u8.md]
-scope: [src/main/ridgun/lib/argon2id.rg, src/main/ridgun/lib/crypto.rg, src/main/ridgun/lib/jwt.rg, src/main/ridgun/lib/posix.rg, src/main/ridgun/lib/socket.rg, src/main/ridgun/lib/uuid.rg, src/main/ridgun/lib/ws.rg, src/test/ridgun/]
+scope: [src/main/ridgun/lib/argon2id.ridgun, src/main/ridgun/lib/crypto.ridgun, src/main/ridgun/lib/jwt.ridgun, src/main/ridgun/lib/posix.ridgun, src/main/ridgun/lib/socket.ridgun, src/main/ridgun/lib/uuid.ridgun, src/main/ridgun/lib/ws.ridgun, src/test/ridgun/]
 owner: agent-001
 claimed: 2026-11-09T18:57:57Z
 claimed_by: claude claude@solarfall
@@ -30,7 +30,7 @@ Every byte sequence that libs held as `[Int]` or in a memfd page is a `Tensor[U8
 ## Progress log (append-only, newest last)
 - 2026-11-09: ADR-0010 written. Three groups migrated: posix/socket/uuid; argon2id/crypto; jwt/ws.
 - 2026-11-09: `posix execve` keeps the memfd page: the built-in `sys execve` always uses `path` as argv[0], and a pointer table needs a known address. Requested from the compiler.
-- 2026-11-09: CONFLICT-0005 → ADR-0011: jwt uses standard HMAC-SHA256 and ChaCha20-Poly1305; RFC 4231, RFC 7515 A.1 and RFC 8439 vectors added to `test jwt.rg`.
+- 2026-11-09: CONFLICT-0005 → ADR-0011: jwt uses standard HMAC-SHA256 and ChaCha20-Poly1305; RFC 4231, RFC 7515 A.1 and RFC 8439 vectors added to `test jwt.ridgun`.
 - 2026-11-09: Compiler report `/tmp/ridgun-compiler/2026-11-09/tensor-u8.md`: `n` wrong with `(Tensor[U8 * n] _)`; `Tensor[U8]` from a constructor pattern read by words; `Tensor[U8]` from a list; `xor` in a function name; execve with the caller's argv[0].
 
 ## Breaking changes (public API)
@@ -43,17 +43,17 @@ Every byte sequence that libs held as `[Int]` or in a memfd page is a `Tensor[U8
 - Behaviour fixes: 64-bit WebSocket lengths now work; bytes ≥ 128 round-trip in ws/jwt.
 
 ## Ecosystem callers that break
-- unix-tools `fs_lib.rg:1785`, `filter_lib.rg:444`: `sys random bytes list`.
-- unix-tools `proc_lib.rg:3833`: `sock send to` with `str to byte list`.
+- unix-tools `fs_lib.ridgun:1785`, `filter_lib.ridgun:444`: `sys random bytes list`.
+- unix-tools `proc_lib.ridgun:3833`: `sock send to` with `str to byte list`.
 
 ## Files changed (keep current)
-- `src/main/ridgun/lib/{argon2id,crypto,jwt,posix,socket,uuid,ws}.rg`
-- `src/test/ridgun/test {argon2id,crypto,io,jwt,posix,socket,uuid,ws}.rg`
+- `src/main/ridgun/lib/{argon2id,crypto,jwt,posix,socket,uuid,ws}.ridgun`
+- `src/test/ridgun/test {argon2id,crypto,io,jwt,posix,socket,uuid,ws}.ridgun`
 - ADR-0010, decisions/INDEX.md; FR/API/DM/TS docs listed in the front matter
 
 ## Verification performed (command → result, newest last)
 - `ridgunc build --strict --so` on all 37 libs → 0 errors.
-- All 35 suites built with `--strict` and run from the repo root → all pass (`test socket.rg`: fixed a `sys_getpid` strict error inside an interpolation).
+- All 35 suites built with `--strict` and run from the repo root → all pass (`test socket.ridgun`: fixed a `sys_getpid` strict error inside an interpolation).
 - `aix docs validate` → 0 errors, 0 warnings; `aix docs coverage` regenerated.
 - Bundles and .so rebuilt for posix, socket, uuid, io, argon2id, crypto, jwt, ws, tls, mail, http.
 - Timings (before → after): 10k JWT HS256 sign+verify 5.0 s → 0.52 s; 64 KB ws frame ~300 → 13 ms; ChaCha20-Poly1305 64 KB 460 → 36 ms; Argon2id m=64 60 → 9 ms; 1M `sys monotonic ns` 15 s → 23 ms; 1k crc32 60 → 1 ms; uuid v7 392 → 106 ms.

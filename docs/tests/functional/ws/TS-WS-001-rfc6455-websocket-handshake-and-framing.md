@@ -4,12 +4,12 @@ title: Verify RFC 6455 WebSocket handshake accept-key computation, frame encodin
 level: unit
 covers: [FR-WS-001, API-WS-001]
 status: automated
-automated_in: ["src/test/ridgun/test ws.rg"]
+automated_in: ["src/test/ridgun/test ws.ridgun"]
 ---
 # TS-WS-001 — Verify RFC 6455 WebSocket handshake accept-key computation, frame encoding/decoding, and XOR masking
 
 ## Preconditions / fixtures
-- Pure-Ridgun `ws` and `test` modules (`src/main/ridgun/lib/ws.rg`, `src/main/ridgun/lib/test.rg`).
+- Pure-Ridgun `ws` and `test` modules (`src/main/ridgun/lib/ws.ridgun`, `src/main/ridgun/lib/test.ridgun`).
 
 ## Steps / inputs
 1. Call `ws accept key "dGhlIHNhbXBsZSBub25jZQ=="` and verify it equals `"s3pPLMBiTxaQ9kYGzzhZRbK+xOo="` (RFC 6455 §1.3); verify `ws build upgrade request` and `ws build upgrade response`.

@@ -10,7 +10,7 @@ Let's be honest: navigating deeply nested JSON in many statically typed language
 
 The **`json`** lib provides a full recursive-descent **RFC 8259** parser into the algebraic `JsonVal` ADT (`JnNull`, `JnBool`, `JnInt`, `JnStr`, `JnArr`, `JnObj`, `JnErr`), compact and indented serializers (`json pretty`), and dot-path queries (`"server.http.port"`, `"users.0.name"`).
 
-In a traditional ecosystem, solving **`JSON`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`json`** lib (`src/main/ridgun/lib/json.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`JSON`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`json`** lib (`src/main/ridgun/lib/json.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import json` (or `import json as alias`) at the top of your file**: every lib defines its `module :: json` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`JSON`** tasks means pulling in external C
 
 ## 08.2. Native Artifacts, Imports, and Complete `json` API Catalog
 
-In `ridgun-libs`, **`json`** is a first-class **lib** located at `src/main/ridgun/lib/json.rg` (domain `JSON`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`json`** is a first-class **lib** located at `src/main/ridgun/lib/json.ridgun` (domain `JSON`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/json.rglib` | Portable distribution and direct `import json` resolution |
+| **Ridgun Bundle** | `target/bundles/json.ridgunlib` | Portable distribution and direct `import json` resolution |
 | **Compiled Archive** | `target/json.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libjson.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -40,9 +40,9 @@ In `ridgun-libs`, **`json`** is a first-class **lib** located at `src/main/ridgu
 | `json stringify / json pretty` | Serialize `JsonVal` into compact or multi-line indented JSON |
 | `json get path / json get str / json get int / json get bool` | Traverse nested objects and arrays via dot-separated paths (`"a.b.0.c"`) |
 
-### 08.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/json.rg`
+### 08.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/json.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/json.rg` (`7` types, `0` operators, and `118` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/json.ridgun` (`7` types, `0` operators, and `118` functions):
 
 **Algebraic Data Types & Records (`type`) in `json`:**
 
@@ -119,7 +119,7 @@ type JsonStrStep = JStrOk String Int | JStrErr String
 
 ## 08.3. Deep Dive into `json`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `json` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test json.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `json` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test json.ridgun`.
 
 ### 08.3.1. Example 1: Core Tabular Workflow with `json`
 
@@ -256,13 +256,13 @@ fn :: test json malformed inputs => ()
 
 ---
 
-## 08.4. Under the Hood: How `json` Is Built in Pure Ridgun (`src/main/ridgun/lib/json.rg`)
+## 08.4. Under the Hood: How `json` Is Built in Pure Ridgun (`src/main/ridgun/lib/json.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/json.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/json.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 08.4.1. Internal Implementation: Whitespace & Character Helpers
 
-Observe how `json.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `json.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: json
@@ -287,7 +287,7 @@ fn :: j spaces Int => String
 
 ### 08.4.2. Internal Implementation: Integer Literal Parsing
 
-Observe how `json.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `json.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: j scan digits String Int Int => Int
@@ -314,7 +314,7 @@ fn :: j finish pos num String Int Int     => JsonStep
 
 ### 08.4.3. Internal Implementation: Serialization & Pretty-Printing
 
-Observe how `json.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `json.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: j join arr loop [JsonVal] String String String String => String
@@ -404,7 +404,7 @@ fn :: json pretty JsonVal Int => String
 
 ### 08.4.4. Internal Implementation: Dot-Path Queries & Field Updates
 
-Observe how `json.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `json.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: j find field [JsonField] String => JsonVal
@@ -495,9 +495,9 @@ fn :: json set field JsonVal String JsonVal => JsonVal
 ## 08.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `json`
 
 - **Algorithmic & Safety Guarantee**: Strict rejection of trailing garbage after the root value, full escape-sequence handling, and exception-free `JnErr` reporting.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/json.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/json.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test json.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test json.ridgun`.
 
 ### The 5 Golden Rules When Programming with `json`
 

@@ -4,12 +4,12 @@ title: Verify INI sectioned configuration and Dotenv parsing, interpolation, and
 level: unit
 covers: [FR-INI-001, API-INI-001]
 status: automated
-automated_in: ["src/test/ridgun/test ini.rg"]
+automated_in: ["src/test/ridgun/test ini.ridgun"]
 ---
 # TS-INI-001 — Verify INI sectioned configuration and Dotenv parsing, interpolation, and serialization
 
 ## Preconditions / fixtures
-- Pure-Ridgun `ini` and `test` modules (`src/main/ridgun/lib/ini.rg`, `src/main/ridgun/lib/test.rg`).
+- Pure-Ridgun `ini` and `test` modules (`src/main/ridgun/lib/ini.ridgun`, `src/main/ridgun/lib/test.ridgun`).
 
 ## Steps / inputs
 1. Parse an INI string with `[database]` and `[server]` sections, comments, and quoted values; verify `ini get`, `ini get int`, `ini get bool`, and `ini sections`.

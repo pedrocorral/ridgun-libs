@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/btree.rg
+-- src/main/ridgun/lib/btree.ridgun
 -- Pure-Ridgun O(log N) AVL Balanced Tree Map, Set & Leftist MinHeap Library (BTREE)
 -- @implements FR-BTREE-001
 -- @implements API-BTREE-001

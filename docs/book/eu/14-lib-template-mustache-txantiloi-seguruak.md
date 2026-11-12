@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: HTML orriak edo LaTeX txostenak kateak eskuz lotuz munta
 
 **`template`** lib-ak logika arbitrariorik gabeko **Mustache** motor bat eskaintzen du testuinguruko auto-ihesarekin (`TmplPlain`, `TmplHtml`, `TmplLatex`), ordezkapen gordin esplizituarekin (`{{{raw}}}` / `{{&raw}}`), iruzkinekin (`{{! ... }}`) eta atal baldintzatuekin (`{{#sec}}` / `{{^sec}}`).
 
-Ekosistema tradizional batean, **`TMPL`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`template`** lib-ak (`src/main/ridgun/lib/template.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`TMPL`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`template`** lib-ak (`src/main/ridgun/lib/template.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import template` (edo `import template as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: template` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`TMPL`** domeinuko zereginak ebazteak C-ko kanp
 
 ## 14.2. Artefaktu natiboak, inportazioa eta `template` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`template`** lehen mailako **lib** bat da, `src/main/ridgun/lib/template.rg` bidean kokatua (`TMPL` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`template`** lehen mailako **lib** bat da, `src/main/ridgun/lib/template.ridgun` bidean kokatua (`TMPL` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/template.rglib` | Banaketa eta inportazio zuzena `import template` bidez |
+| **Ridgun Bundle-a** | `target/bundles/template.ridgunlib` | Banaketa eta inportazio zuzena `import template` bidez |
 | **Fitxategi konpilatua** | `target/template.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libtemplate.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -39,9 +39,9 @@ Ekosistema tradizional batean, **`TMPL`** domeinuko zereginak ebazteak C-ko kanp
 | `tmpl escape html / tmpl escape latex` | `& < > " '` HTMLrako edo `\ { } & % $ # _ ~ ^` LaTeXerako ihes egiten ditu |
 | `tmpl extract vars / tmpl has unclosed tags` | Beharrezko aldagai-izenak erauzten ditu eta etiketen oreka egiaztatzen du |
 
-### 14.2.2. `src/main/ridgun/lib/template.rg`-eko mota eta sinadura guztien katalogoa
+### 14.2.2. `src/main/ridgun/lib/template.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/template.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`1` mota, `0` eragile eta `35` funtzio):
+Jarraian duzu `src/main/ridgun/lib/template.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`1` mota, `0` eragile eta `35` funtzio):
 
 **`template`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -91,7 +91,7 @@ type TmplEscape = TmplEscapeNone | TmplEscapeHtml | TmplEscapeLatex
 
 ## 14.3. `template` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `template` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test template.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `template` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test template.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 14.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `template` erabiliz
 
@@ -239,13 +239,13 @@ fn :: test tmpl malformed tags => ()
 
 ---
 
-## 14.4. Kaputaren azpian: nola dagoen eraikia `template` Ridgun hutsean (`src/main/ridgun/lib/template.rg`)
+## 14.4. Kaputaren azpian: nola dagoen eraikia `template` Ridgun hutsean (`src/main/ridgun/lib/template.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/template.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/template.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 14.4.1. Barne-inplementazioa: Internal Helpers
 
-Ikusi nola `template.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `template.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: template
@@ -446,7 +446,7 @@ fn :: tm tag var String Int Int [String String] TmplEscape String Int => String
 
 ### 14.4.2. Barne-inplementazioa: Public API
 
-Ikusi nola `template.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `template.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: tmpl render with escape String [String String] TmplEscape => String
@@ -467,9 +467,9 @@ fn :: tmpl render latex String [String String] => String
 ## 14.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `template`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: XSS prebentzioa lehenetsita `tmpl render html`-n (`&`, `<`, `>`, `"`, `'` ihes eginez), `{{{var}}}`-k konfiantzazko zatiak esplizituki txertatzea ahalbidetzen duen bitartean.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/template.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/template.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test template.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test template.ridgun` suite automatizatuaren bidez.
 
 ### `template`-ekin programatzeko Urrezko 5 Arauak
 

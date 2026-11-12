@@ -4,12 +4,12 @@ title: Verify typed tensor dimension inspection, subscript row/column views, bit
 level: unit
 covers: [FR-TENSOR-001, API-TENSOR-001]
 status: automated
-automated_in: [src/test/ridgun/test tensor.rg]
+automated_in: [src/test/ridgun/test tensor.ridgun]
 ---
 # TS-TENSOR-001 — Verify typed tensor dimension inspection, subscript row/column views, bitwise/arithmetic Hadamard combinators, Einstein contraction, and BlaMka tensor block compression
 
 ## Preconditions / fixtures
-- Pure-Ridgun `tensor`, `crypto`, and `test` modules (`src/main/ridgun/lib/tensor.rg`, `src/main/ridgun/lib/crypto.rg`, `src/main/ridgun/lib/test.rg`).
+- Pure-Ridgun `tensor`, `crypto`, and `test` modules (`src/main/ridgun/lib/tensor.ridgun`, `src/main/ridgun/lib/crypto.ridgun`, `src/main/ridgun/lib/test.ridgun`).
 
 ## Steps / inputs
 1. Construct a 2D integer tensor `m = |[10, 20, 30], [40, 50, 60]|`; verify `tensor rows m == 2`, `tensor cols m == 3`, `tensor shape m == (2, 3)`, `tensor row m 1` returns `|40, 50, 60|`, and `tensor col m 2` returns `|30, 60|`.

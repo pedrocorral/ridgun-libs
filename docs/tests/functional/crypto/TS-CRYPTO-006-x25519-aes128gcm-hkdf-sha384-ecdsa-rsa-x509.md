@@ -5,12 +5,12 @@ status: automated
 level: unit
 domain: CRYPTO
 covers: [FR-CRYPTO-006, API-CRYPTO-001]
-automated_in: [src/test/ridgun/test crypto.rg]
+automated_in: [src/test/ridgun/test crypto.ridgun]
 ---
 # TS-CRYPTO-006 — Verify SHA-384, HKDF, X25519, AES-128-GCM, ECDHE P-256, ECDSA P-256/P-384, RSA PKCS#1 v1.5/PSS, and ASN.1 DER / X.509 / PEM parsing
 
 ## Scope
-Verifies the `FR-CRYPTO-006` additions in `src/main/ridgun/lib/crypto.rg`: FIPS 180-4 SHA-384 & HMAC-SHA-384, RFC 5869 HKDF & TLS 1.3 `HKDF-Expand-Label`, RFC 7748 X25519, NIST SP 800-38D AES-128-GCM, FIPS 186-4 ECDHE P-256 and ECDSA P-256/P-384 verification, RFC 8017 RSA PKCS#1 v1.5 and RSA-PSS verification, and ASN.1 DER / PEM / X.509 v3 certificate parsing, RFC 6125 `subjectAltName` hostname matching, and signature verification.
+Verifies the `FR-CRYPTO-006` additions in `src/main/ridgun/lib/crypto.ridgun`: FIPS 180-4 SHA-384 & HMAC-SHA-384, RFC 5869 HKDF & TLS 1.3 `HKDF-Expand-Label`, RFC 7748 X25519, NIST SP 800-38D AES-128-GCM, FIPS 186-4 ECDHE P-256 and ECDSA P-256/P-384 verification, RFC 8017 RSA PKCS#1 v1.5 and RSA-PSS verification, and ASN.1 DER / PEM / X.509 v3 certificate parsing, RFC 6125 `subjectAltName` hostname matching, and signature verification.
 
 ## Test Cases
 1. **SHA-384, HMAC-SHA-384, and HKDF (`AC1`)**:

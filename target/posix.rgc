@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/posix.rg
+-- src/main/ridgun/lib/posix.ridgun
 -- Pure-Ridgun POSIX Descriptors, Poll, Signals, Clocks & Random Library (POSIX)
 -- @implements FR-POSIX-001
 -- @implements FR-POSIX-002

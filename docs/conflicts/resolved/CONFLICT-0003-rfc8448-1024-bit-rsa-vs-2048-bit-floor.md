@@ -3,7 +3,7 @@ id: CONFLICT-0003
 title: RFC 8448 CertificateVerify uses a 1024-bit RSA key, but RSA verification must reject keys under 2048 bits
 status: resolved            # open | resolved
 date: 2026-11-06
-affects: [FR-TLS-001, TS-TLS-001, FR-CRYPTO-006, TS-CRYPTO-006, src/main/ridgun/lib/tls.rg, src/main/ridgun/lib/crypto.rg]
+affects: [FR-TLS-001, TS-TLS-001, FR-CRYPTO-006, TS-CRYPTO-006, src/main/ridgun/lib/tls.ridgun, src/main/ridgun/lib/crypto.ridgun]
 adr: ADR-0005
 ---
 # CONFLICT-0003 — RFC 8448 CertificateVerify uses a 1024-bit RSA key, but RSA verification must reject keys under 2048 bits
@@ -13,11 +13,11 @@ adr: ADR-0005
 - `FR-CRYPTO-006` AC5: `rsa verify pkcs1` and `rsa verify pss` "reject any key smaller than 2048 bits (`str len n_be < 256`)".
 - `TS-CRYPTO-006` case 5 says "RFC 8448 2048-bit RSA-PSS (`rsa_pss_rsae_sha256`)".
 - RFC 8448 §2 gives the server RSA modulus as 128 bytes (1024 bits). Source: https://www.rfc-editor.org/rfc/rfc8448.txt, section 2.
-- `src/main/ridgun/lib/crypto.rg` (`rsa verify pss inner`) returns `False` when the modulus is under 256 bytes.
+- `src/main/ridgun/lib/crypto.ridgun` (`rsa verify pss inner`) returns `False` when the modulus is under 256 bytes.
 
 | Requirement says | Code / other spec does | Impact if we follow the requirement |
 |---|---|---|
-| `FR-TLS-001` AC1: verify the RFC 8448 `CertificateVerify` RSA-PSS signature | `FR-CRYPTO-006` AC5 and `crypto.rg` reject the 1024-bit RFC 8448 key | One of the two ACs must break, or a second RSA path that accepts 1024-bit keys must exist |
+| `FR-TLS-001` AC1: verify the RFC 8448 `CertificateVerify` RSA-PSS signature | `FR-CRYPTO-006` AC5 and `crypto.ridgun` reject the 1024-bit RFC 8448 key | One of the two ACs must break, or a second RSA path that accepts 1024-bit keys must exist |
 | `TS-CRYPTO-006` case 5: "RFC 8448 2048-bit RSA-PSS" | The RFC 8448 key is 1024-bit | The test-spec text is factually wrong |
 
 ## Options and consequences

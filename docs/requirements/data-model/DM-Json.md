@@ -13,7 +13,7 @@ related: [FR-JSON-001, API-JSON-001, ADR-0002]
 | dot_path | String | Non-empty dot-separated path (`a.b.0`) | Path expression for nested lookup and update |
 
 ## Relations
-- Used by `json.rg` (`JsonVal`, `JsonRes`) for parsing, serializing, pretty-printing, and querying RFC 8259 JSON documents.
+- Used by `json.ridgun` (`JsonVal`, `JsonRes`) for parsing, serializing, pretty-printing, and querying RFC 8259 JSON documents.
 
 ## Invariants
 - `JsonStr` values decode and encode standard RFC 8259 escape sequences (`\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t`).

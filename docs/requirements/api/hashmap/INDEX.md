@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-HASHMAP-001-hashmap-lib-contract.md` | `API-HASHMAP-001` | Public lib contract for `hashmap` (`hashmap.rglib` / `libhashmap.so`) | approved |
+| `API-HASHMAP-001-hashmap-lib-contract.md` | `API-HASHMAP-001` | Public lib contract for `hashmap` (`hashmap.ridgunlib` / `libhashmap.so`) | approved |

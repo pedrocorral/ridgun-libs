@@ -4,12 +4,12 @@ title: Verify RG-011 test assertion library with message-annotated and concise a
 level: unit
 covers: [FR-TST-001, API-TST-001]
 status: automated
-automated_in: [src/test/ridgun/test test.rg]
+automated_in: [src/test/ridgun/test test.ridgun]
 ---
 # TS-TST-001 — Verify RG-011 test assertion library with message-annotated and concise assertion helpers
 
 ## Preconditions / fixtures
-- Pure-Ridgun `test` module (`src/main/ridgun/lib/test.rg`).
+- Pure-Ridgun `test` module (`src/main/ridgun/lib/test.ridgun`).
 
 ## Steps / inputs
 1. Call `assert_equals 4 4 "math"`, `assert_equals "ok" "ok" "str"`, `assert_true (1 < 2) "lt"`, and `assert_false (1 > 2) "gt"` and verify they return `()` cleanly.

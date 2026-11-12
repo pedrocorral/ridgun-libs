@@ -4,12 +4,12 @@ title: jwt uses the crypto lib's HMAC-SHA256 and ChaCha20-Poly1305
 status: accepted
 date: 2026-11-09
 supersedes: []
-affects: [FR-JWT-001, API-JWT-001, DM-Jwt, TS-JWT-001, src/main/ridgun/lib/jwt.rg]
+affects: [FR-JWT-001, API-JWT-001, DM-Jwt, TS-JWT-001, src/main/ridgun/lib/jwt.ridgun]
 ---
 # ADR-0011 — jwt uses the crypto lib's HMAC-SHA256 and ChaCha20-Poly1305
 
 ## Context
-`CONFLICT-0005`: `jwt.rg` had its own HMAC (wrong pads, inner digest hashed as hex) and an AEAD made of a SHA-256 keystream. `FR-JWT-001` requires RFC 7519 HS256 and RFC 8439 ChaCha20-Poly1305. `crypto.rg` already implements both, tested with RFC 4231 and RFC 8439 vectors.
+`CONFLICT-0005`: `jwt.ridgun` had its own HMAC (wrong pads, inner digest hashed as hex) and an AEAD made of a SHA-256 keystream. `FR-JWT-001` requires RFC 7519 HS256 and RFC 8439 ChaCha20-Poly1305. `crypto.ridgun` already implements both, tested with RFC 4231 and RFC 8439 vectors.
 
 ## Decision
 - `jwt hmac sha256 b64url` is `crypto`'s `hmac sha256`, Base64url-encoded without padding.

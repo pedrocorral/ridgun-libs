@@ -4,12 +4,12 @@ title: Verify Native Agent lifecycle, timeout-bounded messaging, batch dispatch,
 level: unit
 covers: [FR-AGENT-001, API-AGENT-001]
 status: automated
-automated_in: [src/test/ridgun/test agent.rg]
+automated_in: [src/test/ridgun/test agent.ridgun]
 ---
 # TS-AGENT-001 — Verify Native Agent lifecycle, timeout-bounded messaging, batch dispatch, and stateful Counter, Log, and Key-Value agents
 
 ## Preconditions / fixtures
-- Pure-Ridgun `agent`, `list`, `pool`, `net_agent`, and `test` modules (`src/main/ridgun/lib/agent.rg`, `src/main/ridgun/lib/list.rg`, `src/main/ridgun/lib/pool.rg`, `src/main/ridgun/lib/net_agent.rg`, `src/main/ridgun/lib/test.rg`).
+- Pure-Ridgun `agent`, `list`, `pool`, `net_agent`, and `test` modules (`src/main/ridgun/lib/agent.ridgun`, `src/main/ridgun/lib/list.ridgun`, `src/main/ridgun/lib/pool.ridgun`, `src/main/ridgun/lib/net_agent.ridgun`, `src/main/ridgun/lib/test.ridgun`).
 
 ## Steps / inputs
 1. Test core spec combinators (`agent ask`, `agent map batch`, `agent send batch`, `agent receive count`, `agent drain ready`, `agent stop all`), sharded pool operations (`Pool`, `pool ask shard`, `pool broadcast`, `pool drain all`, `pool shutdown`), and per-connection reactor lifecycle (`ConnSlot`, `conn feed payload` EOF, `conn handle event` POLLERR, `reactor sweep next`, `reactor shutdown`).

@@ -4,12 +4,12 @@ title: Verify durable file sync, truncate, directory sync, exclusive lock and po
 level: unit
 covers: [FR-POSIX-003]
 status: automated
-automated_in: [src/test/ridgun/test posix.rg]
+automated_in: [src/test/ridgun/test posix.ridgun]
 ---
 # TS-POSIX-003 — Verify durable file sync, truncate, directory sync, exclusive lock and positional read
 
 ## Preconditions / fixtures
-- `posix` lib (`src/main/ridgun/lib/posix.rg`) and `io` lib (`file size`).
+- `posix` lib (`src/main/ridgun/lib/posix.ridgun`) and `io` lib (`file size`).
 - A fresh directory `/tmp/rg_posix_dur_<pid>`, removed at the end.
 
 ## Steps / inputs

@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: lengoaia estatiko askotan JSON habiaratu batean nabigatz
 
 **`json`** lib-ak **RFC 8259**-rako jaitsiera errekurtsiboko analizatzaile oso bat eskaintzen du `JsonVal` ADT aljebraikoaren gainean (`JnNull`, `JnBool`, `JnInt`, `JnStr`, `JnArr`, `JnObj`, `JnErr`), serializazio trinkoa zein koskaduna (`json pretty`) eta puntu bidezko bide-kontsultak (`"server.http.port"`).
 
-Ekosistema tradizional batean, **`JSON`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`json`** lib-ak (`src/main/ridgun/lib/json.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`JSON`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`json`** lib-ak (`src/main/ridgun/lib/json.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import json` (edo `import json as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: json` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`JSON`** domeinuko zereginak ebazteak C-ko kanp
 
 ## 08.2. Artefaktu natiboak, inportazioa eta `json` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`json`** lehen mailako **lib** bat da, `src/main/ridgun/lib/json.rg` bidean kokatua (`JSON` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`json`** lehen mailako **lib** bat da, `src/main/ridgun/lib/json.ridgun` bidean kokatua (`JSON` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/json.rglib` | Banaketa eta inportazio zuzena `import json` bidez |
+| **Ridgun Bundle-a** | `target/bundles/json.ridgunlib` | Banaketa eta inportazio zuzena `import json` bidez |
 | **Fitxategi konpilatua** | `target/json.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libjson.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`JSON`** domeinuko zereginak ebazteak C-ko kanp
 | `json stringify / json pretty` | `JsonVal` JSON trinko edo lerro anitzeko koskadunera serializatzen du |
 | `json get path / json get str / json get int / json get bool` | Objektu eta zerrenda habiaratuak zeharkatzen ditu puntudun bideekin (`"a.b.0.c"`) |
 
-### 08.2.2. `src/main/ridgun/lib/json.rg`-eko mota eta sinadura guztien katalogoa
+### 08.2.2. `src/main/ridgun/lib/json.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/json.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`7` mota, `0` eragile eta `118` funtzio):
+Jarraian duzu `src/main/ridgun/lib/json.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`7` mota, `0` eragile eta `118` funtzio):
 
 **`json`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -119,7 +119,7 @@ type JsonStrStep = JStrOk String Int | JStrErr String
 
 ## 08.3. `json` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `json` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test json.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `json` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test json.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 08.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `json` erabiliz
 
@@ -256,13 +256,13 @@ fn :: test json malformed inputs => ()
 
 ---
 
-## 08.4. Kaputaren azpian: nola dagoen eraikia `json` Ridgun hutsean (`src/main/ridgun/lib/json.rg`)
+## 08.4. Kaputaren azpian: nola dagoen eraikia `json` Ridgun hutsean (`src/main/ridgun/lib/json.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/json.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/json.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 08.4.1. Barne-inplementazioa: Whitespace & Character Helpers
 
-Ikusi nola `json.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `json.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: json
@@ -287,7 +287,7 @@ fn :: j spaces Int => String
 
 ### 08.4.2. Barne-inplementazioa: Integer Literal Parsing
 
-Ikusi nola `json.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `json.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: j scan digits String Int Int => Int
@@ -314,7 +314,7 @@ fn :: j finish pos num String Int Int     => JsonStep
 
 ### 08.4.3. Barne-inplementazioa: Serialization & Pretty-Printing
 
-Ikusi nola `json.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `json.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: j join arr loop [JsonVal] String String String String => String
@@ -404,7 +404,7 @@ fn :: json pretty JsonVal Int => String
 
 ### 08.4.4. Barne-inplementazioa: Dot-Path Queries & Field Updates
 
-Ikusi nola `json.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `json.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: j find field [JsonField] String => JsonVal
@@ -495,9 +495,9 @@ fn :: json set field JsonVal String JsonVal => JsonVal
 ## 08.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `json`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Erro-balioaren ondorengo zaborraren (`trailing garbage`) ukapen zorrotza, ihes-sekuentzien kudeaketa osoa eta salbuespenik gabeko `JnErr` itzulera segurua.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/json.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/json.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test json.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test json.ridgun` suite automatizatuaren bidez.
 
 ### `json`-ekin programatzeko Urrezko 5 Arauak
 

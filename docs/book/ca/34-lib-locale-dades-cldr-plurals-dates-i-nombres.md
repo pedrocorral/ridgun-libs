@@ -2,7 +2,7 @@
 
 ## 34.1. Per què existeix la lib `locale`? (El problema real i la filosofia Ridgun)
 
-La lib **`locale`** (`src/main/ridgun/lib/locale.rg`, domini `LOCALE`) proporciona internacionalització determinista en Ridgun pur basada en **Unicode CLDR 46** i el calendari civil UTC en $O(1)$ de Howard Hinnant, sense dependre de `setlocale()` ni `libicu`:
+La lib **`locale`** (`src/main/ridgun/lib/locale.ridgun`, domini `LOCALE`) proporciona internacionalització determinista en Ridgun pur basada en **Unicode CLDR 46** i el calendari civil UTC en $O(1)$ de Howard Hinnant, sense dependre de `setlocale()` ni `libicu`:
 
 1. **Regles de plurals CLDR en doble mode (`.po` de 2 formes per defecte + CLDR 46 estricte amb `"many"`)**: `plural category`, `plural categories` i `plural index` ofereixen compatibilitat directa amb catàlegs `.po` (`["one", "other"]`), mentre `plural category cldr` i `plural categories cldr` activen la categoria `"many"` per a milions exactes en `es`, `ca`, `pt`, `it` i `fr`.
 2. **Formatació de dates i marques temporals UTC (`format date`, `format datetime`, `month name`, `weekday name`)**: converteix segons Unix epoch en $O(1)$ als estils `short`, `medium`, `long` i `full` (incloent l'apòstrof `"31 d'octubre de 2026"` vs `"15 de gener de 2026"` en català).
@@ -270,4 +270,4 @@ fn :: test locale autonyms normalization and registry => ()
 ## 34.5. Garanties algorísmiques i memòria `RMM1`/`RMM2`
 
 - **Garantia algorísmica i de seguretat**: Funcions 100 % pures sense estat global mutable, calendari UTC en $O(1)$ i fallback determinista a `"en"`.
-- **Verificació contínua**: Provada exhaustivament amb `src/test/ridgun/test locale.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `src/test/ridgun/test locale.ridgun`.

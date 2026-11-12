@@ -10,7 +10,7 @@ Låt oss vara ärliga: JWT-ekosystemet är ökänt för sårbarheter där en ang
 
 Lib:en **`jwt`** löser båda behoven: den signerar och verifierar **RFC 7519 (`HS256`) JWT:er** med strikt krav på `alg == "HS256"`, konstanttidsjämförelse av MAC och kontroll av `exp`/`nbf`, samt erbjuder **`token seal` / `token open`** för opaka tokens krypterade med **ChaCha20-Poly1305 AEAD**.
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`JWT`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`jwt`** (`src/main/ridgun/lib/jwt.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`JWT`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`jwt`** (`src/main/ridgun/lib/jwt.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import jwt` (eller `import jwt as alias`) överst i filen**: varje lib definierar sin `module :: jwt`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`JWT`** ofta at
 
 ## 26.2. Inbyggda artefakter, import och komplett API-katalog för `jwt`
 
-I `ridgun-libs` är **`jwt`** en förstklassig **lib** placerad i `src/main/ridgun/lib/jwt.rg` (domän `JWT`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`jwt`** en förstklassig **lib** placerad i `src/main/ridgun/lib/jwt.ridgun` (domän `JWT`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/jwt.rglib` | Portabel distribution och direkt import med `import jwt` |
+| **Ridgun-bundle** | `target/bundles/jwt.ridgunlib` | Portabel distribution och direkt import med `import jwt` |
 | **Kompilerat arkiv** | `target/jwt.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libjwt.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -40,9 +40,9 @@ I `ridgun-libs` är **`jwt`** en förstklassig **lib** placerad i `src/main/ridg
 | `jwt claims / jwt get str / jwt get int` | Bygger standard-claims `(sub, iss, iat, exp)` och frågar verifierade payloads |
 | `token seal / token open` | Krypterar och autentiserar opaka JSON-tokens via ChaCha20-Poly1305 AEAD |
 
-### 26.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/jwt.rg`
+### 26.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/jwt.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/jwt.rg` (`3` typer, `0` operatorer och `55` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/jwt.ridgun` (`3` typer, `0` operatorer och `55` funktioner):
 
 **Algebraiska datatyper och poster (`type`) i `jwt`:**
 
@@ -114,7 +114,7 @@ type JwtClaimsRes = JwtClaimsOk JwtClaims | JwtClaimsErr String
 
 ## 26.3. Djupdykning i `jwt`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `jwt` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test jwt.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `jwt` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test jwt.ridgun`.
 
 ### 26.3.1. Exempel 1: Huvudflöde i tabellform med `jwt`
 
@@ -254,13 +254,13 @@ fn :: test jwt aead seal and open => ()
 
 ---
 
-## 26.4. Under huven: hur `jwt` är byggd i ren Ridgun (`src/main/ridgun/lib/jwt.rg`)
+## 26.4. Under huven: hur `jwt` är byggd i ren Ridgun (`src/main/ridgun/lib/jwt.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/jwt.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/jwt.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 26.4.1. Intern implementation: Byte, Hex, Base64url & Constant-Time Helpers
 
-Se hur `jwt.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `jwt.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: jwt
@@ -352,7 +352,7 @@ fn :: jwt b64url decode String => String
 
 ### 26.4.2. Intern implementation: Constant-Time Equality & Bitwise XOR
 
-Se hur `jwt.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `jwt.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: jwt bxor loop Int Int Int Int => Int
@@ -377,7 +377,7 @@ fn :: jwt ct eq String String => Bool
 
 ### 26.4.3. Intern implementation: HS256 (HMAC-SHA256) Signing & Verification
 
-Se hur `jwt.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `jwt.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: jwt hex nib Int => Int
@@ -499,7 +499,7 @@ fn :: jwt verify sig ct Bool String => JwtRes
 
 ### 26.4.4. Intern implementation: Structured Claims Signing & Temporal Validation
 
-Se hur `jwt.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `jwt.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: jwt sign claims JwtClaims String => String
@@ -538,9 +538,9 @@ fn :: jwt check claim times JwtClaims Int => JwtClaimsRes
 ## 26.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `jwt`
 
 - **Algoritmisk garanti och säkerhet**: Fullständig immunitet mot `"alg":"none"`-attacker (alla headers där `alg != "HS256"` returnerar `JwtBadSignature`) och konstanttidsverifiering av signaturer.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/jwt.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/jwt.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test jwt.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test jwt.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `jwt`
 

@@ -10,7 +10,7 @@ Siguem sincers: els fitxers `.env` i `.ini` semblen trivials fins que algú hi a
 
 La lib **`ini`** analitza configuracions `.ini` amb seccions (`[database]`) i fitxers `.env` amb prefixos `export`, preservant símbols `#` i `;` dins de cometes i resolent interpolacions de variables a `dotenv parse`.
 
-En un ecosistema tradicional, resoldre les tasques del domini **`INI`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`ini`** (`src/main/ridgun/lib/ini.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`INI`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`ini`** (`src/main/ridgun/lib/ini.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import ini` (o `import ini as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: ini` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`INI`** implica 
 
 ## 10.2. Artefactes natius, importació i catàleg complet de l'API de `ini`
 
-A `ridgun-libs`, **`ini`** és una **lib** de primera classe situada a `src/main/ridgun/lib/ini.rg` (domini `INI`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`ini`** és una **lib** de primera classe situada a `src/main/ridgun/lib/ini.ridgun` (domini `INI`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/ini.rglib` | Distribució i importació directa amb `import ini` |
+| **Bundle Ridgun** | `target/bundles/ini.ridgunlib` | Distribució i importació directa amb `import ini` |
 | **Fitxer compilat** | `target/ini.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libini.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -40,9 +40,9 @@ A `ridgun-libs`, **`ini`** és una **lib** de primera classe situada a `src/main
 | `ini sections / ini section map` | Llista els noms de secció o extreu el mapa `[String String]` d'una secció |
 | `dotenv parse` | Analitza fitxers `.env` (`export K=V`, cometes, comentaris i expansió de variables) |
 
-### 10.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/ini.rg`
+### 10.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/ini.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/ini.rg` (`3` tipus, `0` operadors i `44` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/ini.ridgun` (`3` tipus, `0` operadors i `44` funcions):
 
 **Tipus algebraics i registres (`type`) de `ini`:**
 
@@ -103,7 +103,7 @@ type IniDoc = sections: [IniSection]
 
 ## 10.3. Explorant `ini` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `ini` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test ini.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `ini` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test ini.ridgun`.
 
 ### 10.3.1. Exemple 1: Flux principal en estil tabular amb `ini`
 
@@ -214,13 +214,13 @@ fn :: cargar configuracion servicio (raw_ini : String) (raw_env : String) => (St
 
 ---
 
-## 10.4. Sota el capó: com està construïda `ini` en Ridgun pur (`src/main/ridgun/lib/ini.rg`)
+## 10.4. Sota el capó: com està construïda `ini` en Ridgun pur (`src/main/ridgun/lib/ini.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/ini.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/ini.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 10.4.1. Implementació interna: Whitespace, Comment & Line Helpers
 
-Fixa't en com `ini.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `ini.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: ini
@@ -291,7 +291,7 @@ fn :: ini clean val len String Int => String
 
 ### 10.4.2. Implementació interna: Key-Value Pair Helpers (`[IniEntry]`)
 
-Fixa't en com `ini.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `ini.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: ini p key IniEntry => String
@@ -315,7 +315,7 @@ fn :: ini kv put [IniEntry] String String => [IniEntry]
 
 ### 10.4.3. Implementació interna: Sectioned INI Document Helpers
 
-Fixa't en com `ini.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `ini.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: ini sec put [IniSection] String String String => [IniSection]
@@ -394,7 +394,7 @@ fn :: dotenv parse String => [IniEntry]
 
 ### 10.4.4. Implementació interna: Queries, Updates & Serialization
 
-Fixa't en com `ini.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `ini.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: ini get IniDoc String String String => String
@@ -462,9 +462,9 @@ fn :: ini stringify IniDoc => String
 ## 10.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `ini`
 
 - **Garantia algorísmica i de seguretat**: Respecte total pels caràcters `#` i `;` quan apareixen entre cometes simples o dobles, i conversió booleana flexible (`true/1/yes/on` vs `false/0/no/off`).
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/ini.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/ini.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test ini.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test ini.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `ini`
 

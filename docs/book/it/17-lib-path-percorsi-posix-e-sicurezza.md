@@ -10,7 +10,7 @@ Siamo sinceri: unire percorsi con `base + "/" + file` senza ripulire i segmenti 
 
 La lib **`path`** implementa la normalizzazione lessicale POSIX (`path clean` nello stile di `filepath.Clean` in Go), l'unione sicura (`path join`), la scomposizione (`dirname`, `basename`, `stem`, `ext`, `replace ext`) e il predicato di sicurezza **`path is safe subpath`** (`VUL-INJ-001`) contro le evasioni di directory.
 
-In un ecosistema tradizionale, risolvere i compiti del dominio **`PATH`** comporta trascinare dipendenze esterne in C, gestire puntatori grezzi, conversioni opache di tipo, eccezioni non verificate o pause imprevedibili del garbage collector. In Ridgun, la lib **`path`** (`src/main/ridgun/lib/path.rg`) affronta il problema con quattro principi non negoziabili:
+In un ecosistema tradizionale, risolvere i compiti del dominio **`PATH`** comporta trascinare dipendenze esterne in C, gestire puntatori grezzi, conversioni opache di tipo, eccezioni non verificate o pause imprevedibili del garbage collector. In Ridgun, la lib **`path`** (`src/main/ridgun/lib/path.ridgun`) affronta il problema con quattro principi non negoziabili:
 
 1. **Dichiara `import path` (o `import path as alias`) all'inizio del file**: ogni lib definisce il proprio spazio dei nomi `module :: path` e in modalità `--strict` le funzioni multi-parola si invocano sempre con spazi naturali.
 2. **Concatena le tue pipeline da sinistra a destra con `->`**: scrivi `input passo uno -> passo due -> risultato`, usa le maschere `(+ _ _ +)` per destrutturare le sequenze e ometti `_ =` nelle istruzioni sequenziali (o scarta il valore con `-> ()`).
@@ -21,11 +21,11 @@ In un ecosistema tradizionale, risolvere i compiti del dominio **`PATH`** compor
 
 ## 17.2. Artefatti nativi, importazione e catalogo completo dell'API di `path`
 
-In `ridgun-libs`, **`path`** è una **lib** di prima classe situata in `src/main/ridgun/lib/path.rg` (dominio `PATH`). Compilando con `stable bundle`, viene impacchettata in tre artefatti nativi:
+In `ridgun-libs`, **`path`** è una **lib** di prima classe situata in `src/main/ridgun/lib/path.ridgun` (dominio `PATH`). Compilando con `stable bundle`, viene impacchettata in tre artefatti nativi:
 
 | Artefatto | Percorso | Scopo |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/path.rglib` | Distribuzione e importazione diretta con `import path` |
+| **Bundle Ridgun** | `target/bundles/path.ridgunlib` | Distribuzione e importazione diretta con `import path` |
 | **File compilato** | `target/path.rgc` | Artefatto intermedio verificato da `ridgunc` |
 | **Oggetto condiviso ELF64** | `target/libpath.so` | Libreria dinamica nativa senza dipendenze C né `libc` |
 
@@ -40,9 +40,9 @@ In `ridgun-libs`, **`path`** è una **lib** di prima classe situata in `src/main
 | `path ext / path stem / path replace ext` | Estrae o sostituisce l'estensione (trattando `.bashrc` come radice `.bashrc` ed estensione `""`) |
 | `path is safe subpath : String -> String -> Bool` | Verifica che `rel` rimanga strettamente all'interno di `base_dir` e senza byte NUL |
 
-### 17.2.2. Catalogo esaustivo dei tipi e delle firme in `src/main/ridgun/lib/path.rg`
+### 17.2.2. Catalogo esaustivo dei tipi e delle firme in `src/main/ridgun/lib/path.ridgun`
 
-Di seguito trovi l'inventario completo dei tipi algebrici (`type`), degli operatori (`op ::`) e delle firme di funzione (`fn ::`) definiti in `src/main/ridgun/lib/path.rg` (`0` tipi, `0` operatori e `30` funzioni):
+Di seguito trovi l'inventario completo dei tipi algebrici (`type`), degli operatori (`op ::`) e delle firme di funzione (`fn ::`) definiti in `src/main/ridgun/lib/path.ridgun` (`0` tipi, `0` operatori e `30` funzioni):
 
 | # | Funzione / Firma (`fn ::`) | Tipo di Ritorno |
 |---|---|---|
@@ -81,7 +81,7 @@ Di seguito trovi l'inventario completo dei tipi algebrici (`type`), degli operat
 
 ## 17.3. Esplorare `path` a fondo: Esempi passo dopo passo di ogni funzionalità
 
-Non basta consultare la tabella delle firme: esploreremo **ciascuna delle funzionalità** della lib `path` tramite esempi progressivi ed eseguibili in Ridgun. Inizieremo con due ricette tabulari di uso quotidiano e poi percorreremo nel dettaglio tutti gli scenari funzionali, le trasformazioni e i casi limite verificati in `src/test/ridgun/test path.rg`.
+Non basta consultare la tabella delle firme: esploreremo **ciascuna delle funzionalità** della lib `path` tramite esempi progressivi ed eseguibili in Ridgun. Inizieremo con due ricette tabulari di uso quotidiano e poi percorreremo nel dettaglio tutti gli scenari funzionali, le trasformazioni e i casi limite verificati in `src/test/ridgun/test path.ridgun`.
 
 ### 17.3.1. Esempio 1: Flusso principale in stile tabulare con `path`
 
@@ -109,7 +109,7 @@ fn :: cambiar salida a objeto String => String String String
         fuente path dirname -> dir
         fuente path stem -> nom
         fuente path clean -> limpio
-        path with ext limpio ".rglib" -> obj
+        path with ext limpio ".ridgunlib" -> obj
         (dir, nom, obj)
 ```
 
@@ -142,7 +142,7 @@ fn :: test path clean and join => ()
         assert str eq (path join "/var/log" "app/server.log") "/var/log/app/server.log" "AC1: join relative child"
         assert str eq (path join "/var/log" "/etc/hosts") "/etc/hosts" "AC1: join absolute child overrides base"
         assert str eq (path join list []) "." "AC1: join_list [] -> ."
-        assert str eq (path join list ["src", "main", "ridgun", "lib", "path.rg"]) "src/main/ridgun/lib/path.rg" "AC1: join_list 5 segments"
+        assert str eq (path join list ["src", "main", "ridgun", "lib", "path.ridgun"]) "src/main/ridgun/lib/path.ridgun" "AC1: join_list 5 segments"
         ()
 ```
 
@@ -153,16 +153,16 @@ In questo esempio pratico esploriamo in modo esaustivo come si comporta `path` i
 ```ridgun
 fn :: test path components and confinement => ()
       test path components and confinement =
-        p = "/home/boogie/ridgun-libs/src/socket.rg"
+        p = "/home/boogie/ridgun-libs/src/socket.ridgun"
         assert true (path is abs p) "AC2: path_is_abs true"
         assert false (path is rel p) "AC2: path_is_rel false"
         assert false (path is abs "") "AC2: empty is not abs"
-        assert true (path is rel "src/socket.rg") "AC2: relative path_is_rel"
+        assert true (path is rel "src/socket.ridgun") "AC2: relative path_is_rel"
         assert str eq (path dirname p) "/home/boogie/ridgun-libs/src" "AC2: dirname"
-        assert str eq (path basename p) "socket.rg" "AC2: basename"
+        assert str eq (path basename p) "socket.ridgun" "AC2: basename"
         sp = path split p
         assert str eq (pair fst sp) "/home/boogie/ridgun-libs/src" "AC2: split dirname"
-        assert str eq (pair snd sp) "socket.rg" "AC2: split basename"
+        assert str eq (pair snd sp) "socket.ridgun" "AC2: split basename"
         assert str eq (path dirname "/") "/" "AC2: dirname of / is /"
         assert str eq (path basename "/") "/" "AC2: basename of / is /"
         assert str eq (path dirname "/top") "/" "AC2: dirname of /top is /"
@@ -170,14 +170,14 @@ fn :: test path components and confinement => ()
 
         -- Multi-dot filenames, dotfiles, and extension replacement
         assert str eq (path stem p) "socket" "AC2: stem"
-        assert str eq (path ext p) ".rg" "AC2: ext"
+        assert str eq (path ext p) ".ridgun" "AC2: ext"
         assert str eq (path stem "archive.tar.gz") "archive.tar" "AC2: multi-dot stem"
         assert str eq (path ext "archive.tar.gz") ".gz" "AC2: multi-dot ext"
         assert str eq (path stem ".gitignore") ".gitignore" "AC2: dotfile stem"
         assert str eq (path ext ".gitignore") "" "AC2: dotfile empty ext"
-        assert str eq (path replace ext p "rglib") "/home/boogie/ridgun-libs/src/socket.rglib" "AC2: replace_ext without leading dot"
+        assert str eq (path replace ext p "ridgunlib") "/home/boogie/ridgun-libs/src/socket.ridgunlib" "AC2: replace_ext without leading dot"
         assert str eq (path replace ext p ".so") "/home/boogie/ridgun-libs/src/socket.so" "AC2: replace_ext with leading dot"
-        assert str eq (path replace ext "main.rg" "") "main" "AC2: replace_ext with empty removes extension"
+        assert str eq (path replace ext "main.ridgun" "") "main" "AC2: replace_ext with empty removes extension"
 
         -- OWASP Path Traversal & Shell Injection Confinement (VUL-INJ-002)
         assert true (path is safe subpath "/srv/www" "assets/app.js") "AC3: safe child subpath"
@@ -215,13 +215,13 @@ fn :: resolver archivo seguro (raiz : String) (peticion : String) => (String, St
 
 ---
 
-## 17.4. Sotto il cofano: come è costruita `path` in Ridgun puro (`src/main/ridgun/lib/path.rg`)
+## 17.4. Sotto il cofano: come è costruita `path` in Ridgun puro (`src/main/ridgun/lib/path.ridgun`)
 
-Uno dei maggiori vantaggi di `ridgun-libs` è che **non ci sono scatole nere in C**. Puoi aprire `src/main/ridgun/lib/path.rg` e leggere esattamente come è implementata ogni operazione usando *pattern matching*, alberi di guardie `|` / `|.` e ricorsione di coda (TCO). Vediamo i pezzi chiave della sua implementazione reale:
+Uno dei maggiori vantaggi di `ridgun-libs` è che **non ci sono scatole nere in C**. Puoi aprire `src/main/ridgun/lib/path.ridgun` e leggere esattamente come è implementata ogni operazione usando *pattern matching*, alberi di guardie `|` / `|.` e ricorsione di coda (TCO). Vediamo i pezzi chiave della sua implementazione reale:
 
 ### 17.4.1. Implementazione interna: Core Implementation Part 1
 
-Nota come `path.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+Nota come `path.ridgun` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
 
 ```ridgun
 module :: path
@@ -316,7 +316,7 @@ fn :: path dirname String => String
 
 ### 17.4.2. Implementazione interna: Core Implementation Part 2
 
-Nota come `path.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+Nota come `path.ridgun` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
 
 ```ridgun
 fn :: pa basename at String Int => String
@@ -405,7 +405,7 @@ fn :: path is safe subpath String String => Bool
 
 ### 17.4.3. Implementazione interna: Core Implementation Part 4
 
-Nota come `path.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+Nota come `path.ridgun` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
 
 ```ridgun
 fn :: path ext String => String
@@ -450,7 +450,7 @@ fn :: pa is safe char Int => Bool
 
 ### 17.4.4. Implementazione interna: Core Implementation Part 5
 
-Nota come `path.rg` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
+Nota come `path.ridgun` strutturi prima le firme `fn :: ... => ...` e risolva ogni caso tramite equazioni allineate e chiamate di coda:
 
 ```ridgun
 fn :: pa safe chars loop String Int Int => Bool
@@ -482,9 +482,9 @@ fn :: path is safe subpath String String => Bool
 ## 17.5. Garanzie algoritmiche, memoria `RMM1`/`RMM2` e le 5 Regole d'Oro di `path`
 
 - **Garanzia algoritmica e di sicurezza**: `path is safe subpath` rifiuta percorsi assoluti, byte NUL e qualsiasi sequenza `..` che tenti di uscire dalla directory radice o di accedere a un prefisso fratello (`/srv/www-secret`).
-- **Complessità dello stack $O(1)$ con TCO**: Tutti i cicli ricorsivi in `src/main/ridgun/lib/path.rg` sono in posizione di coda, perciò `ridgunc` li compila in salti nativi senza crescita dello stack.
+- **Complessità dello stack $O(1)$ con TCO**: Tutti i cicli ricorsivi in `src/main/ridgun/lib/path.ridgun` sono in posizione di coda, perciò `ridgunc` li compila in salti nativi senza crescita dello stack.
 - **Memoria deterministica (`RMM1`/`RMM2`)**: Zero pause del garbage collector; tutte le strutture intermedie vengono liberate in modo deterministico all'uscita dallo scope.
-- **Verifica continua**: Testata in modo esaustivo con `stable check` e la suite automatizzata `src/test/ridgun/test path.rg`.
+- **Verifica continua**: Testata in modo esaustivo con `stable check` e la suite automatizzata `src/test/ridgun/test path.ridgun`.
 
 ### Le 5 Regole d'Oro quando programmi con `path`
 

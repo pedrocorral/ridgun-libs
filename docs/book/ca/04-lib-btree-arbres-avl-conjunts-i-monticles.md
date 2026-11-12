@@ -10,7 +10,7 @@ Siguem sincers: les taules hash mutables pateixen atacs de col·lisió de claus 
 
 La lib **`btree`** implementa tres estructures de dades funcionals persistents en $O(\log N)$ amb compartició estructural: **`BTreeMap`** (arbre AVL autobalancejat), **`BTreeSet`** (àlgebra de conjunts ordenada) i **`MinHeap`** (cua de prioritat *leftist heap*).
 
-En un ecosistema tradicional, resoldre les tasques del domini **`BTREE`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`btree`** (`src/main/ridgun/lib/btree.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`BTREE`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`btree`** (`src/main/ridgun/lib/btree.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import btree` (o `import btree as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: btree` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`BTREE`** implic
 
 ## 04.2. Artefactes natius, importació i catàleg complet de l'API de `btree`
 
-A `ridgun-libs`, **`btree`** és una **lib** de primera classe situada a `src/main/ridgun/lib/btree.rg` (domini `BTREE`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`btree`** és una **lib** de primera classe situada a `src/main/ridgun/lib/btree.ridgun` (domini `BTREE`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/btree.rglib` | Distribució i importació directa amb `import btree` |
+| **Bundle Ridgun** | `target/bundles/btree.ridgunlib` | Distribució i importació directa amb `import btree` |
 | **Fitxer compilat** | `target/btree.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libbtree.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -40,9 +40,9 @@ A `ridgun-libs`, **`btree`** és una **lib** de primera classe situada a `src/ma
 | `bset from list / bset union / bset intersect / bset diff` | Àlgebra de conjunts ordenats (`BTreeSet`) i predicat de subconjunt |
 | `heap empty / heap push / heap peek / heap pop / heap sort` | Cua de prioritat `MinHeap` (*leftist heap*) amb fusió en $O(\log N)$ |
 
-### 04.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/btree.rg`
+### 04.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/btree.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/btree.rg` (`3` tipus, `0` operadors i `54` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/btree.ridgun` (`3` tipus, `0` operadors i `54` funcions):
 
 **Tipus algebraics i registres (`type`) de `btree`:**
 
@@ -113,7 +113,7 @@ type MinHeap = HeapEmpty | HeapNode Int String Int MinHeap MinHeap
 
 ## 04.3. Explorant `btree` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `btree` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test btree.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `btree` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test btree.ridgun`.
 
 ### 04.3.1. Exemple 1: Flux principal en estil tabular amb `btree`
 
@@ -284,13 +284,13 @@ fn :: test min heap priority queue => ()
 
 ---
 
-## 04.4. Sota el capó: com està construïda `btree` en Ridgun pur (`src/main/ridgun/lib/btree.rg`)
+## 04.4. Sota el capó: com està construïda `btree` en Ridgun pur (`src/main/ridgun/lib/btree.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/btree.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/btree.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 04.4.1. Implementació interna: Lexicographical String Comparison & Int Helpers
 
-Fixa't en com `btree.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `btree.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: btree
@@ -315,7 +315,7 @@ fn :: bt str cmp String String => Int
 
 ### 04.4.2. Implementació interna: AVL-Balanced Ordered Map (`BTreeMap`)
 
-Fixa't en com `btree.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `btree.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: btree empty => BTreeMap
@@ -425,7 +425,7 @@ fn :: btree from list [String String] => BTreeMap
 
 ### 04.4.3. Implementació interna: AVL-Balanced Ordered Set (`BTreeSet`)
 
-Fixa't en com `btree.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `btree.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: bset empty => BTreeSet
@@ -528,7 +528,7 @@ fn :: bset diff BTreeSet BTreeSet => BTreeSet
 
 ### 04.4.4. Implementació interna: Leftist MinHeap Priority Queue (`MinHeap`)
 
-Fixa't en com `btree.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `btree.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: heap empty => MinHeap
@@ -571,9 +571,9 @@ fn :: heap size MinHeap => Int
 ## 04.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `btree`
 
 - **Garantia algorísmica i de seguretat**: Rotacions AVL estrictes (`height diff <= 1`), immunitat total a HashDoS, consultes per rang en $O(\log N + K)$ i fusió de monticles en $O(\log N)$.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/btree.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/btree.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test btree.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test btree.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `btree`
 

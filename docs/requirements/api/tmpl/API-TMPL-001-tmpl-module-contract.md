@@ -1,11 +1,11 @@
 ---
 id: API-TMPL-001
-title: Public lib contract for template (template.rglib / libtemplate.so)
+title: Public lib contract for template (template.ridgunlib / libtemplate.so)
 status: implemented
 implements: [FR-TMPL-001]
 auth: none
 ---
-# API-TMPL-001 — Public lib contract for `template` (`template.rg`)
+# API-TMPL-001 — Public lib contract for `template` (`template.ridgun`)
 
 ## Request
 - Imported via `import template`.

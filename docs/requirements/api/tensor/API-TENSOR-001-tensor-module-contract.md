@@ -1,11 +1,11 @@
 ---
 id: API-TENSOR-001
-title: Public lib contract for tensor (tensor.rglib / libtensor.so)
+title: Public lib contract for tensor (tensor.ridgunlib / libtensor.so)
 status: approved
 implements: [FR-TENSOR-001]
 auth: none
 ---
-# API-TENSOR-001 — Public lib contract for `tensor` (`tensor.rg`)
+# API-TENSOR-001 — Public lib contract for `tensor` (`tensor.ridgun`)
 
 ## Request
 - Imported via `import tensor`.

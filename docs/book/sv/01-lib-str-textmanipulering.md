@@ -10,7 +10,7 @@ Låt oss vara ärliga: att manipulera strängar i C med `strtok` och `strncpy` �
 
 Lib:en **`str`** tillhandahåller rena, oföränderliga primitiver för att söka, trimma, dela upp, slå samman, ändra skiftläge, upprepa med binär fördubbling $O(\log N)$ och fylla ut kolumner.
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`STR`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`str`** (`src/main/ridgun/lib/str.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`STR`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`str`** (`src/main/ridgun/lib/str.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import str` (eller `import str as alias`) överst i filen**: varje lib definierar sin `module :: str`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`STR`** ofta at
 
 ## 01.2. Inbyggda artefakter, import och komplett API-katalog för `str`
 
-I `ridgun-libs` är **`str`** en förstklassig **lib** placerad i `src/main/ridgun/lib/str.rg` (domän `STR`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`str`** en förstklassig **lib** placerad i `src/main/ridgun/lib/str.ridgun` (domän `STR`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/str.rglib` | Portabel distribution och direkt import med `import str` |
+| **Ridgun-bundle** | `target/bundles/str.ridgunlib` | Portabel distribution och direkt import med `import str` |
 | **Kompilerat arkiv** | `target/str.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libstr.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -42,9 +42,9 @@ I `ridgun-libs` är **`str`** en förstklassig **lib** placerad i `src/main/ridg
 | `str replace / str to upper / str to lower` | Icke-överlappande ersättning och ASCII-skiftlägeskonvertering |
 | `str repeat / str pad left / str pad right` | $O(\log N)$-upprepning och kolumnutfyllnad till fast bredd |
 
-### 01.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/str.rg`
+### 01.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/str.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/str.rg` (`0` typer, `0` operatorer och `42` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/str.ridgun` (`0` typer, `0` operatorer och `42` funktioner):
 
 | # | Funktion / Signatur (`fn ::`) | Returtyp |
 |---|---|---|
@@ -95,7 +95,7 @@ Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-o
 
 ## 01.3. Djupdykning i `str`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `str` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test str.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `str` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test str.ridgun`.
 
 ### 01.3.1. Exempel 1: Huvudflöde i tabellform med `str`
 
@@ -144,10 +144,10 @@ fn :: test str search and predicates => ()
         assert equals (str index of "" "") 0 "AC1: empty needle in empty haystack -> 0"
         assert equals (str index of "abc" "") 0 "AC1: empty needle -> 0"
 
-        assert true (str ends with "archive.rglib" ".rglib") "AC1: ends_with true"
+        assert true (str ends with "archive.ridgunlib" ".ridgunlib") "AC1: ends_with true"
         assert true (str ends with "exact" "exact") "AC1: ends_with full string"
         assert true (str ends with "any" "") "AC1: ends_with empty suffix true"
-        assert false (str ends with "archive.rg" ".rglib") "AC1: ends_with false"
+        assert false (str ends with "archive.ridgun" ".ridgunlib") "AC1: ends_with false"
         assert false (str ends with "short" "longer_suffix") "AC1: ends_with suffix longer than string"
 
         assert true (str is empty "") "AC1: is_empty true"
@@ -229,13 +229,13 @@ fn :: test str case repeat and padding => ()
 
 ---
 
-## 01.4. Under huven: hur `str` är byggd i ren Ridgun (`src/main/ridgun/lib/str.rg`)
+## 01.4. Under huven: hur `str` är byggd i ren Ridgun (`src/main/ridgun/lib/str.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/str.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/str.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 01.4.1. Intern implementation: ASCII Classification Helpers
 
-Se hur `str.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `str.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: str
@@ -263,7 +263,7 @@ fn :: to lower code Int  => Int
 
 ### 01.4.2. Intern implementation: Whitespace Trimming
 
-Se hur `str.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `str.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: first non space idx String Int Int => Int
@@ -308,7 +308,7 @@ fn :: str is blank String => Bool
 
 ### 01.4.3. Intern implementation: String Splitting & Joining
 
-Se hur `str.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `str.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: str split chars String Int Int [String] => [String]
@@ -363,7 +363,7 @@ fn :: str join [String] String => String
 
 ### 01.4.4. Intern implementation: Repetition & Padding
 
-Se hur `str.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `str.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: str repeat loop String Int String => String
@@ -406,9 +406,9 @@ fn :: str pad right String Int String => String
 ## 01.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `str`
 
 - **Algoritmisk garanti och säkerhet**: $O(\log N)$-upprepning via binär strängfördubbling, säker hantering av tomma söksträngar och noll mutering på plats.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/str.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/str.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test str.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test str.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `str`
 

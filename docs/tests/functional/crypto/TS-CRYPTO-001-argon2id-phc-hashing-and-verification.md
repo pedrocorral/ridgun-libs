@@ -4,12 +4,12 @@ title: Verify RFC 9106 Argon2id PHC hashing, parameter validation, and constant-
 level: unit
 covers: [FR-CRYPTO-001]
 status: automated
-automated_in: [src/test/ridgun/test argon2id.rg]
+automated_in: [src/test/ridgun/test argon2id.ridgun]
 ---
 # TS-CRYPTO-001 — Verify RFC 9106 Argon2id PHC hashing, parameter validation, and constant-time verification
 
 ## Preconditions / fixtures
-- Pure-Ridgun `argon2id` module (`src/main/ridgun/lib/argon2id.rg`).
+- Pure-Ridgun `argon2id` module (`src/main/ridgun/lib/argon2id.ridgun`).
 
 ## Steps / inputs
 1. Hash a password and salt (`>= 8` bytes) with valid RFC 9106 Argon2id parameters (`m_cost = 32`, `t_cost = 3`, `lanes = 4`, `tag_len = 32`) via `argon2id hash`, verifying deterministic in-process pure-Ridgun output (`RG-050`), canonical PHC format `$argon2id$v=19$m=32,t=3,p=4$<salt_b64>$<tag_b64>`, OpenSSL 3.5 vectors (`m=8,t=1,p=1`, `m=64,t=2,p=1`, `m=256,t=2,p=1`), and the RFC 9106 §5.3 official 32-byte test vector (`0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659`).

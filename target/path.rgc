@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/path.rg
+-- src/main/ridgun/lib/path.ridgun
 -- Pure-Ridgun Path Normalization, Component Extraction & Confinement Library (PATH)
 -- @implements FR-PATH-001
 -- @implements API-PATH-001

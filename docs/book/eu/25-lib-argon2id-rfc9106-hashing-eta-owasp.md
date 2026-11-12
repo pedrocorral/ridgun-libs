@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: pasahitzak SHA-256 soil batekin gordetzeak GPU moderno b
 
 **`argon2id`** lib-ak **RFC 9106 Argon2id** eta **RFC 7693 Blake2b-512** % 100ean Ridgun hutsean inplementatzen ditu `Tensor[U64 * 8 * 16]` bloke natiboen gainean (1 024 byte blokeko RMM2 memoria jarraituan), **PHC** kateen sorrerarekin (`$argon2id$v=19$m=...,t=...,p=...$`), **OWASP** profilekin (`owaspfirst`, `owaspsecond`), *pepper* euskarriarekin (`argon2id hash ctx`), gakoen eratorpenarekin (`argon2id derive key`) eta parametroen eguneratze-detekzioarekin (`argon2id needs rehash`).
 
-Ekosistema tradizional batean, **`CRYPTO`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`argon2id`** lib-ak (`src/main/ridgun/lib/argon2id.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`CRYPTO`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`argon2id`** lib-ak (`src/main/ridgun/lib/argon2id.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import argon2id` (edo `import argon2id as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: argon2id` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`CRYPTO`** domeinuko zereginak ebazteak C-ko ka
 
 ## 25.2. Artefaktu natiboak, inportazioa eta `argon2id` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`argon2id`** lehen mailako **lib** bat da, `src/main/ridgun/lib/argon2id.rg` bidean kokatua (`CRYPTO` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`argon2id`** lehen mailako **lib** bat da, `src/main/ridgun/lib/argon2id.ridgun` bidean kokatua (`CRYPTO` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/argon2id.rglib` | Banaketa eta inportazio zuzena `import argon2id` bidez |
+| **Ridgun Bundle-a** | `target/bundles/argon2id.ridgunlib` | Banaketa eta inportazio zuzena `import argon2id` bidez |
 | **Fitxategi konpilatua** | `target/argon2id.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libargon2id.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -41,9 +41,9 @@ Ekosistema tradizional batean, **`CRYPTO`** domeinuko zereginak ebazteak C-ko ka
 | `argon2id derive key / argon2id needs rehash` | Gako bitar gordinaren eratorpena eta PHC kateetan rehash beharraren detekzioa |
 | `blake2b / blake2b hex` | Helburu orokorreko RFC 7693 Blake2b laburpen kriptografikoa (`1..64` byte) |
 
-### 25.2.2. `src/main/ridgun/lib/argon2id.rg`-eko mota eta sinadura guztien katalogoa
+### 25.2.2. `src/main/ridgun/lib/argon2id.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/argon2id.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`10` mota, `0` eragile eta `134` funtzio):
+Jarraian duzu `src/main/ridgun/lib/argon2id.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`10` mota, `0` eragile eta `134` funtzio):
 
 **`argon2id`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -192,7 +192,7 @@ type A2Ctx   = r_pass: Int, s_slice: Int, l_lane: Int, p_lanes: Int, q_cols: Int
 
 ## 25.3. `argon2id` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `argon2id` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test argon2id.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `argon2id` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test argon2id.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 25.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `argon2id` erabiliz
 
@@ -370,13 +370,13 @@ fn :: verificar y evaluar politica (password : String) (phc_guardado : String) =
 
 ---
 
-## 25.4. Kaputaren azpian: nola dagoen eraikia `argon2id` Ridgun hutsean (`src/main/ridgun/lib/argon2id.rg`)
+## 25.4. Kaputaren azpian: nola dagoen eraikia `argon2id` Ridgun hutsean (`src/main/ridgun/lib/argon2id.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/argon2id.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/argon2id.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 25.4.1. Barne-inplementazioa: Core Implementation Part 1
 
-Ikusi nola `argon2id.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `argon2id.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: argon2id
@@ -1061,7 +1061,7 @@ fn :: a2 set mem A2Mem Int Int Int Int Tensor[U64 * 256] => A2Mem
 
 ### 25.4.2. Barne-inplementazioa: Core Implementation Part 9
 
-Ikusi nola `argon2id.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `argon2id.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: a2 blamka g U64 U64 U64 U64 => U64 U64 U64 U64
@@ -1104,7 +1104,7 @@ fn :: a2 blamka col pair Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]
 
 ### 25.4.3. Barne-inplementazioa: Core Implementation Part 18
 
-Ikusi nola `argon2id.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `argon2id.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: derive raw tag ctx [Int] [Int] String String Argon2Params => [Int]
@@ -1158,7 +1158,7 @@ fn :: b64 encode nopad [Int]           => String
 
 ### 25.4.4. Barne-inplementazioa: Core Implementation Part 26
 
-Ikusi nola `argon2id.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `argon2id.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: argon2id needs rehash String Argon2Params => Bool
@@ -1198,9 +1198,9 @@ fn :: argon2id hash phc String String Int Int Int => String
 ## 25.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `argon2id`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Bat-etortze zehatza bytez byte RFC 9106 §5.3 eta OpenSSL 3.5 bektore ofizialekin, `Tensor[U64 * 8 * 16]` gainean C lerro bakar bat ere gabe lan eginez.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/argon2id.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/argon2id.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test argon2id.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test argon2id.ridgun` suite automatizatuaren bidez.
 
 ### `argon2id`-ekin programatzeko Urrezko 5 Arauak
 

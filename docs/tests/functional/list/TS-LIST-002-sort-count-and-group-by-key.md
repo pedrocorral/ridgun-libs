@@ -4,12 +4,12 @@ title: Verify sorting by Int and String keys, stability, and counting and groupi
 level: unit
 covers: [FR-LIST-002, API-LIST-001]
 status: automated
-automated_in: [src/test/ridgun/test list.rg]
+automated_in: [src/test/ridgun/test list.ridgun]
 ---
 # TS-LIST-002 — Verify sorting by Int and String keys, stability, and counting and grouping by key
 
 ## Preconditions / fixtures
-- `list` and `hashmap` libs (`src/main/ridgun/lib/list.rg`, `src/main/ridgun/lib/hashmap.rg`).
+- `list` and `hashmap` libs (`src/main/ridgun/lib/list.ridgun`, `src/main/ridgun/lib/hashmap.ridgun`).
 
 ## Steps / inputs
 1. `list sort ints` on `[]`, one element, repeats, negative values and the minimum and maximum `Int`.

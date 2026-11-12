@@ -10,7 +10,7 @@ Let's be honest: hashing passwords with plain SHA-256 lets a modern GPU brute-fo
 
 The **`argon2id`** lib implements **RFC 9106 Argon2id** and **RFC 7693 Blake2b-512** in 100% pure Ridgun directly over native `Tensor[U64 * 8 * 16]` blocks (1,024 contiguous bytes per block in RMM2 memory), complete with **PHC** string formatting (`$argon2id$v=19$m=...,t=...,p=...$`), **OWASP** presets (`owaspfirst`, `owaspsecond`), secret pepper/associated-data context (`argon2id hash ctx`), raw key derivation (`argon2id derive key`), and parameter upgrade detection (`argon2id needs rehash`).
 
-In a traditional ecosystem, solving **`CRYPTO`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`argon2id`** lib (`src/main/ridgun/lib/argon2id.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`CRYPTO`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`argon2id`** lib (`src/main/ridgun/lib/argon2id.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import argon2id` (or `import argon2id as alias`) at the top of your file**: every lib defines its `module :: argon2id` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`CRYPTO`** tasks means pulling in external
 
 ## 25.2. Native Artifacts, Imports, and Complete `argon2id` API Catalog
 
-In `ridgun-libs`, **`argon2id`** is a first-class **lib** located at `src/main/ridgun/lib/argon2id.rg` (domain `CRYPTO`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`argon2id`** is a first-class **lib** located at `src/main/ridgun/lib/argon2id.ridgun` (domain `CRYPTO`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/argon2id.rglib` | Portable distribution and direct `import argon2id` resolution |
+| **Ridgun Bundle** | `target/bundles/argon2id.ridgunlib` | Portable distribution and direct `import argon2id` resolution |
 | **Compiled Archive** | `target/argon2id.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libargon2id.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -41,9 +41,9 @@ In `ridgun-libs`, **`argon2id`** is a first-class **lib** located at `src/main/r
 | `argon2id derive key / argon2id needs rehash` | Raw binary key derivation and policy-upgrade detection on stored PHC strings |
 | `blake2b / blake2b hex` | General-purpose RFC 7693 Blake2b cryptographic digest (`1..64` bytes) |
 
-### 25.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/argon2id.rg`
+### 25.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/argon2id.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/argon2id.rg` (`10` types, `0` operators, and `134` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/argon2id.ridgun` (`10` types, `0` operators, and `134` functions):
 
 **Algebraic Data Types & Records (`type`) in `argon2id`:**
 
@@ -192,7 +192,7 @@ type A2Ctx   = r_pass: Int, s_slice: Int, l_lane: Int, p_lanes: Int, q_cols: Int
 
 ## 25.3. Deep Dive into `argon2id`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `argon2id` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test argon2id.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `argon2id` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test argon2id.ridgun`.
 
 ### 25.3.1. Example 1: Core Tabular Workflow with `argon2id`
 
@@ -370,13 +370,13 @@ fn :: verificar y evaluar politica (password : String) (phc_guardado : String) =
 
 ---
 
-## 25.4. Under the Hood: How `argon2id` Is Built in Pure Ridgun (`src/main/ridgun/lib/argon2id.rg`)
+## 25.4. Under the Hood: How `argon2id` Is Built in Pure Ridgun (`src/main/ridgun/lib/argon2id.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/argon2id.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/argon2id.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 25.4.1. Internal Implementation: Core Implementation Part 1
 
-Observe how `argon2id.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `argon2id.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: argon2id
@@ -1061,7 +1061,7 @@ fn :: a2 set mem A2Mem Int Int Int Int Tensor[U64 * 256] => A2Mem
 
 ### 25.4.2. Internal Implementation: Core Implementation Part 9
 
-Observe how `argon2id.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `argon2id.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: a2 blamka g U64 U64 U64 U64 => U64 U64 U64 U64
@@ -1104,7 +1104,7 @@ fn :: a2 blamka col pair Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]
 
 ### 25.4.3. Internal Implementation: Core Implementation Part 18
 
-Observe how `argon2id.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `argon2id.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: derive raw tag ctx [Int] [Int] String String Argon2Params => [Int]
@@ -1158,7 +1158,7 @@ fn :: b64 encode nopad [Int]           => String
 
 ### 25.4.4. Internal Implementation: Core Implementation Part 26
 
-Observe how `argon2id.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `argon2id.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: argon2id needs rehash String Argon2Params => Bool
@@ -1198,9 +1198,9 @@ fn :: argon2id hash phc String String Int Int Int => String
 ## 25.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `argon2id`
 
 - **Algorithmic & Safety Guarantee**: Byte-for-byte match with official RFC 9106 §5.3 and OpenSSL 3.5 test vectors, operating on native `Tensor[U64 * 8 * 16]` blocks without a single line of C.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/argon2id.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/argon2id.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test argon2id.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test argon2id.ridgun`.
 
 ### The 5 Golden Rules When Programming with `argon2id`
 

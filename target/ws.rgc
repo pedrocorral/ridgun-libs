@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/ws.rg
+-- src/main/ridgun/lib/ws.ridgun
 -- Pure-Ridgun RFC 6455 WebSocket Handshake, Framing & Masking Library (WS)
 -- Bytes are Tensor[U8] (ADR-0010).
 -- @implements FR-WS-001

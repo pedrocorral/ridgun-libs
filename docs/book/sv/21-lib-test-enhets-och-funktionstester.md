@@ -10,7 +10,7 @@ Låt oss vara ärliga: när ett testramverk kräver magiska makron, körtidsrefl
 
 Lib:en **`test`** (`RG-011`) tillhandahåller polymorfa och typspecifika assertioner som skriver ut tydliga `[FAIL]`-diagnostiker med förväntat kontra faktiskt värde och avslutar med kod `1` vid fel.
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`TST`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`test`** (`src/main/ridgun/lib/test.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`TST`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`test`** (`src/main/ridgun/lib/test.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import test` (eller `import test as alias`) överst i filen**: varje lib definierar sin `module :: test`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`TST`** ofta at
 
 ## 21.2. Inbyggda artefakter, import och komplett API-katalog för `test`
 
-I `ridgun-libs` är **`test`** en förstklassig **lib** placerad i `src/main/ridgun/lib/test.rg` (domän `TST`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`test`** en förstklassig **lib** placerad i `src/main/ridgun/lib/test.ridgun` (domän `TST`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/test.rglib` | Portabel distribution och direkt import med `import test` |
+| **Ridgun-bundle** | `target/bundles/test.ridgunlib` | Portabel distribution och direkt import med `import test` |
 | **Kompilerat arkiv** | `target/test.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libtest.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -40,9 +40,9 @@ I `ridgun-libs` är **`test`** en förstklassig **lib** placerad i `src/main/rid
 | `assert true / assert false / assert not` | Booleska invariantassertioner (`True` / `False`) |
 | `assert ok : Int -> String -> ()` | Verifierar att en OS-/socket-statuskod är `0` (`OK`) |
 
-### 21.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/test.rg`
+### 21.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/test.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/test.rg` (`0` typer, `0` operatorer och `12` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/test.ridgun` (`0` typer, `0` operatorer och `12` funktioner):
 
 | # | Funktion / Signatur (`fn ::`) | Returtyp |
 |---|---|---|
@@ -63,7 +63,7 @@ Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-o
 
 ## 21.3. Djupdykning i `test`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `test` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test test.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `test` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test test.ridgun`.
 
 ### 21.3.1. Exempel 1: Huvudflöde i tabellform med `test`
 
@@ -136,7 +136,7 @@ fn :: ejecutar suite de ejemplo => ()
         assert true (validar invariantes de dominio 21 "ridgun") "predicado compuesto"
         -- 2. Aserciones anotadas con mensaje diagnóstico (`assert_*`)
         assert int equals (20 + 22) 42 "suma entera exacta"
-        assert str eq "rglib" "rglib" "etiqueta de artefacto"
+        assert str eq "ridgunlib" "ridgunlib" "etiqueta de artefacto"
         -- 3. Aserciones concisas sin etiqueta (`assert ok`, `assert not`, `assert eq`)
         assert ok (10 > 5)
         assert not (10 < 5)
@@ -146,13 +146,13 @@ fn :: ejecutar suite de ejemplo => ()
 
 ---
 
-## 21.4. Under huven: hur `test` är byggd i ren Ridgun (`src/main/ridgun/lib/test.rg`)
+## 21.4. Under huven: hur `test` är byggd i ren Ridgun (`src/main/ridgun/lib/test.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/test.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/test.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 21.4.1. Intern implementation: Non-Exiting Predicate Helpers
 
-Se hur `test.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `test.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: test
@@ -169,7 +169,7 @@ fn :: check true Bool => Bool
 
 ### 21.4.2. Intern implementation: RG-011 Message-Annotated Assertions
 
-Se hur `test.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `test.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: assert true Bool String => ()
@@ -200,7 +200,7 @@ fn :: assert int equals Int Int String => ()
 
 ### 21.4.3. Intern implementation: Concise Label-Free Assertion Helpers
 
-Se hur `test.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `test.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: assert ok Bool => ()
@@ -217,10 +217,10 @@ fn :: assert eq A      A        => ()
 
 ## 21.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `test`
 
-- **Algoritmisk garanti och säkerhet**: Alla 30 automatiserade testsviter i `ridgun-libs` (`src/test/ridgun/test_*.rg`, över 4 000 rader tester) körs med exakt denna lib via `stable test`.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/test.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **Algoritmisk garanti och säkerhet**: Alla 30 automatiserade testsviter i `ridgun-libs` (`src/test/ridgun/test_*.ridgun`, över 4 000 rader tester) körs med exakt denna lib via `stable test`.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/test.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test test.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test test.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `test`
 

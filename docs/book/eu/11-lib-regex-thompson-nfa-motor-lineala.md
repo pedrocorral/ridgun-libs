@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: *backtracking* bidezko adierazpen erregularren motorrek 
 
 **`regex`** lib-ak zure adierazpen erregularrak (`.`, `*`, `+`, `?`, `|`, `()`, `[a-z]`, `[^...]`, `^`, `$`, `\d`, `\w`, `\s`) **Thompsonen automata finitu ez-determinista (NFA)** batera konpilatzen ditu eta egoera-multzoa urratsez urrats aurreratzen du **$O(N \cdot M)$** denbora lineal zorrotzean, **ReDoS erasoak matematikoki ezinezko** bihurtuz.
 
-Ekosistema tradizional batean, **`REGEX`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`regex`** lib-ak (`src/main/ridgun/lib/regex.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`REGEX`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`regex`** lib-ak (`src/main/ridgun/lib/regex.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import regex` (edo `import regex as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: regex` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`REGEX`** domeinuko zereginak ebazteak C-ko kan
 
 ## 11.2. Artefaktu natiboak, inportazioa eta `regex` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`regex`** lehen mailako **lib** bat da, `src/main/ridgun/lib/regex.rg` bidean kokatua (`REGEX` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`regex`** lehen mailako **lib** bat da, `src/main/ridgun/lib/regex.ridgun` bidean kokatua (`REGEX` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/regex.rglib` | Banaketa eta inportazio zuzena `import regex` bidez |
+| **Ridgun Bundle-a** | `target/bundles/regex.ridgunlib` | Banaketa eta inportazio zuzena `import regex` bidez |
 | **Fitxategi konpilatua** | `target/regex.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libregex.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`REGEX`** domeinuko zereginak ebazteak C-ko kan
 | `regex replace / regex replace all` | Adierazpen erregularraren lehen bat-etortzea edo guztiak ordezkatzen ditu |
 | `regex split / regex escape` | Testua regex bereizle baten arabera zatitzen du eta metakaraktereak ihes egiten ditu |
 
-### 11.2.2. `src/main/ridgun/lib/regex.rg`-eko mota eta sinadura guztien katalogoa
+### 11.2.2. `src/main/ridgun/lib/regex.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/regex.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`4` mota, `0` eragile eta `70` funtzio):
+Jarraian duzu `src/main/ridgun/lib/regex.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`4` mota, `0` eragile eta `70` funtzio):
 
 **`regex`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -130,7 +130,7 @@ type NfaInst = InstChar Int Int | InstAny Int | InstClass Bool [Int] Int | InstS
 
 ## 11.3. `regex` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `regex` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test regex.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `regex` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test regex.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 11.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `regex` erabiliz
 
@@ -248,13 +248,13 @@ fn :: limpiar traza y validar id (usuario_id : String) (linea_log : String) => (
 
 ---
 
-## 11.4. Kaputaren azpian: nola dagoen eraikia `regex` Ridgun hutsean (`src/main/ridgun/lib/regex.rg`)
+## 11.4. Kaputaren azpian: nola dagoen eraikia `regex` Ridgun hutsean (`src/main/ridgun/lib/regex.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/regex.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/regex.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 11.4.1. Barne-inplementazioa: Character Class & Shorthand Helpers
 
-Ikusi nola `regex.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `regex.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: regex
@@ -287,7 +287,7 @@ fn :: re in ranges Int [Int] => Bool
 
 ### 11.4.2. Barne-inplementazioa: Thompson NFA Compiler (`ReNode` -> `[NfaInst]`)
 
-Ikusi nola `regex.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `regex.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: nfa len [NfaInst] => Int
@@ -350,7 +350,7 @@ fn :: re compile String => [NfaInst]
 
 ### 11.4.3. Barne-inplementazioa: Linear-Time Thompson NFA State-Set Simulation
 
-Ikusi nola `regex.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `regex.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: nfa inst at [NfaInst] Int => NfaInst
@@ -449,7 +449,7 @@ fn :: nfa full step [NfaInst] String Int Int [Int] => Bool
 
 ### 11.4.4. Barne-inplementazioa: Public Regex API (`API-REGEX-001`)
 
-Ikusi nola `regex.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `regex.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: regex match String String => Bool
@@ -539,9 +539,9 @@ fn :: regex split String String => [String]
 ## 11.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `regex`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: NFA egoera-multzoaren simulazioa pilaren errekurtsio kontrolatu gaberik gabe eta $O(N \cdot M)$ denbora bermatua baita `(a+)+b` eredu patologikoen aurrean ere.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/regex.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/regex.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test regex.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test regex.ridgun` suite automatizatuaren bidez.
 
 ### `regex`-ekin programatzeko Urrezko 5 Arauak
 

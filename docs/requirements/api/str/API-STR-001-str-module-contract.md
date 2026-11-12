@@ -1,11 +1,11 @@
 ---
 id: API-STR-001
-title: Public lib contract for str (str.rglib / libstr.so)
+title: Public lib contract for str (str.ridgunlib / libstr.so)
 status: approved
 implements: [FR-STR-001]
 auth: none
 ---
-# API-STR-001 — Public lib contract for `str` (`str.rg`)
+# API-STR-001 — Public lib contract for `str` (`str.ridgun`)
 
 ## Request
 - Imported via `import str`.

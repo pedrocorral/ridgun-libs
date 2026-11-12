@@ -10,7 +10,7 @@ Let's be honest: the beauty of Ridgun lies in its crisp tabular columns (`::`, `
 
 The **`fmt`** lib is Ridgun's official 2D tabular formatter and lexical syntax highlighter: it aligns `fn ::` headers, equations, `|` guards, and `--` comments, and renders into **9 output targets** (`FmtPlain`, `FmtTty`, `FmtTrueColor`, `FmtHtmlInline`, `FmtHtmlCss`, `FmtMarkdown`, `FmtPango`, `FmtLatex`, `FmtRtf`).
 
-In a traditional ecosystem, solving **`FMT`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`fmt`** lib (`src/main/ridgun/lib/fmt.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`FMT`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`fmt`** lib (`src/main/ridgun/lib/fmt.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import fmt` (or `import fmt as alias`) at the top of your file**: every lib defines its `module :: fmt` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`FMT`** tasks means pulling in external C 
 
 ## 15.2. Native Artifacts, Imports, and Complete `fmt` API Catalog
 
-In `ridgun-libs`, **`fmt`** is a first-class **lib** located at `src/main/ridgun/lib/fmt.rg` (domain `FMT`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`fmt`** is a first-class **lib** located at `src/main/ridgun/lib/fmt.ridgun` (domain `FMT`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/fmt.rglib` | Portable distribution and direct `import fmt` resolution |
+| **Ridgun Bundle** | `target/bundles/fmt.ridgunlib` | Portable distribution and direct `import fmt` resolution |
 | **Compiled Archive** | `target/fmt.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libfmt.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -40,9 +40,9 @@ In `ridgun-libs`, **`fmt`** is a first-class **lib** located at `src/main/ridgun
 | `fmt render / fmt render with` | Format and highlight source into any of the 9 `FmtTarget` backends |
 | `fmt tokenize line` | Tokenize a Ridgun line into `TokKeyword`, `TokType`, `TokOperator`, `TokString`, `TokNumber`, `TokComment` |
 
-### 15.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/fmt.rg`
+### 15.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/fmt.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/fmt.rg` (`7` types, `0` operators, and `166` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/fmt.ridgun` (`7` types, `0` operators, and `166` functions):
 
 **Algebraic Data Types & Records (`type`) in `fmt`:**
 
@@ -229,7 +229,7 @@ type FmtWhereBind = NoWhereBind | WhereBindInfo String String
 
 ## 15.3. Deep Dive into `fmt`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `fmt` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test fmt.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `fmt` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test fmt.ridgun`.
 
 ### 15.3.1. Example 1: Core Tabular Workflow with `fmt`
 
@@ -343,7 +343,7 @@ fn :: test fmt enriched document targets => ()
         assert true (str contains css_html "<span class=\"rg-logic\">AND</span>") "AC3: HTML CSS logic operator class"
         sheet_dark = fmt html stylesheet FmtThemeDark
         sheet_light = fmt html stylesheet FmtThemeLight
-        assert true (str contains sheet_dark ".rg-kw") "AC3: Dark CSS stylesheet"
+        assert true (str contains sheet_dark ".ridgun-kw") "AC3: Dark CSS stylesheet"
         assert true (str contains sheet_light "#fafafa") "AC3: Light CSS stylesheet"
 
         -- 3. Markdown
@@ -371,13 +371,13 @@ fn :: test fmt enriched document targets => ()
 
 ---
 
-## 15.4. Under the Hood: How `fmt` Is Built in Pure Ridgun (`src/main/ridgun/lib/fmt.rg`)
+## 15.4. Under the Hood: How `fmt` Is Built in Pure Ridgun (`src/main/ridgun/lib/fmt.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/fmt.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/fmt.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 15.4.1. Internal Implementation: Configuration Constructors
 
-Observe how `fmt.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `fmt.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: fmt
@@ -392,7 +392,7 @@ fn :: fmt config Int Int Int Bool FmtTarget FmtTheme => FmtConfig
 
 ### 15.4.2. Internal Implementation: Signature Parsing (`fn ::` / `op ::`)
 
-Observe how `fmt.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `fmt.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: fmt split sig arrow [FmtToken] [String] => (Bool, [String], String, Int)
@@ -448,7 +448,7 @@ fn :: fmt finish bare sig parse String String (Bool, [String], String, Int) => F
 
 ### 15.4.3. Internal Implementation: Lexical Token Classification & Syntax Highlighting
 
-Observe how `fmt.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `fmt.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: fmt is digit Int => Bool
@@ -488,7 +488,7 @@ fn :: fmt classify word String Bool => String
 
 ### 15.4.4. Internal Implementation: Public Entry Points
 
-Observe how `fmt.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `fmt.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: fmt source with config String FmtConfig => String
@@ -559,9 +559,9 @@ fn :: fmt to rtf String => String
 ## 15.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `fmt`
 
 - **Algorithmic & Safety Guarantee**: Strict idempotence (`fmt source (fmt source s) == fmt source s`) and 100% preservation of semantic tokens.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/fmt.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/fmt.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test fmt.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test fmt.ridgun`.
 
 ### The 5 Golden Rules When Programming with `fmt`
 

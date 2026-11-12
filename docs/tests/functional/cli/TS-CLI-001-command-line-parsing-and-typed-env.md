@@ -4,12 +4,12 @@ title: Verify CLI flag, option, combined short-flag, positional argument parsing
 level: unit
 covers: [FR-CLI-001, API-CLI-001]
 status: automated
-automated_in: [src/test/ridgun/test cli.rg]
+automated_in: [src/test/ridgun/test cli.ridgun]
 ---
 # TS-CLI-001 — Verify CLI flag, option, combined short-flag, positional argument parsing, and typed environment variable readers
 
 ## Preconditions / fixtures
-- Pure-Ridgun `cli` module (`src/main/ridgun/lib/cli.rg`).
+- Pure-Ridgun `cli` module (`src/main/ridgun/lib/cli.ridgun`).
 
 ## Steps / inputs
 1. Call `cli has flag` with long flags (`--verbose`), short flags (`-v`), combined short flags (`-la`), absent flags, and flags appearing after `--`.

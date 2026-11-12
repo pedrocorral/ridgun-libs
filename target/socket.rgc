@@ -1,4 +1,4 @@
--- src/main/ridgun/lib/socket.rg
+-- src/main/ridgun/lib/socket.ridgun
 -- Pure-Ridgun Socket Management Library (TCP, UDP, Unix Domain, Framing, Poll, DNS & CIDR)
 -- @implements FR-SOCK-001
 -- @implements FR-SOCK-002

@@ -10,7 +10,7 @@ Let's be honest: backtracking regex engines have caused famous global outages (a
 
 The **`regex`** lib compiles patterns (`.`, `*`, `+`, `?`, `|`, `()`, `[a-z]`, `[^...]`, `^`, `$`, `\d`, `\w`, `\s`) into a **Thompson Non-Deterministic Finite Automaton (NFA)** and steps the active state set in strict **$O(N \cdot M)$ linear time**, making **ReDoS attacks mathematically impossible**.
 
-In a traditional ecosystem, solving **`REGEX`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`regex`** lib (`src/main/ridgun/lib/regex.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`REGEX`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`regex`** lib (`src/main/ridgun/lib/regex.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import regex` (or `import regex as alias`) at the top of your file**: every lib defines its `module :: regex` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`REGEX`** tasks means pulling in external 
 
 ## 11.2. Native Artifacts, Imports, and Complete `regex` API Catalog
 
-In `ridgun-libs`, **`regex`** is a first-class **lib** located at `src/main/ridgun/lib/regex.rg` (domain `REGEX`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`regex`** is a first-class **lib** located at `src/main/ridgun/lib/regex.ridgun` (domain `REGEX`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/regex.rglib` | Portable distribution and direct `import regex` resolution |
+| **Ridgun Bundle** | `target/bundles/regex.ridgunlib` | Portable distribution and direct `import regex` resolution |
 | **Compiled Archive** | `target/regex.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libregex.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -40,9 +40,9 @@ In `ridgun-libs`, **`regex`** is a first-class **lib** located at `src/main/ridg
 | `regex replace / regex replace all` | Replace the first or all regex matches with a replacement string |
 | `regex split / regex escape` | Split text by a regex delimiter and escape metacharacters |
 
-### 11.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/regex.rg`
+### 11.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/regex.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/regex.rg` (`4` types, `0` operators, and `70` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/regex.ridgun` (`4` types, `0` operators, and `70` functions):
 
 **Algebraic Data Types & Records (`type`) in `regex`:**
 
@@ -130,7 +130,7 @@ type NfaInst = InstChar Int Int | InstAny Int | InstClass Bool [Int] Int | InstS
 
 ## 11.3. Deep Dive into `regex`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `regex` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test regex.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `regex` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test regex.ridgun`.
 
 ### 11.3.1. Example 1: Core Tabular Workflow with `regex`
 
@@ -248,13 +248,13 @@ fn :: limpiar traza y validar id (usuario_id : String) (linea_log : String) => (
 
 ---
 
-## 11.4. Under the Hood: How `regex` Is Built in Pure Ridgun (`src/main/ridgun/lib/regex.rg`)
+## 11.4. Under the Hood: How `regex` Is Built in Pure Ridgun (`src/main/ridgun/lib/regex.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/regex.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/regex.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 11.4.1. Internal Implementation: Character Class & Shorthand Helpers
 
-Observe how `regex.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `regex.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: regex
@@ -287,7 +287,7 @@ fn :: re in ranges Int [Int] => Bool
 
 ### 11.4.2. Internal Implementation: Thompson NFA Compiler (`ReNode` -> `[NfaInst]`)
 
-Observe how `regex.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `regex.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: nfa len [NfaInst] => Int
@@ -350,7 +350,7 @@ fn :: re compile String => [NfaInst]
 
 ### 11.4.3. Internal Implementation: Linear-Time Thompson NFA State-Set Simulation
 
-Observe how `regex.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `regex.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: nfa inst at [NfaInst] Int => NfaInst
@@ -449,7 +449,7 @@ fn :: nfa full step [NfaInst] String Int Int [Int] => Bool
 
 ### 11.4.4. Internal Implementation: Public Regex API (`API-REGEX-001`)
 
-Observe how `regex.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `regex.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: regex match String String => Bool
@@ -539,9 +539,9 @@ fn :: regex split String String => [String]
 ## 11.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `regex`
 
 - **Algorithmic & Safety Guarantee**: Lockstep NFA state-set simulation with zero stack-overflow risk and guaranteed $O(N \cdot M)$ runtime even on pathological `(a+)+b` inputs.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/regex.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/regex.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test regex.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test regex.ridgun`.
 
 ### The 5 Golden Rules When Programming with `regex`
 

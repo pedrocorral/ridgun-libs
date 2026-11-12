@@ -7,8 +7,8 @@ completed: 2026-11-08
 requirements: [FR-HASHMAP-001, FR-LIST-002, FR-LIST-001]  # FR-*/NFR-* this task delivers or touches
 tests: [TS-HASHMAP-001, TS-LIST-002]  # TS-* to automate
 security: [VUL-INPUT-001]   # VUL-* to address
-context_files: [/tmp/ridgun-lib/requirements/2026-11-07-comparar-textos-y-mapa-hash.md, docs/requirements/decisions/ADR-0009-hashmap-is-updated-in-place.md, src/main/ridgun/lib/hashmap.rg, src/main/ridgun/lib/list.rg]  # THE ONLY files an agent must read to work on this task
-scope: [src/main/ridgun/lib/hashmap.rg, src/main/ridgun/lib/list.rg, "src/test/ridgun/test hashmap.rg", "src/test/ridgun/test list.rg", build.rg, docs/requirements, docs/tests]  # paths/globs this task will change (aix task start warns when two going-on tasks overlap)
+context_files: [/tmp/ridgun-lib/requirements/2026-11-07-comparar-textos-y-mapa-hash.md, docs/requirements/decisions/ADR-0009-hashmap-is-updated-in-place.md, src/main/ridgun/lib/hashmap.ridgun, src/main/ridgun/lib/list.ridgun]  # THE ONLY files an agent must read to work on this task
+scope: [src/main/ridgun/lib/hashmap.ridgun, src/main/ridgun/lib/list.ridgun, "src/test/ridgun/test hashmap.ridgun", "src/test/ridgun/test list.ridgun", build.ridgun, docs/requirements, docs/tests]  # paths/globs this task will change (aix task start warns when two going-on tasks overlap)
 owner: agent-001
 claimed: 2026-11-08T15:02:39Z
 claimed_by: claude claude@solarfall
@@ -32,8 +32,8 @@ Deliver Solstice's request `2026-11-07-comparar-textos-y-mapa-hash.md`: a String
 - 2026-11-08: Compiler note `/tmp/ridgun-compiler/2026-11-08/hashmap-tensores-y-campos.md` (field leak, generic tensor write, `@` on Real, slow String/generic tensor creation, call cost). Reply appended to the Solstice request.
 
 ## Files changed (keep current)
-- `src/main/ridgun/lib/hashmap.rg` (new), `src/main/ridgun/lib/list.rg`, `build.rg`
-- `src/test/ridgun/test hashmap.rg` (new), `src/test/ridgun/test list.rg`
+- `src/main/ridgun/lib/hashmap.ridgun` (new), `src/main/ridgun/lib/list.ridgun`, `build.ridgun`
+- `src/test/ridgun/test hashmap.ridgun` (new), `src/test/ridgun/test list.ridgun`
 - FR-HASHMAP-001, API-HASHMAP-001, DM-HashMap, TS-HASHMAP-001, ADR-0009, FR-LIST-002, TS-LIST-002 (new); FR-LIST-001 AC2, API-LIST-001, glossary, field dictionary, indexes
 
 ## Verification performed (command → result, newest last)

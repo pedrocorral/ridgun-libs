@@ -2,7 +2,7 @@
 
 ## 34.1. Varför finns libben `locale`?
 
-Libben **`locale`** (`src/main/ridgun/lib/locale.rg`, domän `LOCALE`) tillhandahåller deterministisk internationalisering i ren Ridgun baserad på **Unicode CLDR 46** och Howard Hinnants $O(1)$ UTC-kalender:
+Libben **`locale`** (`src/main/ridgun/lib/locale.ridgun`, domän `LOCALE`) tillhandahåller deterministisk internationalisering i ren Ridgun baserad på **Unicode CLDR 46** och Howard Hinnants $O(1)$ UTC-kalender:
 
 1. **CLDR-pluralregler i dubbelt läge (`.po`-kompatibelt standardläge + strikt CLDR 46 med `"many"`)**: `plural category`, `plural categories` och `plural index` ger 2-formsläget `["one", "other"]` för `.po`-kataloger, medan `plural category cldr` och `plural categories cldr` aktiverar `"many"` för jämna miljoner i `es`, `ca`, `pt`, `it` och `fr`.
 2. **UTC-datum- och tidsformatering (`format date`, `format datetime`, `month name`, `weekday name`)** i stilarna `short`, `medium`, `long` och `full` (inklusive mellanslag som tusentalsavgränsare och `"31 oktober 2026"` på svenska).
@@ -270,4 +270,4 @@ fn :: test locale autonyms normalization and registry => ()
 ## 34.5. Algoritmiska garantier och `RMM1`/`RMM2`-minne
 
 - **Algoritmisk och säkerhetsmässig garanti**: 100 % rena funktioner utan globalt muterbart tillstånd, $O(1)$ UTC-kalender och deterministisk fallback till `"en"`.
-- **Kontinuerlig verifiering**: Testad med `src/test/ridgun/test locale.rg`.
+- **Kontinuerlig verifiering**: Testad med `src/test/ridgun/test locale.ridgun`.

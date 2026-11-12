@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/http.rg
+-- src/main/ridgun/lib/http.ridgun
 -- Pure-Ridgun RFC 3986 URI & RFC 9112 HTTP/1.1 Request/Response Library (HTTP)
 -- @implements FR-HTTP-001
 -- @implements API-HTTP-001

@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: `O_CREAT`, `O_NONBLOCK` bezalako banderak edo syscall ze
 
 **`posix`** lib-ak Ridgunen 2 mailako **Plataforma Abstrakzio Geruza (PAL)** inplementatzen du `sys os` (`Linux | MacOS | Windows`) eta `sys arch` (`X86_64 | Arm64 | RiscV64`) gaineko zain taularatuak erabiliz, deskribatzaileen zundaketaz (`wait fd`), erloju monotonoez (`RGF-017`), seinaleez (`RGF-018`) eta nukleoaren CSPRNG entropiaz (`sys random bytes`) gain.
 
-Ekosistema tradizional batean, **`POSIX`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`posix`** lib-ak (`src/main/ridgun/lib/posix.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`POSIX`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`posix`** lib-ak (`src/main/ridgun/lib/posix.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import posix` (edo `import posix as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: posix` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`POSIX`** domeinuko zereginak ebazteak C-ko kan
 
 ## 22.2. Artefaktu natiboak, inportazioa eta `posix` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`posix`** lehen mailako **lib** bat da, `src/main/ridgun/lib/posix.rg` bidean kokatua (`POSIX` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`posix`** lehen mailako **lib** bat da, `src/main/ridgun/lib/posix.ridgun` bidean kokatua (`POSIX` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/posix.rglib` | Banaketa eta inportazio zuzena `import posix` bidez |
+| **Ridgun Bundle-a** | `target/bundles/posix.ridgunlib` | Banaketa eta inportazio zuzena `import posix` bidez |
 | **Fitxategi konpilatua** | `target/posix.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libposix.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -41,9 +41,9 @@ Ekosistema tradizional batean, **`POSIX`** domeinuko zereginak ebazteak C-ko kan
 | `signal watch / signal poll / sys random bytes` | Seinaleen zundaketa ez-blokeatzailea (`SIGINT`, `SIGTERM`) eta nukleoaren CSPRNG byteak |
 | `read text / write text / file exists / run cmd` | Goi-mailako fitxategi S/I, direktorio-eragiketak eta azpiprozesuen bilgarriak |
 
-### 22.2.2. `src/main/ridgun/lib/posix.rg`-eko mota eta sinadura guztien katalogoa
+### 22.2.2. `src/main/ridgun/lib/posix.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/posix.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`2` mota, `0` eragile eta `103` funtzio):
+Jarraian duzu `src/main/ridgun/lib/posix.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`2` mota, `0` eragile eta `103` funtzio):
 
 **`posix`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -151,7 +151,7 @@ type ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int
 
 ## 22.3. `posix` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `posix` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test posix.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `posix` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test posix.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 22.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `posix` erabiliz
 
@@ -317,13 +317,13 @@ fn :: medir latencia tuberia => (Int, Int)
 
 ---
 
-## 22.4. Kaputaren azpian: nola dagoen eraikia `posix` Ridgun hutsean (`src/main/ridgun/lib/posix.rg`)
+## 22.4. Kaputaren azpian: nola dagoen eraikia `posix` Ridgun hutsean (`src/main/ridgun/lib/posix.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/posix.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/posix.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 22.4.1. Barne-inplementazioa: Poll & Process Status ADTs
 
-Ikusi nola `posix.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `posix.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: posix
@@ -335,7 +335,7 @@ type ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int
 
 ### 22.4.2. Barne-inplementazioa: Path Safety Validation (VUL-INJ-002 / VUL-INPUT-001)
 
-Ikusi nola `posix.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `posix.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: is bad posix code Int => Bool
@@ -360,7 +360,7 @@ fn :: is safe posix path String => Bool
 
 ### 22.4.3. Barne-inplementazioa: RG-010 Filesystem & Process Operations
 
-Ikusi nola `posix.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `posix.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: posix mkdir String => Bool
@@ -428,7 +428,7 @@ fn :: sys readlink String => String
 
 ### 22.4.4. Barne-inplementazioa: Ridgun v0.9.5 Target OS / Arch & Process Probe Helpers
 
-Ikusi nola `posix.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `posix.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: path separator SysOs   => String
@@ -453,9 +453,9 @@ fn :: process exists Int => Bool
 ## 22.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `posix`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Helburuko bitarrari ez dagozkion `sys os` eta `sys arch` adarrak konpilazio-garaian ezabatzen ditu (Dead-Code Elimination) `ridgunc`-ek.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/posix.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/posix.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test posix.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test posix.ridgun` suite automatizatuaren bidez.
 
 ### `posix`-ekin programatzeko Urrezko 5 Arauak
 

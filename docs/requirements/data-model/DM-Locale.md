@@ -9,7 +9,7 @@ verified_by: [TS-LOCALE-001]
 # DM-Locale — CLDR Locale Specification and Date Pattern Model
 
 ## Overview
-Defines the data-driven CLDR locale specification types (`LocaleDatePatterns` and `LocaleSpec`) in `src/main/ridgun/lib/locale.rg`. New languages can be added purely as `LocaleSpec` data entries without modifying formatting logic.
+Defines the data-driven CLDR locale specification types (`LocaleDatePatterns` and `LocaleSpec`) in `src/main/ridgun/lib/locale.ridgun`. New languages can be added purely as `LocaleSpec` data entries without modifying formatting logic.
 
 ## Algebraic Data Types
 - `LocaleDatePatterns String String String String String`

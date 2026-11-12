@@ -15,7 +15,7 @@ tests: [TS-CODEC-001]
 The `codec` library SHALL provide pure-Ridgun RFC 4648 Hex (`hex encode`, `hex decode`, `is valid hex`), Standard Base64 with `=` padding (`base64 encode`, `base64 decode`, `is valid base64`), and URL-safe Base64url without padding (`base64url encode`, `base64url decode`), RFC 3986 URL percent-encoding (`url encode`, `url decode`, `query string encode`, `query string decode`), and RFC 8259 lightweight JSON formatting and field extraction (`json escape`, `json unescape`, `json quote`, `json int`, `json bool`, `json null`, `json array`, `json object`, `json get str`, `json get int`, `json get bool`).
 
 ## Rationale
-Networking services (`socket.rg`), cryptographic payloads (`crypto.rg`), and configuration/IPC protocols require standardized text encodings and lightweight JSON serialization without external C libraries.
+Networking services (`socket.ridgun`), cryptographic payloads (`crypto.ridgun`), and configuration/IPC protocols require standardized text encodings and lightweight JSON serialization without external C libraries.
 
 ## Acceptance criteria
 - AC1: Given arbitrary strings, when `hex encode`/`hex decode`, `base64 encode`/`base64 decode`, and `base64url encode`/`base64url decode` are called, then they match RFC 4648 test vectors (`""`, `"f"`, `"fo"`, `"foo"`, `"foob"`, `"fooba"`, `"foobar"`) and reject invalid hex/Base64 inputs cleanly (returning `""` on malformed input and `False` on `is valid hex`/`is valid base64`).

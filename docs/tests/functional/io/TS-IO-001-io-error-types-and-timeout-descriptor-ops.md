@@ -4,12 +4,12 @@ title: Verify IoError and IoResult formatting and timeout-bounded descriptor rea
 level: unit
 covers: [FR-IO-001, API-IO-001]
 status: automated
-automated_in: [src/test/ridgun/test io.rg]
+automated_in: [src/test/ridgun/test io.ridgun]
 ---
 # TS-IO-001 — Verify IoError and IoResult formatting and timeout-bounded descriptor read, write, and command execution
 
 ## Preconditions / fixtures
-- Pure-Ridgun `io` and `posix` modules (`src/main/ridgun/lib/io.rg`, `src/main/ridgun/lib/posix.rg`).
+- Pure-Ridgun `io` and `posix` modules (`src/main/ridgun/lib/io.ridgun`, `src/main/ridgun/lib/posix.ridgun`).
 
 ## Steps / inputs
 1. Call `format io error (Timeout 500)`, `format io error Eof`, `format io error (SysErr 9 "poll")`, and `format io error (NotFound "/missing")` and verify the formatted diagnostic strings.

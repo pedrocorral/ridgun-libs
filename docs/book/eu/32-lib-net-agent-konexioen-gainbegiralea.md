@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: **Solstice** bezalako benetako zerbitzari batean, TCP ko
 
 **`net_agent`** lib-ak `ridgun-libs`-en zirkulua ixten du **`posix`**, **`socket`** eta **`agent`** batuz: gainbegiratutako konexio-taulak (`NetSupervisor`) kudeatzen ditu, konkurrentzia-mugak (`max_conns`) aplikatzen ditu, konexio geldoak garbitzen ditu (`net evict idle`) eta nukleoko deskribatzaileen gertaerak gertaera tipatuetan (`NetEvReadyRead`, `NetEvReadyWrite`, `NetEvTimeout`, `NetEvError`) bihurtzen ditu, muturretik muturrerako TCP oihartzun-urrats oso batez (`net tcp echo step`) gain.
 
-Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`net_agent`** lib-ak (`src/main/ridgun/lib/net_agent.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`net_agent`** lib-ak (`src/main/ridgun/lib/net_agent.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import net_agent` (edo `import net_agent as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: net agent` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kan
 
 ## 32.2. Artefaktu natiboak, inportazioa eta `net_agent` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`net_agent`** lehen mailako **lib** bat da, `src/main/ridgun/lib/net_agent.rg` bidean kokatua (`AGENT` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`net_agent`** lehen mailako **lib** bat da, `src/main/ridgun/lib/net_agent.ridgun` bidean kokatua (`AGENT` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/net_agent.rglib` | Banaketa eta inportazio zuzena `import net_agent` bidez |
+| **Ridgun Bundle-a** | `target/bundles/net_agent.ridgunlib` | Banaketa eta inportazio zuzena `import net_agent` bidez |
 | **Fitxategi konpilatua** | `target/net_agent.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libnet_agent.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -41,9 +41,9 @@ Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kan
 | `net poll fd : Int -> Bool -> Int -> NetEvent` | `NetEvReadyRead`, `NetEvReadyWrite`, `NetEvTimeout` edo `NetEvError` igortzen duen `wait fd` zubia |
 | `net tcp echo step : String -> Int -> (Int, String)` | Muturretik muturrerako TCP loopback urrats osoa (`listen/connect/accept/supervise/echo`) |
 
-### 32.2.2. `src/main/ridgun/lib/net_agent.rg`-eko mota eta sinadura guztien katalogoa
+### 32.2.2. `src/main/ridgun/lib/net_agent.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/net_agent.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`2` mota, `0` eragile eta `8` funtzio):
+Jarraian duzu `src/main/ridgun/lib/net_agent.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`2` mota, `0` eragile eta `8` funtzio):
 
 **`net_agent`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -67,7 +67,7 @@ type StepOutcome = ConnKeep ConnSlot String | ConnClosed
 
 ## 32.3. `net_agent` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `net_agent` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test net_agent.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `net_agent` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test net_agent.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 32.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `net_agent` erabiliz
 
@@ -273,13 +273,13 @@ fn :: ejemplo reactor conexiones (fd1 : Int) (fd2 : Int) => [ConnSlot]
 
 ---
 
-## 32.4. Kaputaren azpian: nola dagoen eraikia `net_agent` Ridgun hutsean (`src/main/ridgun/lib/net_agent.rg`)
+## 32.4. Kaputaren azpian: nola dagoen eraikia `net_agent` Ridgun hutsean (`src/main/ridgun/lib/net_agent.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/net_agent.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/net_agent.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 32.4.1. Barne-inplementazioa: Core Implementation Part 1
 
-Ikusi nola `net_agent.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `net_agent.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: net agent
@@ -321,7 +321,7 @@ fn :: conn feed payload Int Agent String => StepOutcome
 
 ### 32.4.2. Barne-inplementazioa: Core Implementation Part 2
 
-Ikusi nola `net_agent.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `net_agent.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: conn cast str A => String
@@ -358,9 +358,9 @@ fn :: reactor shutdown [ConnSlot] => ()
 ## 32.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `net_agent`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Deskribatzaileen agorpenaren aurkako babes automatikoa (`max_conns`), konexio geldoen kanporatze determinista eta socketen itxiera bermatua `net tcp echo step`-en.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/net_agent.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/net_agent.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test net_agent.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test net_agent.ridgun` suite automatizatuaren bidez.
 
 ### `net_agent`-ekin programatzeko Urrezko 5 Arauak
 

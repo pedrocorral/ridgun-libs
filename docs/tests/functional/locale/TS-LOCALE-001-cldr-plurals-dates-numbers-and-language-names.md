@@ -6,12 +6,12 @@ level: unit
 domain: LOCALE
 verifies: [FR-LOCALE-001, API-LOCALE-001, DM-Locale]
 test_files:
-  - src/test/ridgun/test locale.rg
+  - src/test/ridgun/test locale.ridgun
 ---
 # TS-LOCALE-001 — Unit and Functional Suite for CLDR Locale Plurals, UTC Dates, Numbers, and Language Names
 
 ## Scope
-Verifies `src/main/ridgun/lib/locale.rg` across all 7 built-in CLDR locales (`es`, `ca`, `eu`, `gl`, `pt`, `sv`, `en`), unknown locale fallback (`root`/`en`), data-only `LocaleSpec` registration, `.po`-compatible and strict CLDR cardinal plural rules, UTC date/datetime formatting across `"short"`, `"medium"`, `"long"`, and `"full"` styles, integer and decimal formatting (including Swedish non-breaking space `\u00A0`), and language autonyms.
+Verifies `src/main/ridgun/lib/locale.ridgun` across all 7 built-in CLDR locales (`es`, `ca`, `eu`, `gl`, `pt`, `sv`, `en`), unknown locale fallback (`root`/`en`), data-only `LocaleSpec` registration, `.po`-compatible and strict CLDR cardinal plural rules, UTC date/datetime formatting across `"short"`, `"medium"`, `"long"`, and `"full"` styles, integer and decimal formatting (including Swedish non-breaking space `\u00A0`), and language autonyms.
 
 ## Test Cases
 1. **Language Autonyms, Normalization, Fallback & Extensible Registry (`AC1`)**:

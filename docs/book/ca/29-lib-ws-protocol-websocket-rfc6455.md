@@ -10,7 +10,7 @@ Siguem sincers: el protocol WebSocket (RFC 6455) combina un handshake SHA-1 + Ba
 
 La lib **`ws`** implementa **RFC 6455** complet en Ridgun pur: càlcul de `Sec-WebSocket-Accept` (amb SHA-1 RFC 3174 integrat exclusivament per al GUID de handshake), capçaleres HTTP `101 Switching Protocols`, codificació i descodificació de trames (`WsFrame`) amb longituds de 7, 16 (`126`) i 64 bits (`127`), emmascarament simètric XOR i constructors de trames de text, ping, pong i tancament.
 
-En un ecosistema tradicional, resoldre les tasques del domini **`WS`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`ws`** (`src/main/ridgun/lib/ws.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`WS`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`ws`** (`src/main/ridgun/lib/ws.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import ws` (o `import ws as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: ws` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`WS`** implica a
 
 ## 29.2. Artefactes natius, importació i catàleg complet de l'API de `ws`
 
-A `ridgun-libs`, **`ws`** és una **lib** de primera classe situada a `src/main/ridgun/lib/ws.rg` (domini `WS`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`ws`** és una **lib** de primera classe situada a `src/main/ridgun/lib/ws.ridgun` (domini `WS`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/ws.rglib` | Distribució i importació directa amb `import ws` |
+| **Bundle Ridgun** | `target/bundles/ws.ridgunlib` | Distribució i importació directa amb `import ws` |
 | **Fitxer compilat** | `target/ws.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libws.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -40,9 +40,9 @@ A `ridgun-libs`, **`ws`** és una **lib** de primera classe situada a `src/main/
 | `ws encode frame / ws decode frame` | Codifica i descodifica trames `WsFrame` (`fin`, `opcode`, `masked`, `mask_key`, `payload`) |
 | `ws text frame / ws ping frame / ws pong frame / ws close frame` | Constructors de trames d'alt nivell i extractors de codi de tancament (`1000` normal) |
 
-### 29.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/ws.rg`
+### 29.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/ws.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/ws.rg` (`3` tipus, `0` operadors i `54` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/ws.ridgun` (`3` tipus, `0` operadors i `54` funcions):
 
 **Tipus algebraics i registres (`type`) de `ws`:**
 
@@ -113,7 +113,7 @@ type Sha1State = h0: Int, h1: Int, h2: Int, h3: Int, h4: Int
 
 ## 29.3. Explorant `ws` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `ws` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test ws.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `ws` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test ws.ridgun`.
 
 ### 29.3.1. Exemple 1: Flux principal en estil tabular amb `ws`
 
@@ -246,13 +246,13 @@ fn :: test ws truncated frames => ()
 
 ---
 
-## 29.4. Sota el capó: com està construïda `ws` en Ridgun pur (`src/main/ridgun/lib/ws.rg`)
+## 29.4. Sota el capó: com està construïda `ws` en Ridgun pur (`src/main/ridgun/lib/ws.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/ws.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/ws.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 29.4.1. Implementació interna: 32-Bit Unsigned Bitwise Helpers for RFC 3174 SHA-1
 
-Fixa't en com `ws.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `ws.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: ws
@@ -307,7 +307,7 @@ fn :: ws byte bxor Int Int => Int
 
 ### 29.4.2. Implementació interna: List & String Byte Conversion Helpers
 
-Fixa't en com `ws.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `ws.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: ws list len [Int] => Int
@@ -346,7 +346,7 @@ fn :: ws bytes to str [Int] => String
 
 ### 29.4.3. Implementació interna: Pure-Ridgun SHA-1 & Base64 for RFC 6455 Handshake
 
-Fixa't en com `ws.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `ws.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: ws zeroes Int => [Int]
@@ -470,7 +470,7 @@ fn :: ws build upgrade response String => String
 
 ### 29.4.4. Implementació interna: RFC 6455 XOR Masking & Frame Encoding / Decoding
 
-Fixa't en com `ws.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `ws.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: ws mask loop [Int] [Int] Int => [Int]
@@ -563,9 +563,9 @@ fn :: ws finish frame Bool Int Bool [Int] Int => WsRes
 ## 29.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `ws`
 
 - **Garantia algorísmica i de seguretat**: Coincidència exacta amb el vector oficial RFC 6455 (`"dGhlIHNhbXBsZSBub25jZQ=="` $\rightarrow$ `"s3pPLMBiTxaQ9kYGzzhZRbK+xOo="`) i desemmascarament automàtic a `ws decode frame`.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/ws.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/ws.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test ws.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test ws.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `ws`
 

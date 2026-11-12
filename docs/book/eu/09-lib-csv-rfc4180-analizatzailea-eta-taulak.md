@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: mundu guztiak uste du CSV bat analizatzea `str split ler
 
 **`csv`** lib-ak **RFC 4180** arauarekiko egoera-makina oso bat inplementatzen du CSV eta TSV formatuetarako, komatxo adimentsudun serializazio automatikoa eta goiburu-izenaren araberako zutabeak eta errenkadak kontsultatzeko `CsvTable` mota.
 
-Ekosistema tradizional batean, **`CSV`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`csv`** lib-ak (`src/main/ridgun/lib/csv.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`CSV`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`csv`** lib-ak (`src/main/ridgun/lib/csv.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import csv` (edo `import csv as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: csv` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`CSV`** domeinuko zereginak ebazteak C-ko kanpo
 
 ## 09.2. Artefaktu natiboak, inportazioa eta `csv` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`csv`** lehen mailako **lib** bat da, `src/main/ridgun/lib/csv.rg` bidean kokatua (`CSV` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`csv`** lehen mailako **lib** bat da, `src/main/ridgun/lib/csv.ridgun` bidean kokatua (`CSV` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/csv.rglib` | Banaketa eta inportazio zuzena `import csv` bidez |
+| **Ridgun Bundle-a** | `target/bundles/csv.ridgunlib` | Banaketa eta inportazio zuzena `import csv` bidez |
 | **Fitxategi konpilatua** | `target/csv.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libcsv.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`CSV`** domeinuko zereginak ebazteak C-ko kanpo
 | `csv parse table / csv get cell / csv col` | Goiburuz indexatutako `CsvTable` kontsulta `(errenkada, zutabe_izena)` bidez edo zutabe osoa |
 | `csv row to kv / csv table to kv list` | Errenkada taularatuak goiburuz indexatutako `[String String]` hiztegietara bihurtzen ditu |
 
-### 09.2.2. `src/main/ridgun/lib/csv.rg`-eko mota eta sinadura guztien katalogoa
+### 09.2.2. `src/main/ridgun/lib/csv.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/csv.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`1` mota, `0` eragile eta `23` funtzio):
+Jarraian duzu `src/main/ridgun/lib/csv.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`1` mota, `0` eragile eta `23` funtzio):
 
 **`csv`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -80,7 +80,7 @@ type CsvTable = headers: [String], rows: [[String]], delimiter_char: String, has
 
 ## 09.3. `csv` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `csv` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test csv.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `csv` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test csv.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 09.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `csv` erabiliz
 
@@ -198,13 +198,13 @@ fn :: test csv table lookup => ()
 
 ---
 
-## 09.4. Kaputaren azpian: nola dagoen eraikia `csv` Ridgun hutsean (`src/main/ridgun/lib/csv.rg`)
+## 09.4. Kaputaren azpian: nola dagoen eraikia `csv` Ridgun hutsean (`src/main/ridgun/lib/csv.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/csv.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/csv.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 09.4.1. Barne-inplementazioa: RFC 4180 State-Machine Parser
 
-Ikusi nola `csv.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `csv.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: csv
@@ -254,7 +254,7 @@ fn :: csv parse table String Bool => CsvTable
 
 ### 09.4.2. Barne-inplementazioa: RFC 4180 Serialization & Escaping
 
-Ikusi nola `csv.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `csv.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: csv needs quotes loop String Int Int Int => Bool
@@ -296,7 +296,7 @@ fn :: tsv stringify [[String]] => String
 
 ### 09.4.3. Barne-inplementazioa: Column Extraction & Header-Mapped Lookup
 
-Ikusi nola `csv.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `csv.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: csv nth str [String] Int => String
@@ -339,9 +339,9 @@ fn :: csv row to map [String] [String] => [String String]
 ## 09.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `csv`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: `\r\n` eta `\n` lerro-jauzien euskarri zehatza komatxoen barruan zein kanpoan, eta zero datu-galera `csv parse (csv stringify errenkadak)` joan-etorrietan.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/csv.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/csv.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test csv.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test csv.ridgun` suite automatizatuaren bidez.
 
 ### `csv`-ekin programatzeko Urrezko 5 Arauak
 

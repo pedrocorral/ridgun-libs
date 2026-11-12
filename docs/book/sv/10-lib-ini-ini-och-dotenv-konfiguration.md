@@ -10,7 +10,7 @@ Låt oss vara ärliga: `.env`- och `.ini`-filer verkar triviala tills någon skr
 
 Lib:en **`ini`** tolkar sektionsindelade `.ini`-filer (`[database]`) och `.env`-filer med `export`-prefix, bevarar `#` och `;` inuti citerade värden och löser upp variabelinterpoleringar i `dotenv parse`.
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`INI`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`ini`** (`src/main/ridgun/lib/ini.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`INI`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`ini`** (`src/main/ridgun/lib/ini.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import ini` (eller `import ini as alias`) överst i filen**: varje lib definierar sin `module :: ini`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`INI`** ofta at
 
 ## 10.2. Inbyggda artefakter, import och komplett API-katalog för `ini`
 
-I `ridgun-libs` är **`ini`** en förstklassig **lib** placerad i `src/main/ridgun/lib/ini.rg` (domän `INI`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`ini`** en förstklassig **lib** placerad i `src/main/ridgun/lib/ini.ridgun` (domän `INI`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/ini.rglib` | Portabel distribution och direkt import med `import ini` |
+| **Ridgun-bundle** | `target/bundles/ini.ridgunlib` | Portabel distribution och direkt import med `import ini` |
 | **Kompilerat arkiv** | `target/ini.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libini.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -40,9 +40,9 @@ I `ridgun-libs` är **`ini`** en förstklassig **lib** placerad i `src/main/ridg
 | `ini sections / ini section map` | Listar alla sektionsnamn eller extraherar en sektions `[String String]`-mapp |
 | `dotenv parse` | Tolkar `.env`-rader (`export K=V`, citattecken, kommentarer och variabelexpansion) |
 
-### 10.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/ini.rg`
+### 10.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/ini.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/ini.rg` (`3` typer, `0` operatorer och `44` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/ini.ridgun` (`3` typer, `0` operatorer och `44` funktioner):
 
 **Algebraiska datatyper och poster (`type`) i `ini`:**
 
@@ -103,7 +103,7 @@ type IniDoc = sections: [IniSection]
 
 ## 10.3. Djupdykning i `ini`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `ini` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test ini.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `ini` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test ini.ridgun`.
 
 ### 10.3.1. Exempel 1: Huvudflöde i tabellform med `ini`
 
@@ -214,13 +214,13 @@ fn :: cargar configuracion servicio (raw_ini : String) (raw_env : String) => (St
 
 ---
 
-## 10.4. Under huven: hur `ini` är byggd i ren Ridgun (`src/main/ridgun/lib/ini.rg`)
+## 10.4. Under huven: hur `ini` är byggd i ren Ridgun (`src/main/ridgun/lib/ini.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/ini.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/ini.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 10.4.1. Intern implementation: Whitespace, Comment & Line Helpers
 
-Se hur `ini.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `ini.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: ini
@@ -291,7 +291,7 @@ fn :: ini clean val len String Int => String
 
 ### 10.4.2. Intern implementation: Key-Value Pair Helpers (`[IniEntry]`)
 
-Se hur `ini.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `ini.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: ini p key IniEntry => String
@@ -315,7 +315,7 @@ fn :: ini kv put [IniEntry] String String => [IniEntry]
 
 ### 10.4.3. Intern implementation: Sectioned INI Document Helpers
 
-Se hur `ini.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `ini.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: ini sec put [IniSection] String String String => [IniSection]
@@ -394,7 +394,7 @@ fn :: dotenv parse String => [IniEntry]
 
 ### 10.4.4. Intern implementation: Queries, Updates & Serialization
 
-Se hur `ini.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `ini.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: ini get IniDoc String String String => String
@@ -462,9 +462,9 @@ fn :: ini stringify IniDoc => String
 ## 10.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `ini`
 
 - **Algoritmisk garanti och säkerhet**: Fullt bevarande av `#` och `;` inuti enkla eller dubbla citattecken samt flexibel boolesk tolkning (`true/1/yes/on` kontra `false/0/no/off`).
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/ini.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/ini.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test ini.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test ini.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `ini`
 

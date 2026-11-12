@@ -24,7 +24,7 @@ related: [FR-CRYPTO-001, FR-CRYPTO-002, FR-CRYPTO-003, FR-CRYPTO-004, ADR-0001, 
 | raw salt / tag bytes | Tensor[U8] | Salt `>= 8` bytes; tag `tag_len` bytes | Inputs and output of `derive raw tag`, `argon2id hash bytes`, `b64 encode nopad` / `b64 decode nopad` (`ADR-0010`) |
 
 ## Relations
-- Used across `argon2id.rg` (`Argon2Params`, `Argon2Res`, `Argon2KeyRes = Argon2KeyOk Tensor[U8] | Argon2KeyErr String`, `Argon2Phc`, `Argon2PhcRes`) and `crypto.rg` (`argon2id_hash`, `argon2id_verify`, `aead_seal`, `aead_open`).
+- Used across `argon2id.ridgun` (`Argon2Params`, `Argon2Res`, `Argon2KeyRes = Argon2KeyOk Tensor[U8] | Argon2KeyErr String`, `Argon2Phc`, `Argon2PhcRes`) and `crypto.ridgun` (`argon2id_hash`, `argon2id_verify`, `aead_seal`, `aead_open`).
 - Byte sequences that are not a whole `String` are `Tensor[U8]`, never `[Int]` (`ADR-0010`).
 
 ## Invariants

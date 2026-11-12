@@ -4,12 +4,12 @@ title: Verify string searching, trimming, replacement, splitting, case conversio
 level: unit
 covers: [FR-STR-001, API-STR-001]
 status: automated
-automated_in: [src/test/ridgun/test str.rg]
+automated_in: [src/test/ridgun/test str.ridgun]
 ---
 # TS-STR-001 — Verify string searching, trimming, replacement, splitting, case conversion, and padding utilities
 
 ## Preconditions / fixtures
-- Pure-Ridgun `str` module (`src/main/ridgun/lib/str.rg`).
+- Pure-Ridgun `str` module (`src/main/ridgun/lib/str.ridgun`).
 
 ## Steps / inputs
 1. Call `str_index_of "hello world" "world"` (`6`), `str_index_of "hello" "xyz"` (`-1`), and `str_index_of "abc" ""` (`0`), plus space-separated `str index of`.

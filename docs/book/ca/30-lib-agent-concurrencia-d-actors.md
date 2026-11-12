@@ -10,7 +10,7 @@ Siguem sincers: compartir memòria mutable entre fils amb `Mutex`, `RwLock` i va
 
 La lib **`agent`** aprofita el **Model Natiu d'Agents** de Ridgun (`agent`, `send ... to`, `receive from`, `try receive from`, `stop`) per oferir bústies aïllades amb pas de missatges Copy-on-Write, un magatzem clau-valor concurrent (`KvStore`), un limitador de taxa per cubell de tokens (`RateBucket`) i supervisió d'estat (`AgentHealth`).
 
-En un ecosistema tradicional, resoldre les tasques del domini **`AGENT`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`agent`** (`src/main/ridgun/lib/agent.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`AGENT`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`agent`** (`src/main/ridgun/lib/agent.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import agent` (o `import agent as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: agent` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`AGENT`** implic
 
 ## 30.2. Artefactes natius, importació i catàleg complet de l'API de `agent`
 
-A `ridgun-libs`, **`agent`** és una **lib** de primera classe situada a `src/main/ridgun/lib/agent.rg` (domini `AGENT`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`agent`** és una **lib** de primera classe situada a `src/main/ridgun/lib/agent.ridgun` (domini `AGENT`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/agent.rglib` | Distribució i importació directa amb `import agent` |
+| **Bundle Ridgun** | `target/bundles/agent.ridgunlib` | Distribució i importació directa amb `import agent` |
 | **Fitxer compilat** | `target/agent.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libagent.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -40,9 +40,9 @@ A `ridgun-libs`, **`agent`** és una **lib** de primera classe situada a `src/ma
 | `rate bucket new / rate bucket allow` | Limitador de taxa per cubell de tokens que retorna el cubell actualitzat i `(allowed, remaining)` |
 | `sup mark failed / sup should restart` | Polítiques de supervisió amb control de pressupost de reinicis (`max_restarts`) |
 
-### 30.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/agent.rg`
+### 30.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/agent.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/agent.rg` (`7` tipus, `0` operadors i `65` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/agent.ridgun` (`7` tipus, `0` operadors i `65` funcions):
 
 **Tipus algebraics i registres (`type`) de `agent`:**
 
@@ -128,7 +128,7 @@ type LogState     = log_sep: String, log_buf: String
 
 ## 30.3. Explorant `agent` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `agent` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test agent.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `agent` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test agent.ridgun`.
 
 ### 30.3.1. Exemple 1: Flux principal en estil tabular amb `agent`
 
@@ -318,13 +318,13 @@ fn :: test log and kv agents => ()
 
 ---
 
-## 30.4. Sota el capó: com està construïda `agent` en Ridgun pur (`src/main/ridgun/lib/agent.rg`)
+## 30.4. Sota el capó: com està construïda `agent` en Ridgun pur (`src/main/ridgun/lib/agent.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/agent.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/agent.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 30.4.1. Implementació interna: Status & Reply Formatting
 
-Fixa't en com `agent.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `agent.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: agent
@@ -348,7 +348,7 @@ fn :: format agent reply AgentReply        => String
 
 ### 30.4.2. Implementació interna: Core Combinators (`agent ask`, `agent try ask`, `agent send batch`, `agent receive count`, `agent map batch`, `agent drain ready`)
 
-Fixa't en com `agent.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `agent.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: agent ask Agent A   => B
@@ -399,7 +399,7 @@ fn :: agent drain step Agent Option [B] => [B]
 
 ### 30.4.3. Implementació interna: Stateful Counter Agent (`new counter agent`, `counter add`, `counter get`, `counter reset`)
 
-Fixa't en com `agent.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `agent.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: ag counter step CounterState Int   => CounterState Int
@@ -428,7 +428,7 @@ fn :: counter reset (Agent Int Int) => Int
 
 ### 30.4.4. Implementació interna: Stateful In-Memory Key-Value Agent (`new kv agent`, `kv put`, `kv get`, `kv delete`, `kv has`, `kv count`, `kv keys`, `kv clear`)
 
-Fixa't en com `agent.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `agent.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: ag kv lookup [KvEntry] String => String
@@ -478,9 +478,9 @@ fn :: ag kv has str Bool  => String
 ## 30.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `agent`
 
 - **Garantia algorísmica i de seguretat**: Zero memòria mutable compartida entre actors: cada missatge es transfereix per valor / Copy-on-Write i `stop` allibera la regió de l'agent de forma determinista.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/agent.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/agent.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test agent.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test agent.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `agent`
 

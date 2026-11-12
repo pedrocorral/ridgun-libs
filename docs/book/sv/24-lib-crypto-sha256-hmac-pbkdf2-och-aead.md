@@ -10,7 +10,7 @@ Låt oss vara ärliga: att jämföra en HMAC med `==` öppnar dörren för sidok
 
 Lib:en **`crypto`** implementerar i 100 % ren Ridgun över förallokerade `Tensor[Int]`: byte-/bitprimitiver (`RGF-019`), **FIPS 180-4 SHA-256**, **RFC 2104 HMAC-SHA-256**, konstanttidslikhet (`ct equal`), **RFC 8018 PBKDF2-HMAC-SHA-256**, 5-arguments **Argon2id** samt autentiserad kryptering med **RFC 8439 ChaCha20-Poly1305 AEAD** (`aead seal` / `aead open`).
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`CRYPTO`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`crypto`** (`src/main/ridgun/lib/crypto.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`CRYPTO`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`crypto`** (`src/main/ridgun/lib/crypto.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import crypto` (eller `import crypto as alias`) överst i filen**: varje lib definierar sin `module :: crypto`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`CRYPTO`** ofta
 
 ## 24.2. Inbyggda artefakter, import och komplett API-katalog för `crypto`
 
-I `ridgun-libs` är **`crypto`** en förstklassig **lib** placerad i `src/main/ridgun/lib/crypto.rg` (domän `CRYPTO`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`crypto`** en förstklassig **lib** placerad i `src/main/ridgun/lib/crypto.ridgun` (domän `CRYPTO`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/crypto.rglib` | Portabel distribution och direkt import med `import crypto` |
+| **Ridgun-bundle** | `target/bundles/crypto.ridgunlib` | Portabel distribution och direkt import med `import crypto` |
 | **Kompilerat arkiv** | `target/crypto.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libcrypto.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -44,9 +44,9 @@ I `ridgun-libs` är **`crypto`** en förstklassig **lib** placerad i `src/main/r
 | `ed25519 public key / ed25519 sign / ed25519 verify` | RFC 8032 §5.1 ren Ed25519 publik nyckel, konstanttidssignering och kanonisk verifiering |
 | `minisign sign / minisign verify / minisign trusted comment` | Publika nycklar och `.minisig`-signaturer kompatibla med standardverktyget `minisign` |
 
-### 24.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/crypto.rg`
+### 24.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/crypto.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/crypto.rg` (`2` typer, `0` operatorer och `109` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/crypto.ridgun` (`2` typer, `0` operatorer och `109` funktioner):
 
 **Algebraiska datatyper och poster (`type`) i `crypto`:**
 
@@ -234,7 +234,7 @@ type CA2Ctx  = cr_pass: Int, cs_slice: Int, cl_lane: Int, cp_lanes: Int, cq_cols
 
 ## 24.3. Djupdykning i `crypto`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `crypto` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test crypto.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `crypto` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test crypto.ridgun`.
 
 ### 24.3.1. Exempel 1: Huvudflöde i tabellform med `crypto`
 
@@ -489,13 +489,13 @@ fn :: verificar sha512 ed25519 y minisign => ()
 
 ---
 
-## 24.4. Under huven: hur `crypto` är byggd i ren Ridgun (`src/main/ridgun/lib/crypto.rg`)
+## 24.4. Under huven: hur `crypto` är byggd i ren Ridgun (`src/main/ridgun/lib/crypto.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/crypto.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/crypto.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 24.4.1. Intern implementation: RGF-019 Raw Byte Manipulation (`byte str`, `bytes from list`, `bytes to list`)
 
-Se hur `crypto.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `crypto.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: crypto
@@ -586,7 +586,7 @@ fn :: bytes to list String => [Int]
 
 ### 24.4.2. Intern implementation: Hex & List Utilities
 
-Se hur `crypto.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `crypto.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: hextable Int => String
@@ -684,7 +684,7 @@ fn :: byte slice String Int Int => String
 
 ### 24.4.3. Intern implementation: RGF-015 Pure-Ridgun RFC 9106 Argon2id (`argon2id hash`, `argon2id verify`)
 
-Se hur `crypto.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `crypto.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: ca2 take ints [Int]    Int => [Int]
@@ -741,7 +741,7 @@ fn :: ca2 b2b iv w16 => Tensor[U64 * 16]
 
 ### 24.4.4. Intern implementation: RFC 8439 Poly1305 One-Time Authenticator (5 x 26-bit limbs)
 
-Se hur `crypto.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `crypto.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: poly1305 clamp r [Int] => [Int]
@@ -940,9 +940,9 @@ fn :: aead open String String String String => Int String
 ## 24.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `crypto`
 
 - **Algoritmisk garanti och säkerhet**: `aead open` verifierar Poly1305-autentiseringstaggen på 16 byte i konstant tid innan en enda byte klartext lämnas ut (returnerar `(-1, "")` vid manipulering).
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/crypto.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/crypto.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test crypto.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test crypto.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `crypto`
 

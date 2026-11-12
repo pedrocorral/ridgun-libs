@@ -4,12 +4,12 @@ title: Verify socket address validation, options, and TCP/UDP/Unix lifecycle
 level: unit
 covers: [FR-SOCK-001]
 status: automated
-automated_in: [src/test/ridgun/test socket.rg]
+automated_in: [src/test/ridgun/test socket.ridgun]
 ---
 # TS-SOCK-001 — Verify socket address validation, options, and TCP/UDP/Unix lifecycle
 
 ## Preconditions / fixtures
-- Pure-Ridgun `socket` module (`src/main/ridgun/lib/socket.rg`).
+- Pure-Ridgun `socket` module (`src/main/ridgun/lib/socket.ridgun`).
 
 ## Steps / inputs
 1. Parse and construct IPv4 (`127.0.0.1:8080`), IPv6 (`[::1]:9090`), and Unix domain (`/tmp/rg_sock_test.sock`) addresses; pass invalid octets (`999.0.0.1`), invalid ports (`0`, `70000`), and unsafe Unix paths (`../bad`, `/tmp/a;b`).

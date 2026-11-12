@@ -6,11 +6,11 @@
 
 Hori da edozein sistema-ingeniarik `glob`-era iristean egiten duen lehen galdera. Eta erantzunak `ridgun-libs`-en filosofia osoa laburbiltzen du:
 
-Izan gaitezen zintzoak: fitxategi bat `*.rg`-rekin amaitzen den edo `test_[0-9]*.rg`-rekin hasten den egiaztatzeko adierazpen erregular oso bat erabiltzea euliak kanoikadaka hiltzea da.
+Izan gaitezen zintzoak: fitxategi bat `*.ridgun`-rekin amaitzen den edo `test_[0-9]*.ridgun`-rekin hasten den egiaztatzeko adierazpen erregular oso bat erabiltzea euliak kanoikadaka hiltzea da.
 
 **`glob`** lib-ak shell komodinen bat-etortze zehatza (`*`, `?`, `[a-z]` klaseak, `[!0-9]` / `[^a-z]` klase ukatuak), letra larri/xeheekiko aldaera sentikorrak (`glob match ci`) eta bide-zerrenden iragazketa zuzena inplementatzen ditu.
 
-Ekosistema tradizional batean, **`GLOB`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`glob`** lib-ak (`src/main/ridgun/lib/glob.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`GLOB`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`glob`** lib-ak (`src/main/ridgun/lib/glob.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import glob` (edo `import glob as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: glob` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`GLOB`** domeinuko zereginak ebazteak C-ko kanp
 
 ## 12.2. Artefaktu natiboak, inportazioa eta `glob` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`glob`** lehen mailako **lib** bat da, `src/main/ridgun/lib/glob.rg` bidean kokatua (`GLOB` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`glob`** lehen mailako **lib** bat da, `src/main/ridgun/lib/glob.ridgun` bidean kokatua (`GLOB` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/glob.rglib` | Banaketa eta inportazio zuzena `import glob` bidez |
+| **Ridgun Bundle-a** | `target/bundles/glob.ridgunlib` | Banaketa eta inportazio zuzena `import glob` bidez |
 | **Fitxategi konpilatua** | `target/glob.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libglob.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -39,9 +39,9 @@ Ekosistema tradizional batean, **`GLOB`** domeinuko zereginak ebazteak C-ko kanp
 | `glob filter / glob any match` | `[String]` iragazten du edo zerrenda bateko ereduren bat bat datorren egiaztatzen du |
 | `glob has magic` | Kate batek komodin-metakaraktereak (`*`, `?`, `[`) dituen detektatzen du |
 
-### 12.2.2. `src/main/ridgun/lib/glob.rg`-eko mota eta sinadura guztien katalogoa
+### 12.2.2. `src/main/ridgun/lib/glob.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/glob.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `18` funtzio):
+Jarraian duzu `src/main/ridgun/lib/glob.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `18` funtzio):
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
@@ -68,7 +68,7 @@ Jarraian duzu `src/main/ridgun/lib/glob.rg` fitxategian definitutako mota aljebr
 
 ## 12.3. `glob` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `glob` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test glob.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `glob` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test glob.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 12.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `glob` erabiliz
 
@@ -79,7 +79,7 @@ import glob
 
 fn :: seleccionar fuentes ridgun [String] => [String]
       seleccionar fuentes ridgun archivos =
-        glob filter "test_[a-z]*.rg" archivos
+        glob filter "test_[a-z]*.ridgun" archivos
 ```
 
 ### 12.3.2. 2. adibidea: Konposizio segurua eta muga-kasuen kudeaketa
@@ -105,14 +105,14 @@ fn :: test glob wildcards and boundaries => ()
         assert false (glob match "" "a") "AC1: empty pattern rejects non-empty"
         assert true (glob match "*" "") "AC1: * matches empty string"
         assert true (glob match "***" "") "AC1: *** matches empty string"
-        assert true (glob match "*" "anything.rg") "AC1: * matches full filename"
-        assert true (glob match "*.rg" "socket.rg") "AC1: *.rg matches socket.rg"
-        assert true (glob match "*.rg" ".rg") "AC1: *.rg matches leading dot .rg"
-        assert false (glob match "*.rg" "README.md") "AC1: *.rg rejects README.md"
-        assert false (glob match "*.rg" "socket.rg.bak") "AC1: *.rg rejects trailing suffix"
-        assert true (glob match "test_?.rg" "test_a.rg") "AC1: ? matches single char"
-        assert false (glob match "test_?.rg" "test_.rg") "AC1: ? rejects zero chars"
-        assert false (glob match "test_?.rg" "test_ab.rg") "AC1: ? rejects two chars"
+        assert true (glob match "*" "anything.ridgun") "AC1: * matches full filename"
+        assert true (glob match "*.ridgun" "socket.ridgun") "AC1: *.ridgun matches socket.ridgun"
+        assert true (glob match "*.ridgun" ".ridgun") "AC1: *.ridgun matches leading dot .ridgun"
+        assert false (glob match "*.ridgun" "README.md") "AC1: *.ridgun rejects README.md"
+        assert false (glob match "*.ridgun" "socket.ridgun.bak") "AC1: *.ridgun rejects trailing suffix"
+        assert true (glob match "test_?.ridgun" "test_a.ridgun") "AC1: ? matches single char"
+        assert false (glob match "test_?.ridgun" "test_.ridgun") "AC1: ? rejects zero chars"
+        assert false (glob match "test_?.ridgun" "test_ab.ridgun") "AC1: ? rejects two chars"
         assert true (glob match "???" "abc") "AC1: ??? matches 3 chars"
         assert false (glob match "???" "ab") "AC1: ??? rejects 2 chars"
         assert true (glob match "a*b*c" "abc") "AC1: multiple * matching zero chars"
@@ -135,11 +135,11 @@ fn :: test glob classes and case insensitivity => ()
         assert true (glob match "file_[0-9].txt" "file_0.txt") "AC2: [0-9] lower bound 0"
         assert true (glob match "file_[0-9].txt" "file_9.txt") "AC2: [0-9] upper bound 9"
         assert false (glob match "file_[0-9].txt" "file_a.txt") "AC2: [0-9] rejects alpha"
-        assert true (glob match "id_[a-zA-Z0-9].rg" "id_Z.rg") "AC2: multi-range [a-zA-Z0-9] matches Z"
-        assert true (glob match "id_[a-zA-Z0-9].rg" "id_5.rg") "AC2: multi-range [a-zA-Z0-9] matches 5"
-        assert false (glob match "id_[a-zA-Z0-9].rg" "id__.rg") "AC2: multi-range [a-zA-Z0-9] rejects _"
-        assert true (glob match "v[135].rg" "v3.rg") "AC2: discrete character set [135]"
-        assert false (glob match "v[135].rg" "v2.rg") "AC2: discrete character set rejects 2"
+        assert true (glob match "id_[a-zA-Z0-9].ridgun" "id_Z.ridgun") "AC2: multi-range [a-zA-Z0-9] matches Z"
+        assert true (glob match "id_[a-zA-Z0-9].ridgun" "id_5.ridgun") "AC2: multi-range [a-zA-Z0-9] matches 5"
+        assert false (glob match "id_[a-zA-Z0-9].ridgun" "id__.ridgun") "AC2: multi-range [a-zA-Z0-9] rejects _"
+        assert true (glob match "v[135].ridgun" "v3.ridgun") "AC2: discrete character set [135]"
+        assert false (glob match "v[135].ridgun" "v2.ridgun") "AC2: discrete character set rejects 2"
         assert true (glob match "file_[!0-9].txt" "file_a.txt") "AC2: [!0-9] POSIX negated class"
         assert false (glob match "file_[!0-9].txt" "file_7.txt") "AC2: [!0-9] rejects digit"
         assert true (glob match "file_[^0-9].txt" "file_z.txt") "AC2: [^0-9] caret negated class"
@@ -148,9 +148,9 @@ fn :: test glob classes and case insensitivity => ()
         assert false (glob match "a[b" "axb") "AC2: unclosed '[' rejects non-bracket"
 
         -- Case-insensitive matching
-        assert true (glob match ci "*.RG" "socket.rg") "AC2: glob_match_ci *.RG on lowercase"
-        assert true (glob match ci "*.rg" "SOCKET.RG") "AC2: glob_match_ci *.rg on uppercase"
-        assert true (glob match ci "src/**/Test_[A-Z]*.rg" "SRC/main/test_crypto.RG") "AC2: glob_match_ci mixed case"
+        assert true (glob match ci "*.RIDGUN" "socket.ridgun") "AC2: glob_match_ci *.RIDGUN on lowercase"
+        assert true (glob match ci "*.ridgun" "SOCKET.RIDGUN") "AC2: glob_match_ci *.ridgun on uppercase"
+        assert true (glob match ci "src/**/Test_[A-Z]*.ridgun" "SRC/main/test_crypto.RIDGUN") "AC2: glob_match_ci mixed case"
         ()
 ```
 
@@ -161,27 +161,27 @@ Adibide praktiko honetan `glob` bloke funtzional honetan nola portatzen den sako
 ```ridgun
 fn :: test glob filter and any match => ()
       test glob filter and any match =
-        files = ["socket.rg", "README.md", "test_socket.rg", "crypto.rg", "build.sh"]
-        assert eq (glob filter "*.rg" files) ["socket.rg", "test_socket.rg", "crypto.rg"]
-        assert eq (glob filter "test_*.rg" files) ["test_socket.rg"]
+        files = ["socket.ridgun", "README.md", "test_socket.ridgun", "crypto.ridgun", "build.sh"]
+        assert eq (glob filter "*.ridgun" files) ["socket.ridgun", "test_socket.ridgun", "crypto.ridgun"]
+        assert eq (glob filter "test_*.ridgun" files) ["test_socket.ridgun"]
         assert eq (glob filter "*.nomatch" files) []
-        assert eq (glob filter "*.rg" []) []
+        assert eq (glob filter "*.ridgun" []) []
         assert true (glob any match ["*.md", "*.txt", "*.sh"] "README.md") "AC3: glob_any_match first pattern"
         assert true (glob any match ["*.md", "*.txt", "*.sh"] "build.sh") "AC3: glob_any_match last pattern"
-        assert false (glob any match ["*.md", "*.txt"] "socket.rg") "AC3: glob_any_match no match"
-        assert false (glob any match [] "socket.rg") "AC3: glob_any_match empty pattern list"
+        assert false (glob any match ["*.md", "*.txt"] "socket.ridgun") "AC3: glob_any_match no match"
+        assert false (glob any match [] "socket.ridgun") "AC3: glob_any_match empty pattern list"
         ()
 ```
 
 ---
 
-## 12.4. Kaputaren azpian: nola dagoen eraikia `glob` Ridgun hutsean (`src/main/ridgun/lib/glob.rg`)
+## 12.4. Kaputaren azpian: nola dagoen eraikia `glob` Ridgun hutsean (`src/main/ridgun/lib/glob.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/glob.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/glob.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 12.4.1. Barne-inplementazioa: Bracket Character Class `[...]` Matching
 
-Ikusi nola `glob.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `glob.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: glob
@@ -217,7 +217,7 @@ fn :: gl eval bracket String Int Int Int => Bool
 
 ### 12.4.2. Barne-inplementazioa: Wildcard (`*`, `?`, `[...]`) Matcher
 
-Ikusi nola `glob.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `glob.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: gl skip stars String Int Int => Int
@@ -287,9 +287,9 @@ fn :: glob any match [String] String => Bool
 ## 12.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `glob`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Ondoz ondoko izarren kolapso automatikoa (`***` $\rightarrow$ `*`) atzera-egite erredundanteak saihesteko eta itxi gabeko `[` kortxeteen kudeaketa segurua.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/glob.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/glob.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test glob.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test glob.ridgun` suite automatizatuaren bidez.
 
 ### `glob`-ekin programatzeko Urrezko 5 Arauak
 

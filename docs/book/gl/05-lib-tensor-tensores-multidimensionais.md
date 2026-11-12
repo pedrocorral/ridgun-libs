@@ -10,7 +10,7 @@ Sexamos sinceros: na maioría de linguaxes tes que escoller entre listas aniñad
 
 A lib **`tensor`** envolve a primitiva nativa `Tensor[...]` de Ridgun ofrecendo creación tipada (`Tensor[Int]`, `Tensor[Real]`, `Tensor[U64]`), vistas sen copia (`reshape`, `slice`), operacións elemento a elemento (Hadamard), contracción de Einstein (`*` sobre eixos simbólicos) e aritmética `BlaMka` de 64 bits.
 
-Nun ecosistema tradicional, resolver as tarefas do dominio **`TENSOR`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`tensor`** (`src/main/ridgun/lib/tensor.rg`) aborda o problema con catro principios innegociables:
+Nun ecosistema tradicional, resolver as tarefas do dominio **`TENSOR`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`tensor`** (`src/main/ridgun/lib/tensor.ridgun`) aborda o problema con catro principios innegociables:
 
 1. **Declara `import tensor` (ou `import tensor as alias`) ao inicio do ficheiro**: cada lib define o seu espazo de nomes `module :: tensor` e en modo `--strict` as funcións multi-palabra invócanse sempre con espazos naturais.
 2. **Encadea as túas tubaxes de esquerda a dereita con `->`**: escribe `entrada paso un -> paso dous -> resultado`, usa máscaras `(+ _ _ +)` para desestruturar secuencias e omite `_ =` en sentenzas secuenciais (ou descarta con `-> ()`).
@@ -21,11 +21,11 @@ Nun ecosistema tradicional, resolver as tarefas do dominio **`TENSOR`** implica 
 
 ## 05.2. Artefactos nativos, importación e catálogo completo da API de `tensor`
 
-En `ridgun-libs`, **`tensor`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/tensor.rg` (dominio `TENSOR`). Ao compilar con `stable bundle`, empaquétase en tres formatos nativos:
+En `ridgun-libs`, **`tensor`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/tensor.ridgun` (dominio `TENSOR`). Ao compilar con `stable bundle`, empaquétase en tres formatos nativos:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/tensor.rglib` | Distribución e importación directa con `import tensor` |
+| **Bundle Ridgun** | `target/bundles/tensor.ridgunlib` | Distribución e importación directa con `import tensor` |
 | **Ficheiro compilado** | `target/tensor.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/libtensor.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
@@ -42,9 +42,9 @@ En `ridgun-libs`, **`tensor`** é unha **lib** de primeira clase situada en `src
 | `tensor dot int / tensor matmul int` | Contracción de índices de Einstein (`a[i] * b[i]`, `a[i, k] * b[k, j]`) |
 | `u64 blamka g / u64 rotr` | Mestura rotacional `U64` sen signo de 64 bits para bloques criptográficos |
 
-### 05.2.2. Catálogo exhaustivo de tipos e sinaturas en `src/main/ridgun/lib/tensor.rg`
+### 05.2.2. Catálogo exhaustivo de tipos e sinaturas en `src/main/ridgun/lib/tensor.ridgun`
 
-A continuación tes o inventario completo de tipos alxébricos (`type`), operadores (`op ::`) e sinaturas de funcións (`fn ::`) definidos en `src/main/ridgun/lib/tensor.rg` (`0` tipos, `0` operadores e `13` funcións):
+A continuación tes o inventario completo de tipos alxébricos (`type`), operadores (`op ::`) e sinaturas de funcións (`fn ::`) definidos en `src/main/ridgun/lib/tensor.ridgun` (`0` tipos, `0` operadores e `13` funcións):
 
 | # | Función / Sinatura (`fn ::`) | Tipo de Retorno |
 |---|---|---|
@@ -66,7 +66,7 @@ A continuación tes o inventario completo de tipos alxébricos (`type`), operado
 
 ## 05.3. Explorando `tensor` a fondo: Exemplos paso a paso de cada funcionalidade
 
-Non abonda con ver a táboa de sinaturas: imos explorar **cada unha das funcionalidades** da lib `tensor` mediante exemplos progresivos e executables en Ridgun. Comezaremos polas dúas receitas tabulares de uso cotián e despois percorreremos en detalle todos os escenarios funcionais, transformacións e casos límite verificados en `src/test/ridgun/test tensor.rg`.
+Non abonda con ver a táboa de sinaturas: imos explorar **cada unha das funcionalidades** da lib `tensor` mediante exemplos progresivos e executables en Ridgun. Comezaremos polas dúas receitas tabulares de uso cotián e despois percorreremos en detalle todos os escenarios funcionais, transformacións e casos límite verificados en `src/test/ridgun/test tensor.ridgun`.
 
 ### 05.3.1. Exemplo 1: Fluxo principal en estilo tabular con `tensor`
 
@@ -227,13 +227,13 @@ fn :: test blamka tensor compression => ()
 
 ---
 
-## 05.4. Baixo o capó: como está construída `tensor` en Ridgun puro (`src/main/ridgun/lib/tensor.rg`)
+## 05.4. Baixo o capó: como está construída `tensor` en Ridgun puro (`src/main/ridgun/lib/tensor.ridgun`)
 
-Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**. Podes abrir `src/main/ridgun/lib/tensor.rg` e ler exactamente como está implementada cada operación usando *pattern matching*, árbores de gardas `|` / `|.` e recursión de cola (TCO). Vexamos as pezas clave da súa implementación real:
+Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**. Podes abrir `src/main/ridgun/lib/tensor.ridgun` e ler exactamente como está implementada cada operación usando *pattern matching*, árbores de gardas `|` / `|.` e recursión de cola (TCO). Vexamos as pezas clave da súa implementación real:
 
 ### 05.4.1. Implementación interna: Core Implementation Part 1
 
-Fíxate en como `tensor.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
+Fíxate en como `tensor.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 module :: tensor
@@ -259,7 +259,7 @@ fn :: tensor bitxor blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64
 
 ### 05.4.2. Implementación interna: Core Implementation Part 2
 
-Fíxate en como `tensor.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
+Fíxate en como `tensor.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 fn :: tensor bitand blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
@@ -291,9 +291,9 @@ fn :: tensor matmul Tensor[Real * r * k] Tensor[Real * k * c] => Tensor[Real * r
 ## 05.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` e as 5 Regras de Ouro de `tensor`
 
 - **Garantía algorítmica e de seguridade**: Memoria contigua de 8 bytes por cela xestionada estaticamente por RMM1/RMM2, vistas en $O(1)$ sen duplicar o búfer e semántica pura Copy-on-Write.
-- **Complexidade de pila $O(1)$ con TCO**: Todos os bucles recursivos en `src/main/ridgun/lib/tensor.rg` están en posición de cola, polo que `ridgunc` os compila a saltos nativos sen crecemento de pila.
+- **Complexidade de pila $O(1)$ con TCO**: Todos os bucles recursivos en `src/main/ridgun/lib/tensor.ridgun` están en posición de cola, polo que `ridgunc` os compila a saltos nativos sen crecemento de pila.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Cero pausas de colector de lixo; todas as estruturas intermedias libéranse de forma determinista ao saír do ámbito.
-- **Verificación continua**: Probada exhaustivamente con `stable check` e a suite automatizada `src/test/ridgun/test tensor.rg`.
+- **Verificación continua**: Probada exhaustivamente con `stable check` e a suite automatizada `src/test/ridgun/test tensor.ridgun`.
 
 ### As 5 Regras de Ouro ao programar con `tensor`
 

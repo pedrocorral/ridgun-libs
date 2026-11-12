@@ -1,11 +1,11 @@
 ---
 id: API-WS-001
-title: Public lib contract for ws (ws.rglib / libws.so)
+title: Public lib contract for ws (ws.ridgunlib / libws.so)
 status: approved
 implements: [FR-WS-001]
 auth: none
 ---
-# API-WS-001 — Public lib contract for `ws` (`ws.rg`)
+# API-WS-001 — Public lib contract for `ws` (`ws.ridgun`)
 
 ## Request
 - Imported via `import ws`.

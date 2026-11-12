@@ -10,7 +10,7 @@ Siguem sincers: llançar un fil o actor nou per cada petició entrant sense lím
 
 La lib **`pool`** proporciona un despatxador de tasques amb **contrapressió explícita** (`PoolAccept`, `PoolRejectFull`), partició equilibrada de lots en $K$ carrils (`pool partition`), reequilibri per **robatori de treball (*work-stealing*)** (`pool steal rebalance`) i execució paral·lela sobre actors natius.
 
-En un ecosistema tradicional, resoldre les tasques del domini **`AGENT`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`pool`** (`src/main/ridgun/lib/pool.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`AGENT`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`pool`** (`src/main/ridgun/lib/pool.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import pool` (o `import pool as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: pool` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`AGENT`** implic
 
 ## 31.2. Artefactes natius, importació i catàleg complet de l'API de `pool`
 
-A `ridgun-libs`, **`pool`** és una **lib** de primera classe situada a `src/main/ridgun/lib/pool.rg` (domini `AGENT`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`pool`** és una **lib** de primera classe situada a `src/main/ridgun/lib/pool.ridgun` (domini `AGENT`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/pool.rglib` | Distribució i importació directa amb `import pool` |
+| **Bundle Ridgun** | `target/bundles/pool.ridgunlib` | Distribució i importació directa amb `import pool` |
 | **Fitxer compilat** | `target/pool.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libpool.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -40,9 +40,9 @@ A `ridgun-libs`, **`pool`** és una **lib** de primera classe situada a `src/mai
 | `pool partition / pool steal rebalance` | Reparteix lots entre $K$ treballadors i roba la meitat d'una cua sobrecarregada per a un treballador lliure |
 | `pool map sum / pool parallel sum2` | Despatxa càrregues de treball en paral·lel sobre treballadors `agent` natius |
 
-### 31.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/pool.rg`
+### 31.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/pool.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/pool.rg` (`1` tipus, `0` operadors i `14` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/pool.ridgun` (`1` tipus, `0` operadors i `14` funcions):
 
 **Tipus algebraics i registres (`type`) de `pool`:**
 
@@ -71,7 +71,7 @@ type AgentPool = Pool Int [Agent]
 
 ## 31.3. Explorant `pool` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `pool` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test pool.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `pool` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test pool.ridgun`.
 
 ### 31.3.1. Exemple 1: Flux principal en estil tabular amb `pool`
 
@@ -283,13 +283,13 @@ fn :: ejemplo pool completo => (Int, Int, [Int])
 
 ---
 
-## 31.4. Sota el capó: com està construïda `pool` en Ridgun pur (`src/main/ridgun/lib/pool.rg`)
+## 31.4. Sota el capó: com està construïda `pool` en Ridgun pur (`src/main/ridgun/lib/pool.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/pool.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/pool.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 31.4.1. Implementació interna: Core Implementation Part 1
 
-Fixa't en com `pool.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `pool.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: pool
@@ -323,7 +323,7 @@ fn :: pool broadcast AgentPool       A   => ()
 
 ### 31.4.2. Implementació interna: Core Implementation Part 2
 
-Fixa't en com `pool.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `pool.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: pool broadcast list [Agent]   A   => ()
@@ -367,9 +367,9 @@ fn :: pool shutdown AgentPool       => ()
 ## 31.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `pool`
 
 - **Garantia algorísmica i de seguretat**: Capacitat de cua estrictament acotada (`queued <= max_queue`) per protegir la memòria sota sobrecàrrega i repartiment determinista entre treballadors.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/pool.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/pool.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test pool.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test pool.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `pool`
 

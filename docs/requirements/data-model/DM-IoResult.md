@@ -16,11 +16,11 @@ related: [FR-IO-001, FR-IO-002, FR-POSIX-001, ADR-0002]
 | path | String | Non-empty filesystem path | Carried in `NotFound path` and file helpers |
 
 ## Relations
-- Defined in `io.rg` (`type IoError = Timeout Int | Eof | SysErr Int String | NotFound String`, `type IoResult = String | Int | IoError`) on top of `posix.rg` (`DM-PosixStatus`) and extendable by downstream modules via `expand type IoError` / `expand type IoResult`.
+- Defined in `io.ridgun` (`type IoError = Timeout Int | Eof | SysErr Int String | NotFound String`, `type IoResult = String | Int | IoError`) on top of `posix.ridgun` (`DM-PosixStatus`) and extendable by downstream modules via `expand type IoError` / `expand type IoResult`.
 
 ## Invariants
 - Every timeout-bounded descriptor read or write (`read fd`, `write fd`) checks readiness via `wait fd` before performing raw kernel I/O, guaranteeing that stalled pipes or sockets return `Timeout ms` instead of blocking the calling thread.
 - Reading `0` bytes from a ready descriptor returns `Eof`.
 
 ## Lifecycle
-- Single-call result sum value returned by `io.rg` operations and formatted via `format io error`.
+- Single-call result sum value returned by `io.ridgun` operations and formatted via `format io error`.

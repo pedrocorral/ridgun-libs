@@ -4,12 +4,12 @@ title: Verify RFC 3986 URI parsing, HTTP/1.1 request/response building and parsi
 level: unit
 covers: [FR-HTTP-001, API-HTTP-001]
 status: automated
-automated_in: [src/test/ridgun/test http.rg]
+automated_in: [src/test/ridgun/test http.ridgun]
 ---
 # TS-HTTP-001 — Verify RFC 3986 URI parsing, HTTP/1.1 request/response building and parsing, case-insensitive headers, and CRLF sanitization
 
 ## Preconditions / fixtures
-- Pure-Ridgun `http` module (`src/main/ridgun/lib/http.rg`).
+- Pure-Ridgun `http` module (`src/main/ridgun/lib/http.ridgun`).
 
 ## Steps / inputs
 1. Call `uri parse`, `uri scheme`, `uri host`, `uri port`, `uri path`, and `uri query` on explicit-port and default-port HTTP/HTTPS URLs.

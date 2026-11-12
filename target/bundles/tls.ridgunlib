@@ -1,0 +1,1454 @@
+-- ============================================================
+-- src/main/ridgun/lib/tls.ridgun
+-- Pure-Ridgun TLS client: RFC 8446 TLS 1.3 and RFC 5246 TLS 1.2 (ECDHE + AEAD),
+-- X.509 chain validation and RFC 6125 hostname verification.
+-- @implements FR-TLS-001
+-- @implements API-TLS-001
+-- @implements DM-Tls
+-- @mitigates VUL-AUTHN-004
+-- @mitigates VUL-INPUT-003
+-- ============================================================
+-- Cipher suites (decimal wire codes):
+--   TLS 1.3: 4865 TLS_AES_128_GCM_SHA256, 4867 TLS_CHACHA20_POLY1305_SHA256
+--   TLS 1.2: 49195 ECDHE_ECDSA_AES_128_GCM_SHA256, 49199 ECDHE_RSA_AES_128_GCM_SHA256,
+--            52393 ECDHE_ECDSA_CHACHA20_POLY1305, 52392 ECDHE_RSA_CHACHA20_POLY1305
+-- Groups: 29 x25519, 23 secp256r1. Versions: 771 = 0x0303 (TLS 1.2), 772 = 0x0304 (TLS 1.3).
+-- There is no option that skips chain, expiry, signature or hostname checks (FR-TLS-001 AC4).
+
+module :: tls
+
+import crypto
+import socket
+import posix
+import io
+
+type TlsConfig = root_certs_path: String, root_certs_pem: String, alpn_protocols: [String], min_version: Int, max_version: Int, timeout_ms: Int, verify_time_sec: Int
+type TlsConn   = fd: Int, server_name: String, tls_version: Int, cipher_suite: Int, selected_alpn: String, c_key: String, c_iv: String, s_key: String, s_iv: String, io_timeout_ms: Int, state: Tensor[U64 * 16], rx_buf: Tensor[U64 * 65536]
+type TlsError  = TlsCertExpired String | TlsHostnameMismatch String | TlsInvalidChain String | TlsUnsupportedVersion String | TlsServerAlert Int String | TlsTimeout String | TlsIoError String
+type TlsResult = TlsOk TlsConn | TlsErr TlsError
+
+-- Handshake state threaded through every step; a step does nothing once hs_failed is True.
+type TlsHs = hs_fd: Int, hs_timeout: Int, hs_ver: Int, hs_suite: Int, hs_rkey: String, hs_riv: String, hs_rseq: Int, hs_wkey: String, hs_wiv: String, hs_wseq: Int, hs_pending: String, hs_transcript: String, hs_failed: Bool, hs_error: TlsError, hs_crand: String, hs_srand: String, hs_sid: String, hs_xpriv: String, hs_ppriv: String, hs_hsec: String, hs_csec: String, hs_ssec: String, hs_master: String, hs_leaf: String, hs_alpn: String, hs_cert_req: Bool, hs_cr_ctx: String, hs_ems: Bool, hs_group: Int, hs_peer_key: String, hs_next_rkey: String, hs_next_riv: String
+
+-- conn state tensor slots
+fn :: tls st wseq => Int
+      tls st wseq =  0
+
+fn :: tls st rseq => Int
+      tls st rseq =  1
+
+fn :: tls st rx start => Int
+      tls st rx start =  2
+
+fn :: tls st rx len => Int
+      tls st rx len =  3
+
+fn :: tls st closed => Int
+      tls st closed =  4
+
+-- ============================================================
+-- Byte helpers (str slice is the fast built-in byte slice)
+-- ============================================================
+
+fn :: tls u8 String Int => Int
+      tls u8 s      i   =  norm byte (str char at s i)
+
+fn :: tls u16 String Int => Int
+      tls u16 s      i   =  ((tls u8 s i) * 256) + (tls u8 s (i + 1))
+
+fn :: tls u24 String Int => Int
+      tls u24 s      i   =  ((tls u8 s i) * 65536) + ((tls u8 s (i + 1)) * 256) + (tls u8 s (i + 2))
+
+fn :: tls sub String Int Int => String
+      tls sub s      off len =
+        | off < 0 or len <= 0 or (off + len) > (str len s) = ""
+        | otherwise                                         = str slice s off (off + len)
+
+fn :: tls rest String Int => String
+      tls rest s      off =
+        | off >= (str len s) = ""
+        | otherwise          = str slice s off (str len s)
+
+fn :: tls be2 Int => String
+      tls be2 n   =  (byte str ((n / 256) % 256)) + (byte str (n % 256))
+
+fn :: tls be3 Int => String
+      tls be3 n   =  (byte str ((n / 65536) % 256)) + (tls be2 (n % 65536))
+
+fn :: tls be4 Int => String
+      tls be4 n   =  (tls be2 ((n / 65536) % 65536)) + (tls be2 (n % 65536))
+
+fn :: tls be8 Int => String
+      tls be8 n   =  (tls be4 (n / 4294967296)) + (tls be4 (n % 4294967296))
+
+fn :: tls vec1 String => String
+      tls vec1 s      =  (byte str (str len s)) + s
+
+fn :: tls vec2 String => String
+      tls vec2 s      =  (tls be2 (str len s)) + s
+
+fn :: tls vec3 String => String
+      tls vec3 s      =  (tls be3 (str len s)) + s
+
+fn :: tls hs msg Int String => String
+      tls hs msg mtype body =  (byte str mtype) + (tls vec3 body)
+
+fn :: tls nonce String Int => String
+      tls nonce iv     seq =  bitxor byte strings iv ((c repeat byte 0 4) + (tls be8 seq))
+
+fn :: tls random String Int => String
+      tls random _ n =  str slice (argon2id generate salt 64) 0 n
+
+fn :: tls join [String] String => String
+      tls join []       acc =  acc
+      tls join (x:rest) acc =  tls join rest (acc + x)
+
+fn :: tls reverse [String] [String] => [String]
+      tls reverse []       acc =  acc
+      tls reverse (x:rest) acc =  tls reverse rest ([x] :: acc)
+
+fn :: tls hex4 Int => String
+      tls hex4 n   =  bytes to hex str (tls be2 n)
+
+-- ============================================================
+-- Suites, versions and errors
+-- ============================================================
+
+fn :: tls suite is chacha Int => Bool
+      tls suite is chacha s   =  (s == 4867) or (s == 52392) or (s == 52393)
+
+fn :: tls suite key len Int => Int
+      tls suite key len s   =
+        | tls suite is chacha s = 32
+        | otherwise             = 16
+
+fn :: tls12 suite iv len Int => Int
+      tls12 suite iv len s   =
+        | tls suite is chacha s = 12
+        | otherwise             = 4
+
+fn :: tls12 suite known Int => Bool
+      tls12 suite known s   =  (s == 49195) or (s == 49199) or (s == 52392) or (s == 52393)
+
+fn :: tls12 suite is ecdsa Int => Bool
+      tls12 suite is ecdsa s   =  (s == 49195) or (s == 52393)
+
+fn :: tls13 suite known Int => Bool
+      tls13 suite known s   =  (s == 4865) or (s == 4867)
+
+fn :: tls alert name Int => String
+      tls alert name d   =
+        | d == 0    = "close_notify"
+        | d == 10   = "unexpected_message"
+        | d == 20   = "bad_record_mac"
+        | d == 40   = "handshake_failure"
+        | d == 42   = "bad_certificate"
+        | d == 45   = "certificate_expired"
+        | d == 47   = "illegal_parameter"
+        | d == 48   = "unknown_ca"
+        | d == 50   = "decode_error"
+        | d == 51   = "decrypt_error"
+        | d == 70   = "protocol_version"
+        | d == 71   = "insufficient_security"
+        | d == 80   = "internal_error"
+        | d == 86   = "inappropriate_fallback"
+        | d == 109  = "missing_extension"
+        | d == 112  = "unrecognized_name"
+        | d == 120  = "no_application_protocol"
+        | otherwise = "alert " + (int to str d)
+
+fn :: tls alert error Int => TlsError
+      tls alert error d   =
+        | d == 70   = TlsUnsupportedVersion "server sent protocol_version alert"
+        | otherwise = TlsServerAlert d (tls alert name d)
+
+fn :: tls error name TlsError => String
+      tls error name (TlsCertExpired _)        =  "TlsCertExpired"
+      tls error name (TlsHostnameMismatch _)   =  "TlsHostnameMismatch"
+      tls error name (TlsInvalidChain _)       =  "TlsInvalidChain"
+      tls error name (TlsUnsupportedVersion _) =  "TlsUnsupportedVersion"
+      tls error name (TlsServerAlert _ _)      =  "TlsServerAlert"
+      tls error name (TlsTimeout _)            =  "TlsTimeout"
+      tls error name (TlsIoError _)            =  "TlsIoError"
+
+fn :: tls error text TlsError => String
+      tls error text (TlsCertExpired m)        =  m
+      tls error text (TlsHostnameMismatch m)   =  m
+      tls error text (TlsInvalidChain m)       =  m
+      tls error text (TlsUnsupportedVersion m) =  m
+      tls error text (TlsServerAlert _ m)      =  m
+      tls error text (TlsTimeout m)            =  m
+      tls error text (TlsIoError m)            =  m
+
+-- ============================================================
+-- Configuration (API-TLS-001)
+-- ============================================================
+
+-- @implements API-TLS-001
+fn :: tls defaults => TlsConfig
+      tls defaults =  TlsConfig "/etc/ssl/certs/ca-certificates.crt" "" [] 771 772 10000 0
+
+-- @implements API-TLS-001
+fn :: tls with roots TlsConfig String => TlsConfig
+      tls with roots cfg       path   =  cfg with root_certs_path = path, root_certs_pem = ""
+
+-- @implements API-TLS-001
+fn :: tls with root pem TlsConfig String => TlsConfig
+      tls with root pem cfg       pem    =  cfg with root_certs_pem = pem
+
+-- @implements API-TLS-001
+fn :: tls with alpn TlsConfig [String] => TlsConfig
+      tls with alpn cfg       protos   =  cfg with alpn_protocols = protos
+
+-- @implements API-TLS-001
+fn :: tls with timeout TlsConfig Int => TlsConfig
+      tls with timeout cfg       ms  =  cfg with timeout_ms = ms
+
+-- @implements API-TLS-001
+fn :: tls with verify time TlsConfig Int => TlsConfig
+      tls with verify time cfg       sec =  cfg with verify_time_sec = sec
+
+fn :: tls with versions TlsConfig Int Int => TlsConfig
+      tls with versions cfg       lo  hi  =  cfg with min_version = lo, max_version = hi
+
+-- ============================================================
+-- Record layer: AEAD, TLS 1.3 and TLS 1.2 record protection
+-- ============================================================
+
+fn :: tls aead seal Int String String String String => String
+      tls aead seal suite key   nonce  aad    pt     =
+        | tls suite is chacha suite = aead seal key nonce aad pt
+        | otherwise                 = aes128 gcm seal key nonce aad pt
+
+fn :: tls aead open Int String String String String => Int String
+      tls aead open suite key   nonce  aad    ct     =
+        | (str len ct) < 16         = (0 - 12, "")
+        | tls suite is chacha suite = aead open key nonce aad ct
+        | otherwise                 = aes128 gcm open key nonce aad ct
+
+-- TLSInnerPlaintext = content || type || zeros; AAD = record header (RFC 8446 §5.2).
+fn :: tls13 seal record Int String String Int Int String => String
+      tls13 seal record suite key   iv     seq ctype content =
+        inner = content + (byte str ctype)
+        hdr   = (byte str 23) + (tls be2 771) + (tls be2 ((str len inner) + 16))
+        hdr + (tls aead seal suite key (tls nonce iv seq) hdr inner)
+
+fn :: tls13 strip inner String Int => Int Int String
+      tls13 strip inner pt     i   =
+        | i < 0                = (0 - 7, 0, "")
+        | (tls u8 pt i) == 0   = tls13 strip inner pt (i - 1)
+        | otherwise            = (0, tls u8 pt i, str slice pt 0 i)
+
+fn :: tls13 open after Int String => Int Int String
+      tls13 open after rc  pt     =
+        | rc != 0   = (rc, 0, "")
+        | otherwise = tls13 strip inner pt ((str len pt) - 1)
+
+fn :: tls13 open record Int String String Int String => Int Int String
+      tls13 open record suite key   iv     seq payload =
+        hdr    = (byte str 23) + (tls be2 771) + (tls be2 (str len payload))
+        rc, pt = tls aead open suite key (tls nonce iv seq) hdr payload
+        tls13 open after rc pt
+
+-- GCM: nonce = salt(4) || explicit(8), explicit sent in the record. ChaCha20: RFC 7905 nonce.
+-- AAD = seq(8) || type || version || plaintext length (RFC 5246 §6.2.3.3).
+fn :: tls12 seal record Int String String Int Int String => String
+      tls12 seal record suite key   iv     seq ctype content =
+        aad  = (tls be8 seq) + (byte str ctype) + (tls be2 771) + (tls be2 (str len content))
+        body =
+          | tls suite is chacha suite = aead seal key (tls nonce iv seq) aad content
+          | otherwise                 = (tls be8 seq) + (aes128 gcm seal key (iv + (tls be8 seq)) aad content)
+        (byte str ctype) + (tls be2 771) + (tls vec2 body)
+
+fn :: tls12 open record Int String String Int Int String => Int Int String
+      tls12 open record suite key   iv     seq ctype payload =
+        | tls suite is chacha suite =
+          aad    = (tls be8 seq) + (byte str ctype) + (tls be2 771) + (tls be2 ((str len payload) - 16))
+          rc, pt = tls aead open suite key (tls nonce iv seq) aad payload
+          (rc, ctype, pt)
+        | (str len payload) < 24 = (0 - 12, ctype, "")
+        | otherwise =
+          explicit = str slice payload 0 8
+          aad      = (tls be8 seq) + (byte str ctype) + (tls be2 771) + (tls be2 ((str len payload) - 24))
+          rc, pt   = aes128 gcm open key (iv + explicit) aad (tls rest payload 8)
+          (rc, ctype, pt)
+
+fn :: tls seal record Int Int String String Int Int String => String
+      tls seal record ver suite key   iv     seq ctype content =
+        | ver == 772 = tls13 seal record suite key iv seq ctype content
+        | otherwise  = tls12 seal record suite key iv seq ctype content
+
+fn :: tls open record Int Int String String Int Int String => Int Int String
+      tls open record ver suite key   iv     seq ctype payload =
+        | ver == 772 and ctype != 23 = (0 - 7, 0, "")
+        | ver == 772                 = tls13 open record suite key iv seq payload
+        | otherwise                  = tls12 open record suite key iv seq ctype payload
+
+fn :: tls plain record Int Int String => String
+      tls plain record ctype ver   body =  (byte str ctype) + (tls be2 ver) + (tls vec2 body)
+
+-- ============================================================
+-- Socket I/O (FR-SOCK-004 kernel sockets)
+-- ============================================================
+
+fn :: tls send all Int String Int => Bool
+      tls send all fd  data   timeout =
+        rc, n = sys send fd data timeout
+        (rc == 0) and (n == (str len data))
+
+fn :: tls read exact step Int Int Int String Int String => Int String
+      tls read exact step fd  n   timeout acc    rc  chunk  =
+        | rc != 0   = (rc, acc)
+        | otherwise = tls read exact fd n timeout (acc + chunk)
+
+fn :: tls read exact Int Int Int String => Int String
+      tls read exact fd  n   timeout acc    =
+        | (str len acc) >= n = (0, acc)
+        | otherwise          =
+          rc, chunk = sys recv fd (n - (str len acc)) timeout
+          tls read exact step fd n timeout acc rc chunk
+
+fn :: tls read record body Int Int Int String => Int Int String
+      tls read record body fd  timeout rc  hdr    =
+        | rc != 0                   = (rc, 0, "")
+        | (tls u16 hdr 3) > 18432   = (0 - 7, 0, "")
+        | (tls u16 hdr 3) == 0      = (0, tls u8 hdr 0, "")
+        | otherwise                 =
+          rc2, body = tls read exact fd (tls u16 hdr 3) timeout ""
+          (rc2, tls u8 hdr 0, body)
+
+-- Returns (rc, content type, payload); rc -2 = timeout, -1 = EOF, -7 = invalid record.
+fn :: tls read record Int Int => Int Int String
+      tls read record fd  timeout =
+        rc, hdr = tls read exact fd 5 timeout ""
+        tls read record body fd timeout rc hdr
+
+-- ============================================================
+-- Handshake state machine helpers
+-- ============================================================
+
+fn :: hs fail TlsHs TlsError => TlsHs
+      hs fail st    err      =
+        | hs_failed st = st
+        | otherwise    = st with hs_failed = True, hs_error = err
+
+fn :: hs add TlsHs String => TlsHs
+      hs add st    msg    =  st with hs_transcript = (hs_transcript st) + msg
+
+fn :: hs alert TlsHs String => TlsHs
+      hs alert st    payload =
+        | (str len payload) < 2 = hs fail st (TlsIoError "malformed alert")
+        | otherwise             = hs fail st (tls alert error (tls u8 payload 1))
+
+fn :: hs absorb decrypted TlsHs Int Int String => TlsHs
+      hs absorb decrypted st    rc  itype content =
+        | rc != 0     = hs fail st (TlsIoError "record authentication failed")
+        | itype == 22 = st with hs_pending = (hs_pending st) + content
+        | itype == 21 = hs alert st content
+        | otherwise   = hs fail st (TlsIoError "unexpected record type during handshake")
+
+fn :: hs absorb record TlsHs Int Int String => TlsHs
+      hs absorb record st    rc  ctype payload =
+        | rc == (0 - 2)        = hs fail st (TlsTimeout "timed out waiting for the server")
+        | rc != 0              = hs fail st (TlsIoError "connection closed during handshake")
+        | ctype == 20          = st
+        | ctype == 21 and (hs_rkey st) == "" = hs alert st payload
+        | (hs_rkey st) == "" =
+          | ctype == 22 = st with hs_pending = (hs_pending st) + payload
+          | otherwise   = hs fail st (TlsIoError "unexpected plaintext record") |.
+        | otherwise =
+          rc2, itype, content = tls open record (hs_ver st) (hs_suite st) (hs_rkey st) (hs_riv st) (hs_rseq st) ctype payload
+          hs absorb decrypted (st with hs_rseq = (hs_rseq st) + 1) rc2 itype content
+
+fn :: hs pull record TlsHs => TlsHs
+      hs pull record st    =
+        rc, ctype, payload = tls read record (hs_fd st) (hs_timeout st)
+        hs absorb record st rc ctype payload
+
+fn :: hs msg len String => Int
+      hs msg len p      =
+        | (str len p) < 4 = 0 - 1
+        | otherwise       = (tls u24 p 1) + 4
+
+-- Next complete handshake message: (state, type or -1, full message including its 4-byte header).
+fn :: hs next msg TlsHs => TlsHs Int String
+      hs next msg st    =
+        p    = hs_pending st
+        mlen = hs msg len p
+        res  =
+          | hs_failed st                         = (st, 0 - 1, "")
+          | mlen > 262144                        = (hs fail st (TlsIoError "handshake message too large"), 0 - 1, "")
+          | mlen >= 4 and (str len p) >= mlen    = (st with hs_pending = (tls rest p mlen), tls u8 p 0, str slice p 0 mlen)
+          | otherwise                            = hs next msg (hs pull record st)
+        res
+
+fn :: hs send TlsHs String => TlsHs
+      hs send st    data   =
+        | hs_failed st                            = st
+        | tls send all (hs_fd st) data (hs_timeout st) = st
+        | otherwise                               = hs fail st (TlsIoError "failed to send to the server")
+
+-- Encrypt a handshake message with the current write keys and advance the write sequence.
+fn :: hs seal hs TlsHs String => TlsHs String
+      hs seal hs st    msg    =
+        rec = tls seal record (hs_ver st) (hs_suite st) (hs_wkey st) (hs_wiv st) (hs_wseq st) 22 msg
+        (st with hs_wseq = (hs_wseq st) + 1, rec)
+
+-- ============================================================
+-- Extensions
+-- ============================================================
+
+-- Find extension `want` in an extension block: (found, data offset, data length).
+fn :: tls find ext String Int Int => Bool Int Int
+      tls find ext exts   pos want =
+        | (pos + 4) > (str len exts)                          = (False, 0, 0)
+        | (pos + 4 + (tls u16 exts (pos + 2))) > (str len exts) = (False, 0, 0)
+        | (tls u16 exts pos) == want                          = (True, pos + 4, tls u16 exts (pos + 2))
+        | otherwise                                           = tls find ext exts (pos + 4 + (tls u16 exts (pos + 2))) want
+
+-- ALPN extension data: ProtocolNameList (2-byte length) of 1-byte-length names; first name.
+fn :: tls parse alpn String => String
+      tls parse alpn exts   =
+        found, off, len = tls find ext exts 0 16
+        res             =
+          | not found or len < 3 = ""
+          | otherwise            = tls sub exts (off + 3) (tls u8 exts (off + 2))
+        res
+
+fn :: tls alpn list [String] String => String
+      tls alpn list []       acc =  acc
+      tls alpn list (p:rest) acc =  tls alpn list rest (acc + (tls vec1 p))
+
+-- ============================================================
+-- ClientHello (RFC 8446 §4.1.2, offered for TLS 1.2 and 1.3 at once)
+-- ============================================================
+
+fn :: tls ch suites TlsConfig => String
+      tls ch suites cfg       =
+        s13 =
+          | (max_version cfg) >= 772 = (tls be2 4865) + (tls be2 4867)
+          | otherwise                = ""
+        s12 =
+          | (min_version cfg) <= 771 = (tls be2 49195) + (tls be2 49199) + (tls be2 52393) + (tls be2 52392)
+          | otherwise                = ""
+        s13 + s12
+
+fn :: tls ch versions TlsConfig => String
+      tls ch versions cfg       =
+        v13 =
+          | (max_version cfg) >= 772 = tls be2 772
+          | otherwise                = ""
+        v12 =
+          | (min_version cfg) <= 771 = tls be2 771
+          | otherwise                = ""
+        v13 + v12
+
+fn :: tls ext String String => String
+      tls ext etype  data   =  etype + (tls vec2 data)
+
+fn :: tls sig schemes => String
+      tls sig schemes =  hex to byte str "04030503060308040805080608070401050106010201"
+
+-- `shares` = KeyShareEntry list body; `cookie` = complete cookie extension or "" (HRR only).
+fn :: tls client hello String String String String String TlsConfig => String
+      tls client hello server rnd    sid    shares cookie cfg       =
+        sni    = tls ext (tls be2 0) (tls vec2 ((byte str 0) + (tls vec2 server)))
+        groups = tls ext (tls be2 10) (tls vec2 ((tls be2 29) + (tls be2 23)))
+        ptfmt  = tls ext (tls be2 11) (tls vec1 (byte str 0))
+        sigs   = tls ext (tls be2 13) (tls vec2 (tls sig schemes))
+        vers   = tls ext (tls be2 43) (tls vec1 (tls ch versions cfg))
+        kshare = tls ext (tls be2 51) (tls vec2 shares)
+        ems    = tls ext (tls be2 23) ""
+        reneg  = tls ext (tls be2 65281) (tls vec1 "")
+        protos = tls alpn list (alpn_protocols cfg) ""
+        alpn   =
+          | protos == "" = ""
+          | otherwise    = tls ext (tls be2 16) (tls vec2 protos)
+        exts   = sni + groups + ptfmt + sigs + vers + kshare + ems + reneg + alpn + cookie
+        body   = (tls be2 771) + rnd + (tls vec1 sid) + (tls vec2 (tls ch suites cfg)) + (tls vec1 (byte str 0)) + (tls vec2 exts)
+        tls hs msg 1 body
+
+-- ============================================================
+-- Certificate chain validation (FR-TLS-001 AC2/AC3/AC4)
+-- ============================================================
+
+-- PEM bundle -> list of base64 bodies (one per CERTIFICATE block), without decoding them.
+fn :: tls next nl String Int Int => Int
+      tls next nl s      idx slen =
+        | idx >= slen                = slen
+        | (str char at s idx) == 10  = idx
+        | otherwise                  = tls next nl s (idx + 1) slen
+
+fn :: tls trim cr String => String
+      tls trim cr line   =
+        | (str len line) > 0 and (str char at line ((str len line) - 1)) == 13 = str slice line 0 ((str len line) - 1)
+        | otherwise                                                           = line
+
+fn :: tls pem lines String Int Int [String] => [String]
+      tls pem lines s      idx slen acc      =
+        | idx >= slen = tls reverse acc []
+        | otherwise   =
+          e = tls next nl s idx slen
+          tls pem lines s (e + 1) slen ([tls trim cr (str slice s idx e)] :: acc)
+
+fn :: tls pem group [String] Bool [String] [String] => [String]
+      tls pem group []         _     _   blocks =  tls reverse blocks []
+      tls pem group (ln:rest) inside cur blocks =
+        | ln == "-----BEGIN CERTIFICATE-----"     = tls pem group rest True [] blocks
+        | ln == "-----END CERTIFICATE-----" and inside = tls pem group rest False [] ([tls join (tls reverse cur []) ""] :: blocks)
+        | inside                                  = tls pem group rest True ([ln] :: cur) blocks
+        | otherwise                               = tls pem group rest False cur blocks
+
+fn :: tls pem b64 blocks String => [String]
+      tls pem b64 blocks pem    =  tls pem group (tls pem lines pem 0 (str len pem) []) False [] []
+
+-- The base64 text of `der` at the three possible byte alignments, trimmed to the characters
+-- that depend only on `der`. A root whose PEM contains one of them may hold that DER.
+fn :: tls b64 pattern String Int => String
+      tls b64 pattern der    k   =
+        enc   = c b64 encode ((c repeat byte 0 k) + der)
+        full  = ((k + (str len der)) / 3) * 4
+        start =
+          | k == 0    = 0
+          | k == 1    = 2
+          | otherwise = 3
+        tls sub enc start (full - start)
+
+fn :: tls pem may hold String String String String => Bool
+      tls pem may hold b64    p0     p1     p2     =
+        ((str len p0) > 0 and (str contains b64 p0)) or ((str len p1) > 0 and (str contains b64 p1)) or ((str len p2) > 0 and (str contains b64 p2))
+
+fn :: tls roots decode String String => [X509Cert]
+      tls roots decode b64    subject =
+        ok_d, der  = c b64 decode b64
+        ok_c, cert = x509 parse cert der
+        res        =
+          | ok_d and ok_c and (subject_der cert) == subject = [cert]
+          | otherwise                                       = []
+        res
+
+-- Trusted roots whose subject equals `subject`.
+fn :: tls find roots [String] String String String String [X509Cert] => [X509Cert]
+      tls find roots []        _       _  _  _  acc =  acc
+      tls find roots (b:rest) subject p0 p1 p2 acc =
+        | tls pem may hold b p0 p1 p2 = tls find roots rest subject p0 p1 p2 ((tls roots decode b subject) :: acc)
+        | otherwise                   = tls find roots rest subject p0 p1 p2 acc
+
+fn :: tls roots for [String] String => [X509Cert]
+      tls roots for roots    subject =  tls find roots roots subject (tls b64 pattern subject 0) (tls b64 pattern subject 1) (tls b64 pattern subject 2) []
+
+fn :: tls same cert X509Cert X509Cert => Bool
+      tls same cert a        b        =  ((tbs_der a) == (tbs_der b)) and ((sig_bytes a) == (sig_bytes b))
+
+-- First anchor that signed `cur` (or that is `cur` itself).
+fn :: tls pick anchor X509Cert [X509Cert] => Bool X509Cert
+      tls pick anchor _   []       =  (False, x509 empty cert)
+      tls pick anchor cur (a:rest) =
+        | tls same cert cur a                                 = (True, a)
+        | (issuer_der cur) == (subject_der a) and (x509 verify cert sig cur a) = (True, a)
+        | otherwise                                           = tls pick anchor cur rest
+
+-- First intermediate from the server's list that is a CA and signed `cur`.
+fn :: tls pick issuer X509Cert [X509Cert] => Bool X509Cert
+      tls pick issuer _   []       =  (False, x509 empty cert)
+      tls pick issuer cur (c:rest) =
+        | not (tls same cert cur c) and (is_ca c) and (issuer_der cur) == (subject_der c) and (x509 verify cert sig cur c) = (True, c)
+        | otherwise = tls pick issuer cur rest
+
+fn :: tls path step X509Cert [X509Cert] [String] Int [X509Cert] Bool X509Cert => Bool String [X509Cert]
+      tls path step cur      pool       roots    depth acc        ok_a anchor   =
+        | ok_a and (tls same cert cur anchor) = (True, "", acc)
+        | ok_a                                = (True, "", acc :: [anchor])
+        | otherwise                           =
+          ok_i, inter = tls pick issuer cur pool
+          res         =
+            | ok_i                                 = tls build path inter pool roots (depth + 1) (acc :: [inter])
+            | (issuer_der cur) == (subject_der cur) = (False, "self-signed certificate is not trusted", acc)
+            | otherwise                            = (False, "certificate chain does not lead to a trusted root", acc)
+          res
+
+-- Build leaf -> ... -> trust anchor. Returns (ok, reason, path).
+fn :: tls build path X509Cert [X509Cert] [String] Int [X509Cert] => Bool String [X509Cert]
+      tls build path cur      pool       roots    depth acc        =
+        | depth > 8 = (False, "certificate chain is too long", acc)
+        | otherwise =
+          ok_a, anchor = tls pick anchor cur (tls roots for roots (issuer_der cur))
+          tls path step cur pool roots depth acc ok_a anchor
+
+fn :: tls parse ders [String] [X509Cert] => Bool [X509Cert]
+      tls parse ders []       acc =  (True, tls reverse certs acc [])
+      tls parse ders (d:rest) acc =
+        ok, cert = x509 parse cert d
+        res      =
+          | ok        = tls parse ders rest ([cert] :: acc)
+          | otherwise = (False, [])
+        res
+
+fn :: tls reverse certs [X509Cert] [X509Cert] => [X509Cert]
+      tls reverse certs []       acc =  acc
+      tls reverse certs (x:rest) acc =  tls reverse certs rest ([x] :: acc)
+
+fn :: tls first expired [X509Cert] Int => String
+      tls first expired []       _   =  ""
+      tls first expired (c:rest) now =
+        | now < (not_before_at c) = "certificate is not yet valid: " + (subject_cn c)
+        | now > (not_after_at c)  = "certificate has expired: " + (subject_cn c)
+        | otherwise               = tls first expired rest now
+
+fn :: tls now sec TlsConfig => Int
+      tls now sec cfg       =
+        | (verify_time_sec cfg) > 0 = verify_time_sec cfg
+        | otherwise                 = (sys wall time ms) / 1000
+
+fn :: tls root pem text TlsConfig => String
+      tls root pem text cfg       =
+        | (root_certs_pem cfg) != ""         = root_certs_pem cfg
+        | file exists (root_certs_path cfg) = read file (root_certs_path cfg)
+        | otherwise                          = ""
+
+fn :: tls check path Bool String [X509Cert] X509Cert String TlsConfig => Bool TlsError
+      tls check path ok_p reason path       leaf     server cfg       =
+        expired = tls first expired path (tls now sec cfg)
+        res     =
+          | not ok_p                         = (False, TlsInvalidChain reason)
+          | expired != ""                    = (False, TlsCertExpired expired)
+          | not (x509 match hostname leaf server) = (False, TlsHostnameMismatch ("certificate does not match host " + server))
+          | otherwise                        = (True, TlsIoError "")
+        res
+
+fn :: tls verify parsed Bool [X509Cert] String TlsConfig => Bool TlsError
+      tls verify parsed ok_c certs       server cfg       =
+        | not ok_c      = (False, TlsInvalidChain "malformed certificate")
+        | tls no certs certs = (False, TlsInvalidChain "server sent no certificate")
+        | otherwise     =
+          leaf                = c nth cert certs 0
+          roots               = tls pem b64 blocks (tls root pem text cfg)
+          ok_p, reason, path  = tls build path leaf certs roots 0 [leaf]
+          tls check path ok_p reason path leaf server cfg
+
+fn :: tls no certs [X509Cert] => Bool
+      tls no certs []    =  True
+      tls no certs (_:_) =  False
+
+fn :: c nth cert [X509Cert] Int => X509Cert
+      c nth cert []       _   =  x509 empty cert
+      c nth cert (x:rest) idx =
+        | idx <= 0  = x
+        | otherwise = c nth cert rest (idx - 1)
+
+-- Verify a server certificate list (leaf first, DER) for `server`.
+-- @implements FR-TLS-001
+-- @implements API-TLS-001
+-- @mitigates VUL-AUTHN-004
+fn :: tls verify chain [String] String TlsConfig => Bool TlsError
+      tls verify chain ders     server cfg       =
+        ok_c, certs = tls parse ders ders []
+        tls verify parsed ok_c certs server cfg
+
+-- ============================================================
+-- Handshake signatures (CertificateVerify / ServerKeyExchange)
+-- ============================================================
+
+fn :: tls scheme alg Int => String
+      tls scheme alg s   =
+        | s == 1027 = "ecdsa_sha256"
+        | s == 1283 = "ecdsa_sha384"
+        | s == 1539 = "ecdsa_sha512"
+        | s == 2052 = "rsa_pss_sha256"
+        | s == 2053 = "rsa_pss_sha384"
+        | s == 2054 = "rsa_pss_sha512"
+        | s == 2055 = "ed25519"
+        | s == 1025 = "rsa_pkcs1_sha256"
+        | s == 1281 = "rsa_pkcs1_sha384"
+        | s == 1537 = "rsa_pkcs1_sha512"
+        | otherwise = ""
+
+-- TLS 1.3 binds ECDSA schemes to a curve and forbids PKCS#1 v1.5 (RFC 8446 §4.2.3).
+fn :: tls scheme fits Int String Bool => Bool
+      tls scheme fits s   k_alg  is13 =
+        | not is13                  = True
+        | s == 1027                 = k_alg == "ec_p256"
+        | s == 1283                 = k_alg == "ec_p384"
+        | s == 1025 or s == 1281 or s == 1537 = False
+        | s == 1539                 = False
+        | otherwise                 = True
+
+fn :: tls verify scheme String Int String String Bool => Bool
+      tls verify scheme leaf_der scheme msg    sig    is13 =
+        ok, leaf = x509 parse cert leaf_der
+        alg      = tls scheme alg scheme
+        res      =
+          | not ok or alg == ""                           = False
+          | not (tls scheme fits scheme (key_alg leaf) is13) = False
+          | otherwise                                     = x509 verify signature (key_alg leaf) (pubkey_bytes leaf) (rsa_exp_bytes leaf) alg msg sig
+        res
+
+-- ============================================================
+-- TLS 1.3 key schedule (RFC 8446 §7.1, SHA-256 suites)
+-- ============================================================
+
+fn :: tls13 hs secret String => String
+      tls13 hs secret shared =
+        early = hkdf extract "" (c repeat byte 0 32)
+        hkdf extract (derive secret early "derived" "") shared
+
+fn :: tls13 master secret String => String
+      tls13 master secret hsec   =  hkdf extract (derive secret hsec "derived" "") (c repeat byte 0 32)
+
+fn :: tls13 key String Int => String
+      tls13 key secret klen =  hkdf expand label secret "key" "" klen
+
+fn :: tls13 iv String => String
+      tls13 iv secret =  hkdf expand label secret "iv" "" 12
+
+fn :: tls13 finished mac String String => String
+      tls13 finished mac secret transcript =  hmac sha256 (hkdf expand label secret "finished" "" 32) (sha256 bytes transcript)
+
+fn :: tls13 cv content String => String
+      tls13 cv content transcript =  (c repeat byte 32 64) + "TLS 1.3, server CertificateVerify" + (byte str 0) + (sha256 bytes transcript)
+
+-- Certificate message (RFC 8446 §4.4.2): context, then entries of cert_data + extensions.
+fn :: tls13 cert entries String Int Int [String] => [String]
+      tls13 cert entries msg    pos end acc      =
+        | (pos + 3) > end                           = tls reverse acc []
+        | (pos + 3 + (tls u24 msg pos) + 2) > end   = []
+        | otherwise                                 =
+          clen = tls u24 msg pos
+          elen = tls u16 msg (pos + 3 + clen)
+          tls13 cert entries msg (pos + 3 + clen + 2 + elen) end ([tls sub msg (pos + 3) clen] :: acc)
+
+fn :: tls13 cert list String => [String]
+      tls13 cert list msg    =
+        | (str len msg) < 8 = []
+        | otherwise         =
+          ctx_len = tls u8 msg 4
+          lpos    = 5 + ctx_len
+          tls13 cert entries msg (lpos + 3) (lpos + 3 + (tls u24 msg lpos)) []
+
+fn :: tls12 cert entries String Int Int [String] => [String]
+      tls12 cert entries msg    pos end acc      =
+        | (pos + 3) > end                     = tls reverse acc []
+        | (pos + 3 + (tls u24 msg pos)) > end = []
+        | otherwise                           = tls12 cert entries msg (pos + 3 + (tls u24 msg pos)) end ([tls sub msg (pos + 3) (tls u24 msg pos)] :: acc)
+
+fn :: tls12 cert list String => [String]
+      tls12 cert list msg    =
+        | (str len msg) < 7 = []
+        | otherwise         = tls12 cert entries msg 7 (7 + (tls u24 msg 4)) []
+
+-- ============================================================
+-- ServerHello (both versions)
+-- ============================================================
+
+fn :: tls hrr random => String
+      tls hrr random =  hex to byte str "cf21ad74e59a6111be1d8c021e65b891c2a211167abb8c5e079e09e2c8a8339c"
+
+fn :: tls ecdh TlsHs Int String => String
+      tls ecdh st    group key    =
+        | group == 29 and (str len key) == 32 = x25519 (hs_xpriv st) key
+        | group == 23 and (str len key) == 65 = p256 ecdh (hs_ppriv st) key
+        | otherwise                           = ""
+
+fn :: tls13 setup TlsHs String String Int TlsConfig => TlsHs
+      tls13 setup st    msg    exts   suite cfg       =
+        found, off, _ = tls find ext exts 0 51
+        group         = tls u16 exts off
+        shared        =
+          | found     = tls ecdh st group (tls sub exts (off + 4) (tls u16 exts (off + 2)))
+          | otherwise = ""
+        res           =
+          | (max_version cfg) < 772        = hs fail st (TlsUnsupportedVersion "TLS 1.3 was not offered")
+          | not (tls13 suite known suite)  = hs fail st (TlsIoError "server selected an unsupported cipher suite")
+          | (hs_group st) != 0 and group != (hs_group st) = hs fail st (TlsIoError "key share does not match HelloRetryRequest")
+          | shared == ""                   = hs fail st (TlsIoError "invalid server key share")
+          | otherwise                      = tls13 keys (hs add st msg) suite shared
+        res
+
+fn :: tls13 keys TlsHs Int String => TlsHs
+      tls13 keys st    suite shared =
+        hsec = tls13 hs secret shared
+        csec = derive secret hsec "c hs traffic" (hs_transcript st)
+        ssec = derive secret hsec "s hs traffic" (hs_transcript st)
+        klen = tls suite key len suite
+        st with hs_ver = 772, hs_suite = suite, hs_hsec = hsec, hs_csec = csec, hs_ssec = ssec, hs_rkey = tls13 key ssec klen, hs_riv = tls13 iv ssec, hs_rseq = 0, hs_wkey = tls13 key csec klen, hs_wiv = tls13 iv csec, hs_wseq = 0
+
+fn :: tls12 setup TlsHs String String Int TlsConfig => TlsHs
+      tls12 setup st    msg    exts   suite cfg       =
+        sentinel = tls sub (hs_srand st) 24 8
+        ems, _, _ = tls find ext exts 0 23
+        res      =
+          | (min_version cfg) > 771                                   = hs fail st (TlsUnsupportedVersion "server selected TLS 1.2 below the configured minimum")
+          | (max_version cfg) >= 772 and sentinel == (hex to byte str "444f574e47524401") = hs fail st (TlsUnsupportedVersion "TLS 1.3 downgrade detected")
+          | not (tls12 suite known suite)                             = hs fail st (TlsIoError "server selected an unsupported cipher suite")
+          | otherwise                                                 = (hs add st msg) with hs_ver = 771, hs_suite = suite, hs_ems = ems, hs_alpn = tls parse alpn exts
+        res
+
+fn :: tls on server hello TlsHs Int String String TlsConfig => TlsHs
+      tls on server hello st    mtype msg    server cfg       =
+        | hs_failed st                       = st
+        | mtype != 2                         = hs fail st (TlsIoError "expected ServerHello")
+        | (str len msg) < 44                 = hs fail st (TlsIoError "malformed ServerHello")
+        | otherwise                          =
+          srand   = tls sub msg 6 32
+          sid_len = tls u8 msg 38
+          pos     = 39 + sid_len
+          suite   = tls u16 msg pos
+          exts    = tls sub msg (pos + 5) (tls u16 msg (pos + 3))
+          sv, off, _ = tls find ext exts 0 43
+          version =
+            | sv        = tls u16 exts off
+            | otherwise = tls u16 msg 4
+          st2     = st with hs_srand = srand
+          res     =
+            | srand == (tls hrr random)                  = tls on hrr st msg exts server cfg
+            | version == 772 and (tls sub msg 39 sid_len) != (hs_sid st) = hs fail st2 (TlsIoError "session id echo mismatch")
+            | version == 772                             = tls13 setup st2 msg exts suite cfg
+            | version == 771                             = tls12 setup st2 msg exts suite cfg
+            | otherwise                                  = hs fail st2 (TlsUnsupportedVersion ("server selected unsupported version 0x" + (tls hex4 version)))
+          res
+
+fn :: tls read server hello TlsHs String TlsConfig => TlsHs
+      tls read server hello st    server cfg       =
+        st2, mtype, msg = hs next msg st
+        tls on server hello st2 mtype msg server cfg
+
+-- HelloRetryRequest (RFC 8446 §4.1.4): only the X25519 share is offered first, so a server
+-- that wants secp256r1 asks again. The transcript restarts with message_hash(ClientHello1).
+fn :: tls on hrr TlsHs String String String TlsConfig => TlsHs
+      tls on hrr st    msg    exts   server cfg       =
+        found, off, _      = tls find ext exts 0 51
+        group              = tls u16 exts off
+        ck, ck_off, ck_len = tls find ext exts 0 44
+        cookie             =
+          | ck        = tls ext (tls be2 44) (tls sub exts ck_off ck_len)
+          | otherwise = ""
+        res                =
+          | (hs_group st) != 0       = hs fail st (TlsIoError "second HelloRetryRequest")
+          | (max_version cfg) < 772  = hs fail st (TlsUnsupportedVersion "HelloRetryRequest without TLS 1.3")
+          | not found or group != 23 = hs fail st (TlsIoError "HelloRetryRequest selected an unsupported group")
+          | otherwise                = tls retry hello st msg cookie server cfg
+        res
+
+fn :: tls retry hello TlsHs String String String TlsConfig => TlsHs
+      tls retry hello st    hrr    cookie server cfg       =
+        share = (tls be2 23) + (tls vec2 (p256 public key (hs_ppriv st)))
+        ch2   = tls client hello server (hs_crand st) (hs_sid st) share cookie cfg
+        st2   = st with hs_group = 23, hs_transcript = (tls hs msg 254 (sha256 bytes (hs_transcript st))) + hrr + ch2
+        tls read server hello (hs send st2 (tls plain record 22 771 ch2)) server cfg
+
+-- ============================================================
+-- TLS 1.3 handshake steps
+-- ============================================================
+
+fn :: tls13 on ee TlsHs Int String => TlsHs
+      tls13 on ee st    mtype msg    =
+        | hs_failed st                    = st
+        | mtype != 8 or (str len msg) < 6 = hs fail st (TlsIoError "expected EncryptedExtensions")
+        | otherwise                       = (hs add st msg) with hs_alpn = tls parse alpn (tls sub msg 6 (tls u16 msg 4))
+
+fn :: tls13 read ee TlsHs => TlsHs
+      tls13 read ee st    =
+        st2, mtype, msg = hs next msg st
+        tls13 on ee st2 mtype msg
+
+fn :: tls13 on cert TlsHs Int String String TlsConfig => TlsHs
+      tls13 on cert st    mtype msg    server cfg       =
+        | hs_failed st = st
+        | mtype == 13  = tls13 read cert ((hs add st msg) with hs_cert_req = True, hs_cr_ctx = tls sub msg 5 (tls u8 msg 4)) server cfg
+        | mtype != 11  = hs fail st (TlsIoError "expected Certificate")
+        | otherwise    =
+          ders    = tls13 cert list msg
+          ok, err = tls verify chain ders server cfg
+          res     =
+            | not ok    = hs fail st err
+            | otherwise = (hs add st msg) with hs_leaf = c nth str ders 0
+          res
+
+fn :: tls13 read cert TlsHs String TlsConfig => TlsHs
+      tls13 read cert st    server cfg       =
+        st2, mtype, msg = hs next msg st
+        tls13 on cert st2 mtype msg server cfg
+
+fn :: tls13 on cv TlsHs Int String => TlsHs
+      tls13 on cv st    mtype msg    =
+        | hs_failed st                     = st
+        | mtype != 15 or (str len msg) < 8 = hs fail st (TlsIoError "expected CertificateVerify")
+        | tls verify scheme (hs_leaf st) (tls u16 msg 4) (tls13 cv content (hs_transcript st)) (tls sub msg 8 (tls u16 msg 6)) True = hs add st msg
+        | otherwise                        = hs fail st (TlsInvalidChain "server CertificateVerify signature is invalid")
+
+fn :: tls13 read cv TlsHs => TlsHs
+      tls13 read cv st    =
+        st2, mtype, msg = hs next msg st
+        tls13 on cv st2 mtype msg
+
+fn :: tls13 on fin TlsHs Int String => TlsHs
+      tls13 on fin st    mtype msg    =
+        | hs_failed st                                                          = st
+        | mtype != 20                                                           = hs fail st (TlsIoError "expected Finished")
+        | ct equal (tls rest msg 4) (tls13 finished mac (hs_ssec st) (hs_transcript st)) = hs add st msg
+        | otherwise                                                             = hs fail st (TlsIoError "server Finished verification failed")
+
+fn :: tls13 read fin TlsHs => TlsHs
+      tls13 read fin st    =
+        st2, mtype, msg = hs next msg st
+        tls13 on fin st2 mtype msg
+
+fn :: tls13 client cert msg TlsHs => String
+      tls13 client cert msg st    =
+        | hs_cert_req st = tls hs msg 11 ((tls vec1 (hs_cr_ctx st)) + (tls be3 0))
+        | otherwise      = ""
+
+-- Send [empty Certificate] + Finished, then switch both directions to application keys.
+fn :: tls13 send fin TlsHs => TlsHs
+      tls13 send fin st    =
+        | hs_failed st = st
+        | otherwise    =
+          master        = tls13 master secret (hs_hsec st)
+          c_ap          = derive secret master "c ap traffic" (hs_transcript st)
+          s_ap          = derive secret master "s ap traffic" (hs_transcript st)
+          cert_msg      = tls13 client cert msg st
+          st2           = hs add st cert_msg
+          fin           = tls hs msg 20 (tls13 finished mac (hs_csec st2) (hs_transcript st2))
+          st3, cert_rec = tls13 seal opt st2 cert_msg
+          st4, fin_rec  = hs seal hs st3 fin
+          ccs           = tls plain record 20 771 (byte str 1)
+          klen          = tls suite key len (hs_suite st)
+          sent          = hs send st4 (ccs + cert_rec + fin_rec)
+          (hs add sent fin) with hs_master = master, hs_wkey = tls13 key c_ap klen, hs_wiv = tls13 iv c_ap, hs_wseq = 0, hs_rkey = tls13 key s_ap klen, hs_riv = tls13 iv s_ap, hs_rseq = 0
+
+fn :: tls13 seal opt TlsHs String => TlsHs String
+      tls13 seal opt st    msg    =
+        | msg == ""  = (st, "")
+        | otherwise  = hs seal hs st msg
+
+-- ============================================================
+-- TLS 1.2 handshake steps (RFC 5246, RFC 7627 extended master secret)
+-- ============================================================
+
+fn :: tls12 prf loop String String Int String String => String
+      tls12 prf loop secret seed   n   a      acc    =
+        | (str len acc) >= n = str slice acc 0 n
+        | otherwise          =
+          a2 = hmac sha256 secret a
+          tls12 prf loop secret seed n a2 (acc + (hmac sha256 secret (a2 + seed)))
+
+-- P_SHA256 (RFC 5246 §5).
+fn :: tls12 prf String String String Int => String
+      tls12 prf secret label  seed   n   =  tls12 prf loop secret (label + seed) n (label + seed) ""
+
+fn :: tls12 on cert TlsHs Int String String TlsConfig => TlsHs
+      tls12 on cert st    mtype msg    server cfg       =
+        | hs_failed st = st
+        | mtype != 11  = hs fail st (TlsIoError "expected Certificate")
+        | otherwise    =
+          ders    = tls12 cert list msg
+          ok, err = tls verify chain ders server cfg
+          res     =
+            | not ok    = hs fail st err
+            | otherwise = (hs add st msg) with hs_leaf = c nth str ders 0
+          res
+
+fn :: tls12 read cert TlsHs String TlsConfig => TlsHs
+      tls12 read cert st    server cfg       =
+        st2, mtype, msg = hs next msg st
+        tls12 on cert st2 mtype msg server cfg
+
+fn :: tls12 key fits Int String => Bool
+      tls12 key fits suite leaf_der =
+        ok, leaf = x509 parse cert leaf_der
+        is_ec    = (key_alg leaf) == "ec_p256" or (key_alg leaf) == "ec_p384"
+        res      =
+          | not ok                         = False
+          | tls12 suite is ecdsa suite     = is_ec
+          | otherwise                      = (key_alg leaf) == "rsa"
+        res
+
+-- ServerKeyExchange: ECParameters (named_curve) + ECPoint, then signature over randoms + params.
+fn :: tls12 on ske TlsHs Int String => TlsHs
+      tls12 on ske st    mtype msg    =
+        | hs_failed st                                   = st
+        | mtype != 12 or (str len msg) < 12              = hs fail st (TlsIoError "expected ServerKeyExchange")
+        | (tls u8 msg 4) != 3                            = hs fail st (TlsIoError "unsupported ECParameters curve type")
+        | otherwise                                      =
+          group  = tls u16 msg 5
+          plen   = tls u8 msg 7
+          params = tls sub msg 4 (4 + plen)
+          spos   = 8 + plen
+          scheme = tls u16 msg spos
+          sig    = tls sub msg (spos + 4) (tls u16 msg (spos + 2))
+          signed = (hs_crand st) + (hs_srand st) + params
+          res    =
+            | group != 29 and group != 23                          = hs fail st (TlsIoError "server selected an unsupported group")
+            | not (tls12 key fits (hs_suite st) (hs_leaf st))       = hs fail st (TlsInvalidChain "certificate key does not match the cipher suite")
+            | not (tls verify scheme (hs_leaf st) scheme signed sig False) = hs fail st (TlsInvalidChain "ServerKeyExchange signature is invalid")
+            | otherwise                                            = (hs add st msg) with hs_group = group, hs_peer_key = tls sub msg 8 plen
+          res
+
+fn :: tls12 read ske TlsHs => TlsHs
+      tls12 read ske st    =
+        st2, mtype, msg = hs next msg st
+        tls12 on ske st2 mtype msg
+
+fn :: tls12 on done TlsHs Int String => TlsHs
+      tls12 on done st    mtype msg    =
+        | hs_failed st = st
+        | mtype == 13  = tls12 read done ((hs add st msg) with hs_cert_req = True)
+        | mtype == 14  = hs add st msg
+        | otherwise    = hs fail st (TlsIoError "expected ServerHelloDone")
+
+fn :: tls12 read done TlsHs => TlsHs
+      tls12 read done st    =
+        st2, mtype, msg = hs next msg st
+        tls12 on done st2 mtype msg
+
+fn :: tls12 our pub TlsHs => String
+      tls12 our pub st    =
+        | (hs_group st) == 29 = x25519 public key (hs_xpriv st)
+        | otherwise           = p256 public key (hs_ppriv st)
+
+fn :: tls12 send keys TlsHs => TlsHs
+      tls12 send keys st    =
+        | hs_failed st = st
+        | otherwise    =
+          shared = tls ecdh st (hs_group st) (hs_peer_key st)
+          tls12 send keys with st shared
+
+fn :: tls12 send keys with TlsHs String => TlsHs
+      tls12 send keys with st    shared =
+        | shared == "" = hs fail st (TlsIoError "invalid server key share")
+        | otherwise    =
+          cert_msg =
+            | hs_cert_req st = tls hs msg 11 (tls be3 0)
+            | otherwise      = ""
+          cke      = tls hs msg 16 (tls vec1 (tls12 our pub st))
+          st2      = hs add (hs add st cert_msg) cke
+          master   =
+            | hs_ems st = tls12 prf shared "extended master secret" (sha256 bytes (hs_transcript st2)) 48
+            | otherwise = tls12 prf shared "master secret" ((hs_crand st) + (hs_srand st)) 48
+          suite    = hs_suite st
+          klen     = tls suite key len suite
+          ivlen    = tls12 suite iv len suite
+          kb       = tls12 prf master "key expansion" ((hs_srand st) + (hs_crand st)) ((2 * klen) + (2 * ivlen))
+          fin      = tls hs msg 20 (tls12 prf master "client finished" (sha256 bytes (hs_transcript st2)) 12)
+          ckey     = tls sub kb 0 klen
+          civ      = tls sub kb (2 * klen) ivlen
+          fin_rec  = tls12 seal record suite ckey civ 0 22 fin
+          plain    = (tls plain record 22 771 (cert_msg + cke)) + (tls plain record 20 771 (byte str 1))
+          sent     = hs send st2 (plain + fin_rec)
+          (hs add sent fin) with hs_master = master, hs_wkey = ckey, hs_wiv = civ, hs_wseq = 1, hs_next_rkey = tls sub kb klen klen, hs_next_riv = tls sub kb ((2 * klen) + ivlen) ivlen
+
+fn :: tls12 on ccs TlsHs Int Int String => TlsHs
+      tls12 on ccs st    rc  ctype payload =
+        | rc == (0 - 2) = hs fail st (TlsTimeout "timed out waiting for ChangeCipherSpec")
+        | rc != 0       = hs fail st (TlsIoError "connection closed during handshake")
+        | ctype == 21   = hs alert st payload
+        | ctype != 20   = hs fail st (TlsIoError "expected ChangeCipherSpec")
+        | otherwise     = st with hs_rkey = hs_next_rkey st, hs_riv = hs_next_riv st, hs_rseq = 0
+
+fn :: tls12 read ccs TlsHs => TlsHs
+      tls12 read ccs st    =
+        | hs_failed st             = st
+        | (hs_pending st) != ""    = hs fail st (TlsIoError "unexpected handshake data before ChangeCipherSpec")
+        | otherwise                =
+          rc, ctype, payload = tls read record (hs_fd st) (hs_timeout st)
+          tls12 on ccs st rc ctype payload
+
+fn :: tls12 on fin TlsHs Int String => TlsHs
+      tls12 on fin st    mtype msg    =
+        | hs_failed st                                                                                      = st
+        | mtype != 20                                                                                       = hs fail st (TlsIoError "expected Finished")
+        | ct equal (tls rest msg 4) (tls12 prf (hs_master st) "server finished" (sha256 bytes (hs_transcript st)) 12) = st
+        | otherwise                                                                                         = hs fail st (TlsIoError "server Finished verification failed")
+
+fn :: tls12 read fin TlsHs => TlsHs
+      tls12 read fin st    =
+        st2, mtype, msg = hs next msg st
+        tls12 on fin st2 mtype msg
+
+-- ============================================================
+-- Connect (API-TLS-001)
+-- ============================================================
+
+fn :: tls valid sni char Int => Bool
+      tls valid sni char c   =  (c >= 97 and c <= 122) or (c >= 65 and c <= 90) or (c >= 48 and c <= 57) or c == 45 or c == 46
+
+fn :: tls valid sni loop String Int Int Bool => Bool
+      tls valid sni loop s      idx slen has_alpha =
+        | idx >= slen                             = has_alpha
+        | not (tls valid sni char (tls u8 s idx)) = False
+        | otherwise                               =
+          c = tls u8 s idx
+          tls valid sni loop s (idx + 1) slen (has_alpha or (c >= 97 and c <= 122) or (c >= 65 and c <= 90))
+
+-- SNI must be a DNS hostname (RFC 6066 §3: no IP literals).
+fn :: tls valid sni String => Bool
+      tls valid sni s      =
+        | (str len s) == 0 or (str len s) > 253 = False
+        | otherwise                             = tls valid sni loop s 0 (str len s) False
+
+fn :: tls new hs Int TlsConfig => TlsHs
+      tls new hs fd  cfg       =
+        TlsHs fd (timeout_ms cfg) 0 0 "" "" 0 "" "" 0 "" "" False (TlsIoError "") (tls random "c" 32) "" (tls random "s" 32) (tls random "x" 32) (tls random "p" 32) "" "" "" "" "" "" False "" False 0 "" "" ""
+
+fn :: tls finish TlsHs String => TlsResult
+      tls finish st    server =
+        | hs_failed st = TlsErr (hs_error st)
+        | otherwise    =
+          stt = Tensor[U64 * 16]
+          buf = Tensor[U64 * 65536]
+          stt_(0) = hs_wseq st
+          stt_(1) = hs_rseq st
+          stt_(2) = 0
+          stt_(3) = 0
+          stt_(4) = 0
+          TlsOk (TlsConn (hs_fd st) server (hs_ver st) (hs_suite st) (hs_alpn st) (hs_wkey st) (hs_wiv st) (hs_rkey st) (hs_riv st) (hs_timeout st) stt buf)
+
+fn :: tls run handshake TlsHs String TlsConfig => TlsHs
+      tls run handshake st    server cfg       =
+        st2 = tls read server hello st server cfg
+        res =
+          | hs_failed st2         = st2
+          | (hs_ver st2) == 772   = st2 -> tls13 read ee -> tls13 read cert server cfg -> tls13 read cv -> tls13 read fin -> tls13 send fin
+          | otherwise             = st2 -> tls12 read cert server cfg -> tls12 read ske -> tls12 read done -> tls12 send keys -> tls12 read ccs -> tls12 read fin
+        res
+
+-- Run the client handshake on an already connected kernel socket descriptor.
+-- @implements FR-TLS-001
+-- @implements API-TLS-001
+-- @mitigates VUL-AUTHN-004
+-- @mitigates VUL-INPUT-003
+fn :: tls connect fd Int String TlsConfig => TlsResult
+      tls connect fd fd  server cfg       =
+        | fd < 0                                                   = TlsErr (TlsIoError "invalid socket descriptor")
+        | not (tls valid sni server)                               = TlsErr (TlsIoError "server name must be a DNS hostname")
+        | (min_version cfg) > (max_version cfg) or (max_version cfg) < 771 or (min_version cfg) > 772 = TlsErr (TlsUnsupportedVersion "no supported TLS version enabled")
+        | otherwise                                                =
+          st0 = tls new hs fd cfg
+          ch  = tls client hello server (hs_crand st0) (hs_sid st0) ((tls be2 29) + (tls vec2 (x25519 public key (hs_xpriv st0)))) "" cfg
+          st1 = hs send (hs add st0 ch) (tls plain record 22 769 ch)
+          tls finish (tls run handshake st1 server cfg) server
+
+fn :: tls connect opened Int Int String TlsConfig => TlsResult
+      tls connect opened rc  fd  server cfg       =
+        | rc == (0 - 2) = TlsErr (TlsTimeout "TCP connect timed out")
+        | rc != 0       = TlsErr (TlsIoError ("TCP connect failed (rc " + (int to str rc) + ")"))
+        | otherwise     =
+          res = tls connect fd fd server cfg
+          tls close on error res fd
+
+fn :: tls close on error TlsResult Int => TlsResult
+      tls close on error (TlsOk c)  _  =  TlsOk c
+      tls close on error (TlsErr e) fd =
+        sys close fd
+        TlsErr e
+
+-- Open a TCP connection to `addr:port` and handshake with SNI `server`.
+fn :: tls connect addr String Int String TlsConfig => TlsResult
+      tls connect addr addr   port server cfg       =
+        rc, fd = sys tcp connect addr port (timeout_ms cfg)
+        tls connect opened rc fd server cfg
+
+-- @implements FR-TLS-001
+-- @implements API-TLS-001
+fn :: tls connect host String Int TlsConfig => TlsResult
+      tls connect host server port cfg       =  tls connect addr server port server cfg
+
+-- The simulated `Socket` record holds no kernel descriptor, so this opens a kernel
+-- connection to the socket's remote address and handshakes with SNI `server`.
+-- @implements FR-TLS-001
+-- @implements API-TLS-001
+fn :: tls connect Socket String TlsConfig => TlsResult
+      tls connect sock   server cfg       =
+        | not (is_connected sock) = TlsErr (TlsIoError "socket is not connected")
+        | otherwise               = tls connect addr (socket.host (remote_addr sock)) (socket.port (remote_addr sock)) server cfg
+
+-- ============================================================
+-- Application data (API-TLS-001)
+-- ============================================================
+
+fn :: tls get Tensor[U64 * 16] Int => Int
+      tls get t                 i   =  t_(i)
+
+fn :: tls send chunks TlsConn String Int Int => Int
+      tls send chunks conn    data   off total =
+        | off >= total = total
+        | otherwise    =
+          n   =
+            | (total - off) > 16384 = 16384
+            | otherwise             = total - off
+          stt = state conn
+          seq = stt_(0)
+          rec = tls seal record (tls_version conn) (cipher_suite conn) (c_key conn) (c_iv conn) seq 23 (str slice data off (off + n))
+          stt_(0) = seq + 1
+          res =
+            | tls send all (fd conn) rec (io_timeout_ms conn) = tls send chunks conn data (off + n) total
+            | otherwise                                    = 0 - 1
+          res
+
+-- Encrypt and send `data`; returns the number of plaintext bytes sent or -1.
+-- @implements FR-TLS-001
+-- @implements API-TLS-001
+fn :: tls send TlsConn String => Int
+      tls send conn    data   =
+        | (tls get (state conn) 4) != 0 = 0 - 1
+        | (str len data) == 0           = 0
+        | otherwise                     = tls send chunks conn data 0 (str len data)
+
+fn :: tls buf store loop Tensor[U64 * 65536] String Int Int => Int
+      tls buf store loop buf               s      idx slen =
+        | idx >= slen = slen
+        | otherwise   =
+          buf_(idx) = tls u8 s idx
+          tls buf store loop buf s (idx + 1) slen
+
+fn :: tls buf take loop CT16 Tensor[U64 * 65536] Int Int String String String String => String
+      tls buf take loop tbl  buf               idx end c0     c1     c2     c3     =
+        | idx >= end = c sb finish c0 c1 c2 c3
+        | otherwise  =
+          b              = buf_(idx)
+          n0, n1, n2, n3 = c sb append (c get b256 tbl (b / 16) (b % 16)) c0 c1 c2 c3
+          tls buf take loop tbl buf (idx + 1) end n0 n1 n2 n3
+
+-- Hand out up to `max` buffered plaintext bytes.
+fn :: tls take buffered TlsConn Int => String
+      tls take buffered conn    max =
+        stt   = state conn
+        start = stt_(2)
+        avail = stt_(3)
+        n     =
+          | max < avail = max
+          | otherwise   = avail
+        out   = tls buf take loop (c build b256) (rx_buf conn) start (start + n) "" "" "" ""
+        stt_(2) = start + n
+        stt_(3) = avail - n
+        out
+
+fn :: tls deliver TlsConn String Int => String
+      tls deliver conn    content max =
+        | (str len content) <= max = content
+        | otherwise                =
+          rest = tls rest content max
+          stt  = state conn
+          tls buf store loop (rx_buf conn) rest 0 (str len rest) -> ()
+          stt_(2) = 0
+          stt_(3) = str len rest
+          str slice content 0 max
+
+fn :: tls mark closed TlsConn => String
+      tls mark closed conn    =
+        stt = state conn
+        stt_(4) = 1
+        ""
+
+fn :: tls on app record TlsConn Int Int Int String => String
+      tls on app record conn    max rc  itype content =
+        | rc != 0     = tls mark closed conn
+        | itype == 23 and (str len content) == 0 = tls recv conn max
+        | itype == 23 = tls deliver conn content max
+        | itype == 22 = tls recv conn max
+        | otherwise   = tls mark closed conn
+
+fn :: tls on raw record TlsConn Int Int Int String => String
+      tls on raw record conn    max rc  ctype payload =
+        | rc == (0 - 2) = ""
+        | rc != 0       = tls mark closed conn
+        | otherwise     =
+          stt                  = state conn
+          seq                  = stt_(1)
+          stt_(1)              = seq + 1
+          rc2, itype, content  = tls open record (tls_version conn) (cipher_suite conn) (s_key conn) (s_iv conn) seq ctype payload
+          tls on app record conn max rc2 itype content
+
+-- Receive up to `max` decrypted bytes. Returns "" on timeout, close_notify, EOF or error.
+-- TLS 1.3 post-handshake messages (NewSessionTicket) are skipped; a KeyUpdate closes the stream.
+-- @implements FR-TLS-001
+-- @implements API-TLS-001
+fn :: tls recv TlsConn Int => String
+      tls recv conn    max =
+        | max <= 0                      = ""
+        | (tls get (state conn) 3) > 0  = tls take buffered conn max
+        | (tls get (state conn) 4) != 0 = ""
+        | otherwise                     =
+          rc, ctype, payload = tls read record (fd conn) (io_timeout_ms conn)
+          tls on raw record conn max rc ctype payload
+
+-- Send close_notify and close the descriptor.
+-- @implements FR-TLS-001
+-- @implements API-TLS-001
+fn :: tls close TlsConn => ()
+      tls close conn    =
+        stt = state conn
+        tls send close notify conn stt_(0) stt_(4) -> ()
+        stt_(4) = 1
+        sys close (fd conn) -> ()
+
+fn :: tls send close notify TlsConn Int Int => Bool
+      tls send close notify conn    seq closed =
+        | closed != 0 or (fd conn) < 0 = False
+        | otherwise                    = tls send all (fd conn) (tls seal record (tls_version conn) (cipher_suite conn) (c_key conn) (c_iv conn) seq 21 ((byte str 1) + (byte str 0))) (io_timeout_ms conn)
+
+-- ============================================================
+-- Result helpers (API-TLS-001)
+-- ============================================================
+
+-- @implements API-TLS-001
+fn :: tls is ok TlsResult => Bool
+      tls is ok (TlsOk _)  =  True
+      tls is ok (TlsErr _) =  False
+
+fn :: tls closed conn => TlsConn
+      tls closed conn =
+        stt = Tensor[U64 * 16]
+        buf = Tensor[U64 * 65536]
+        stt_(4) = 1
+        TlsConn (0 - 1) "" 0 0 "" "" "" "" "" 0 stt buf
+
+-- @implements API-TLS-001
+fn :: tls unwrap TlsResult => TlsConn
+      tls unwrap (TlsOk c)  =  c
+      tls unwrap (TlsErr _) =  tls closed conn
+
+-- @implements API-TLS-001
+fn :: tls error kind TlsResult => String
+      tls error kind (TlsOk _)  =  ""
+      tls error kind (TlsErr e) =  tls error name e
+
+-- @implements API-TLS-001
+fn :: tls error reason TlsResult => String
+      tls error reason (TlsOk _)  =  ""
+      tls error reason (TlsErr e) =  tls error text e
+
+-- ============================================================
+-- RFC 8448 §3 self-test (FR-TLS-001 AC1, ADR-0005)
+-- Every value runs through the same key-schedule, record and verification
+-- functions the client uses. The RFC 8448 CertificateVerify is signed with a
+-- 1024-bit RSA key, so it must be REJECTED by the 2048-bit floor (ADR-0005).
+-- ============================================================
+
+-- RFC 8448 §3 (Simple 1-RTT Handshake) trace values, generated from the RFC text.
+fn :: rfc8448 hex String => String
+      rfc8448 hex "c priv"         =  "49af42ba7f7994852d713ef2784bcbcaa7911de26adc5642cb634540e7ea5005"
+      rfc8448 hex "s pub"          =  "c9828876112095fe66762bdbf7c672e156d6cc253b833df1dd69b1b04e751f0f"
+      rfc8448 hex "ch"             =  "010000c00303cb34ecb1e78163ba1c38c6dacb196a6dffa21a8d9912ec18a2ef6283024dece700000613011303130201" + "0000910000000b0009000006736572766572ff01000100000a00140012001d0017001800190100010101020103010400" + "230000003300260024001d002099381de560e4bd43d23d8e435a7dbafeb3c06e51c13cae4d5413691e529aaf2c002b00" + "03020304000d0020001e040305030603020308040805080604010501060102010402050206020202002d00020101001c" + "00024001"
+      rfc8448 hex "sh"             =  "020000560303a6af06a4121860dc5e6e60249cd34c95930c8ac5cb1434dac155772ed3e2692800130100002e00330024" + "001d0020c9828876112095fe66762bdbf7c672e156d6cc253b833df1dd69b1b04e751f0f002b00020304"
+      rfc8448 hex "ikm"            =  "8bd4054fb55b9d63fdfbacf9f04b9f0d35e6d63f537563efd46272900f89492d"
+      rfc8448 hex "hs secret"      =  "1dc826e93606aa6fdc0aadc12f741b01046aa6b99f691ed221a9f0ca043fbeac"
+      rfc8448 hex "c hs"           =  "b3eddb126e067f35a780b3abf45e2d8f3b1a950738f52e9600746a0e27a55a21"
+      rfc8448 hex "s hs"           =  "b67b7d690cc16c4e75e54213cb2d37b4e9c912bcded9105d42befd59d391ad38"
+      rfc8448 hex "s hs key"       =  "3fce516009c21727d0f2e4e86ee403bc"
+      rfc8448 hex "s hs iv"        =  "5d313eb2671276ee13000b30"
+      rfc8448 hex "s hs record"    =  "17030302a2d1ff334a56f5bff6594a07cc87b580233f500f45e489e7f33af35edf7869fcf40aa40aa2b8ea73f848a7ca" + "07612ef9f945cb960b4068905123ea78b111b429ba9191cd05d2a389280f526134aadc7fc78c4b729df828b5ecf7b13b" + "d9aefb0e57f271585b8ea9bb355c7c79020716cfb9b1183ef3ab20e37d57a6b9d7477609aee6e122a4cf51427325250c" + "7d0e509289444c9b3a648f1d71035d2ed65b0e3cdd0cbae8bf2d0b227812cbb360987255cc744110c453baa4fcd61092" + "8d809810e4b7ed1a8fd991f06aa6248204797e36a6a73b70a2559c09ead686945ba246ab66e5edd8044b4c6de3fcf2a8" + "9441ac66272fd8fb330ef8190579b3684596c960bd596eea520a56a8d650f563aad27409960dca63d3e688611ea5e22f" + "4415cf9538d51a200c27034272968a264ed6540c84838d89f72c24461aad6d26f59ecaba9acbbb317b66d902f4f292a3" + "6ac1b639c637ce343117b659622245317b49eeda0c6258f100d7d961ffb138647e92ea330faeea6dfa31c7a84dc3bd7e" + "1b7a6c7178af36879018e3f252107f243d243dc7339d5684c8b0378bf30244da8c87c843f5e56eb4c5e8280a2b48052c" + "f93b16499a66db7cca71e4599426f7d461e66f99882bd89fc50800becca62d6c74116dbd2972fda1fa80f85df881edbe" + "5a37668936b335583b599186dc5c6918a396fa48a181d6b6fa4f9d62d513afbb992f2b992f67f8afe67f76913fa388cb" + "5630c8ca01e0c65d11c66a1e2ac4c85977b7c7a6999bbf10dc35ae69f5515614636c0b9b68c19ed2e31c0b3b66763038" + "ebba42f3b38edc0399f3a9f23faa63978c317fc9fa66a73f60f0504de93b5b845e275592c12335ee340bbc4fddd50278" + "4016e4b3be7ef04dda49f4b440a30cb5d2af939828fd4ae3794e44f94df5a631ede42c1719bfdabf0253fe5175be898e" + "750edc53370d2b"
+      rfc8448 hex "s hs plain"     =  "080000240022000a00140012001d00170018001901000101010201030104001c00024001000000000b0001b9000001b5" + "0001b0308201ac30820115a003020102020102300d06092a864886f70d01010b0500300e310c300a0603550403130372" + "7361301e170d3136303733303031323335395a170d3236303733303031323335395a300e310c300a0603550403130372" + "736130819f300d06092a864886f70d010101050003818d0030818902818100b4bb498f8279303d980836399b36c6988c" + "0c68de55e1bdb826d3901a2461eafd2de49a91d015abbc9a95137ace6c1af19eaa6af98c7ced43120998e187a80ee0cc" + "b0524b1b018c3e0b63264d449a6d38e22a5fda430846748030530ef0461c8ca9d9efbfae8ea6d1d03e2bd193eff0ab9a" + "8002c47428a6d35a8d88d79f7f1e3f0203010001a31a301830090603551d1304023000300b0603551d0f0404030205a0" + "300d06092a864886f70d01010b05000381810085aad2a0e5b9276b908c65f73a7267170618a54c5f8a7b337d2df7a594" + "365417f2eae8f8a58c8f8172f9319cf36b7fd6c55b80f21a03015156726096fd335e5e67f2dbf102702e608ccae6bec1" + "fc63a42a99be5c3eb7107c3c54e9b9eb2bd5203b1c3b84e0a8b2f759409ba3eac9d91d402dcc0cc8f8961229ac9187b4" + "2b4de100000f000084080400805a747c5d88fa9bd2e55ab085a61015b7211f824cd484145ab3ff52f1fda8477b0b7abc" + "90db78e2d33a5c141a078653fa6bef780c5ea248eeaaa785c4f394cab6d30bbe8d4859ee511f602957b15411ac027671" + "459e46445c9ea58c181e818e95b8c3fb0bf3278409d3be152a3da5043e063dda65cdf5aea20d53dfacd42f74f3140000" + "209b9b141d906337fbd2cbdce71df4deda4ab42c309572cb7fffee5454b78f0718"
+      rfc8448 hex "ee"             =  "080000240022000a00140012001d00170018001901000101010201030104001c0002400100000000"
+      rfc8448 hex "cert"           =  "0b0001b9000001b50001b0308201ac30820115a003020102020102300d06092a864886f70d01010b0500300e310c300a" + "06035504031303727361301e170d3136303733303031323335395a170d3236303733303031323335395a300e310c300a" + "0603550403130372736130819f300d06092a864886f70d010101050003818d0030818902818100b4bb498f8279303d98" + "0836399b36c6988c0c68de55e1bdb826d3901a2461eafd2de49a91d015abbc9a95137ace6c1af19eaa6af98c7ced4312" + "0998e187a80ee0ccb0524b1b018c3e0b63264d449a6d38e22a5fda430846748030530ef0461c8ca9d9efbfae8ea6d1d0" + "3e2bd193eff0ab9a8002c47428a6d35a8d88d79f7f1e3f0203010001a31a301830090603551d1304023000300b060355" + "1d0f0404030205a0300d06092a864886f70d01010b05000381810085aad2a0e5b9276b908c65f73a7267170618a54c5f" + "8a7b337d2df7a594365417f2eae8f8a58c8f8172f9319cf36b7fd6c55b80f21a03015156726096fd335e5e67f2dbf102" + "702e608ccae6bec1fc63a42a99be5c3eb7107c3c54e9b9eb2bd5203b1c3b84e0a8b2f759409ba3eac9d91d402dcc0cc8" + "f8961229ac9187b42b4de10000"
+      rfc8448 hex "cv"             =  "0f000084080400805a747c5d88fa9bd2e55ab085a61015b7211f824cd484145ab3ff52f1fda8477b0b7abc90db78e2d3" + "3a5c141a078653fa6bef780c5ea248eeaaa785c4f394cab6d30bbe8d4859ee511f602957b15411ac027671459e46445c" + "9ea58c181e818e95b8c3fb0bf3278409d3be152a3da5043e063dda65cdf5aea20d53dfacd42f74f3"
+      rfc8448 hex "s fin key"      =  "008d3b66f816ea559f96b537e885c31fc068bf492c652f01f288a1d8cdc19fc8"
+      rfc8448 hex "s fin"          =  "140000209b9b141d906337fbd2cbdce71df4deda4ab42c309572cb7fffee5454b78f0718"
+      rfc8448 hex "master"         =  "18df06843d13a08bf2a449844c5f8a478001bc4d4c627984d5a41da8d0402919"
+      rfc8448 hex "c ap"           =  "9e40646ce79a7f9dc05af8889bce6552875afa0b06df0087f792ebb7c17504a5"
+      rfc8448 hex "s ap"           =  "a11af9f05531f856ad47116b45a950328204b4f44bfb6b3a4b4f1f3fcb631643"
+      rfc8448 hex "s ap key"       =  "9f02283b6c9c07efc26bb9f2ac92e356"
+      rfc8448 hex "s ap iv"        =  "cf782b88dd83549aadf1e984"
+      rfc8448 hex "c fin"          =  "14000020a8ec436d677634ae525ac1fcebe11a039ec17694fac6e98527b642f2edd5ce61"
+      rfc8448 hex "c fin record"   =  "170303003575ec4dc238cce60b298044a71e219c56cc77b0517fe9b93c7a4bfc44d87f38f80338ac98fc46deb384bd1c" + "aeacab6867d726c40546"
+      rfc8448 hex "c ap key"       =  "17422dda596ed5d9acd890e3c63f5051"
+      rfc8448 hex "c ap iv"        =  "5b78923dee08579033e523d9"
+      rfc8448 hex "nst"            =  "040000c90000001efad6aac502000000b22c035d829359ee5ff7af4ec900000000262a6494dc486d2c8a34cb33fa90bf" + "1b0070ad3c498883c9367c09a2be785abc55cd226097a3a982117283f82a03a143efd3ff5dd36d64e861be7fd61d2827" + "db279cce145077d454a3664d4e6da4d29ee03725a6a4dafcd0fc67d2aea70529513e3da2677fa5906c5b3f7d8f92f228" + "bda40dda721470f9fbf297b5aea617646fac5c03272e970727c621a79141ef5f7de6505e5bfbc388e93343694093934a" + "e4d3570008002a000400000400"
+      rfc8448 hex "nst record"     =  "17030300de3a6b8f90414a97d6959c3487680de5134a2b240e6cffac116e95d41d6af8f6b580dcf3d11d63c758db289a" + "015940252f55713e061dc13e078891a38efbcf5753ad8ef170ad3c7353d16d9da773b9ca7f2b9fa1b6c0d4a3d03f75e0" + "9c30ba1e62972ac46f75f7b981be63439b2999ce13064615139891d5e4c5b406f16e3fc181a77ca475840025db2f0a77" + "f81b5ab05b94c01346755f69232c86519d86cbeeac87aac347d143f9605d64f650db4d023e70e952ca49fe5137121c74" + "bc2697687e248746d6df353005f3bce18696129c8153556b3b6c6779b37bf15985684f"
+      rfc8448 hex "c app plain"    =  "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f" + "3031"
+      rfc8448 hex "c app record"   =  "1703030043a23f7054b62c94d0affafe8228ba55cbefacea42f914aa66bcab3f2b9819a8a5b46b395bd54a9a20441e2b" + "62974e1f5a6292a2977014bd1e3deae63aeebb21694915e4"
+      rfc8448 hex "s app plain"    =  "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f" + "3031"
+      rfc8448 hex "s app record"   =  "17030300432e937e11ef4ac740e538ad36005fc4a46932fc3225d05f82aa1b36e30efaf97d90e6dffc602dcb501a59a8" + "fcc49c4bf2e5f0a21c0047c2abf332540dd032e167c2955d"
+      rfc8448 hex "c alert record" =  "1703030013c9872760655666b74d7ff1153efd6db6d0b0e3"
+      rfc8448 hex "s alert plain"  =  "0100"
+      rfc8448 hex "s alert record" =  "1703030013b58fd67166ebf599d24720cfbe7efa7a8864a9"
+      rfc8448 hex _                  =  ""
+
+fn :: rfc8448 v String => String
+      rfc8448 v name   =  hex to byte str (rfc8448 hex name)
+
+fn :: tls check [String] String Bool => [String]
+      tls check acc      name   ok   =
+        | ok        = acc
+        | otherwise = acc :: [name]
+
+fn :: rfc8448 open String String String Int => Int Int String
+      rfc8448 open rec    key    iv     seq =  tls13 open record 4865 key iv seq (tls rest rec 5)
+
+-- Names of the RFC 8448 checks that fail (empty list = all pass).
+-- @implements FR-TLS-001
+fn :: tls13 rfc8448 checks => [String]
+      tls13 rfc8448 checks =
+        tr1                  = (rfc8448 v "ch") + (rfc8448 v "sh")
+        shared               = x25519 (rfc8448 v "c priv") (rfc8448 v "s pub")
+        hsec                 = tls13 hs secret shared
+        c_hs                 = derive secret hsec "c hs traffic" tr1
+        s_hs                 = derive secret hsec "s hs traffic" tr1
+        skey                 = tls13 key s_hs 16
+        siv                  = tls13 iv s_hs
+        rc1, t1, plain       = rfc8448 open (rfc8448 v "s hs record") skey siv 0
+        l1                   = hs msg len plain
+        ee                   = tls sub plain 0 l1
+        r1                   = tls rest plain l1
+        l2                   = hs msg len r1
+        cert                 = tls sub r1 0 l2
+        r2                   = tls rest r1 l2
+        l3                   = hs msg len r2
+        cv                   = tls sub r2 0 l3
+        sfin                 = tls rest r2 l3
+        ders                 = tls13 cert list cert
+        ok_leaf, leaf        = x509 parse cert (c nth str ders 0)
+        tr_cert              = tr1 + ee + cert
+        cv_ok                = tls verify scheme (c nth str ders 0) (tls u16 cv 4) (tls13 cv content tr_cert) (tls sub cv 8 (tls u16 cv 6)) True
+        tr_cv                = tr_cert + cv
+        tr_sfin              = tr_cv + sfin
+        master               = tls13 master secret hsec
+        c_ap                 = derive secret master "c ap traffic" tr_sfin
+        s_ap                 = derive secret master "s ap traffic" tr_sfin
+        cfin                 = tls hs msg 20 (tls13 finished mac c_hs tr_sfin)
+        cfin_rec             = tls13 seal record 4865 (tls13 key c_hs 16) (tls13 iv c_hs) 0 22 cfin
+        sak                  = tls13 key s_ap 16
+        sai                  = tls13 iv s_ap
+        cak                  = tls13 key c_ap 16
+        cai                  = tls13 iv c_ap
+        rc2, t2, nst         = rfc8448 open (rfc8448 v "nst record") sak sai 0
+        rc3, t3, sapp        = rfc8448 open (rfc8448 v "s app record") sak sai 1
+        rc4, t4, salert      = rfc8448 open (rfc8448 v "s alert record") sak sai 2
+        []
+          -> tls check "x25519 shared secret" (shared == (rfc8448 v "ikm"))
+          -> tls check "handshake secret" (hsec == (rfc8448 v "hs secret"))
+          -> tls check "client handshake traffic secret" (c_hs == (rfc8448 v "c hs"))
+          -> tls check "server handshake traffic secret" (s_hs == (rfc8448 v "s hs"))
+          -> tls check "server handshake key" (skey == (rfc8448 v "s hs key"))
+          -> tls check "server handshake iv" (siv == (rfc8448 v "s hs iv"))
+          -> tls check "server handshake record decrypts" (rc1 == 0 and t1 == 22 and plain == (rfc8448 v "s hs plain"))
+          -> tls check "EncryptedExtensions" (ee == (rfc8448 v "ee"))
+          -> tls check "Certificate" (cert == (rfc8448 v "cert"))
+          -> tls check "CertificateVerify message" (cv == (rfc8448 v "cv"))
+          -> tls check "server Finished message" (sfin == (rfc8448 v "s fin"))
+          -> tls check "certificate parses as 1024-bit RSA" (ok_leaf and (key_alg leaf) == "rsa" and (str len (pubkey_bytes leaf)) == 128)
+          -> tls check "1024-bit CertificateVerify rejected by 2048-bit floor (ADR-0005)" (not cv_ok)
+          -> tls check "server Finished verifies" (ct equal (tls rest sfin 4) (tls13 finished mac s_hs tr_cv))
+          -> tls check "master secret" (master == (rfc8448 v "master"))
+          -> tls check "client application traffic secret" (c_ap == (rfc8448 v "c ap"))
+          -> tls check "server application traffic secret" (s_ap == (rfc8448 v "s ap"))
+          -> tls check "client Finished message" (cfin == (rfc8448 v "c fin"))
+          -> tls check "client Finished record" (cfin_rec == (rfc8448 v "c fin record"))
+          -> tls check "server application key" (sak == (rfc8448 v "s ap key"))
+          -> tls check "server application iv" (sai == (rfc8448 v "s ap iv"))
+          -> tls check "client application key" (cak == (rfc8448 v "c ap key"))
+          -> tls check "client application iv" (cai == (rfc8448 v "c ap iv"))
+          -> tls check "NewSessionTicket record decrypts" (rc2 == 0 and t2 == 22 and nst == (rfc8448 v "nst"))
+          -> tls check "client application data record" ((tls13 seal record 4865 cak cai 0 23 (rfc8448 v "c app plain")) == (rfc8448 v "c app record"))
+          -> tls check "server application data record decrypts" (rc3 == 0 and t3 == 23 and sapp == (rfc8448 v "s app plain"))
+          -> tls check "client close_notify record" ((tls13 seal record 4865 cak cai 1 21 ((byte str 1) + (byte str 0))) == (rfc8448 v "c alert record"))
+          -> tls check "server close_notify record decrypts" (rc4 == 0 and t4 == 21 and salert == (rfc8448 v "s alert plain"))
+
+-- @implements FR-TLS-001
+-- @implements API-TLS-001
+fn :: tls13 rfc8448 self test => Bool
+      tls13 rfc8448 self test =  tls no names (tls13 rfc8448 checks)
+
+fn :: tls no names [String] => Bool
+      tls no names []    =  True
+      tls no names (_:_) =  False

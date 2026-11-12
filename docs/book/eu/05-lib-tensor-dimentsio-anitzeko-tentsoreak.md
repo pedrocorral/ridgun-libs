@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: lengoaia gehienetan erakusle sakabanatuz betetako zerren
 
 **`tensor`** lib-ak Ridgunen `Tensor[...]` primitiba natiboa biltzen du, sorrera tipatua (`Tensor[Int]`, `Tensor[Real]`, `Tensor[U64]`), kopiarik gabeko bistak (`reshape`, `slice`), elementuz elementuko eragiketak (Hadamard), Einsteinen uzkurdura eta 64 biteko `BlaMka` aritmetika eskainiz.
 
-Ekosistema tradizional batean, **`TENSOR`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`tensor`** lib-ak (`src/main/ridgun/lib/tensor.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`TENSOR`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`tensor`** lib-ak (`src/main/ridgun/lib/tensor.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import tensor` (edo `import tensor as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: tensor` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`TENSOR`** domeinuko zereginak ebazteak C-ko ka
 
 ## 05.2. Artefaktu natiboak, inportazioa eta `tensor` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`tensor`** lehen mailako **lib** bat da, `src/main/ridgun/lib/tensor.rg` bidean kokatua (`TENSOR` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`tensor`** lehen mailako **lib** bat da, `src/main/ridgun/lib/tensor.ridgun` bidean kokatua (`TENSOR` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/tensor.rglib` | Banaketa eta inportazio zuzena `import tensor` bidez |
+| **Ridgun Bundle-a** | `target/bundles/tensor.ridgunlib` | Banaketa eta inportazio zuzena `import tensor` bidez |
 | **Fitxategi konpilatua** | `target/tensor.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libtensor.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -42,9 +42,9 @@ Ekosistema tradizional batean, **`TENSOR`** domeinuko zereginak ebazteak C-ko ka
 | `tensor dot int / tensor matmul int` | Einsteinen indize-uzkurdura (`a[i] * b[i]`, `a[i, k] * b[k, j]`) |
 | `u64 blamka g / u64 rotr` | 64 biteko zeinurik gabeko `U64` nahasketa birakaria bloke kriptografikoetarako |
 
-### 05.2.2. `src/main/ridgun/lib/tensor.rg`-eko mota eta sinadura guztien katalogoa
+### 05.2.2. `src/main/ridgun/lib/tensor.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/tensor.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `13` funtzio):
+Jarraian duzu `src/main/ridgun/lib/tensor.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `13` funtzio):
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
@@ -66,7 +66,7 @@ Jarraian duzu `src/main/ridgun/lib/tensor.rg` fitxategian definitutako mota alje
 
 ## 05.3. `tensor` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `tensor` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test tensor.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `tensor` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test tensor.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 05.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `tensor` erabiliz
 
@@ -227,13 +227,13 @@ fn :: test blamka tensor compression => ()
 
 ---
 
-## 05.4. Kaputaren azpian: nola dagoen eraikia `tensor` Ridgun hutsean (`src/main/ridgun/lib/tensor.rg`)
+## 05.4. Kaputaren azpian: nola dagoen eraikia `tensor` Ridgun hutsean (`src/main/ridgun/lib/tensor.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/tensor.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/tensor.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 05.4.1. Barne-inplementazioa: Core Implementation Part 1
 
-Ikusi nola `tensor.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `tensor.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: tensor
@@ -259,7 +259,7 @@ fn :: tensor bitxor blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64
 
 ### 05.4.2. Barne-inplementazioa: Core Implementation Part 2
 
-Ikusi nola `tensor.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `tensor.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: tensor bitand blocks Tensor[U64 * r * c] Tensor[U64 * r * c] => Tensor[U64 * r * c]
@@ -291,9 +291,9 @@ fn :: tensor matmul Tensor[Real * r * k] Tensor[Real * k * c] => Tensor[Real * r
 ## 05.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `tensor`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: RMM1/RMM2-k estatikoki kudeatutako gelaxkako 8 byteko memoria jarraitua, $O(1)$ bistak bufferra bikoiztu gabe eta Copy-on-Write semantika hutsa.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/tensor.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/tensor.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test tensor.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test tensor.ridgun` suite automatizatuaren bidez.
 
 ### `tensor`-ekin programatzeko Urrezko 5 Arauak
 

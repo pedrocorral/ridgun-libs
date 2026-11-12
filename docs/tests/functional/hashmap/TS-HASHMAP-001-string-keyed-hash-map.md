@@ -4,12 +4,12 @@ title: Verify hashmap put, get, has, add, size and pairs, including unusual keys
 level: unit
 covers: [FR-HASHMAP-001, API-HASHMAP-001]
 status: automated
-automated_in: [src/test/ridgun/test hashmap.rg]
+automated_in: [src/test/ridgun/test hashmap.ridgun]
 ---
 # TS-HASHMAP-001 — Verify hashmap put, get, has, add, size and pairs, including unusual keys and growth
 
 ## Preconditions / fixtures
-- `hashmap` lib (`src/main/ridgun/lib/hashmap.rg`).
+- `hashmap` lib (`src/main/ridgun/lib/hashmap.ridgun`).
 
 ## Steps / inputs
 1. `get`, `has`, `size` and `pairs` on `hashmap empty`.

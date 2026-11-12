@@ -10,7 +10,7 @@ Sexamos sinceros: cando un test falla ou un ficheiro de configuración muda, un 
 
 A lib **`diff`** calcula a **Subsecuencia Común Máis Longa (LCS)** sobre `Tensor[Int]` 2D para producir edicións mínimas (`DiffKeep`, `DiffAdd`, `DiffDel`), distancia de edición, estatísticas, formato **Unified Diff** (`---`/`+++`/`@@`) e reconstrución exacta con `diff apply`.
 
-Nun ecosistema tradicional, resolver as tarefas do dominio **`DIFF`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`diff`** (`src/main/ridgun/lib/diff.rg`) aborda o problema con catro principios innegociables:
+Nun ecosistema tradicional, resolver as tarefas do dominio **`DIFF`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`diff`** (`src/main/ridgun/lib/diff.ridgun`) aborda o problema con catro principios innegociables:
 
 1. **Declara `import diff` (ou `import diff as alias`) ao inicio do ficheiro**: cada lib define o seu espazo de nomes `module :: diff` e en modo `--strict` as funcións multi-palabra invócanse sempre con espazos naturais.
 2. **Encadea as túas tubaxes de esquerda a dereita con `->`**: escribe `entrada paso un -> paso dous -> resultado`, usa máscaras `(+ _ _ +)` para desestruturar secuencias e omite `_ =` en sentenzas secuenciais (ou descarta con `-> ()`).
@@ -21,11 +21,11 @@ Nun ecosistema tradicional, resolver as tarefas do dominio **`DIFF`** implica ar
 
 ## 13.2. Artefactos nativos, importación e catálogo completo da API de `diff`
 
-En `ridgun-libs`, **`diff`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/diff.rg` (dominio `DIFF`). Ao compilar con `stable bundle`, empaquétase en tres formatos nativos:
+En `ridgun-libs`, **`diff`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/diff.ridgun` (dominio `DIFF`). Ao compilar con `stable bundle`, empaquétase en tres formatos nativos:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/diff.rglib` | Distribución e importación directa con `import diff` |
+| **Bundle Ridgun** | `target/bundles/diff.ridgunlib` | Distribución e importación directa con `import diff` |
 | **Ficheiro compilado** | `target/diff.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/libdiff.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
@@ -41,9 +41,9 @@ En `ridgun-libs`, **`diff`** é unha **lib** de primeira clase situada en `src/m
 | `diff format / diff unified` | Formatea liñas compactas `+ / - /  ` ou Unified Diff estándar con cabeceiras |
 | `diff apply / diff apply text` | Reconstrúe o documento destino sen perdas a partir do guión de edición |
 
-### 13.2.2. Catálogo exhaustivo de tipos e sinaturas en `src/main/ridgun/lib/diff.rg`
+### 13.2.2. Catálogo exhaustivo de tipos e sinaturas en `src/main/ridgun/lib/diff.ridgun`
 
-A continuación tes o inventario completo de tipos alxébricos (`type`), operadores (`op ::`) e sinaturas de funcións (`fn ::`) definidos en `src/main/ridgun/lib/diff.rg` (`2` tipos, `0` operadores e `33` funcións):
+A continuación tes o inventario completo de tipos alxébricos (`type`), operadores (`op ::`) e sinaturas de funcións (`fn ::`) definidos en `src/main/ridgun/lib/diff.ridgun` (`2` tipos, `0` operadores e `33` funcións):
 
 **Tipos alxébricos e rexistros (`type`) de `diff`:**
 
@@ -92,7 +92,7 @@ type DiffStats = equal_count: Int, insert_count: Int, delete_count: Int
 
 ## 13.3. Explorando `diff` a fondo: Exemplos paso a paso de cada funcionalidade
 
-Non abonda con ver a táboa de sinaturas: imos explorar **cada unha das funcionalidades** da lib `diff` mediante exemplos progresivos e executables en Ridgun. Comezaremos polas dúas receitas tabulares de uso cotián e despois percorreremos en detalle todos os escenarios funcionais, transformacións e casos límite verificados en `src/test/ridgun/test diff.rg`.
+Non abonda con ver a táboa de sinaturas: imos explorar **cada unha das funcionalidades** da lib `diff` mediante exemplos progresivos e executables en Ridgun. Comezaremos polas dúas receitas tabulares de uso cotián e despois percorreremos en detalle todos os escenarios funcionais, transformacións e casos límite verificados en `src/test/ridgun/test diff.ridgun`.
 
 ### 13.3.1. Exemplo 1: Fluxo principal en estilo tabular con `diff`
 
@@ -277,13 +277,13 @@ fn :: test diff repetitive lines => ()
 
 ---
 
-## 13.4. Baixo o capó: como está construída `diff` en Ridgun puro (`src/main/ridgun/lib/diff.rg`)
+## 13.4. Baixo o capó: como está construída `diff` en Ridgun puro (`src/main/ridgun/lib/diff.ridgun`)
 
-Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**. Podes abrir `src/main/ridgun/lib/diff.rg` e ler exactamente como está implementada cada operación usando *pattern matching*, árbores de gardas `|` / `|.` e recursión de cola (TCO). Vexamos as pezas clave da súa implementación real:
+Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**. Podes abrir `src/main/ridgun/lib/diff.ridgun` e ler exactamente como está implementada cada operación usando *pattern matching*, árbores de gardas `|` / `|.` e recursión de cola (TCO). Vexamos as pezas clave da súa implementación real:
 
 ### 13.4.1. Implementación interna: Internal Helpers
 
-Fíxate en como `diff.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
+Fíxate en como `diff.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 module :: diff
@@ -402,7 +402,7 @@ fn :: df list length [String] => Int
 
 ### 13.4.2. Implementación interna: Public API
 
-Fíxate en como `diff.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
+Fíxate en como `diff.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 fn :: diff lines [String] [String] => [DiffEdit]
@@ -485,9 +485,9 @@ fn :: diff apply [DiffEdit] => String
 ## 13.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` e as 5 Regras de Ouro de `diff`
 
 - **Garantía algorítmica e de seguridade**: Identidade matemática garantida $diff\_edit\_distance(a, b) == |a| + |b| - 2 \cdot LCS(a, b)$ e reconstrución sen perdas `diff apply (diff lines a b) == b`.
-- **Complexidade de pila $O(1)$ con TCO**: Todos os bucles recursivos en `src/main/ridgun/lib/diff.rg` están en posición de cola, polo que `ridgunc` os compila a saltos nativos sen crecemento de pila.
+- **Complexidade de pila $O(1)$ con TCO**: Todos os bucles recursivos en `src/main/ridgun/lib/diff.ridgun` están en posición de cola, polo que `ridgunc` os compila a saltos nativos sen crecemento de pila.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Cero pausas de colector de lixo; todas as estruturas intermedias libéranse de forma determinista ao saír do ámbito.
-- **Verificación continua**: Probada exhaustivamente con `stable check` e a suite automatizada `src/test/ridgun/test diff.rg`.
+- **Verificación continua**: Probada exhaustivamente con `stable check` e a suite automatizada `src/test/ridgun/test diff.ridgun`.
 
 ### As 5 Regras de Ouro ao programar con `diff`
 

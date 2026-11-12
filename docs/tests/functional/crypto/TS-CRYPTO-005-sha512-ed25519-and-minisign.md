@@ -4,12 +4,12 @@ title: Verify FIPS 180-4 SHA-512, RFC 8032 §5.1 pure Ed25519 test vectors and n
 level: unit
 covers: [FR-CRYPTO-005]
 status: automated
-automated_in: [src/test/ridgun/test crypto.rg]
+automated_in: [src/test/ridgun/test crypto.ridgun]
 ---
 # TS-CRYPTO-005 — Verify FIPS 180-4 SHA-512, RFC 8032 §5.1 pure Ed25519 test vectors and negative cases, and Minisign format round-trips
 
 ## Preconditions / fixtures
-- Pure-Ridgun `crypto` library (`src/main/ridgun/lib/crypto.rg`).
+- Pure-Ridgun `crypto` library (`src/main/ridgun/lib/crypto.ridgun`).
 
 ## Steps / inputs
 1. Call `sha512 hex` and `sha512 bytes` on the FIPS 180-4 test vectors: `""`, `"abc"`, `"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"` (448 bits), `"abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu"` (896 bits), and $1\,000\,000 \times \text{"a"}$; verify all 64-byte raw and 128-char hex digests match FIPS 180-4 bit-for-bit.

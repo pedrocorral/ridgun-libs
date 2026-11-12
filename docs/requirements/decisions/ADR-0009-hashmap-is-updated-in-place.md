@@ -4,7 +4,7 @@ title: hashmap is updated in place and lists keys in insertion order
 status: accepted
 date: 2026-11-08
 supersedes: []
-affects: [FR-HASHMAP-001, API-HASHMAP-001, DM-HashMap, FR-LIST-002, src/main/ridgun/lib/hashmap.rg, src/main/ridgun/lib/list.rg]
+affects: [FR-HASHMAP-001, API-HASHMAP-001, DM-HashMap, FR-LIST-002, src/main/ridgun/lib/hashmap.ridgun, src/main/ridgun/lib/list.ridgun]
 ---
 # ADR-0009 — hashmap is updated in place and lists keys in insertion order
 

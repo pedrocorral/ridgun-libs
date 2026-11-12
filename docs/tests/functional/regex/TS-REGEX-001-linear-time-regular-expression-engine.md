@@ -4,12 +4,12 @@ title: Verify linear-time Thompson NFA regular expression matching, search, repl
 level: unit
 covers: [FR-REGEX-001, API-REGEX-001]
 status: automated
-automated_in: ["src/test/ridgun/test regex.rg"]
+automated_in: ["src/test/ridgun/test regex.ridgun"]
 ---
 # TS-REGEX-001 — Verify linear-time Thompson NFA regular expression matching, search, replacement, and splitting
 
 ## Preconditions / fixtures
-- Pure-Ridgun `regex` and `test` modules (`src/main/ridgun/lib/regex.rg`, `src/main/ridgun/lib/test.rg`).
+- Pure-Ridgun `regex` and `test` modules (`src/main/ridgun/lib/regex.ridgun`, `src/main/ridgun/lib/test.ridgun`).
 
 ## Steps / inputs
 1. Test `regex match` and `regex is match` with `.`, `*`, `+`, `?`, `|`, `(...)`, `[a-z0-9]`, `[^0-9]`, `\d`, `\w`, `\s`, `^`, `$`, and pathological `(a?){20}a{20}` patterns.

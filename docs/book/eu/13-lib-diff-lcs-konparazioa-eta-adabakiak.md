@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: test batek huts egiten duenean edo konfigurazio-fitxateg
 
 **`diff`** lib-ak **Azpisekuentzia Komun Luzeena (LCS)** kalkulatzen du 2D `Tensor[Int]` baten gainean edizio minimoak (`DiffKeep`, `DiffAdd`, `DiffDel`), edizio-distantzia, estatistikak, **Unified Diff** formatua eta `diff apply` bidezko berreraikuntza zehatza sortzeko.
 
-Ekosistema tradizional batean, **`DIFF`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`diff`** lib-ak (`src/main/ridgun/lib/diff.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`DIFF`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`diff`** lib-ak (`src/main/ridgun/lib/diff.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import diff` (edo `import diff as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: diff` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`DIFF`** domeinuko zereginak ebazteak C-ko kanp
 
 ## 13.2. Artefaktu natiboak, inportazioa eta `diff` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`diff`** lehen mailako **lib** bat da, `src/main/ridgun/lib/diff.rg` bidean kokatua (`DIFF` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`diff`** lehen mailako **lib** bat da, `src/main/ridgun/lib/diff.ridgun` bidean kokatua (`DIFF` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/diff.rglib` | Banaketa eta inportazio zuzena `import diff` bidez |
+| **Ridgun Bundle-a** | `target/bundles/diff.ridgunlib` | Banaketa eta inportazio zuzena `import diff` bidez |
 | **Fitxategi konpilatua** | `target/diff.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libdiff.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -41,9 +41,9 @@ Ekosistema tradizional batean, **`DIFF`** domeinuko zereginak ebazteak C-ko kanp
 | `diff format / diff unified` | `+ / - /  ` lerro trinkoak edo goiburudun Unified Diff estandarra errenderizatzen ditu |
 | `diff apply / diff apply text` | Helburuko dokumentua galerarik gabe berreraikitzen du edizio-gidoitik abiatuta |
 
-### 13.2.2. `src/main/ridgun/lib/diff.rg`-eko mota eta sinadura guztien katalogoa
+### 13.2.2. `src/main/ridgun/lib/diff.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/diff.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`2` mota, `0` eragile eta `33` funtzio):
+Jarraian duzu `src/main/ridgun/lib/diff.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`2` mota, `0` eragile eta `33` funtzio):
 
 **`diff`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -92,7 +92,7 @@ type DiffStats = equal_count: Int, insert_count: Int, delete_count: Int
 
 ## 13.3. `diff` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `diff` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test diff.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `diff` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test diff.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 13.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `diff` erabiliz
 
@@ -277,13 +277,13 @@ fn :: test diff repetitive lines => ()
 
 ---
 
-## 13.4. Kaputaren azpian: nola dagoen eraikia `diff` Ridgun hutsean (`src/main/ridgun/lib/diff.rg`)
+## 13.4. Kaputaren azpian: nola dagoen eraikia `diff` Ridgun hutsean (`src/main/ridgun/lib/diff.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/diff.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/diff.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 13.4.1. Barne-inplementazioa: Internal Helpers
 
-Ikusi nola `diff.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `diff.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: diff
@@ -402,7 +402,7 @@ fn :: df list length [String] => Int
 
 ### 13.4.2. Barne-inplementazioa: Public API
 
-Ikusi nola `diff.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `diff.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: diff lines [String] [String] => [DiffEdit]
@@ -485,9 +485,9 @@ fn :: diff apply [DiffEdit] => String
 ## 13.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `diff`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: $diff\_edit\_distance(a, b) == |a| + |b| - 2 \cdot LCS(a, b)$ identitate matematiko bermatua eta galerarik gabeko berreraikuntza: `diff apply (diff lines a b) == b`.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/diff.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/diff.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test diff.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test diff.ridgun` suite automatizatuaren bidez.
 
 ### `diff`-ekin programatzeko Urrezko 5 Arauak
 

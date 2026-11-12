@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/json.rg
+-- src/main/ridgun/lib/json.ridgun
 -- Pure-Ridgun Recursive RFC 8259 JSON AST Parser, Serializer, Pretty-Printer & Dot-Path Query Library (JSON)
 -- @implements FR-JSON-001
 -- @implements API-JSON-001

@@ -10,7 +10,7 @@ Let's be honest: in a real server like **Solstice**, accepting TCP connections i
 
 The **`net_agent`** lib closes the loop of `ridgun-libs` by uniting **`posix`**, **`socket`**, and **`agent`**: it manages supervised connection tables (`NetSupervisor`), enforces concurrency limits (`max_conns`), reaps idle peers (`net evict idle`), bridges kernel descriptor readiness into typed actor events (`NetEvReadyRead`, `NetEvReadyWrite`, `NetEvTimeout`, `NetEvError`), and provides an end-to-end supervised TCP echo step (`net tcp echo step`).
 
-In a traditional ecosystem, solving **`AGENT`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`net_agent`** lib (`src/main/ridgun/lib/net_agent.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`AGENT`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`net_agent`** lib (`src/main/ridgun/lib/net_agent.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import net_agent` (or `import net_agent as alias`) at the top of your file**: every lib defines its `module :: net agent` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`AGENT`** tasks means pulling in external 
 
 ## 32.2. Native Artifacts, Imports, and Complete `net_agent` API Catalog
 
-In `ridgun-libs`, **`net_agent`** is a first-class **lib** located at `src/main/ridgun/lib/net_agent.rg` (domain `AGENT`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`net_agent`** is a first-class **lib** located at `src/main/ridgun/lib/net_agent.ridgun` (domain `AGENT`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/net_agent.rglib` | Portable distribution and direct `import net_agent` resolution |
+| **Ridgun Bundle** | `target/bundles/net_agent.ridgunlib` | Portable distribution and direct `import net_agent` resolution |
 | **Compiled Archive** | `target/net_agent.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libnet_agent.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -41,9 +41,9 @@ In `ridgun-libs`, **`net_agent`** is a first-class **lib** located at `src/main/
 | `net poll fd : Int -> Bool -> Int -> NetEvent` | Non-blocking `wait fd` bridge emitting `NetEvReadyRead`, `NetEvReadyWrite`, `NetEvTimeout`, or `NetEvError` |
 | `net tcp echo step : String -> Int -> (Int, String)` | End-to-end loopback TCP listen/connect/accept/supervise/echo verification step |
 
-### 32.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/net_agent.rg`
+### 32.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/net_agent.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/net_agent.rg` (`2` types, `0` operators, and `8` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/net_agent.ridgun` (`2` types, `0` operators, and `8` functions):
 
 **Algebraic Data Types & Records (`type`) in `net_agent`:**
 
@@ -67,7 +67,7 @@ type StepOutcome = ConnKeep ConnSlot String | ConnClosed
 
 ## 32.3. Deep Dive into `net_agent`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `net_agent` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test net_agent.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `net_agent` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test net_agent.ridgun`.
 
 ### 32.3.1. Example 1: Core Tabular Workflow with `net_agent`
 
@@ -273,13 +273,13 @@ fn :: ejemplo reactor conexiones (fd1 : Int) (fd2 : Int) => [ConnSlot]
 
 ---
 
-## 32.4. Under the Hood: How `net_agent` Is Built in Pure Ridgun (`src/main/ridgun/lib/net_agent.rg`)
+## 32.4. Under the Hood: How `net_agent` Is Built in Pure Ridgun (`src/main/ridgun/lib/net_agent.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/net_agent.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/net_agent.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 32.4.1. Internal Implementation: Core Implementation Part 1
 
-Observe how `net_agent.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `net_agent.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: net agent
@@ -321,7 +321,7 @@ fn :: conn feed payload Int Agent String => StepOutcome
 
 ### 32.4.2. Internal Implementation: Core Implementation Part 2
 
-Observe how `net_agent.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `net_agent.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: conn cast str A => String
@@ -358,9 +358,9 @@ fn :: reactor shutdown [ConnSlot] => ()
 ## 32.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `net_agent`
 
 - **Algorithmic & Safety Guarantee**: Automatic protection against descriptor exhaustion (`max_conns`), deterministic eviction of idle peers, and guaranteed socket cleanup in `net tcp echo step`.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/net_agent.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/net_agent.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test net_agent.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test net_agent.ridgun`.
 
 ### The 5 Golden Rules When Programming with `net_agent`
 

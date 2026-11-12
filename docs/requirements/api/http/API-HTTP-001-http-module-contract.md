@@ -1,11 +1,11 @@
 ---
 id: API-HTTP-001
-title: Public lib contract for http (http.rglib / libhttp.so)
+title: Public lib contract for http (http.ridgunlib / libhttp.so)
 status: approved
 implements: [FR-HTTP-001]
 auth: none
 ---
-# API-HTTP-001 — Public lib contract for `http` (`http.rg`)
+# API-HTTP-001 — Public lib contract for `http` (`http.ridgun`)
 
 ## Request
 - Imported via `import http`.

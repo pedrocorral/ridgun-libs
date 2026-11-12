@@ -10,7 +10,7 @@ Let's be honest: spawning a fresh thread or actor for every incoming request wit
 
 The **`pool`** lib provides a bounded task dispatcher with **explicit backpressure** (`PoolAccept`, `PoolRejectFull`), balanced $K$-lane batch partitioning (`pool partition`), **work-stealing** queue rebalancing (`pool steal rebalance`), and parallel native-actor execution.
 
-In a traditional ecosystem, solving **`AGENT`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`pool`** lib (`src/main/ridgun/lib/pool.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`AGENT`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`pool`** lib (`src/main/ridgun/lib/pool.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import pool` (or `import pool as alias`) at the top of your file**: every lib defines its `module :: pool` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`AGENT`** tasks means pulling in external 
 
 ## 31.2. Native Artifacts, Imports, and Complete `pool` API Catalog
 
-In `ridgun-libs`, **`pool`** is a first-class **lib** located at `src/main/ridgun/lib/pool.rg` (domain `AGENT`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`pool`** is a first-class **lib** located at `src/main/ridgun/lib/pool.ridgun` (domain `AGENT`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/pool.rglib` | Portable distribution and direct `import pool` resolution |
+| **Ridgun Bundle** | `target/bundles/pool.ridgunlib` | Portable distribution and direct `import pool` resolution |
 | **Compiled Archive** | `target/pool.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libpool.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -40,9 +40,9 @@ In `ridgun-libs`, **`pool`** is a first-class **lib** located at `src/main/ridgu
 | `pool partition / pool steal rebalance` | Split batches across $K$ workers and steal half of an overloaded queue for an idle worker |
 | `pool map sum / pool parallel sum2` | Dispatch integer workloads across concurrent native `agent` workers |
 
-### 31.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/pool.rg`
+### 31.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/pool.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/pool.rg` (`1` types, `0` operators, and `14` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/pool.ridgun` (`1` types, `0` operators, and `14` functions):
 
 **Algebraic Data Types & Records (`type`) in `pool`:**
 
@@ -71,7 +71,7 @@ type AgentPool = Pool Int [Agent]
 
 ## 31.3. Deep Dive into `pool`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `pool` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test pool.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `pool` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test pool.ridgun`.
 
 ### 31.3.1. Example 1: Core Tabular Workflow with `pool`
 
@@ -283,13 +283,13 @@ fn :: ejemplo pool completo => (Int, Int, [Int])
 
 ---
 
-## 31.4. Under the Hood: How `pool` Is Built in Pure Ridgun (`src/main/ridgun/lib/pool.rg`)
+## 31.4. Under the Hood: How `pool` Is Built in Pure Ridgun (`src/main/ridgun/lib/pool.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/pool.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/pool.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 31.4.1. Internal Implementation: Core Implementation Part 1
 
-Observe how `pool.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `pool.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: pool
@@ -323,7 +323,7 @@ fn :: pool broadcast AgentPool       A   => ()
 
 ### 31.4.2. Internal Implementation: Core Implementation Part 2
 
-Observe how `pool.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `pool.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: pool broadcast list [Agent]   A   => ()
@@ -367,9 +367,9 @@ fn :: pool shutdown AgentPool       => ()
 ## 31.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `pool`
 
 - **Algorithmic & Safety Guarantee**: Strictly bounded queue capacity (`queued <= max_queue`) to protect memory under load spikes and deterministic round-robin / work-stealing distribution.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/pool.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/pool.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test pool.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test pool.ridgun`.
 
 ### The 5 Golden Rules When Programming with `pool`
 

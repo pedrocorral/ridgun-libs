@@ -4,12 +4,12 @@ title: Verify Solstice RGF-015 RFC 9106 Argon2id 5-arg API and RFC 8439 ChaCha20
 level: unit
 covers: [FR-CRYPTO-004]
 status: automated
-automated_in: [src/test/ridgun/test crypto.rg]
+automated_in: [src/test/ridgun/test crypto.ridgun]
 ---
 # TS-CRYPTO-004 — Verify Solstice RGF-015 RFC 9106 Argon2id 5-arg API and RFC 8439 ChaCha20-Poly1305 AEAD
 
 ## Preconditions / fixtures
-- Pure-Ridgun `crypto` and `argon2id` modules (`src/main/ridgun/lib/crypto.rg`, `src/main/ridgun/lib/argon2id.rg`).
+- Pure-Ridgun `crypto` and `argon2id` modules (`src/main/ridgun/lib/crypto.ridgun`, `src/main/ridgun/lib/argon2id.ridgun`).
 
 ## Steps / inputs
 1. Call `argon2id_hash "correct horse battery staple" "0123456789abcdef" 64 2 1`, verify the returned PHC string starts with `$argon2id$v=19$m=64,t=2,p=1$`, verify `argon2id_verify "correct horse battery staple" phc == True`, `argon2id_verify "wrong" phc == False`, and verify RFC 7693 Blake2b / RFC 9106 Argon2id test vector derivation.

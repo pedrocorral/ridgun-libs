@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/pool.rg
+-- src/main/ridgun/lib/pool.ridgun
 -- Pure-Ridgun Sharded & Round-Robin Agent Pools Library (AGENT)
 -- @implements FR-AGENT-001
 -- @implements API-AGENT-001

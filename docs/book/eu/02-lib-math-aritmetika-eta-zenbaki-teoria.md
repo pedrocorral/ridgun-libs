@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: ekoizpenean ustekabeko zeroz zatitze batek edo C zein Ja
 
 **`math`** lib-ak `d == 0`-ren aurkako zatiketa osoak (`div ceil`, `div floor`, `div euclid`, `mod euclid`), $O(\log E)$ berreketa eta alderantzizko modularra, erro eta logaritmo oso zehatzak, konbinatoria eta `clamp x between lo and hi` mixfix eragilea eskaintzen ditu.
 
-Ekosistema tradizional batean, **`MATH`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`math`** lib-ak (`src/main/ridgun/lib/math.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`MATH`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`math`** lib-ak (`src/main/ridgun/lib/math.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import math` (edo `import math as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: math` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`MATH`** domeinuko zereginak ebazteak C-ko kanp
 
 ## 02.2. Artefaktu natiboak, inportazioa eta `math` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`math`** lehen mailako **lib** bat da, `src/main/ridgun/lib/math.rg` bidean kokatua (`MATH` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`math`** lehen mailako **lib** bat da, `src/main/ridgun/lib/math.ridgun` bidean kokatua (`MATH` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/math.rglib` | Banaketa eta inportazio zuzena `import math` bidez |
+| **Ridgun Bundle-a** | `target/bundles/math.ridgunlib` | Banaketa eta inportazio zuzena `import math` bidez |
 | **Fitxategi konpilatua** | `target/math.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libmath.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -42,9 +42,9 @@ Ekosistema tradizional batean, **`MATH`** domeinuko zereginak ebazteak C-ko kanp
 | `math gcd / math lcm / math mod pow / math mod inv / math is prime` | Euklidesen ZKH/MKT, aritmetika modularra eta $6k \pm 1$ lehentasun-proba |
 | `math sum / math mean floor / math median floor / math variance floor` | Gainezkatzerik gabeko konbinatoria (`nCr`) eta zerrenden estatistika osoa |
 
-### 02.2.2. `src/main/ridgun/lib/math.rg`-eko mota eta sinadura guztien katalogoa
+### 02.2.2. `src/main/ridgun/lib/math.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/math.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `1` eragile eta `56` funtzio):
+Jarraian duzu `src/main/ridgun/lib/math.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `1` eragile eta `56` funtzio):
 
 **`math`-eko mixfix eragileak (`op ::`):**
 
@@ -115,7 +115,7 @@ op :: clamp Int between Int and Int => Int
 
 ## 02.3. `math` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `math` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test math.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `math` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test math.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 02.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `math` erabiliz
 
@@ -250,13 +250,13 @@ fn :: test math list statistics => ()
 
 ---
 
-## 02.4. Kaputaren azpian: nola dagoen eraikia `math` Ridgun hutsean (`src/main/ridgun/lib/math.rg`)
+## 02.4. Kaputaren azpian: nola dagoen eraikia `math` Ridgun hutsean (`src/main/ridgun/lib/math.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/math.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/math.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 02.4.1. Barne-inplementazioa: Bounds, Sign & Parity
 
-Ikusi nola `math.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `math.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: math
@@ -300,7 +300,7 @@ fn :: math is odd Int => Bool
 
 ### 02.4.2. Barne-inplementazioa: Powers, Integer Roots & Logarithms
 
-Ikusi nola `math.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `math.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: m pow loop Int Int Int => Int
@@ -368,7 +368,7 @@ fn :: math is power of two Int => Bool
 
 ### 02.4.3. Barne-inplementazioa: Combinatorics & Sequences
 
-Ikusi nola `math.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `math.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: m fact loop Int Int => Int
@@ -407,7 +407,7 @@ fn :: math fibonacci Int => Int
 
 ### 02.4.4. Barne-inplementazioa: Integer List Statistics
 
-Ikusi nola `math.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `math.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: m list len [Int]    => Int
@@ -479,9 +479,9 @@ fn :: math median [Int] => Int
 ## 02.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `math`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Funtzio osoak (`0` itzultzen dute zatitzailea `<= 0` denean `SIGFPE`-rekin abortatu beharrean), koma higikor ez-zehatzik gabe.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/math.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/math.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test math.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test math.ridgun` suite automatizatuaren bidez.
 
 ### `math`-ekin programatzeko Urrezko 5 Arauak
 

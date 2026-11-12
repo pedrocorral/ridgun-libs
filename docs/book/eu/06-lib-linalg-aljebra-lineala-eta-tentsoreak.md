@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: embedding-etarako kosinu-antzekotasuna kalkulatu, $A x =
 
 **`linalg`** lib-ak zenbakizko aljebra lineala eraikitzen du `Tensor[Real]` natiboaren gainean: iraulketa, aztarna, identitatea, biderkadura eskalarrak eta matrizialak Einsteinen notazioarekin, normak ($L_1, L_2, L_\infty$, Frobenius), determinantea eta $A x = b$ ebazpena **Bareiss/Gauss** algoritmoarekin, eta aktibazio neuronalak (`relu`, `sigmoid`, `softmax`).
 
-Ekosistema tradizional batean, **`LINALG`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`linalg`** lib-ak (`src/main/ridgun/lib/linalg.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`LINALG`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`linalg`** lib-ak (`src/main/ridgun/lib/linalg.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import linalg` (edo `import linalg as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: linalg` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`LINALG`** domeinuko zereginak ebazteak C-ko ka
 
 ## 06.2. Artefaktu natiboak, inportazioa eta `linalg` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`linalg`** lehen mailako **lib** bat da, `src/main/ridgun/lib/linalg.rg` bidean kokatua (`LINALG` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`linalg`** lehen mailako **lib** bat da, `src/main/ridgun/lib/linalg.ridgun` bidean kokatua (`LINALG` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/linalg.rglib` | Banaketa eta inportazio zuzena `import linalg` bidez |
+| **Ridgun Bundle-a** | `target/bundles/linalg.ridgunlib` | Banaketa eta inportazio zuzena `import linalg` bidez |
 | **Fitxategi konpilatua** | `target/linalg.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/liblinalg.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -42,9 +42,9 @@ Ekosistema tradizional batean, **`LINALG`** domeinuko zereginak ebazteak C-ko ka
 | `linalg det / linalg solve` | Bareissen determinante zehatza eta $A x = b$ ebazlea pibotatze partzialarekin (`Option[Tensor[Real]]`) |
 | `linalg relu / linalg sigmoid / linalg softmax` | Maximoaren bidezko desplazamendudun aktibazio neuronal zenbakiz egonkorrak |
 
-### 06.2.2. `src/main/ridgun/lib/linalg.rg`-eko mota eta sinadura guztien katalogoa
+### 06.2.2. `src/main/ridgun/lib/linalg.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/linalg.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `76` funtzio):
+Jarraian duzu `src/main/ridgun/lib/linalg.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `76` funtzio):
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
@@ -129,7 +129,7 @@ Jarraian duzu `src/main/ridgun/lib/linalg.rg` fitxategian definitutako mota alje
 
 ## 06.3. `linalg` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `linalg` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test linalg.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `linalg` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test linalg.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 06.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `linalg` erabiliz
 
@@ -391,13 +391,13 @@ fn :: test neural activations => ()
 
 ---
 
-## 06.4. Kaputaren azpian: nola dagoen eraikia `linalg` Ridgun hutsean (`src/main/ridgun/lib/linalg.rg`)
+## 06.4. Kaputaren azpian: nola dagoen eraikia `linalg` Ridgun hutsean (`src/main/ridgun/lib/linalg.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/linalg.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/linalg.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 06.4.1. Barne-inplementazioa: Internal Scalar Helpers
 
-Ikusi nola `linalg.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `linalg.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: linalg
@@ -449,7 +449,7 @@ fn :: la exp neg scaled Int => Int
 
 ### 06.4.2. Barne-inplementazioa: Matrix Transpose, Trace, Diagonal & Identity
 
-Ikusi nola `linalg.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `linalg.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: la transpose col loop Tensor[Real * r * c] Tensor[Real * c * r] Int Int Int => Tensor[Real * c * r]
@@ -508,7 +508,7 @@ fn :: linalg identity Int => Tensor[Real * n * n]
 
 ### 06.4.3. Barne-inplementazioa: Vector & Matrix Norms (`norm_l1`, `norm_l2`, `norm_linf`, `frobenius`)
 
-Ikusi nola `linalg.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `linalg.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: la norm l1 loop Tensor[Real * n] Int Int Int => Int
@@ -581,7 +581,7 @@ fn :: linalg cosine similarity Tensor[Real * n] Tensor[Real * n] => Int
 
 ### 06.4.4. Barne-inplementazioa: Neural Activations (`linalg relu`, `linalg sigmoid`, `linalg softmax`)
 
-Ikusi nola `linalg.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `linalg.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: la relu scalar Int => Int
@@ -675,9 +675,9 @@ fn :: linalg softmax Tensor[Real * n] => Tensor[Real * n]
 ## 06.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `linalg`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Matrize singularrek `None` itzultzen dute garbi `linalg solve`-n (`NaN` isilik gabe), eta `linalg softmax`-ek maximoa kentzen du berreketa aurretik gainezkatzeak saihesteko.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/linalg.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/linalg.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test linalg.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test linalg.ridgun` suite automatizatuaren bidez.
 
 ### `linalg`-ekin programatzeko Urrezko 5 Arauak
 

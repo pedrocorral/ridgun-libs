@@ -1,6 +1,6 @@
 ---
 id: TASK-0025
-title: Implement jwt.rg (RFC 7519 HS256 & AEAD tokens) and ws.rg (RFC 6455 WebSocket) libraries
+title: Implement jwt.ridgun (RFC 7519 HS256 & AEAD tokens) and ws.ridgun (RFC 6455 WebSocket) libraries
 status: completed
 priority: must
 owner: agent-001
@@ -9,18 +9,18 @@ tests: [TS-JWT-001, TS-WS-001]
 mitigates: [VUL-AUTHN-001, VUL-INPUT-001]
 depends_on: []
 scope:
-  - src/main/ridgun/lib/jwt.rg
-  - src/main/ridgun/lib/ws.rg
-  - src/test/ridgun/test jwt.rg
-  - src/test/ridgun/test ws.rg
-  - build.rg
+  - src/main/ridgun/lib/jwt.ridgun
+  - src/main/ridgun/lib/ws.ridgun
+  - src/test/ridgun/test jwt.ridgun
+  - src/test/ridgun/test ws.ridgun
+  - build.ridgun
 context_files:
   - docs/requirements/functional/jwt/FR-JWT-001-jwt-hs256-and-aead-tokens.md
   - docs/requirements/functional/ws/FR-WS-001-rfc6455-websocket-handshake-and-framing.md
 claimed: 2026-10-23T20:30:27Z
 claimed_by: agent gemini@solarfall
 ---
-# TASK-0025 — Implement `jwt.rg` (RFC 7519 HS256 & AEAD tokens) and `ws.rg` (RFC 6455 WebSocket) libraries
+# TASK-0025 — Implement `jwt.ridgun` (RFC 7519 HS256 & AEAD tokens) and `ws.ridgun` (RFC 6455 WebSocket) libraries
 
 ## Goal
-Implement pure-Ridgun `jwt.rg` and `ws.rg`, their test suites (`test jwt.rg`, `test ws.rg`), and `.rglib`/`.so` bundles.
+Implement pure-Ridgun `jwt.ridgun` and `ws.ridgun`, their test suites (`test jwt.ridgun`, `test ws.ridgun`), and `.ridgunlib`/`.so` bundles.

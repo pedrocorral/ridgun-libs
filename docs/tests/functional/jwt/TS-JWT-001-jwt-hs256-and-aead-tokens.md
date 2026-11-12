@@ -4,12 +4,12 @@ title: Verify RFC 7519 HS256 JWT and ChaCha20-Poly1305 encrypted token signing, 
 level: unit
 covers: [FR-JWT-001, API-JWT-001]
 status: automated
-automated_in: ["src/test/ridgun/test jwt.rg"]
+automated_in: ["src/test/ridgun/test jwt.ridgun"]
 ---
 # TS-JWT-001 — Verify RFC 7519 HS256 JWT and ChaCha20-Poly1305 encrypted token signing, constant-time verification, and claim validation
 
 ## Preconditions / fixtures
-- Pure-Ridgun `jwt` and `test` modules (`src/main/ridgun/lib/jwt.rg`, `src/main/ridgun/lib/test.rg`).
+- Pure-Ridgun `jwt` and `test` modules (`src/main/ridgun/lib/jwt.ridgun`, `src/main/ridgun/lib/test.ridgun`).
 
 ## Steps / inputs
 1. Sign payloads and `JwtClaims` (`iss`, `sub`, `exp`, `nbf`) with `jwt sign hs256` and `jwt sign claims`; verify `jwt decode payload` and `jwt verify hs256`.

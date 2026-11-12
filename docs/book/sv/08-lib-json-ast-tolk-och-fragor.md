@@ -10,7 +10,7 @@ Låt oss vara ärliga: att navigera i djupt nästlad JSON i många statiskt typa
 
 Lib:en **`json`** erbjuder en komplett rekursiv **RFC 8259**-tolk till den algebraiska datatypen `JsonVal` (`JnNull`, `JnBool`, `JnInt`, `JnStr`, `JnArr`, `JnObj`, `JnErr`), kompakt och indenterad serialisering (`json pretty`) samt punktseparerade sökvägsfrågor (`"server.http.port"`, `"users.0.name"`).
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`JSON`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`json`** (`src/main/ridgun/lib/json.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`JSON`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`json`** (`src/main/ridgun/lib/json.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import json` (eller `import json as alias`) överst i filen**: varje lib definierar sin `module :: json`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`JSON`** ofta a
 
 ## 08.2. Inbyggda artefakter, import och komplett API-katalog för `json`
 
-I `ridgun-libs` är **`json`** en förstklassig **lib** placerad i `src/main/ridgun/lib/json.rg` (domän `JSON`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`json`** en förstklassig **lib** placerad i `src/main/ridgun/lib/json.ridgun` (domän `JSON`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/json.rglib` | Portabel distribution och direkt import med `import json` |
+| **Ridgun-bundle** | `target/bundles/json.ridgunlib` | Portabel distribution och direkt import med `import json` |
 | **Kompilerat arkiv** | `target/json.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libjson.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -40,9 +40,9 @@ I `ridgun-libs` är **`json`** en förstklassig **lib** placerad i `src/main/rid
 | `json stringify / json pretty` | Serialiserar `JsonVal` till kompakt eller flerradig indenterad JSON |
 | `json get path / json get str / json get int / json get bool` | Navigerar i nästlade objekt och listor via punktseparerade sökvägar (`"a.b.0.c"`) |
 
-### 08.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/json.rg`
+### 08.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/json.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/json.rg` (`7` typer, `0` operatorer och `118` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/json.ridgun` (`7` typer, `0` operatorer och `118` funktioner):
 
 **Algebraiska datatyper och poster (`type`) i `json`:**
 
@@ -119,7 +119,7 @@ type JsonStrStep = JStrOk String Int | JStrErr String
 
 ## 08.3. Djupdykning i `json`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `json` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test json.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `json` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test json.ridgun`.
 
 ### 08.3.1. Exempel 1: Huvudflöde i tabellform med `json`
 
@@ -256,13 +256,13 @@ fn :: test json malformed inputs => ()
 
 ---
 
-## 08.4. Under huven: hur `json` är byggd i ren Ridgun (`src/main/ridgun/lib/json.rg`)
+## 08.4. Under huven: hur `json` är byggd i ren Ridgun (`src/main/ridgun/lib/json.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/json.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/json.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 08.4.1. Intern implementation: Whitespace & Character Helpers
 
-Se hur `json.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `json.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: json
@@ -287,7 +287,7 @@ fn :: j spaces Int => String
 
 ### 08.4.2. Intern implementation: Integer Literal Parsing
 
-Se hur `json.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `json.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: j scan digits String Int Int => Int
@@ -314,7 +314,7 @@ fn :: j finish pos num String Int Int     => JsonStep
 
 ### 08.4.3. Intern implementation: Serialization & Pretty-Printing
 
-Se hur `json.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `json.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: j join arr loop [JsonVal] String String String String => String
@@ -404,7 +404,7 @@ fn :: json pretty JsonVal Int => String
 
 ### 08.4.4. Intern implementation: Dot-Path Queries & Field Updates
 
-Se hur `json.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `json.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: j find field [JsonField] String => JsonVal
@@ -495,9 +495,9 @@ fn :: json set field JsonVal String JsonVal => JsonVal
 ## 08.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `json`
 
 - **Algoritmisk garanti och säkerhet**: Strikt avvisande av skräptecken efter rotvärdet (`trailing garbage`), fullständig hantering av escape-sekvenser och undantagsfri felrapportering med `JnErr`.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/json.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/json.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test json.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test json.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `json`
 

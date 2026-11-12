@@ -1,15 +1,15 @@
 ---
 id: API-TLS-001
-title: Public API Contract for tls.rg
+title: Public API Contract for tls.ridgun
 status: approved
 domain: TLS
 implements: [FR-TLS-001]
 verified_by: [TS-TLS-001]
 ---
-# API-TLS-001 — Public API Contract for `tls.rg`
+# API-TLS-001 — Public API Contract for `tls.ridgun`
 
 ## Module
-`src/main/ridgun/lib/tls.rg` (`module :: tls`)
+`src/main/ridgun/lib/tls.ridgun` (`module :: tls`)
 
 ## Types
 - `type TlsConfig = root_certs_path: String, root_certs_pem: String, alpn_protocols: [String], min_version: Int, max_version: Int, timeout_ms: Int, verify_time_sec: Int`

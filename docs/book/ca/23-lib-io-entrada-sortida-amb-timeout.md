@@ -10,7 +10,7 @@ Siguem sincers: una crida a `read()` o un subprocess fill sense data límit (`ti
 
 La lib **`io`** modela cada operació del sistema amb ADTs explícits (`IoError`, `IoResult[A]`), combina `ppoll` no bloquejant amb quotes lèxiques `with timeout wait_ms do` de Ridgun i ofereix els operadors mixfix `read fd ... timeout` i `write fd ... timeout`.
 
-En un ecosistema tradicional, resoldre les tasques del domini **`IO`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`io`** (`src/main/ridgun/lib/io.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`IO`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`io`** (`src/main/ridgun/lib/io.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import io` (o `import io as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: io` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`IO`** implica a
 
 ## 23.2. Artefactes natius, importació i catàleg complet de l'API de `io`
 
-A `ridgun-libs`, **`io`** és una **lib** de primera classe situada a `src/main/ridgun/lib/io.rg` (domini `IO`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`io`** és una **lib** de primera classe situada a `src/main/ridgun/lib/io.ridgun` (domini `IO`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/io.rglib` | Distribució i importació directa amb `import io` |
+| **Bundle Ridgun** | `target/bundles/io.ridgunlib` | Distribució i importació directa amb `import io` |
 | **Fitxer compilat** | `target/io.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libio.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -41,9 +41,9 @@ A `ridgun-libs`, **`io`** és una **lib** de primera classe situada a `src/main/
 | `io read file / io write file / io read lines` | Funcions segures de fitxers i fluxos de línies que retornen `IoResult` |
 | `exec with timeout : String -> Int -> IoResult[ProcStatus]` | Executa una comanda externa acotada per una quota lèxica `with timeout` |
 
-### 23.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/io.rg`
+### 23.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/io.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/io.rg` (`2` tipus, `2` operadors i `42` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/io.ridgun` (`2` tipus, `2` operadors i `42` funcions):
 
 **Tipus algebraics i registres (`type`) de `io`:**
 
@@ -103,7 +103,7 @@ op :: write fd Int data String timeout Int => IoResult
 
 ## 23.3. Explorant `io` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `io` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test io.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `io` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test io.ridgun`.
 
 ### 23.3.1. Exemple 1: Flux principal en estil tabular amb `io`
 
@@ -269,13 +269,13 @@ fn :: test io file and metadata => ()
 
 ---
 
-## 23.4. Sota el capó: com està construïda `io` en Ridgun pur (`src/main/ridgun/lib/io.rg`)
+## 23.4. Sota el capó: com està construïda `io` en Ridgun pur (`src/main/ridgun/lib/io.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/io.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/io.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 23.4.1. Implementació interna: Extensible I/O Error & Result Sum Types (§5.1)
 
-Fixa't en com `io.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `io.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: io
@@ -308,7 +308,7 @@ fn :: format io result IoResult           => String
 
 ### 23.4.2. Implementació interna: Timeout-Bounded Command Execution (§5.2)
 
-Fixa't en com `io.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `io.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: has null char String Int Int => Bool
@@ -352,7 +352,7 @@ fn :: exec with timeout String Int        => IoResult
 
 ### 23.4.3. Implementació interna: Safe File Read & Line-Stream Helpers
 
-Fixa't en com `io.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `io.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: io read file safe String => IoResult
@@ -409,7 +409,7 @@ fn :: io write lines String [String] => Int
 
 ### 23.4.4. Implementació interna: Ridgun v0.9.5 PAL & Ambient Deadline `io read with timeout` (§3.1)
 
-Fixa't en com `io.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `io.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: io wrap chunk String => IoResult
@@ -455,9 +455,9 @@ fn :: io read with timeout String Int => IoResult
 ## 23.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `io`
 
 - **Garantia algorísmica i de seguretat**: Cap lectura, escriptura o comanda executada a través d'`io` amb quota `wait_ms` pot bloquejar indefinidament el fil o actor que fa la crida.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/io.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/io.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test io.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test io.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `io`
 

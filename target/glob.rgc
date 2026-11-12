@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/glob.rg
+-- src/main/ridgun/lib/glob.ridgun
 -- Pure-Ridgun Wildcard (*, ?), Character Class ([a-z], [!a-z]) & List Filter Library (GLOB)
 -- @implements FR-GLOB-001
 -- @implements API-GLOB-001

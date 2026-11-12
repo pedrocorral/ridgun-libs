@@ -1,11 +1,11 @@
 ---
 id: API-AGENT-001
-title: Public lib contract for agent (agent.rglib / libagent.so)
+title: Public lib contract for agent (agent.ridgunlib / libagent.so)
 status: approved
 implements: [FR-AGENT-001]
 auth: none
 ---
-# API-AGENT-001 — Public lib contract for `agent` (`agent.rg`)
+# API-AGENT-001 — Public lib contract for `agent` (`agent.ridgun`)
 
 ## Request
 - Imported via `import agent`.
@@ -16,7 +16,7 @@ auth: none
   - `type KvCmd = KvPut String String | KvGet String | KvDel String | KvHas String | KvCount | KvKeys | KvClear`
   - `format agent status AgentStatus => String`
   - `format agent reply AgentReply => String`
-- Core Combinators (`agent.rg`):
+- Core Combinators (`agent.ridgun`):
   - `agent ask Agent A => B`
   - `agent try ask Agent A => Option`
   - `agent send batch Agent [A] => ()`
@@ -24,7 +24,7 @@ auth: none
   - `agent map batch Agent [A] => [B]`
   - `agent drain ready Agent => [B]`
   - `agent stop all [Agent] => ()`
-- Sharded & Round-Robin Agent Pools (`pool.rg`):
+- Sharded & Round-Robin Agent Pools (`pool.ridgun`):
   - `type AgentPool = Pool Int [Agent]`
   - `pool get agent [Agent] Int => Agent`
   - `pool ask shard AgentPool Int A => B`
@@ -32,7 +32,7 @@ auth: none
   - `pool broadcast AgentPool A => ()`
   - `pool drain all AgentPool => [B]`
   - `pool shutdown AgentPool => ()`
-- Per-Connection Stateful Agent Reactor (`net_agent.rg`):
+- Per-Connection Stateful Agent Reactor (`net_agent.ridgun`):
   - `type ConnSlot = ConnSlot Int Agent`
   - `type StepOutcome = ConnKeep ConnSlot String | ConnClosed`
   - `conn poll step ConnSlot => StepOutcome`
@@ -73,5 +73,5 @@ auth: none
 | `ReplyError msg` | Agent operation failed | `ReplyError msg` (`"agent error: {msg}"`) |
 
 ## Rules
-- All public functions use natural space-separated Ridgun names (`new counter agent`, `ask int with timeout`, `agent kv get`, etc.) and avoid colliding with `list.rg` (`RG-066`).
+- All public functions use natural space-separated Ridgun names (`new counter agent`, `ask int with timeout`, `agent kv get`, etc.) and avoid colliding with `list.ridgun` (`RG-066`).
 - Calling `ask *` or `relay *` checks `agent alive` before sending so stopped agents never block the caller.

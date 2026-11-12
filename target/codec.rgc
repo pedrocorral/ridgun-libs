@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/codec.rg
+-- src/main/ridgun/lib/codec.ridgun
 -- Pure-Ridgun RFC 4648 Hex/Base64/Base64url, RFC 3986 URL & RFC 8259 JSON Library (CODEC)
 -- @implements FR-CODEC-001
 -- @implements API-CODEC-001

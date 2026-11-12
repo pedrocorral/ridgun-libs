@@ -4,12 +4,12 @@ title: Verify level filtering, sensitive key redaction, and structured text/JSON
 level: unit
 covers: [FR-LOG-001, API-LOG-001]
 status: automated
-automated_in: [src/test/ridgun/test log.rg]
+automated_in: [src/test/ridgun/test log.ridgun]
 ---
 # TS-LOG-001 — Verify level filtering, sensitive key redaction, and structured text/JSON log formatting
 
 ## Preconditions / fixtures
-- Pure-Ridgun `log` module (`src/main/ridgun/lib/log.rg`).
+- Pure-Ridgun `log` module (`src/main/ridgun/lib/log.ridgun`).
 
 ## Steps / inputs
 1. Call `log level rank`, `log level name`, and `log should emit` across `DEBUG`, `INFO`, `WARN`, and `ERROR`.

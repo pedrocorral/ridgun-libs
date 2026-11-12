@@ -2,7 +2,7 @@
 
 ## 34.1. Zergatik existitzen da `locale` lib-a?
 
-**`locale`** lib-ak (`src/main/ridgun/lib/locale.rg`, `LOCALE` domeinua) **Unicode CLDR 46** datuetan eta Howard Hinnanten $O(1)$ UTC egutegi zibilean oinarritutako nazioartekotze determinista eskaintzen du Ridgun hutsean:
+**`locale`** lib-ak (`src/main/ridgun/lib/locale.ridgun`, `LOCALE` domeinua) **Unicode CLDR 46** datuetan eta Howard Hinnanten $O(1)$ UTC egutegi zibilean oinarritutako nazioartekotze determinista eskaintzen du Ridgun hutsean:
 
 1. **CLDR plural-arauak bi modutan (`.po` bateragarria lehenetsia + CLDR 46 zorrotza `"many"` kategoriarekin)**: `plural category`, `plural categories` eta `plural index` funtzioek `.po` katalogoekin bateragarria den 2 formako modua eskaintzen dute, eta `plural category cldr` zein `plural categories cldr` funtzioek milioi zehatzetarako `"many"` kategoria aktibatzen dute.
 2. **UTC daten eta denbora-zigiluen formatua (`format date`, `format datetime`, `month name`, `weekday name`)**: `short`, `medium`, `long` eta `full` estiloak (euskarazko `"2026ko urriaren 31"` deklinazioa barne).
@@ -270,4 +270,4 @@ fn :: test locale autonyms normalization and registry => ()
 ## 34.5. Berme algoritmikoak eta `RMM1`/`RMM2` memoria
 
 - **Berme algoritmikoa eta segurtasunekoa**: Egoera global aldakorrik gabeko funtzio puruak, $O(1)$ UTC egutegia eta `"en"` fallback determinista.
-- **Etengabeko egiaztapena**: `src/test/ridgun/test locale.rg` suitearekin egiaztatua.
+- **Etengabeko egiaztapena**: `src/test/ridgun/test locale.ridgun` suitearekin egiaztatua.

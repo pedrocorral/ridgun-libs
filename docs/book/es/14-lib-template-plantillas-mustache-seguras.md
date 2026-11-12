@@ -10,7 +10,7 @@ Seamos sinceros: montar páginas HTML o informes LaTeX concatenando cadenas a ma
 
 La lib **`template`** ofrece un motor **Mustache** sin lógica arbitraria con auto-escape contextual (`TmplPlain`, `TmplHtml`, `TmplLatex`), sustitución cruda explícita (`{{{raw}}}` / `{{&raw}}`), comentarios (`{{! ... }}`), secciones condicionales (`{{#sec}}...{{/sec}}`) e invertidas (`{{^sec}}...{{/sec}}`).
 
-En un ecosistema tradicional, resolver las tareas del dominio **`TMPL`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`template`** (`src/main/ridgun/lib/template.rg`) aborda el problema con cuatro principios innegociables:
+En un ecosistema tradicional, resolver las tareas del dominio **`TMPL`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`template`** (`src/main/ridgun/lib/template.ridgun`) aborda el problema con cuatro principios innegociables:
 
 1. **Declara `import template` (o `import template as alias`) al inicio del archivo**: cada lib define su espacio de nombres `module :: template` y en modo `--strict` las funciones multi-palabra se invocan siempre con espacios naturales.
 2. **Encadena tus tuberías de izquierda a derecha con `->`**: escribe `entrada paso uno -> paso dos -> resultado`, usa máscaras `(+ _ _ +)` para desestructurar secuencias y omite `_ =` en sentencias secuenciales (o descarta con `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resolver las tareas del dominio **`TMPL`** implica
 
 ## 14.2. Artefactos nativos, importación y catálogo completo de la API de `template`
 
-En `ridgun-libs`, **`template`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/template.rg` (dominio `TMPL`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
+En `ridgun-libs`, **`template`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/template.ridgun` (dominio `TMPL`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/template.rglib` | Distribución e importación directa con `import template` |
+| **Bundle Ridgun** | `target/bundles/template.ridgunlib` | Distribución e importación directa con `import template` |
 | **Archivo compilado** | `target/template.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Objeto compartido ELF64** | `target/libtemplate.so` | Biblioteca dinámica nativa sin dependencias de C ni `libc` |
 
@@ -39,9 +39,9 @@ En `ridgun-libs`, **`template`** es una **lib** de primera clase ubicada en `src
 | `tmpl escape html / tmpl escape latex` | Escapa `& < > " '` para HTML o `\ { } & % $ # _ ~ ^` para LaTeX |
 | `tmpl extract vars / tmpl has unclosed tags` | Extrae los nombres de variables requeridos y valida que las etiquetas estén cerradas |
 
-### 14.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/template.rg`
+### 14.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/template.ridgun`
 
-A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/template.rg` (`1` tipos, `0` operadores y `35` funciones):
+A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/template.ridgun` (`1` tipos, `0` operadores y `35` funciones):
 
 **Tipos algebraicos y registros (`type`) de `template`:**
 
@@ -91,7 +91,7 @@ type TmplEscape = TmplEscapeNone | TmplEscapeHtml | TmplEscapeLatex
 
 ## 14.3. Explorando `template` a fondo: Ejemplos paso a paso de cada funcionalidad
 
-No basta con ver la tabla de firmas: vamos a explorar **cada una de las funcionalidades** de la lib `template` mediante ejemplos progresivos y ejecutables en Ridgun. Empezaremos por las dos recetas tabulares de uso cotidiano y después recorreremos en detalle todos los escenarios funcionales, transformaciones y casos límite verificados en `src/test/ridgun/test template.rg`.
+No basta con ver la tabla de firmas: vamos a explorar **cada una de las funcionalidades** de la lib `template` mediante ejemplos progresivos y ejecutables en Ridgun. Empezaremos por las dos recetas tabulares de uso cotidiano y después recorreremos en detalle todos los escenarios funcionales, transformaciones y casos límite verificados en `src/test/ridgun/test template.ridgun`.
 
 ### 14.3.1. Ejemplo 1: Flujo principal en estilo tabular con `template`
 
@@ -239,13 +239,13 @@ fn :: test tmpl malformed tags => ()
 
 ---
 
-## 14.4. Bajo el capó: cómo está construida `template` en Ridgun puro (`src/main/ridgun/lib/template.rg`)
+## 14.4. Bajo el capó: cómo está construida `template` en Ridgun puro (`src/main/ridgun/lib/template.ridgun`)
 
-Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**. Puedes abrir `src/main/ridgun/lib/template.rg` y leer exactamente cómo está implementada cada operación usando *pattern matching*, árboles de guardas `|` / `|.` y recursión de cola (TCO). Veamos las piezas clave de su implementación real:
+Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**. Puedes abrir `src/main/ridgun/lib/template.ridgun` y leer exactamente cómo está implementada cada operación usando *pattern matching*, árboles de guardas `|` / `|.` y recursión de cola (TCO). Veamos las piezas clave de su implementación real:
 
 ### 14.4.1. Implementación interna: Internal Helpers
 
-Fíjate en cómo `template.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `template.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 module :: template
@@ -446,7 +446,7 @@ fn :: tm tag var String Int Int [String String] TmplEscape String Int => String
 
 ### 14.4.2. Implementación interna: Public API
 
-Fíjate en cómo `template.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `template.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 fn :: tmpl render with escape String [String String] TmplEscape => String
@@ -467,9 +467,9 @@ fn :: tmpl render latex String [String String] => String
 ## 14.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` y las 5 Reglas de Oro de `template`
 
 - **Garantía algorítmica y de seguridad**: Prevención de XSS por defecto en `tmpl render html` (escapando `&`, `<`, `>`, `"`, `'`) mientras `{{{var}}}` permite inyectar fragmentos de confianza de forma explícita.
-- **Complejidad de pila $O(1)$ con TCO**: Todos los bucles recursivos en `src/main/ridgun/lib/template.rg` están en posición de cola, por lo que `ridgunc` los compila a saltos nativos sin crecimiento de pila.
+- **Complejidad de pila $O(1)$ con TCO**: Todos los bucles recursivos en `src/main/ridgun/lib/template.ridgun` están en posición de cola, por lo que `ridgunc` los compila a saltos nativos sin crecimiento de pila.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Cero pausas de recolector de basura; todas las estructuras intermedias se liberan de forma determinista al salir del ámbito.
-- **Verificación continua**: Probada exhaustivamente con `stable check` y la suite automatizada `src/test/ridgun/test template.rg`.
+- **Verificación continua**: Probada exhaustivamente con `stable check` y la suite automatizada `src/test/ridgun/test template.ridgun`.
 
 ### Las 5 Reglas de Oro al programar con `template`
 

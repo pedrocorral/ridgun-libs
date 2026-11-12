@@ -23,10 +23,10 @@ The `test` library SHALL provide the `RG-011` message-annotated test assertions 
 - AC3: Given existing 2-argument `assert eq a b` and 1-argument `assert ok cond` calls across test suites, when invoked, then they remain fully supported alongside the 3-argument `assert_equals` and 2-argument `assert_true` functions.
 
 ## Actors & permissions
-- Any Ridgun test suite (`src/test/ridgun/test_*.rg`) importing `test`.
+- Any Ridgun test suite (`src/test/ridgun/test_*.ridgun`) importing `test`.
 
 ## Constraints & edge cases
-- Must compile as a reusable `.rglib` and `.so` without a `main` entrypoint.
+- Must compile as a reusable `.ridgunlib` and `.so` without a `main` entrypoint.
 
 ## Data & privacy
 - No persistent data or PII.

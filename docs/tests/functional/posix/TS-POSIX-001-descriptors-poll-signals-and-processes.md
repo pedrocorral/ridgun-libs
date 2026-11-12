@@ -4,12 +4,12 @@ title: Verify POSIX descriptor wrappers, PollStatus, ProcStatus, open flags, sig
 level: unit
 covers: [FR-POSIX-001, API-POSIX-001]
 status: automated
-automated_in: [src/test/ridgun/test posix.rg]
+automated_in: [src/test/ridgun/test posix.ridgun]
 ---
 # TS-POSIX-001 — Verify POSIX descriptor wrappers, PollStatus, ProcStatus, open flags, signals, and wait fd timeout polling
 
 ## Preconditions / fixtures
-- Pure-Ridgun `posix` module (`src/main/ridgun/lib/posix.rg`).
+- Pure-Ridgun `posix` module (`src/main/ridgun/lib/posix.ridgun`).
 
 ## Steps / inputs
 1. Query `poll in`, `poll out`, `poll err`, `sig term`, `sig kill`, `sig int`, `o rdonly`, `o wronly`, `o rdwr`, `o creat`, `o trunc`, `o append`, `o nonblock`, and `o cloexec` and verify their POSIX constants.

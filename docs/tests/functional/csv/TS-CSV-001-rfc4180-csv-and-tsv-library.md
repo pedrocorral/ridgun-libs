@@ -4,12 +4,12 @@ title: Verify RFC 4180 CSV and TSV parsing, serialization, quoted-field escaping
 level: unit
 covers: [FR-CSV-001, API-CSV-001]
 status: automated
-automated_in: ["src/test/ridgun/test csv.rg"]
+automated_in: ["src/test/ridgun/test csv.ridgun"]
 ---
 # TS-CSV-001 — Verify RFC 4180 CSV and TSV parsing, serialization, quoted-field escaping, and header-mapped lookup
 
 ## Preconditions / fixtures
-- Pure-Ridgun `csv` and `test` modules (`src/main/ridgun/lib/csv.rg`, `src/main/ridgun/lib/test.rg`).
+- Pure-Ridgun `csv` and `test` modules (`src/main/ridgun/lib/csv.ridgun`, `src/main/ridgun/lib/test.ridgun`).
 
 ## Steps / inputs
 1. Parse CSV and TSV text containing quoted commas, escaped quotes (`""`), and CRLF/LF newlines via `csv parse` and `tsv parse`.

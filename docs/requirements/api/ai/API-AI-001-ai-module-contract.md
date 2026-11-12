@@ -1,11 +1,11 @@
 ---
 id: API-AI-001
-title: Public lib contract for ai (ai.rglib / libai.so)
+title: Public lib contract for ai (ai.ridgunlib / libai.so)
 status: implemented
 implements: [FR-AI-001]
 auth: none
 ---
-# API-AI-001 — Public lib contract for `ai` (`ai.rg`)
+# API-AI-001 — Public lib contract for `ai` (`ai.ridgun`)
 
 ## Request
 - Imported via `import ai`.

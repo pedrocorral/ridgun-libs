@@ -4,12 +4,12 @@ title: Verify RFC 4648 Hex/Base64/Base64url, RFC 3986 URL/query-string encoding,
 level: unit
 covers: [FR-CODEC-001, API-CODEC-001]
 status: automated
-automated_in: [src/test/ridgun/test codec.rg]
+automated_in: [src/test/ridgun/test codec.ridgun]
 ---
 # TS-CODEC-001 — Verify RFC 4648 Hex/Base64/Base64url, RFC 3986 URL/query-string encoding, and RFC 8259 JSON formatting and extraction
 
 ## Preconditions / fixtures
-- Pure-Ridgun `codec` module (`src/main/ridgun/lib/codec.rg`).
+- Pure-Ridgun `codec` module (`src/main/ridgun/lib/codec.ridgun`).
 
 ## Steps / inputs
 1. Verify RFC 4648 test vectors (`""`, `"f"`, `"fo"`, `"foo"`, `"foob"`, `"fooba"`, `"foobar"`) for `hex encode`/`hex decode`, `base64 encode`/`base64 decode`, and `base64url encode`/`base64url decode`, plus invalid input rejection (`is valid hex`, `is valid base64`).

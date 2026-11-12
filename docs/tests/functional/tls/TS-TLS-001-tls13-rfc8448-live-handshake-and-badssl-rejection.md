@@ -5,12 +5,12 @@ status: automated
 level: functional
 domain: TLS
 covers: [FR-TLS-001, API-TLS-001, DM-Tls]
-automated_in: [src/test/ridgun/test tls.rg]
+automated_in: [src/test/ridgun/test tls.ridgun]
 ---
 # TS-TLS-001 — Verify RFC 8448 TLS 1.3 Vectors, Live TLS Handshakes, X.509 Chain Verification, and badssl.com Rejection Cases
 
 ## Scope
-Verifies `src/main/ridgun/lib/tls.rg` across RFC 8448 §3 TLS 1.3 1-RTT handshake and application-data test vectors, live TLS connections (`www.debian.org:443` / `smtp.gmail.com:465`) and local TLS test servers, and rejection of `expired.badssl.com`, `wrong.host.badssl.com`, `self-signed.badssl.com`, `untrusted-root.badssl.com`, and `tls-v1-0.badssl.com` with typed `TlsError` reasons.
+Verifies `src/main/ridgun/lib/tls.ridgun` across RFC 8448 §3 TLS 1.3 1-RTT handshake and application-data test vectors, live TLS connections (`www.debian.org:443` / `smtp.gmail.com:465`) and local TLS test servers, and rejection of `expired.badssl.com`, `wrong.host.badssl.com`, `self-signed.badssl.com`, `untrusted-root.badssl.com`, and `tls-v1-0.badssl.com` with typed `TlsError` reasons.
 
 ## Test Cases
 1. **RFC 8448 §3 TLS 1.3 1-RTT Handshake & Record Vectors (`AC1`)**:

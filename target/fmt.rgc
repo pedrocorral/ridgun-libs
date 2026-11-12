@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/fmt.rg
+-- src/main/ridgun/lib/fmt.ridgun
 -- Configurable 2D Ridgun Source Code Formatter & Multi-Target Syntax Highlighter
 -- @implements FR-FMT-001
 -- @implements API-FMT-001
@@ -1270,10 +1270,10 @@ fn :: fmt wrap target doc [String] FmtTarget FmtTheme => String
 fn :: fmt html stylesheet FmtTheme      => String
       fmt html stylesheet FmtThemeLight =
         nl = char from code 10
-        '<style>' + nl + '.ridgun-code { background: #fafafa; color: #383a42; padding: 12px; border-radius: 6px; overflow-x: auto; }' + nl + '.rg-kw, .rg-logic { color: #a626a4; font-weight: bold; }' + nl + '.rg-fn { color: #4078f2; font-weight: bold; }' + nl + '.rg-type { color: #c18401; }' + nl + '.rg-str { color: #50a14f; }' + nl + '.rg-interp, .rg-op { color: #0184bc; }' + nl + '.rg-num { color: #986801; }' + nl + '.rg-bool { color: #986801; font-weight: bold; }' + nl + '.rg-pragma { color: #696c77; font-weight: bold; }' + nl + '.rg-cmt { color: #a0a1a7; font-style: italic; }' + nl + '</style>' + nl
+        '<style>' + nl + '.ridgun-code { background: #fafafa; color: #383a42; padding: 12px; border-radius: 6px; overflow-x: auto; }' + nl + '.ridgun-kw, .ridgun-logic { color: #a626a4; font-weight: bold; }' + nl + '.ridgun-fn { color: #4078f2; font-weight: bold; }' + nl + '.ridgun-type { color: #c18401; }' + nl + '.ridgun-str { color: #50a14f; }' + nl + '.ridgun-interp, .ridgun-op { color: #0184bc; }' + nl + '.ridgun-num { color: #986801; }' + nl + '.ridgun-bool { color: #986801; font-weight: bold; }' + nl + '.ridgun-pragma { color: #696c77; font-weight: bold; }' + nl + '.ridgun-cmt { color: #a0a1a7; font-style: italic; }' + nl + '</style>' + nl
       fmt html stylesheet _             =
         nl = char from code 10
-        '<style>' + nl + '.ridgun-code { background: #282c34; color: #abb2bf; padding: 12px; border-radius: 6px; overflow-x: auto; }' + nl + '.rg-kw, .rg-logic { color: #c678dd; font-weight: bold; }' + nl + '.rg-fn { color: #61afef; font-weight: bold; }' + nl + '.rg-type { color: #e5c07b; }' + nl + '.rg-str { color: #98c379; }' + nl + '.rg-interp, .rg-op { color: #56b6c2; }' + nl + '.rg-num { color: #d19a66; }' + nl + '.rg-bool { color: #d19a66; font-weight: bold; }' + nl + '.rg-pragma { color: #7f848e; font-weight: bold; }' + nl + '.rg-cmt { color: #5c6370; font-style: italic; }' + nl + '</style>' + nl
+        '<style>' + nl + '.ridgun-code { background: #282c34; color: #abb2bf; padding: 12px; border-radius: 6px; overflow-x: auto; }' + nl + '.ridgun-kw, .ridgun-logic { color: #c678dd; font-weight: bold; }' + nl + '.ridgun-fn { color: #61afef; font-weight: bold; }' + nl + '.ridgun-type { color: #e5c07b; }' + nl + '.ridgun-str { color: #98c379; }' + nl + '.ridgun-interp, .ridgun-op { color: #56b6c2; }' + nl + '.ridgun-num { color: #d19a66; }' + nl + '.ridgun-bool { color: #d19a66; font-weight: bold; }' + nl + '.ridgun-pragma { color: #7f848e; font-weight: bold; }' + nl + '.ridgun-cmt { color: #5c6370; font-style: italic; }' + nl + '</style>' + nl
 
 -- ── Public Entry Points ──────────────────────────────────────
 

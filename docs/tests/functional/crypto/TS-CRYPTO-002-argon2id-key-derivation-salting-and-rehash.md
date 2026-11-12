@@ -4,12 +4,12 @@ title: Verify Argon2id salt generation, auto-salted password hashing, PHC parsin
 level: unit
 covers: [FR-CRYPTO-002]
 status: automated
-automated_in: [src/test/ridgun/test argon2id.rg]
+automated_in: [src/test/ridgun/test argon2id.ridgun]
 ---
 # TS-CRYPTO-002 — Verify Argon2id salt generation, auto-salted password hashing, PHC parsing, rehash detection, raw key derivation, context pepper/AD, and presets
 
 ## Preconditions / fixtures
-- Pure-Ridgun `argon2id` module (`src/main/ridgun/lib/argon2id.rg`).
+- Pure-Ridgun `argon2id` module (`src/main/ridgun/lib/argon2id.ridgun`).
 
 ## Steps / inputs
 1. Generate salts with `argon2id generate salt 16`, hash a password with `argon2id hash password`, and verify the resulting PHC string with `argon2id verify`.

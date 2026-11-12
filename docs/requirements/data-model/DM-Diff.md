@@ -14,7 +14,7 @@ related: [FR-DIFF-001, API-DIFF-001, ADR-0002]
 | new_line_no | Int | `>= 0` | 1-based line index in modified text (`0` for deletions) |
 
 ## Relations
-- Used by `diff.rg` (`DiffEdit`) to compute LCS line diffs, render Unified Diff text, and apply edit scripts to reconstruct target documents.
+- Used by `diff.ridgun` (`DiffEdit`) to compute LCS line diffs, render Unified Diff text, and apply edit scripts to reconstruct target documents.
 
 ## Invariants
 - Applying the edit script `diff apply old_text edits` reproduces `new_text` byte-for-byte.

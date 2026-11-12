@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/ai.rg
+-- src/main/ridgun/lib/ai.ridgun
 -- Pure-Ridgun AI Agent, Tool Calling, Streaming SSE, Structured Output,
 -- Bounded ReAct, Security Guardrails, Mini-RAG & MCP Library (AI)
 -- @implements FR-AI-001

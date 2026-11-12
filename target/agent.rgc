@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/agent.rg
+-- src/main/ridgun/lib/agent.ridgun
 -- Pure-Ridgun Native Agent Concurrency, Lifecycle, Messaging & Stateful Actors Library (AGENT)
 -- @implements FR-AGENT-001
 -- @implements API-AGENT-001

@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: eskaera bateko eremuak log fitxategi batera irauli eta a
 
 **`log`** lib-ak larritasunaren araberako iragazketa (`DEBUG`, `INFO`, `WARN`, `ERROR`), giza testuko eta **NDJSON egituratuko** formateatzea, eta **gako sentikorren ezkutatze automatikoa** (`password`, `secret`, `token`, `api_key`, `authorization`, `cookie`, `private_key` $\rightarrow$ `"[REDACTED]"`, `VUL-LOG-001` arinduz) eskaintzen ditu.
 
-Ekosistema tradizional batean, **`LOG`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`log`** lib-ak (`src/main/ridgun/lib/log.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`LOG`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`log`** lib-ak (`src/main/ridgun/lib/log.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import log` (edo `import log as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: log` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`LOG`** domeinuko zereginak ebazteak C-ko kanpo
 
 ## 20.2. Artefaktu natiboak, inportazioa eta `log` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`log`** lehen mailako **lib** bat da, `src/main/ridgun/lib/log.rg` bidean kokatua (`LOG` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`log`** lehen mailako **lib** bat da, `src/main/ridgun/lib/log.ridgun` bidean kokatua (`LOG` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/log.rglib` | Banaketa eta inportazio zuzena `import log` bidez |
+| **Ridgun Bundle-a** | `target/bundles/log.ridgunlib` | Banaketa eta inportazio zuzena `import log` bidez |
 | **Fitxategi konpilatua** | `target/log.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/liblog.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -39,9 +39,9 @@ Ekosistema tradizional batean, **`LOG`** domeinuko zereginak ebazteak C-ko kanpo
 | `log is sensitive key / log redact fields` | Gako sekretuen balioak `"[REDACTED]"`-ekin ordezkatzen ditu letra larri/xeheak kontuan hartu gabe |
 | `log format text / log format json` | `gako=balio` testu-lerroak edo RFC 8259 NDJSON formateatzen ditu sekretuen ezkutatze automatikoarekin |
 
-### 20.2.2. `src/main/ridgun/lib/log.rg`-eko mota eta sinadura guztien katalogoa
+### 20.2.2. `src/main/ridgun/lib/log.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/log.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `21` funtzio):
+Jarraian duzu `src/main/ridgun/lib/log.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `21` funtzio):
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
@@ -71,7 +71,7 @@ Jarraian duzu `src/main/ridgun/lib/log.rg` fitxategian definitutako mota aljebra
 
 ## 20.3. `log` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `log` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test log.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `log` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test log.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 20.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `log` erabiliz
 
@@ -181,13 +181,13 @@ fn :: test log text and ndjson formatting => ()
 
 ---
 
-## 20.4. Kaputaren azpian: nola dagoen eraikia `log` Ridgun hutsean (`src/main/ridgun/lib/log.rg`)
+## 20.4. Kaputaren azpian: nola dagoen eraikia `log` Ridgun hutsean (`src/main/ridgun/lib/log.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/log.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/log.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 20.4.1. Barne-inplementazioa: Severity Levels (`DEBUG`, `INFO`, `WARN`, `ERROR`)
 
-Ikusi nola `log.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `log.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: log
@@ -216,7 +216,7 @@ fn :: log should emit String    String    => Bool
 
 ### 20.4.2. Barne-inplementazioa: Sensitive Key Detection & Redaction
 
-Ikusi nola `log.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `log.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: lg check sens lower String => Bool
@@ -250,7 +250,7 @@ fn :: log redact fields [String String] => [String String]
 
 ### 20.4.3. Barne-inplementazioa: Escaping & Text / NDJSON Formatting
 
-Ikusi nola `log.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `log.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: lg esc char String Int Int => String
@@ -301,9 +301,9 @@ fn :: log format json String String [String String] => String
 ## 20.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `log`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Bai `log format text`-ek eta bai `log format json`-ek eremuak `log redact fields`-etik pasatzen dituzte beti serializatu aurretik, inongo sekreturik ahaztuta ez isurtzea bermatuz.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/log.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/log.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test log.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test log.ridgun` suite automatizatuaren bidez.
 
 ### `log`-ekin programatzeko Urrezko 5 Arauak
 

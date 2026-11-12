@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: datu-base batean gako nagusi gisa erabat ausazko `UUIDv4
 
 **`uuid`** lib-ak **`UUIDv4`** (nukleoaren CSPRNG bidezko ausazkoa) eta **`UUIDv7`** (**RFC 9562** arauaren arabera lehen 48 bitetan kronologikoki ordenatua), egiaztapen-batura azkarrak (**FNV-1a**, **Adler-32**, **CRC-32 IEEE 802.3**) eta hazidun PRNG determinista bat inplementatzen ditu.
 
-Ekosistema tradizional batean, **`UUID`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`uuid`** lib-ak (`src/main/ridgun/lib/uuid.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`UUID`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`uuid`** lib-ak (`src/main/ridgun/lib/uuid.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import uuid` (edo `import uuid as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: uuid` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`UUID`** domeinuko zereginak ebazteak C-ko kanp
 
 ## 19.2. Artefaktu natiboak, inportazioa eta `uuid` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`uuid`** lehen mailako **lib** bat da, `src/main/ridgun/lib/uuid.rg` bidean kokatua (`UUID` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`uuid`** lehen mailako **lib** bat da, `src/main/ridgun/lib/uuid.ridgun` bidean kokatua (`UUID` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/uuid.rglib` | Banaketa eta inportazio zuzena `import uuid` bidez |
+| **Ridgun Bundle-a** | `target/bundles/uuid.ridgunlib` | Banaketa eta inportazio zuzena `import uuid` bidez |
 | **Fitxategi konpilatua** | `target/uuid.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libuuid.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`UUID`** domeinuko zereginak ebazteak C-ko kanp
 | `fnv1a 32 / adler32 / crc32 / crc32 hex` | 32 biteko hash ez-kriptografiko eta egiaztapen-batura azkarrak |
 | `prng next / prng range` | Proba eta simulazio errepikagarrietarako PRNG kongruentzial lineal funtzional hutsa |
 
-### 19.2.2. `src/main/ridgun/lib/uuid.rg`-eko mota eta sinadura guztien katalogoa
+### 19.2.2. `src/main/ridgun/lib/uuid.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/uuid.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `33` funtzio):
+Jarraian duzu `src/main/ridgun/lib/uuid.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `33` funtzio):
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
@@ -84,7 +84,7 @@ Jarraian duzu `src/main/ridgun/lib/uuid.rg` fitxategian definitutako mota aljebr
 
 ## 19.3. `uuid` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `uuid` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test uuid.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `uuid` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test uuid.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 19.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `uuid` erabiliz
 
@@ -211,13 +211,13 @@ fn :: sellar paquete trazado (ahora_ms : Int) (payload : String) => (String, Int
 
 ---
 
-## 19.4. Kaputaren azpian: nola dagoen eraikia `uuid` Ridgun hutsean (`src/main/ridgun/lib/uuid.rg`)
+## 19.4. Kaputaren azpian: nola dagoen eraikia `uuid` Ridgun hutsean (`src/main/ridgun/lib/uuid.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/uuid.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/uuid.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 19.4.1. Barne-inplementazioa: RFC 9562 UUIDv4 & UUIDv7 Generation & Validation (CSPRNG + clock_gettime)
 
-Ikusi nola `uuid.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `uuid.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: uuid
@@ -365,9 +365,9 @@ fn :: uuid version String => Int
 ## 19.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `uuid`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: `uuid v7 at t1 < uuid v7 at t2`-k denborarekin hazten den ordena lexikografiko monotonoa bermatzen du, `btree` indizeetarako eta datu-baseetarako aproposa.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/uuid.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/uuid.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test uuid.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test uuid.ridgun` suite automatizatuaren bidez.
 
 ### `uuid`-ekin programatzeko Urrezko 5 Arauak
 

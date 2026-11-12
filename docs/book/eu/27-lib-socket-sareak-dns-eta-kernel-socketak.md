@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: C-n BSD socketak `struct sockaddr_in`, `htons`, `inet_pt
 
 **`socket`** lib-ak bi geruza osagarri eskaintzen ditu C lerro bakar bat gabe: (1) **Solstice** bezalako ekoizpen-zerbitzarietarako **`RGF-001`** nukleoko deskribatzaileen APIa (`sys tcp listen`, `sys tcp listen reuseport`, `sys accept`, `sys tcp connect`, `sys send`, `sys recv`, `sys resolve ipv4` `/etc/hosts` + 53 atakako RFC 1035 UDP DNS paketeen bidez) eta (2) `Socket` egoera-makina funtzional aldaezina luzera-aurrizkidun framing, CRLF lerro eta CIDR azpisareekin.
 
-Ekosistema tradizional batean, **`SOCK`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`socket`** lib-ak (`src/main/ridgun/lib/socket.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`SOCK`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`socket`** lib-ak (`src/main/ridgun/lib/socket.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import socket` (edo `import socket as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: socket` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`SOCK`** domeinuko zereginak ebazteak C-ko kanp
 
 ## 27.2. Artefaktu natiboak, inportazioa eta `socket` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`socket`** lehen mailako **lib** bat da, `src/main/ridgun/lib/socket.rg` bidean kokatua (`SOCK` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`socket`** lehen mailako **lib** bat da, `src/main/ridgun/lib/socket.ridgun` bidean kokatua (`SOCK` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/socket.rglib` | Banaketa eta inportazio zuzena `import socket` bidez |
+| **Ridgun Bundle-a** | `target/bundles/socket.ridgunlib` | Banaketa eta inportazio zuzena `import socket` bidez |
 | **Fitxategi konpilatua** | `target/socket.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libsocket.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -41,9 +41,9 @@ Ekosistema tradizional batean, **`SOCK`** domeinuko zereginak ebazteak C-ko kanp
 | `sys resolve ipv4 / dns resolve a` | Ridgun hutseko IPv4 ebazpena `/etc/hosts` eta RFC 1035 UDP DNS kontsulten bidez |
 | `sock send frame / sock recv frame / ipv4 in cidr` | Luzera-aurrizkidun (`N:payload`) framinga eta IPv4 CIDR azpisareen bat-etortzea |
 
-### 27.2.2. `src/main/ridgun/lib/socket.rg`-eko mota eta sinadura guztien katalogoa
+### 27.2.2. `src/main/ridgun/lib/socket.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/socket.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`10` mota, `0` eragile eta `183` funtzio):
+Jarraian duzu `src/main/ridgun/lib/socket.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`10` mota, `0` eragile eta `183` funtzio):
 
 **`socket`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -249,7 +249,7 @@ type SockRecvFromRes  = SockFromOk Socket [Int] SockAddr | SockFromErr String
 
 ## 27.3. `socket` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `socket` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test socket.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `socket` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test socket.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 27.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `socket` erabiliz
 
@@ -669,13 +669,13 @@ fn :: test sock rgf001 kernel tcp and unix => ()
 
 ---
 
-## 27.4. Kaputaren azpian: nola dagoen eraikia `socket` Ridgun hutsean (`src/main/ridgun/lib/socket.rg`)
+## 27.4. Kaputaren azpian: nola dagoen eraikia `socket` Ridgun hutsean (`src/main/ridgun/lib/socket.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/socket.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/socket.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 27.4.1. Barne-inplementazioa: RGF-001 Tuple Accessor Helpers
 
-Ikusi nola `socket.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `socket.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: socket
@@ -707,9 +707,9 @@ fn :: sock recv data (Int String) => String
 ## 27.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `socket`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Erregistroen eguneratzea `s with field = val` sintaxi aldaezinarekin, `glibc`/`libnss` gabeko DNS ebazpena eta egoera-kode deterministak (`0` OK, `-1` EOF, `-2` TIMEOUT, `-3` REFUSED).
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/socket.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/socket.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test socket.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test socket.ridgun` suite automatizatuaren bidez.
 
 ### `socket`-ekin programatzeko Urrezko 5 Arauak
 

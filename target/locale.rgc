@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/locale.rg
+-- src/main/ridgun/lib/locale.ridgun
 -- Pure-Ridgun Unicode CLDR Locale Data Library for Cardinal Plurals,
 -- UTC Date/Datetime Formatting, Number Formatting & Language Autonyms (LOCALE)
 -- @implements FR-LOCALE-001

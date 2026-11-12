@@ -4,12 +4,12 @@ title: Verify UTC civil calendar conversions, ISO-8601 formatting and parsing, h
 level: unit
 covers: [FR-TIME-001, API-TIME-001]
 status: automated
-automated_in: [src/test/ridgun/test time.rg]
+automated_in: [src/test/ridgun/test time.ridgun]
 ---
 # TS-TIME-001 — Verify UTC civil calendar conversions, ISO-8601 formatting and parsing, human durations, and exponential backoff
 
 ## Preconditions / fixtures
-- Pure-Ridgun `time` module (`src/main/ridgun/lib/time.rg`).
+- Pure-Ridgun `time` module (`src/main/ridgun/lib/time.ridgun`).
 
 ## Steps / inputs
 1. Call `time is leap year`, `time days in month`, `time day of week`, `time utc to epoch`, and `time epoch to utc` across `1970-01-01`, `2000-02-29`, and `2026-10-22`.

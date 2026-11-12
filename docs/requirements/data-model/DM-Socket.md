@@ -36,7 +36,7 @@ related: [FR-SOCK-001, FR-SOCK-002, FR-SOCK-003, FR-SOCK-004, ADR-0001, ADR-0002
 | status_code | Int | `0`, `-1`..`-8`, `-99` | Solstice `RGF-001` status tuple code |
 
 ## Relations
-- Consumed by `socket.rg` high-level ADT API (`SockAddr`, `SockOpts`, `Socket`, `SockPoll`, `SockRes`, `SockBytesRes`, `SockStrRes`, `SockDatagram`) and `RGF-001` status-tuple functions (`sys_tcp_listen`, `sys_unix_listen`, `sys_accept`, `sys_tcp_connect`, `sys_unix_connect`, `sys_recv`, `sys_send`, `sys_shutdown_write`, `sys_close`).
+- Consumed by `socket.ridgun` high-level ADT API (`SockAddr`, `SockOpts`, `Socket`, `SockPoll`, `SockRes`, `SockBytesRes`, `SockStrRes`, `SockDatagram`) and `RGF-001` status-tuple functions (`sys_tcp_listen`, `sys_unix_listen`, `sys_accept`, `sys_tcp_connect`, `sys_unix_connect`, `sys_recv`, `sys_send`, `sys_shutdown_write`, `sys_close`).
 
 ## Invariants
 - A closed socket (`is_open == False`) rejects all bind, listen, accept, connect, send, recv, and shutdown operations.

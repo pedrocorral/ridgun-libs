@@ -10,7 +10,7 @@ Let's be honest: manipulating strings in C with `strtok` and `strncpy` is a mine
 
 The **`str`** lib provides pure, immutable primitives for searching, trimming, splitting, joining, ASCII case conversion, $O(\log N)$ binary-doubling repetition, and column padding.
 
-In a traditional ecosystem, solving **`STR`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`str`** lib (`src/main/ridgun/lib/str.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`STR`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`str`** lib (`src/main/ridgun/lib/str.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import str` (or `import str as alias`) at the top of your file**: every lib defines its `module :: str` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`STR`** tasks means pulling in external C 
 
 ## 01.2. Native Artifacts, Imports, and Complete `str` API Catalog
 
-In `ridgun-libs`, **`str`** is a first-class **lib** located at `src/main/ridgun/lib/str.rg` (domain `STR`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`str`** is a first-class **lib** located at `src/main/ridgun/lib/str.ridgun` (domain `STR`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/str.rglib` | Portable distribution and direct `import str` resolution |
+| **Ridgun Bundle** | `target/bundles/str.ridgunlib` | Portable distribution and direct `import str` resolution |
 | **Compiled Archive** | `target/str.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libstr.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -42,9 +42,9 @@ In `ridgun-libs`, **`str`** is a first-class **lib** located at `src/main/ridgun
 | `str replace / str to upper / str to lower` | Non-overlapping replacement and ASCII case conversion |
 | `str repeat / str pad left / str pad right` | $O(\log N)$ repetition and fixed-width column padding |
 
-### 01.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/str.rg`
+### 01.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/str.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/str.rg` (`0` types, `0` operators, and `42` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/str.ridgun` (`0` types, `0` operators, and `42` functions):
 
 | # | Function / Signature (`fn ::`) | Return Type |
 |---|---|---|
@@ -95,7 +95,7 @@ Below is the complete inventory of algebraic data types (`type`), mixfix operato
 
 ## 01.3. Deep Dive into `str`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `str` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test str.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `str` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test str.ridgun`.
 
 ### 01.3.1. Example 1: Core Tabular Workflow with `str`
 
@@ -144,10 +144,10 @@ fn :: test str search and predicates => ()
         assert equals (str index of "" "") 0 "AC1: empty needle in empty haystack -> 0"
         assert equals (str index of "abc" "") 0 "AC1: empty needle -> 0"
 
-        assert true (str ends with "archive.rglib" ".rglib") "AC1: ends_with true"
+        assert true (str ends with "archive.ridgunlib" ".ridgunlib") "AC1: ends_with true"
         assert true (str ends with "exact" "exact") "AC1: ends_with full string"
         assert true (str ends with "any" "") "AC1: ends_with empty suffix true"
-        assert false (str ends with "archive.rg" ".rglib") "AC1: ends_with false"
+        assert false (str ends with "archive.ridgun" ".ridgunlib") "AC1: ends_with false"
         assert false (str ends with "short" "longer_suffix") "AC1: ends_with suffix longer than string"
 
         assert true (str is empty "") "AC1: is_empty true"
@@ -229,13 +229,13 @@ fn :: test str case repeat and padding => ()
 
 ---
 
-## 01.4. Under the Hood: How `str` Is Built in Pure Ridgun (`src/main/ridgun/lib/str.rg`)
+## 01.4. Under the Hood: How `str` Is Built in Pure Ridgun (`src/main/ridgun/lib/str.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/str.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/str.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 01.4.1. Internal Implementation: ASCII Classification Helpers
 
-Observe how `str.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `str.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: str
@@ -263,7 +263,7 @@ fn :: to lower code Int  => Int
 
 ### 01.4.2. Internal Implementation: Whitespace Trimming
 
-Observe how `str.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `str.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: first non space idx String Int Int => Int
@@ -308,7 +308,7 @@ fn :: str is blank String => Bool
 
 ### 01.4.3. Internal Implementation: String Splitting & Joining
 
-Observe how `str.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `str.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: str split chars String Int Int [String] => [String]
@@ -363,7 +363,7 @@ fn :: str join [String] String => String
 
 ### 01.4.4. Internal Implementation: Repetition & Padding
 
-Observe how `str.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `str.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: str repeat loop String Int String => String
@@ -406,9 +406,9 @@ fn :: str pad right String Int String => String
 ## 01.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `str`
 
 - **Algorithmic & Safety Guarantee**: $O(\log N)$ repetition via binary string doubling, safe handling of empty needles, and zero in-place mutation.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/str.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/str.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test str.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test str.ridgun`.
 
 ### The 5 Golden Rules When Programming with `str`
 

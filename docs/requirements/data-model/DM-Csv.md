@@ -13,7 +13,7 @@ related: [FR-CSV-001, API-CSV-001, ADR-0002]
 | has_headers | Bool | `True` or `False` | Whether row 0 is treated as column header names |
 
 ## Relations
-- Used by `csv.rg` (`CsvTable`) to parse, query, and serialize RFC 4180 CSV and TSV tables.
+- Used by `csv.ridgun` (`CsvTable`) to parse, query, and serialize RFC 4180 CSV and TSV tables.
 
 ## Invariants
 - Fields containing `delimiter_char`, `"`, `\r`, or `\n` are enclosed in double quotes `"` with internal quotes doubled (`""`).

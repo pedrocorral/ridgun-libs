@@ -1,15 +1,15 @@
 ---
 id: API-MAIL-001
-title: Public API Contract for mail.rg
+title: Public API Contract for mail.ridgun
 status: approved
 domain: MAIL
 implements: [FR-MAIL-001]
 verified_by: [TS-MAIL-001]
 ---
-# API-MAIL-001 — Public API Contract for `mail.rg`
+# API-MAIL-001 — Public API Contract for `mail.ridgun`
 
 ## Module
-`src/main/ridgun/lib/mail.rg` (`module :: mail`)
+`src/main/ridgun/lib/mail.ridgun` (`module :: mail`)
 
 ## Types
 - `type MailMessage = from_addr: String, to_addrs: [String], reply_to_addr: String, subject_line: String, text_body: String, html_body: String, message_id: String, date_sec: Int`

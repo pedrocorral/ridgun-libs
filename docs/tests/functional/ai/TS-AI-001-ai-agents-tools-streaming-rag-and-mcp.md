@@ -4,7 +4,7 @@ title: Verify AI conversations, thinking separation, tool schemas, OpenAI/Anthro
 status: automated
 level: unit
 verifies: [FR-AI-001, API-AI-001]
-test_file: "src/test/ridgun/test ai.rg"
+test_file: "src/test/ridgun/test ai.ridgun"
 ---
 # TS-AI-001 — AI Agent, Tool Calling, Streaming, Structured Output, ReAct, Guardrails, Mini-RAG & MCP Test Suite
 

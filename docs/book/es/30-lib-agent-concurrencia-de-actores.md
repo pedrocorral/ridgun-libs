@@ -10,7 +10,7 @@ Seamos sinceros: compartir memoria mutable entre hilos con `Mutex`, `RwLock` y v
 
 La lib **`agent`** aprovecha el **Modelo Nativo de Agentes** de Ridgun (`agent`, `send ... to`, `receive from`, `try receive from`, `stop`) para ofrecer buzones aislados con paso de mensajes Copy-on-Write, un almacén clave-valor concurrente (`KvStore`), un limitador de tasa por cubo de tokens (`RateBucket`) y supervisión de estado (`AgentHealth`).
 
-En un ecosistema tradicional, resolver las tareas del dominio **`AGENT`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`agent`** (`src/main/ridgun/lib/agent.rg`) aborda el problema con cuatro principios innegociables:
+En un ecosistema tradicional, resolver las tareas del dominio **`AGENT`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`agent`** (`src/main/ridgun/lib/agent.ridgun`) aborda el problema con cuatro principios innegociables:
 
 1. **Declara `import agent` (o `import agent as alias`) al inicio del archivo**: cada lib define su espacio de nombres `module :: agent` y en modo `--strict` las funciones multi-palabra se invocan siempre con espacios naturales.
 2. **Encadena tus tuberías de izquierda a derecha con `->`**: escribe `entrada paso uno -> paso dos -> resultado`, usa máscaras `(+ _ _ +)` para desestructurar secuencias y omite `_ =` en sentencias secuenciales (o descarta con `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resolver las tareas del dominio **`AGENT`** implic
 
 ## 30.2. Artefactos nativos, importación y catálogo completo de la API de `agent`
 
-En `ridgun-libs`, **`agent`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/agent.rg` (dominio `AGENT`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
+En `ridgun-libs`, **`agent`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/agent.ridgun` (dominio `AGENT`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/agent.rglib` | Distribución e importación directa con `import agent` |
+| **Bundle Ridgun** | `target/bundles/agent.ridgunlib` | Distribución e importación directa con `import agent` |
 | **Archivo compilado** | `target/agent.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Objeto compartido ELF64** | `target/libagent.so` | Biblioteca dinámica nativa sin dependencias de C ni `libc` |
 
@@ -40,9 +40,9 @@ En `ridgun-libs`, **`agent`** es una **lib** de primera clase ubicada en `src/ma
 | `rate bucket new / rate bucket allow` | Limitador de tasa por cubo de tokens que devuelve el cubo actualizado y `(allowed, remaining)` |
 | `sup mark failed / sup should restart` | Políticas de supervisión con control de presupuesto de reinicios (`max_restarts`) |
 
-### 30.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/agent.rg`
+### 30.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/agent.ridgun`
 
-A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/agent.rg` (`7` tipos, `0` operadores y `65` funciones):
+A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/agent.ridgun` (`7` tipos, `0` operadores y `65` funciones):
 
 **Tipos algebraicos y registros (`type`) de `agent`:**
 
@@ -128,7 +128,7 @@ type LogState     = log_sep: String, log_buf: String
 
 ## 30.3. Explorando `agent` a fondo: Ejemplos paso a paso de cada funcionalidad
 
-No basta con ver la tabla de firmas: vamos a explorar **cada una de las funcionalidades** de la lib `agent` mediante ejemplos progresivos y ejecutables en Ridgun. Empezaremos por las dos recetas tabulares de uso cotidiano y después recorreremos en detalle todos los escenarios funcionales, transformaciones y casos límite verificados en `src/test/ridgun/test agent.rg`.
+No basta con ver la tabla de firmas: vamos a explorar **cada una de las funcionalidades** de la lib `agent` mediante ejemplos progresivos y ejecutables en Ridgun. Empezaremos por las dos recetas tabulares de uso cotidiano y después recorreremos en detalle todos los escenarios funcionales, transformaciones y casos límite verificados en `src/test/ridgun/test agent.ridgun`.
 
 ### 30.3.1. Ejemplo 1: Flujo principal en estilo tabular con `agent`
 
@@ -318,13 +318,13 @@ fn :: test log and kv agents => ()
 
 ---
 
-## 30.4. Bajo el capó: cómo está construida `agent` en Ridgun puro (`src/main/ridgun/lib/agent.rg`)
+## 30.4. Bajo el capó: cómo está construida `agent` en Ridgun puro (`src/main/ridgun/lib/agent.ridgun`)
 
-Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**. Puedes abrir `src/main/ridgun/lib/agent.rg` y leer exactamente cómo está implementada cada operación usando *pattern matching*, árboles de guardas `|` / `|.` y recursión de cola (TCO). Veamos las piezas clave de su implementación real:
+Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**. Puedes abrir `src/main/ridgun/lib/agent.ridgun` y leer exactamente cómo está implementada cada operación usando *pattern matching*, árboles de guardas `|` / `|.` y recursión de cola (TCO). Veamos las piezas clave de su implementación real:
 
 ### 30.4.1. Implementación interna: Status & Reply Formatting
 
-Fíjate en cómo `agent.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `agent.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 module :: agent
@@ -348,7 +348,7 @@ fn :: format agent reply AgentReply        => String
 
 ### 30.4.2. Implementación interna: Core Combinators (`agent ask`, `agent try ask`, `agent send batch`, `agent receive count`, `agent map batch`, `agent drain ready`)
 
-Fíjate en cómo `agent.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `agent.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 fn :: agent ask Agent A   => B
@@ -399,7 +399,7 @@ fn :: agent drain step Agent Option [B] => [B]
 
 ### 30.4.3. Implementación interna: Stateful Counter Agent (`new counter agent`, `counter add`, `counter get`, `counter reset`)
 
-Fíjate en cómo `agent.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `agent.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 fn :: ag counter step CounterState Int   => CounterState Int
@@ -428,7 +428,7 @@ fn :: counter reset (Agent Int Int) => Int
 
 ### 30.4.4. Implementación interna: Stateful In-Memory Key-Value Agent (`new kv agent`, `kv put`, `kv get`, `kv delete`, `kv has`, `kv count`, `kv keys`, `kv clear`)
 
-Fíjate en cómo `agent.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `agent.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 fn :: ag kv lookup [KvEntry] String => String
@@ -478,9 +478,9 @@ fn :: ag kv has str Bool  => String
 ## 30.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` y las 5 Reglas de Oro de `agent`
 
 - **Garantía algorítmica y de seguridad**: Cero memoria mutable compartida entre actores: cada mensaje se transfiere por valor / Copy-on-Write y `stop` libera la región del agente de forma determinista.
-- **Complejidad de pila $O(1)$ con TCO**: Todos los bucles recursivos en `src/main/ridgun/lib/agent.rg` están en posición de cola, por lo que `ridgunc` los compila a saltos nativos sin crecimiento de pila.
+- **Complejidad de pila $O(1)$ con TCO**: Todos los bucles recursivos en `src/main/ridgun/lib/agent.ridgun` están en posición de cola, por lo que `ridgunc` los compila a saltos nativos sin crecimiento de pila.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Cero pausas de recolector de basura; todas las estructuras intermedias se liberan de forma determinista al salir del ámbito.
-- **Verificación continua**: Probada exhaustivamente con `stable check` y la suite automatizada `src/test/ridgun/test agent.rg`.
+- **Verificación continua**: Probada exhaustivamente con `stable check` y la suite automatizada `src/test/ridgun/test agent.ridgun`.
 
 ### Las 5 Reglas de Oro al programar con `agent`
 

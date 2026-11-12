@@ -4,12 +4,12 @@ title: Verify O(log N) balanced binary search tree Map, Set, and MinHeap priorit
 level: unit
 covers: [FR-BTREE-001, API-BTREE-001]
 status: automated
-automated_in: ["src/test/ridgun/test btree.rg"]
+automated_in: ["src/test/ridgun/test btree.ridgun"]
 ---
 # TS-BTREE-001 — Verify O(log N) balanced binary search tree Map, Set, and MinHeap priority queue
 
 ## Preconditions / fixtures
-- Pure-Ridgun `btree` and `test` modules (`src/main/ridgun/lib/btree.rg`, `src/main/ridgun/lib/test.rg`).
+- Pure-Ridgun `btree` and `test` modules (`src/main/ridgun/lib/btree.ridgun`, `src/main/ridgun/lib/test.ridgun`).
 
 ## Steps / inputs
 1. Insert ascending, descending, and mixed keys into `BTreeMap` via `btree put`; verify `btree height` stays logarithmic, `btree get`/`btree has`/`btree remove` work, and `btree keys` is sorted.

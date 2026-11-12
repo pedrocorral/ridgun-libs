@@ -1,5 +1,5 @@
 #!/bin/sh
-# Throwaway TLS test PKI for `test tls.rg` and `test mail.rg` (TS-TLS-001, TS-MAIL-001).
+# Throwaway TLS test PKI for `test tls.ridgun` and `test mail.ridgun` (TS-TLS-001, TS-MAIL-001).
 # Keys are generated at test time and never committed.
 # Usage: gen-certs.sh <dir>
 set -eu
@@ -27,7 +27,7 @@ q openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -keyout s
 q openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -keyout other.key -out other.pem -days 3 -subj "/CN=Unrelated Test Root" \
   -addext "basicConstraints=critical,CA:TRUE"
 
-# Ed25519 "localhost" certificate for the Ridgun TLS 1.3 test server in `test mail.rg`;
+# Ed25519 "localhost" certificate for the Ridgun TLS 1.3 test server in `test mail.ridgun`;
 # ed.seed.hex is the 32-byte private seed (last 32 bytes of the PKCS#8 DER) in hex.
 q openssl genpkey -algorithm ED25519 -out ed.key
 q openssl req -x509 -new -key ed.key -out ed.pem -days 3 -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost"

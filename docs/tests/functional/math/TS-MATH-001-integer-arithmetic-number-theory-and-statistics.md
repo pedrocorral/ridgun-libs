@@ -4,12 +4,12 @@ title: Verify integer arithmetic, rounding division, powers/roots/logarithms, mo
 level: unit
 covers: [FR-MATH-001, API-MATH-001]
 status: automated
-automated_in: [src/test/ridgun/test math.rg]
+automated_in: [src/test/ridgun/test math.ridgun]
 ---
 # TS-MATH-001 — Verify integer arithmetic, rounding division, powers/roots/logarithms, modular number theory, combinatorics, and list statistics
 
 ## Preconditions / fixtures
-- Pure-Ridgun `math` module (`src/main/ridgun/lib/math.rg`).
+- Pure-Ridgun `math` module (`src/main/ridgun/lib/math.ridgun`).
 
 ## Steps / inputs
 1. Call `math abs`, `math sign`, `math min`, `math max`, `math clamp`, `clamp x between lo and hi`, `math is even`, `math is odd`, `math div ceil`, `math div floor`, `math div euclid`, and `math mod euclid` with positive, negative, and zero-divisor inputs.

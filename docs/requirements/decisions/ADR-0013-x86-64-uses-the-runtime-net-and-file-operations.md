@@ -4,7 +4,7 @@ title: On x86-64, socket and posix use the runtime's net and file operations
 status: accepted
 date: 2026-11-12
 supersedes: []
-affects: [FR-SOCK-004, API-SOCK-001, FR-POSIX-002, FR-POSIX-004, ADR-0007, src/main/ridgun/lib/socket.rg, src/main/ridgun/lib/posix.rg]
+affects: [FR-SOCK-004, API-SOCK-001, FR-POSIX-002, FR-POSIX-004, ADR-0007, src/main/ridgun/lib/socket.ridgun, src/main/ridgun/lib/posix.ridgun]
 ---
 # ADR-0013 — On x86-64, socket and posix use the runtime's net and file operations
 
@@ -19,8 +19,8 @@ ADR-0007 sends every kernel call through the `posix` syscall bridge (`sys call (
 
 ## Decision
 Option 2.
-- `socket.rg`: on x86-64, `sys resolve ipv4`, `sys tcp listen`, `sys tcp connect`, `sys accept`, `sys send`, `sys recv`, `sys shutdown write`, `sys local port` and `sys set reuseport` call `net …`. The errno values map to the existing RGF-001 status codes (`-110` → `-2`, `-111` → `-3`, `-104`/`-32` → `-4`, `-98` → `-5`, `-13` → `-6`, others → `-7`).
-- `posix.rg`: on x86-64, `sys unlink`, `sys rmdir` and `sys rename` call `remove file`, `remove dir` and `rename path`.
+- `socket.ridgun`: on x86-64, `sys resolve ipv4`, `sys tcp listen`, `sys tcp connect`, `sys accept`, `sys send`, `sys recv`, `sys shutdown write`, `sys local port` and `sys set reuseport` call `net …`. The errno values map to the existing RGF-001 status codes (`-110` → `-2`, `-111` → `-3`, `-104`/`-32` → `-4`, `-98` → `-5`, `-13` → `-6`, others → `-7`).
+- `posix.ridgun`: on x86-64, `sys unlink`, `sys rmdir` and `sys rename` call `remove file`, `remove dir` and `rename path`.
 - On ARM64 both libs keep the ADR-0007 `sys call (nr …)` code.
 - `sys tcp listen reuseport` and the `AF_UNIX` functions keep `sys call` on every architecture: `net listen` binds in the same step, so `SO_REUSEPORT` cannot be set before `bind`, and the runtime has no `AF_UNIX` operations.
 

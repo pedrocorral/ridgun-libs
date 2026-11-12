@@ -10,7 +10,7 @@ Låt oss vara ärliga: alla tror att CSV-tolkning bara är `str split rad ","`..
 
 Lib:en **`csv`** implementerar en komplett **RFC 4180**-tillståndsmaskin för CSV och TSV, smart serialisering med citattecken och typen `CsvTable` för kolumn- och raduppslagning via rubriknamn.
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`CSV`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`csv`** (`src/main/ridgun/lib/csv.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`CSV`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`csv`** (`src/main/ridgun/lib/csv.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import csv` (eller `import csv as alias`) överst i filen**: varje lib definierar sin `module :: csv`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`CSV`** ofta at
 
 ## 09.2. Inbyggda artefakter, import och komplett API-katalog för `csv`
 
-I `ridgun-libs` är **`csv`** en förstklassig **lib** placerad i `src/main/ridgun/lib/csv.rg` (domän `CSV`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`csv`** en förstklassig **lib** placerad i `src/main/ridgun/lib/csv.ridgun` (domän `CSV`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/csv.rglib` | Portabel distribution och direkt import med `import csv` |
+| **Ridgun-bundle** | `target/bundles/csv.ridgunlib` | Portabel distribution och direkt import med `import csv` |
 | **Kompilerat arkiv** | `target/csv.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libcsv.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -40,9 +40,9 @@ I `ridgun-libs` är **`csv`** en förstklassig **lib** placerad i `src/main/ridg
 | `csv parse table / csv get cell / csv col` | Rubrikindexerad `CsvTable`-uppslagning via `(rad, kolumnnamn)` eller hel kolumn |
 | `csv row to kv / csv table to kv list` | Konverterar tabellrader till `[String String]`-mappar nycklade efter rubrik |
 
-### 09.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/csv.rg`
+### 09.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/csv.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/csv.rg` (`1` typer, `0` operatorer och `23` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/csv.ridgun` (`1` typer, `0` operatorer och `23` funktioner):
 
 **Algebraiska datatyper och poster (`type`) i `csv`:**
 
@@ -80,7 +80,7 @@ type CsvTable = headers: [String], rows: [[String]], delimiter_char: String, has
 
 ## 09.3. Djupdykning i `csv`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `csv` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test csv.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `csv` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test csv.ridgun`.
 
 ### 09.3.1. Exempel 1: Huvudflöde i tabellform med `csv`
 
@@ -198,13 +198,13 @@ fn :: test csv table lookup => ()
 
 ---
 
-## 09.4. Under huven: hur `csv` är byggd i ren Ridgun (`src/main/ridgun/lib/csv.rg`)
+## 09.4. Under huven: hur `csv` är byggd i ren Ridgun (`src/main/ridgun/lib/csv.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/csv.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/csv.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 09.4.1. Intern implementation: RFC 4180 State-Machine Parser
 
-Se hur `csv.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `csv.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: csv
@@ -254,7 +254,7 @@ fn :: csv parse table String Bool => CsvTable
 
 ### 09.4.2. Intern implementation: RFC 4180 Serialization & Escaping
 
-Se hur `csv.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `csv.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: csv needs quotes loop String Int Int Int => Bool
@@ -296,7 +296,7 @@ fn :: tsv stringify [[String]] => String
 
 ### 09.4.3. Intern implementation: Column Extraction & Header-Mapped Lookup
 
-Se hur `csv.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `csv.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: csv nth str [String] Int => String
@@ -339,9 +339,9 @@ fn :: csv row to map [String] [String] => [String String]
 ## 09.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `csv`
 
 - **Algoritmisk garanti och säkerhet**: Exakt hantering av `\r\n` och `\n` både inom och utanför citattecken samt förlustfria rundresor med `csv parse (csv stringify rader)`.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/csv.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/csv.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test csv.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test csv.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `csv`
 

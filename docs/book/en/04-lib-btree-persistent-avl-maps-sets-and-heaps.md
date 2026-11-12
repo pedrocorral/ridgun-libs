@@ -10,7 +10,7 @@ Let's be honest: mutable hash tables are vulnerable to hash-flooding (HashDoS), 
 
 The **`btree`** lib implements three persistent $O(\log N)$ functional data structures with structural sharing: **`BTreeMap`** (self-balancing AVL tree), **`BTreeSet`** (ordered set algebra), and **`MinHeap`** (leftist priority queue).
 
-In a traditional ecosystem, solving **`BTREE`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`btree`** lib (`src/main/ridgun/lib/btree.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`BTREE`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`btree`** lib (`src/main/ridgun/lib/btree.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import btree` (or `import btree as alias`) at the top of your file**: every lib defines its `module :: btree` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`BTREE`** tasks means pulling in external 
 
 ## 04.2. Native Artifacts, Imports, and Complete `btree` API Catalog
 
-In `ridgun-libs`, **`btree`** is a first-class **lib** located at `src/main/ridgun/lib/btree.rg` (domain `BTREE`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`btree`** is a first-class **lib** located at `src/main/ridgun/lib/btree.ridgun` (domain `BTREE`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/btree.rglib` | Portable distribution and direct `import btree` resolution |
+| **Ridgun Bundle** | `target/bundles/btree.ridgunlib` | Portable distribution and direct `import btree` resolution |
 | **Compiled Archive** | `target/btree.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libbtree.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -40,9 +40,9 @@ In `ridgun-libs`, **`btree`** is a first-class **lib** located at `src/main/ridg
 | `bset from list / bset union / bset intersect / bset diff` | Ordered set operations (`BTreeSet`) and subset predicate |
 | `heap empty / heap push / heap peek / heap pop / heap sort` | Leftist `MinHeap` priority queue with $O(\log N)$ merge |
 
-### 04.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/btree.rg`
+### 04.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/btree.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/btree.rg` (`3` types, `0` operators, and `54` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/btree.ridgun` (`3` types, `0` operators, and `54` functions):
 
 **Algebraic Data Types & Records (`type`) in `btree`:**
 
@@ -113,7 +113,7 @@ type MinHeap = HeapEmpty | HeapNode Int String Int MinHeap MinHeap
 
 ## 04.3. Deep Dive into `btree`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `btree` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test btree.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `btree` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test btree.ridgun`.
 
 ### 04.3.1. Example 1: Core Tabular Workflow with `btree`
 
@@ -284,13 +284,13 @@ fn :: test min heap priority queue => ()
 
 ---
 
-## 04.4. Under the Hood: How `btree` Is Built in Pure Ridgun (`src/main/ridgun/lib/btree.rg`)
+## 04.4. Under the Hood: How `btree` Is Built in Pure Ridgun (`src/main/ridgun/lib/btree.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/btree.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/btree.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 04.4.1. Internal Implementation: Lexicographical String Comparison & Int Helpers
 
-Observe how `btree.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `btree.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: btree
@@ -315,7 +315,7 @@ fn :: bt str cmp String String => Int
 
 ### 04.4.2. Internal Implementation: AVL-Balanced Ordered Map (`BTreeMap`)
 
-Observe how `btree.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `btree.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: btree empty => BTreeMap
@@ -425,7 +425,7 @@ fn :: btree from list [String String] => BTreeMap
 
 ### 04.4.3. Internal Implementation: AVL-Balanced Ordered Set (`BTreeSet`)
 
-Observe how `btree.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `btree.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: bset empty => BTreeSet
@@ -528,7 +528,7 @@ fn :: bset diff BTreeSet BTreeSet => BTreeSet
 
 ### 04.4.4. Internal Implementation: Leftist MinHeap Priority Queue (`MinHeap`)
 
-Observe how `btree.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `btree.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: heap empty => MinHeap
@@ -571,9 +571,9 @@ fn :: heap size MinHeap => Int
 ## 04.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `btree`
 
 - **Algorithmic & Safety Guarantee**: Strict AVL balance invariant (`|height_l - height_r| <= 1`), complete HashDoS immunity, $O(\log N + K)$ range queries, and $O(\log N)$ leftist heap merging.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/btree.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/btree.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test btree.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test btree.ridgun`.
 
 ### The 5 Golden Rules When Programming with `btree`
 

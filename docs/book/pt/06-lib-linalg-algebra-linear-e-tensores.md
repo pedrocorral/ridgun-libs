@@ -10,7 +10,7 @@ Sejamos sinceros: quando precisa de calcular similaridade de cosseno para embedd
 
 A lib **`linalg`** constrói álgebra linear numérica sobre `Tensor[Real]` nativo: transposição, traço, identidade, produto interno/externo, multiplicação matriz-vetor e matriz-matriz com notação de Einstein, normas ($L_1, L_2, L_\infty$, Frobenius), determinante e resolução linear $A x = b$ por **Bareiss/Gauss com pivotamento parcial**, e ativações neuronais (`relu`, `sigmoid`, `softmax`).
 
-Num ecossistema tradicional, resolver as tarefas do domínio **`LINALG`** implica arrastar dependências externas em C, lidar com ponteiros brutos, conversões opacas de tipos, exceções não verificadas ou pausas imprevisíveis do coletor de lixo. Em Ridgun, a lib **`linalg`** (`src/main/ridgun/lib/linalg.rg`) aborda o problema com quatro princípios inegociáveis:
+Num ecossistema tradicional, resolver as tarefas do domínio **`LINALG`** implica arrastar dependências externas em C, lidar com ponteiros brutos, conversões opacas de tipos, exceções não verificadas ou pausas imprevisíveis do coletor de lixo. Em Ridgun, a lib **`linalg`** (`src/main/ridgun/lib/linalg.ridgun`) aborda o problema com quatro princípios inegociáveis:
 
 1. **Declare `import linalg` (ou `import linalg as alias`) no início do ficheiro**: cada lib define o seu espaço de nomes `module :: linalg` e em modo `--strict` as funções multi-palavra são sempre invocadas com espaços naturais.
 2. **Encadeie os seus pipelines da esquerda para a direita com `->`**: escreva `entrada passo um -> passo dois -> resultado`, use máscaras `(+ _ _ +)` para desestruturar sequências e omita `_ =` em instruções sequenciais (ou descarte com `-> ()`).
@@ -21,11 +21,11 @@ Num ecossistema tradicional, resolver as tarefas do domínio **`LINALG`** implic
 
 ## 06.2. Artefactos nativos, importação e catálogo completo da API de `linalg`
 
-No `ridgun-libs`, **`linalg`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/linalg.rg` (domínio `LINALG`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
+No `ridgun-libs`, **`linalg`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/linalg.ridgun` (domínio `LINALG`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
 
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/linalg.rglib` | Distribuição e importação direta com `import linalg` |
+| **Bundle Ridgun** | `target/bundles/linalg.ridgunlib` | Distribuição e importação direta com `import linalg` |
 | **Ficheiro compilado** | `target/linalg.rgc` | Artefacto intermédio verificado pelo `ridgunc` |
 | **Objeto partilhado ELF64** | `target/liblinalg.so` | Biblioteca dinâmica nativa sem dependências de C nem `libc` |
 
@@ -42,9 +42,9 @@ No `ridgun-libs`, **`linalg`** é uma **lib** de primeira classe localizada em `
 | `linalg det / linalg solve` | Determinante exato de Bareiss e resolução $A x = b$ com pivotamento parcial (`Option[Tensor[Real]]`) |
 | `linalg relu / linalg sigmoid / linalg softmax` | Ativações neuronais numericamente estáveis com deslocamento pelo máximo |
 
-### 06.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/linalg.rg`
+### 06.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/linalg.ridgun`
 
-Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/linalg.rg` (`0` tipos, `0` operadores e `76` funções):
+Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/linalg.ridgun` (`0` tipos, `0` operadores e `76` funções):
 
 | # | Função / Assinatura (`fn ::`) | Tipo de Retorno |
 |---|---|---|
@@ -129,7 +129,7 @@ Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operado
 
 ## 06.3. Explorando a `linalg` a fundo: Exemplos passo a passo de cada funcionalidade
 
-Não basta ver a tabela de assinaturas: vamos explorar **cada uma das funcionalidades** da lib `linalg` através de exemplos progressivos e executáveis em Ridgun. Começaremos pelas duas receitas tabulares de uso diário e depois percorreremos em detalhe todos os cenários funcionais, transformações e casos de fronteira verificados em `src/test/ridgun/test linalg.rg`.
+Não basta ver a tabela de assinaturas: vamos explorar **cada uma das funcionalidades** da lib `linalg` através de exemplos progressivos e executáveis em Ridgun. Começaremos pelas duas receitas tabulares de uso diário e depois percorreremos em detalhe todos os cenários funcionais, transformações e casos de fronteira verificados em `src/test/ridgun/test linalg.ridgun`.
 
 ### 06.3.1. Exemplo 1: Fluxo principal em estilo tabular com `linalg`
 
@@ -391,13 +391,13 @@ fn :: test neural activations => ()
 
 ---
 
-## 06.4. Debaixo do capô: como a `linalg` é construída em Ridgun puro (`src/main/ridgun/lib/linalg.rg`)
+## 06.4. Debaixo do capô: como a `linalg` é construída em Ridgun puro (`src/main/ridgun/lib/linalg.ridgun`)
 
-Uma das maiores vantagens do `ridgun-libs` é que **não existem caixas-pretas em C**. Pode abrir `src/main/ridgun/lib/linalg.rg` e ler exatamente como cada operação é implementada usando *pattern matching*, árvores de guardas `|` / `|.` e recursão de cauda (TCO). Vejamos as peças-chave da sua implementação real:
+Uma das maiores vantagens do `ridgun-libs` é que **não existem caixas-pretas em C**. Pode abrir `src/main/ridgun/lib/linalg.ridgun` e ler exatamente como cada operação é implementada usando *pattern matching*, árvores de guardas `|` / `|.` e recursão de cauda (TCO). Vejamos as peças-chave da sua implementação real:
 
 ### 06.4.1. Implementação interna: Internal Scalar Helpers
 
-Observe como `linalg.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `linalg.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 module :: linalg
@@ -449,7 +449,7 @@ fn :: la exp neg scaled Int => Int
 
 ### 06.4.2. Implementação interna: Matrix Transpose, Trace, Diagonal & Identity
 
-Observe como `linalg.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `linalg.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 fn :: la transpose col loop Tensor[Real * r * c] Tensor[Real * c * r] Int Int Int => Tensor[Real * c * r]
@@ -508,7 +508,7 @@ fn :: linalg identity Int => Tensor[Real * n * n]
 
 ### 06.4.3. Implementação interna: Vector & Matrix Norms (`norm_l1`, `norm_l2`, `norm_linf`, `frobenius`)
 
-Observe como `linalg.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `linalg.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 fn :: la norm l1 loop Tensor[Real * n] Int Int Int => Int
@@ -581,7 +581,7 @@ fn :: linalg cosine similarity Tensor[Real * n] Tensor[Real * n] => Int
 
 ### 06.4.4. Implementação interna: Neural Activations (`linalg relu`, `linalg sigmoid`, `linalg softmax`)
 
-Observe como `linalg.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `linalg.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 fn :: la relu scalar Int => Int
@@ -675,9 +675,9 @@ fn :: linalg softmax Tensor[Real * n] => Tensor[Real * n]
 ## 06.5. Garantias algorítmicas, memória `RMM1`/`RMM2` e as 5 Regras de Ouro da `linalg`
 
 - **Garantia algorítmica e de segurança**: Matrizes singulares devolvem `None` de forma limpa em `linalg solve` (sem `NaN` silenciosos), e `linalg softmax` subtrai o máximo antes de exponenciar para evitar overflow.
-- **Complexidade de pilha $O(1)$ com TCO**: Todos os ciclos recursivos em `src/main/ridgun/lib/linalg.rg` estão em posição de cauda, pelo que o `ridgunc` os compila para saltos nativos sem crescimento de pilha.
+- **Complexidade de pilha $O(1)$ com TCO**: Todos os ciclos recursivos em `src/main/ridgun/lib/linalg.ridgun` estão em posição de cauda, pelo que o `ridgunc` os compila para saltos nativos sem crescimento de pilha.
 - **Memória determinística (`RMM1`/`RMM2`)**: Zero pausas de coletor de lixo; todas as estruturas intermédias são libertadas de forma determinística à saída do escopo.
-- **Verificação contínua**: Testada exaustivamente com `stable check` e pela suite automatizada `src/test/ridgun/test linalg.rg`.
+- **Verificação contínua**: Testada exaustivamente com `stable check` e pela suite automatizada `src/test/ridgun/test linalg.ridgun`.
 
 ### As 5 Regras de Ouro ao programar com a `linalg`
 

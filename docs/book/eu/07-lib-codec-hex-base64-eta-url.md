@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: ezerk ez du web integrazio bat azkarragoapurtzen JWT tok
 
 **`codec`** lib-ak **RFC 4648** (Hex, Base64 eta Base64url), **RFC 3986** (URLen ehunekozko kodetzea eta `query encode` / `query decode`) eta **JSON arinaren (RFC 8259)** eraikitzaile/erauzleak inplementatzen ditu.
 
-Ekosistema tradizional batean, **`CODEC`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`codec`** lib-ak (`src/main/ridgun/lib/codec.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`CODEC`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`codec`** lib-ak (`src/main/ridgun/lib/codec.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import codec` (edo `import codec as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: codec` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`CODEC`** domeinuko zereginak ebazteak C-ko kan
 
 ## 07.2. Artefaktu natiboak, inportazioa eta `codec` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`codec`** lehen mailako **lib** bat da, `src/main/ridgun/lib/codec.rg` bidean kokatua (`CODEC` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`codec`** lehen mailako **lib** bat da, `src/main/ridgun/lib/codec.ridgun` bidean kokatua (`CODEC` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/codec.rglib` | Banaketa eta inportazio zuzena `import codec` bidez |
+| **Ridgun Bundle-a** | `target/bundles/codec.ridgunlib` | Banaketa eta inportazio zuzena `import codec` bidez |
 | **Fitxategi konpilatua** | `target/codec.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libcodec.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -41,9 +41,9 @@ Ekosistema tradizional batean, **`CODEC`** domeinuko zereginak ebazteak C-ko kan
 | `url encode / url decode / query encode / query decode` | RFC 3986 ehunekozko kodetzea eta `k=v&...` query string bihurketak |
 | `json quote / json object / json get str / json get int` | AST gabeko JSON serializazio azkarra eta lehen mailako gakoen erauzketa |
 
-### 07.2.2. `src/main/ridgun/lib/codec.rg`-eko mota eta sinadura guztien katalogoa
+### 07.2.2. `src/main/ridgun/lib/codec.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/codec.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `121` funtzio):
+Jarraian duzu `src/main/ridgun/lib/codec.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `121` funtzio):
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
@@ -173,7 +173,7 @@ Jarraian duzu `src/main/ridgun/lib/codec.rg` fitxategian definitutako mota aljeb
 
 ## 07.3. `codec` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `codec` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test codec.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `codec` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test codec.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 07.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `codec` erabiliz
 
@@ -298,13 +298,13 @@ fn :: test rfc8259 lightweight json => ()
 
 ---
 
-## 07.4. Kaputaren azpian: nola dagoen eraikia `codec` Ridgun hutsean (`src/main/ridgun/lib/codec.rg`)
+## 07.4. Kaputaren azpian: nola dagoen eraikia `codec` Ridgun hutsean (`src/main/ridgun/lib/codec.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/codec.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/codec.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 07.4.1. Barne-inplementazioa: RFC 4648 Hexadecimal Encoding & Decoding
 
-Ikusi nola `codec.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `codec.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: codec
@@ -366,7 +366,7 @@ fn :: hex decode String => String
 
 ### 07.4.2. Barne-inplementazioa: RFC 4648 Standard Base64 & URL-Safe Base64url
 
-Ikusi nola `codec.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `codec.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: cd b64 char String Int => String
@@ -491,7 +491,7 @@ fn :: base64url decode String => String
 
 ### 07.4.3. Barne-inplementazioa: RFC 3986 URL Percent-Encoding & Query Strings
 
-Ikusi nola `codec.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `codec.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: cd is unreserved Int => Bool
@@ -645,7 +645,7 @@ fn :: query string decode String => [String String]
 
 ### 07.4.4. Barne-inplementazioa: RFC 8259 Lightweight JSON Formatting & Field Extraction
 
-Ikusi nola `codec.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `codec.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: cd is json esc Int => Bool
@@ -912,9 +912,9 @@ fn :: codec json get bool String String Bool => Bool
 ## 07.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `codec`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Gaizki osatutako sarrera hamaseitar edo Base64-en ukapen determinista (`""` itzuliz mugetatik kanpoko irakurketarik gabe) eta $decode(encode(x)) == x$ itzulgarritasun zehatza.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/codec.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/codec.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test codec.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test codec.ridgun` suite automatizatuaren bidez.
 
 ### `codec`-ekin programatzeko Urrezko 5 Arauak
 

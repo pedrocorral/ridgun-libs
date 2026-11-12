@@ -10,7 +10,7 @@ Låt oss vara ärliga: när du vill beräkna cosinuslikhet för embeddings, lös
 
 Lib:en **`linalg`** bygger numerisk linjär algebra direkt på inbyggda `Tensor[Real]`: transponering, spår, identitetsmatris, inre/yttre produkt, Einsteinkontraherad `matvec` och `matmul`, normer ($L_1, L_2, L_\infty$, Frobenius), **Bareiss/Gauss**-determinant och $A x = b$-lösare samt neuronnätsaktiveringar (`relu`, `sigmoid`, `softmax`).
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`LINALG`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`linalg`** (`src/main/ridgun/lib/linalg.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`LINALG`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`linalg`** (`src/main/ridgun/lib/linalg.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import linalg` (eller `import linalg as alias`) överst i filen**: varje lib definierar sin `module :: linalg`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`LINALG`** ofta
 
 ## 06.2. Inbyggda artefakter, import och komplett API-katalog för `linalg`
 
-I `ridgun-libs` är **`linalg`** en förstklassig **lib** placerad i `src/main/ridgun/lib/linalg.rg` (domän `LINALG`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`linalg`** en förstklassig **lib** placerad i `src/main/ridgun/lib/linalg.ridgun` (domän `LINALG`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/linalg.rglib` | Portabel distribution och direkt import med `import linalg` |
+| **Ridgun-bundle** | `target/bundles/linalg.ridgunlib` | Portabel distribution och direkt import med `import linalg` |
 | **Kompilerat arkiv** | `target/linalg.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/liblinalg.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -42,9 +42,9 @@ I `ridgun-libs` är **`linalg`** en förstklassig **lib** placerad i `src/main/r
 | `linalg det / linalg solve` | Exakt Bareiss-determinant och $A x = b$-lösare med partiell pivotering (`Option[Tensor[Real]]`) |
 | `linalg relu / linalg sigmoid / linalg softmax` | Numeriskt stabila neuronnätsaktiveringar med max-förskjutning |
 
-### 06.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/linalg.rg`
+### 06.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/linalg.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/linalg.rg` (`0` typer, `0` operatorer och `76` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/linalg.ridgun` (`0` typer, `0` operatorer och `76` funktioner):
 
 | # | Funktion / Signatur (`fn ::`) | Returtyp |
 |---|---|---|
@@ -129,7 +129,7 @@ Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-o
 
 ## 06.3. Djupdykning i `linalg`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `linalg` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test linalg.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `linalg` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test linalg.ridgun`.
 
 ### 06.3.1. Exempel 1: Huvudflöde i tabellform med `linalg`
 
@@ -391,13 +391,13 @@ fn :: test neural activations => ()
 
 ---
 
-## 06.4. Under huven: hur `linalg` är byggd i ren Ridgun (`src/main/ridgun/lib/linalg.rg`)
+## 06.4. Under huven: hur `linalg` är byggd i ren Ridgun (`src/main/ridgun/lib/linalg.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/linalg.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/linalg.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 06.4.1. Intern implementation: Internal Scalar Helpers
 
-Se hur `linalg.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `linalg.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: linalg
@@ -449,7 +449,7 @@ fn :: la exp neg scaled Int => Int
 
 ### 06.4.2. Intern implementation: Matrix Transpose, Trace, Diagonal & Identity
 
-Se hur `linalg.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `linalg.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: la transpose col loop Tensor[Real * r * c] Tensor[Real * c * r] Int Int Int => Tensor[Real * c * r]
@@ -508,7 +508,7 @@ fn :: linalg identity Int => Tensor[Real * n * n]
 
 ### 06.4.3. Intern implementation: Vector & Matrix Norms (`norm_l1`, `norm_l2`, `norm_linf`, `frobenius`)
 
-Se hur `linalg.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `linalg.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: la norm l1 loop Tensor[Real * n] Int Int Int => Int
@@ -581,7 +581,7 @@ fn :: linalg cosine similarity Tensor[Real * n] Tensor[Real * n] => Int
 
 ### 06.4.4. Intern implementation: Neural Activations (`linalg relu`, `linalg sigmoid`, `linalg softmax`)
 
-Se hur `linalg.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `linalg.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: la relu scalar Int => Int
@@ -675,9 +675,9 @@ fn :: linalg softmax Tensor[Real * n] => Tensor[Real * n]
 ## 06.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `linalg`
 
 - **Algoritmisk garanti och säkerhet**: Singulära matriser returnerar `None` rent i `linalg solve` (inga tysta `NaN`), och `linalg softmax` subtraherar maxvärdet före exponentiering för att förhindra spill.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/linalg.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/linalg.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test linalg.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test linalg.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `linalg`
 

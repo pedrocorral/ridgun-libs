@@ -1,11 +1,11 @@
 ---
 id: API-FMT-001
-title: Public lib contract for fmt (fmt.rglib / libfmt.so)
+title: Public lib contract for fmt (fmt.ridgunlib / libfmt.so)
 status: approved
 implements: [FR-FMT-001]
 auth: none
 ---
-# API-FMT-001 — Public lib contract for `fmt` (`fmt.rg`)
+# API-FMT-001 — Public lib contract for `fmt` (`fmt.ridgun`)
 
 ## Request
 - Imported via `import fmt`.
@@ -41,7 +41,7 @@ auth: none
 |---|---|---|
 | `FmtConfig` | `default fmt config` or `fmt config` | Formatter & highlighter configuration record |
 | `String` | `format ridgun source`, `fmt source with config`, or `fmt to *` | Canonically formatted and optionally syntax-highlighted Ridgun code in the target format |
-| `String` | `fmt html stylesheet` | Complete `<style>...</style>` CSS rules for `.rg-*` syntax classes |
+| `String` | `fmt html stylesheet` | Complete `<style>...</style>` CSS rules for `.ridgun-*` syntax classes |
 
 ## Rules
 - `format ridgun source` preserves 100% compatibility with `stable format` (`indent_width = 2`, `max_align_params = 4`, `max_line_width = 80`, `is_aligned = True`, `FmtPlain`, `FmtThemeNone`).

@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: tartetik kanpoko indize batera sartzea (`IndexError` / `
 
 **`list`** lib-ak lehenetsitako balio bidezko indexazioa, zatitzea (`take`, `drop`, `slice`), urrats bidezko tarteak, deduplikazio egonkorra, `[Int]` eta `[String]`-entzako **$O(N \log N)$ mergesort** ordenazioa eta `[String String]` hiztegi elkartu aldaezinak eskaintzen ditu.
 
-Ekosistema tradizional batean, **`LIST`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`list`** lib-ak (`src/main/ridgun/lib/list.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`LIST`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`list`** lib-ak (`src/main/ridgun/lib/list.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import list` (edo `import list as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: list` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`LIST`** domeinuko zereginak ebazteak C-ko kanp
 
 ## 03.2. Artefaktu natiboak, inportazioa eta `list` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`list`** lehen mailako **lib** bat da, `src/main/ridgun/lib/list.rg` bidean kokatua (`LIST` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`list`** lehen mailako **lib** bat da, `src/main/ridgun/lib/list.ridgun` bidean kokatua (`LIST` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/list.rglib` | Banaketa eta inportazio zuzena `import list` bidez |
+| **Ridgun Bundle-a** | `target/bundles/list.ridgunlib` | Banaketa eta inportazio zuzena `import list` bidez |
 | **Fitxategi konpilatua** | `target/list.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/liblist.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -41,9 +41,9 @@ Ekosistema tradizional batean, **`LIST`** domeinuko zereginak ebazteak C-ko kanp
 | `list sort / list str sort / list dedup / list str dedup` | $O(N \log N)$ mergesort ordenazio egonkorra eta lehen agerpeneko deduplikazioa |
 | `kv empty / kv put / kv get / kv get or / kv remove / kv merge` | `[String String]` hiztegi elkartu ordenatuen gaineko eragiketak |
 
-### 03.2.2. `src/main/ridgun/lib/list.rg`-eko mota eta sinadura guztien katalogoa
+### 03.2.2. `src/main/ridgun/lib/list.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/list.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `59` funtzio):
+Jarraian duzu `src/main/ridgun/lib/list.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `59` funtzio):
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
@@ -111,7 +111,7 @@ Jarraian duzu `src/main/ridgun/lib/list.rg` fitxategian definitutako mota aljebr
 
 ## 03.3. `list` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `list` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test list.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `list` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test list.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 03.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `list` erabiliz
 
@@ -261,13 +261,13 @@ fn :: test kv associative map => ()
 
 ---
 
-## 03.4. Kaputaren azpian: nola dagoen eraikia `list` Ridgun hutsean (`src/main/ridgun/lib/list.rg`)
+## 03.4. Kaputaren azpian: nola dagoen eraikia `list` Ridgun hutsean (`src/main/ridgun/lib/list.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/list.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/list.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 03.4.1. Barne-inplementazioa: List Length & Emptiness
 
-Ikusi nola `list.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `list.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: list
@@ -291,7 +291,7 @@ fn :: list str is empty [String] => Bool
 
 ### 03.4.2. Barne-inplementazioa: Slicing (`take`, `drop`, `slice`) & Reversal
 
-Ikusi nola `list.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `list.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: list take [Int]    Int => [Int]
@@ -360,7 +360,7 @@ fn :: list str reverse [String] => [String]
 
 ### 03.4.3. Barne-inplementazioa: Search, Count & Deduplication
 
-Ikusi nola `list.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `list.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: l idx int [Int] Int Int => Int
@@ -420,7 +420,7 @@ fn :: list str dedup [String] => [String]
 
 ### 03.4.4. Barne-inplementazioa: Associative Key-Value Map (`[(String, String)]`)
 
-Ikusi nola `list.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `list.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: l kv key (String String) => String
@@ -477,9 +477,9 @@ fn :: kv values [String String] => [String]
 ## 03.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `list`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Kasurik txarreneko $O(N \log N)$ ordenazio determinista (Quicksorten $O(N^2)$ patologikorik gabe) eta txertatze-ordenaren kontserbazioa `kv` mapetan.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/list.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/list.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test list.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test list.ridgun` suite automatizatuaren bidez.
 
 ### `list`-ekin programatzeko Urrezko 5 Arauak
 

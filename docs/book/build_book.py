@@ -532,13 +532,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     tr:last-child td {
       border-bottom: none;
     }
-    .rg-com { color: var(--com); font-style: italic; }
-    .rg-kw  { color: var(--kw); font-weight: 600; }
-    .rg-ty  { color: var(--ty); font-weight: 600; }
-    .rg-fn  { color: var(--fn); font-weight: 600; }
-    .rg-str { color: var(--str); }
-    .rg-num { color: var(--num); }
-    .rg-op  { color: var(--op); font-weight: 600; }
+    .ridgun-com { color: var(--com); font-style: italic; }
+    .ridgun-kw  { color: var(--kw); font-weight: 600; }
+    .ridgun-ty  { color: var(--ty); font-weight: 600; }
+    .ridgun-fn  { color: var(--fn); font-weight: 600; }
+    .ridgun-str { color: var(--str); }
+    .ridgun-num { color: var(--num); }
+    .ridgun-op  { color: var(--op); font-weight: 600; }
     .pager {
       margin-top: 3.5rem;
       padding-top: 1.5rem;

@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: test framework batek makro magikoak, exekuzio-garaiko is
 
 **`test`** lib-ak (`RG-011`) baieztapen huts, polimorfiko eta motaren araberakoak eskaintzen ditu, espero zen eta lortutako balioekin `[FAIL]` diagnostiko argiak igorriz eta irteera-kode `1`-ekin amaituz.
 
-Ekosistema tradizional batean, **`TST`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`test`** lib-ak (`src/main/ridgun/lib/test.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`TST`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`test`** lib-ak (`src/main/ridgun/lib/test.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import test` (edo `import test as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: test` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`TST`** domeinuko zereginak ebazteak C-ko kanpo
 
 ## 21.2. Artefaktu natiboak, inportazioa eta `test` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`test`** lehen mailako **lib** bat da, `src/main/ridgun/lib/test.rg` bidean kokatua (`TST` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`test`** lehen mailako **lib** bat da, `src/main/ridgun/lib/test.ridgun` bidean kokatua (`TST` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/test.rglib` | Banaketa eta inportazio zuzena `import test` bidez |
+| **Ridgun Bundle-a** | `target/bundles/test.ridgunlib` | Banaketa eta inportazio zuzena `import test` bidez |
 | **Fitxategi konpilatua** | `target/test.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libtest.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`TST`** domeinuko zereginak ebazteak C-ko kanpo
 | `assert true / assert false / assert not` | Aldaezin boolearren baieztapenak (`True` / `False`) |
 | `assert ok : Int -> String -> ()` | Sistema edo socket baten egoera-kodea `0` (`OK`) dela egiaztatzen du |
 
-### 21.2.2. `src/main/ridgun/lib/test.rg`-eko mota eta sinadura guztien katalogoa
+### 21.2.2. `src/main/ridgun/lib/test.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/test.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `12` funtzio):
+Jarraian duzu `src/main/ridgun/lib/test.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `12` funtzio):
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
@@ -63,7 +63,7 @@ Jarraian duzu `src/main/ridgun/lib/test.rg` fitxategian definitutako mota aljebr
 
 ## 21.3. `test` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `test` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test test.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `test` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test test.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 21.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `test` erabiliz
 
@@ -136,7 +136,7 @@ fn :: ejecutar suite de ejemplo => ()
         assert true (validar invariantes de dominio 21 "ridgun") "predicado compuesto"
         -- 2. Aserciones anotadas con mensaje diagnóstico (`assert_*`)
         assert int equals (20 + 22) 42 "suma entera exacta"
-        assert str eq "rglib" "rglib" "etiqueta de artefacto"
+        assert str eq "ridgunlib" "ridgunlib" "etiqueta de artefacto"
         -- 3. Aserciones concisas sin etiqueta (`assert ok`, `assert not`, `assert eq`)
         assert ok (10 > 5)
         assert not (10 < 5)
@@ -146,13 +146,13 @@ fn :: ejecutar suite de ejemplo => ()
 
 ---
 
-## 21.4. Kaputaren azpian: nola dagoen eraikia `test` Ridgun hutsean (`src/main/ridgun/lib/test.rg`)
+## 21.4. Kaputaren azpian: nola dagoen eraikia `test` Ridgun hutsean (`src/main/ridgun/lib/test.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/test.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/test.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 21.4.1. Barne-inplementazioa: Non-Exiting Predicate Helpers
 
-Ikusi nola `test.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `test.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: test
@@ -169,7 +169,7 @@ fn :: check true Bool => Bool
 
 ### 21.4.2. Barne-inplementazioa: RG-011 Message-Annotated Assertions
 
-Ikusi nola `test.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `test.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: assert true Bool String => ()
@@ -200,7 +200,7 @@ fn :: assert int equals Int Int String => ()
 
 ### 21.4.3. Barne-inplementazioa: Concise Label-Free Assertion Helpers
 
-Ikusi nola `test.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `test.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: assert ok Bool => ()
@@ -217,10 +217,10 @@ fn :: assert eq A      A        => ()
 
 ## 21.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `test`-en Urrezko 5 Arauak
 
-- **Berme algoritmikoa eta segurtasunekoa**: `ridgun-libs`-eko 30 proba-suiteak (`src/test/ridgun/test_*.rg`, 4 000 lerro baino gehiago) lib honekin exekutatzen dira `stable test` bidez.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/test.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **Berme algoritmikoa eta segurtasunekoa**: `ridgun-libs`-eko 30 proba-suiteak (`src/test/ridgun/test_*.ridgun`, 4 000 lerro baino gehiago) lib honekin exekutatzen dira `stable test` bidez.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/test.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test test.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test test.ridgun` suite automatizatuaren bidez.
 
 ### `test`-ekin programatzeko Urrezko 5 Arauak
 

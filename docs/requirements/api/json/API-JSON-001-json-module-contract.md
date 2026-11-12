@@ -1,11 +1,11 @@
 ---
 id: API-JSON-001
-title: Public lib contract for json (json.rglib / libjson.so)
+title: Public lib contract for json (json.ridgunlib / libjson.so)
 status: approved
 implements: [FR-JSON-001]
 auth: none
 ---
-# API-JSON-001 — Public lib contract for `json` (`json.rg`)
+# API-JSON-001 — Public lib contract for `json` (`json.ridgun`)
 
 ## Request
 - Imported via `import json`.

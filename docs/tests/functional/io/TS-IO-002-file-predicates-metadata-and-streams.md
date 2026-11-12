@@ -4,12 +4,12 @@ title: Verify high-level file I/O helpers, path metadata predicates, and line-st
 level: unit
 covers: [FR-IO-002]
 status: automated
-automated_in: [src/test/ridgun/test io.rg]
+automated_in: [src/test/ridgun/test io.ridgun]
 ---
 # TS-IO-002 — Verify high-level file I/O helpers, path metadata predicates, and line-stream utilities
 
 ## Preconditions / fixtures
-- Pure-Ridgun `io` module (`src/main/ridgun/lib/io.rg`).
+- Pure-Ridgun `io` module (`src/main/ridgun/lib/io.ridgun`).
 
 ## Steps / inputs
 1. Write `"hello "` to `/tmp/rg_io_test.txt` via `write_file`, append `"world"` via `append_file`, read back via `read_file`, and verify `"hello world"`. Write the byte list `[65, 66, 67, 0, 255]` with `write bytes`, read it back with `read bytes` and check a 5-byte `Tensor[U8]` whose list is the same and whose byte 4 is `255`; write `tensor from str "A\nB"` with `write bytes` and check `tensor to str (read bytes path)` gives it back (`ADR-0010`).

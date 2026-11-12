@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-AI-001-ai-module-contract.md` | `API-AI-001` | Public lib contract for `ai` (`ai.rglib` / `libai.so`) | implemented |
+| `API-AI-001-ai-module-contract.md` | `API-AI-001` | Public lib contract for `ai` (`ai.ridgunlib` / `libai.so`) | implemented |

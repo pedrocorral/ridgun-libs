@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: WebSocket protokoloak (RFC 6455) SHA-1 + Base64 handshak
 
 **`ws`** lib-ak **RFC 6455** osoa inplementatzen du Ridgun hutsean: `Sec-WebSocket-Accept` kalkulua (handshake GUIDerako soilik integratutako RFC 3174 SHA-1-ekin), `101 Switching Protocols` HTTP goiburuak, 7, 16 (`126`) eta 64 biteko (`127`) luzeradun tramen (`WsFrame`) kodetzea/deskodetzea, XOR maskaratze simetrikoa eta testu, ping, pong zein itxiera tramen eraikitzaileak.
 
-Ekosistema tradizional batean, **`WS`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`ws`** lib-ak (`src/main/ridgun/lib/ws.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`WS`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`ws`** lib-ak (`src/main/ridgun/lib/ws.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import ws` (edo `import ws as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: ws` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`WS`** domeinuko zereginak ebazteak C-ko kanpo-
 
 ## 29.2. Artefaktu natiboak, inportazioa eta `ws` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`ws`** lehen mailako **lib** bat da, `src/main/ridgun/lib/ws.rg` bidean kokatua (`WS` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`ws`** lehen mailako **lib** bat da, `src/main/ridgun/lib/ws.ridgun` bidean kokatua (`WS` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/ws.rglib` | Banaketa eta inportazio zuzena `import ws` bidez |
+| **Ridgun Bundle-a** | `target/bundles/ws.ridgunlib` | Banaketa eta inportazio zuzena `import ws` bidez |
 | **Fitxategi konpilatua** | `target/ws.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libws.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`WS`** domeinuko zereginak ebazteak C-ko kanpo-
 | `ws encode frame / ws decode frame` | `WsFrame` tramak (`fin`, `opcode`, `masked`, `mask_key`, `payload`) kodetu eta deskodetzen ditu |
 | `ws text frame / ws ping frame / ws pong frame / ws close frame` | Goi-mailako tramen eraikitzaileak eta itxiera-kodeen erauzleak (`1000` itxiera normala) |
 
-### 29.2.2. `src/main/ridgun/lib/ws.rg`-eko mota eta sinadura guztien katalogoa
+### 29.2.2. `src/main/ridgun/lib/ws.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/ws.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`3` mota, `0` eragile eta `54` funtzio):
+Jarraian duzu `src/main/ridgun/lib/ws.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`3` mota, `0` eragile eta `54` funtzio):
 
 **`ws`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -113,7 +113,7 @@ type Sha1State = h0: Int, h1: Int, h2: Int, h3: Int, h4: Int
 
 ## 29.3. `ws` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `ws` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test ws.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `ws` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test ws.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 29.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `ws` erabiliz
 
@@ -246,13 +246,13 @@ fn :: test ws truncated frames => ()
 
 ---
 
-## 29.4. Kaputaren azpian: nola dagoen eraikia `ws` Ridgun hutsean (`src/main/ridgun/lib/ws.rg`)
+## 29.4. Kaputaren azpian: nola dagoen eraikia `ws` Ridgun hutsean (`src/main/ridgun/lib/ws.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/ws.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/ws.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 29.4.1. Barne-inplementazioa: 32-Bit Unsigned Bitwise Helpers for RFC 3174 SHA-1
 
-Ikusi nola `ws.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `ws.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: ws
@@ -307,7 +307,7 @@ fn :: ws byte bxor Int Int => Int
 
 ### 29.4.2. Barne-inplementazioa: List & String Byte Conversion Helpers
 
-Ikusi nola `ws.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `ws.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: ws list len [Int] => Int
@@ -346,7 +346,7 @@ fn :: ws bytes to str [Int] => String
 
 ### 29.4.3. Barne-inplementazioa: Pure-Ridgun SHA-1 & Base64 for RFC 6455 Handshake
 
-Ikusi nola `ws.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `ws.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: ws zeroes Int => [Int]
@@ -470,7 +470,7 @@ fn :: ws build upgrade response String => String
 
 ### 29.4.4. Barne-inplementazioa: RFC 6455 XOR Masking & Frame Encoding / Decoding
 
-Ikusi nola `ws.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `ws.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: ws mask loop [Int] [Int] Int => [Int]
@@ -563,9 +563,9 @@ fn :: ws finish frame Bool Int Bool [Int] Int => WsRes
 ## 29.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `ws`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Bat-etortze zehatza RFC 6455 bektore ofizialarekin (`"dGhlIHNhbXBsZSBub25jZQ=="` $\rightarrow$ `"s3pPLMBiTxaQ9kYGzzhZRbK+xOo="`) eta maskara-kentze automatikoa `ws decode frame`-n.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/ws.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/ws.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test ws.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test ws.ridgun` suite automatizatuaren bidez.
 
 ### `ws`-ekin programatzeko Urrezko 5 Arauak
 

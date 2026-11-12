@@ -18,7 +18,7 @@ related: [FR-POSIX-001, FR-POSIX-002, FR-IO-001, ADR-0002]
 | errno_code | Int | `> 0` | Positive POSIX `errno` encapsulated in `PollError Int` |
 
 ## Relations
-- Exported by `posix.rg` (`PollStatus = PollReady Int | PollTimeout | PollError Int`, `ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int`) and consumed by `io.rg`.
+- Exported by `posix.ridgun` (`PollStatus = PollReady Int | PollTimeout | PollError Int`, `ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int`) and consumed by `io.ridgun`.
 
 ## Invariants
 - `wait fd` maps `sys poll` return values deterministically: `0` → `PollTimeout`, `< 0` → `PollError (0 - rc)`, `> 0` → `PollReady rc`.

@@ -6,7 +6,7 @@ status: approved
 # RB-0001 — Build, verify, test, and package `ridgun-libs`
 
 ## Trigger
-- Any modification to `src/main/ridgun/lib/*.rg`, `src/test/ridgun/test_*.rg`, or `build.rg`, or before publishing updated `.rglib` / `.so` artifacts to downstream projects (`Solstice`, `unix-tools`).
+- Any modification to `src/main/ridgun/lib/*.ridgun`, `src/test/ridgun/test_*.ridgun`, or `build.ridgun`, or before publishing updated `.ridgunlib` / `.so` artifacts to downstream projects (`Solstice`, `unix-tools`).
 
 ## Steps
 1. **Format sources**:
@@ -21,7 +21,7 @@ status: approved
    ```bash
    stable test
    ```
-4. **Compile `.rgc`, `.so`, and `.rglib` bundles**:
+4. **Compile `.rgc`, `.so`, and `.ridgunlib` bundles**:
    ```bash
    stable built lib
    ```

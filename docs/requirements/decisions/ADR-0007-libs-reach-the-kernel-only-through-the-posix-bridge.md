@@ -4,7 +4,7 @@ title: Libs reach the kernel only through the posix per-architecture bridge
 status: accepted
 date: 2026-11-07
 supersedes: []
-affects: [FR-POSIX-001, FR-POSIX-002, FR-POSIX-004, API-POSIX-001, TS-POSIX-004, src/main/ridgun/lib/posix.rg, src/main/ridgun/lib/socket.rg, src/main/ridgun/lib/uuid.rg, src/main/ridgun/lib/argon2id.rg]
+affects: [FR-POSIX-001, FR-POSIX-002, FR-POSIX-004, API-POSIX-001, TS-POSIX-004, src/main/ridgun/lib/posix.ridgun, src/main/ridgun/lib/socket.ridgun, src/main/ridgun/lib/uuid.ridgun, src/main/ridgun/lib/argon2id.ridgun]
 ---
 # ADR-0007 — Libs reach the kernel only through the posix per-architecture bridge
 
@@ -32,6 +32,6 @@ Option 3 was not chosen: `posix` already imports nothing, so it is a leaf, and a
 
 ## Consequences
 - Requirements to update: `FR-POSIX-001` (drop "x86_64"), `API-POSIX-001` (syscall numbers per architecture); new `FR-POSIX-004`.
-- Tests to update: new `TS-POSIX-004`; `test posix.rg` and `test socket.rg` lose their literal `sys call` numbers.
-- Code to update: `posix.rg`, `socket.rg`, `uuid.rg`, `argon2id.rg` (`socket`, `uuid` and `argon2id` now import `posix`).
+- Tests to update: new `TS-POSIX-004`; `test posix.ridgun` and `test socket.ridgun` lose their literal `sys call` numbers.
+- Code to update: `posix.ridgun`, `socket.ridgun`, `uuid.ridgun`, `argon2id.ridgun` (`socket`, `uuid` and `argon2id` now import `posix`).
 - arm64 is checked against the kernel headers and by cross-building, not by running, until an arm64 host is available.

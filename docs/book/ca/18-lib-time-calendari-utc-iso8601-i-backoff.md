@@ -10,7 +10,7 @@ Siguem sincers: les funcions de data de `libc` (`localtime`, `gmtime`, `mktime`)
 
 La lib **`time`** implementa l'algorisme de calendari civil gregorià prolèptic en **$O(1)$ de Howard Hinnant**, formatat i anàlisi estricta **ISO-8601 / RFC 3339** (`YYYY-MM-DDTHH:MM:SSZ`), durades llegibles (`1h 1m 1s 5ms`) i càlcul d'*exponential backoff* acotat per a reintents de xarxa.
 
-En un ecosistema tradicional, resoldre les tasques del domini **`TIME`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`time`** (`src/main/ridgun/lib/time.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`TIME`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`time`** (`src/main/ridgun/lib/time.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import time` (o `import time as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: time` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`TIME`** implica
 
 ## 18.2. Artefactes natius, importació i catàleg complet de l'API de `time`
 
-A `ridgun-libs`, **`time`** és una **lib** de primera classe situada a `src/main/ridgun/lib/time.rg` (domini `TIME`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`time`** és una **lib** de primera classe situada a `src/main/ridgun/lib/time.ridgun` (domini `TIME`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/time.rglib` | Distribució i importació directa amb `import time` |
+| **Bundle Ridgun** | `target/bundles/time.ridgunlib` | Distribució i importació directa amb `import time` |
 | **Fitxer compilat** | `target/time.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libtime.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -40,9 +40,9 @@ A `ridgun-libs`, **`time`** és una **lib** de primera classe situada a `src/mai
 | `time format iso8601 / time parse iso8601` | Formata i valida marques `YYYY-MM-DDTHH:MM:SSZ` (`-1` en dates invàlides com 30 de feb) |
 | `time format duration ms / time backoff ms` | Durades llegibles i temps d'espera exponencials acotats $base \cdot 2^{attempt}$ |
 
-### 18.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/time.rg`
+### 18.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/time.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/time.rg` (`0` tipus, `0` operadors i `26` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/time.ridgun` (`0` tipus, `0` operadors i `26` funcions):
 
 | # | Funció / Signatura (`fn ::`) | Tipus de Retorn |
 |---|---|---|
@@ -77,7 +77,7 @@ A continuació tens l'inventari complet de tipus algebraics (`type`), operadors 
 
 ## 18.3. Explorant `time` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `time` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test time.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `time` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test time.ridgun`.
 
 ### 18.3.1. Exemple 1: Flux principal en estil tabular amb `time`
 
@@ -217,13 +217,13 @@ fn :: planificar ventana reintentos (iso_inicio : String) => (String, String, In
 
 ---
 
-## 18.4. Sota el capó: com està construïda `time` en Ridgun pur (`src/main/ridgun/lib/time.rg`)
+## 18.4. Sota el capó: com està construïda `time` en Ridgun pur (`src/main/ridgun/lib/time.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/time.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/time.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 18.4.1. Implementació interna: Leap Year, Month Length & Day of Week
 
-Fixa't en com `time.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `time.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: time
@@ -250,7 +250,7 @@ fn :: time days in month Int Int => Int
 
 ### 18.4.2. Implementació interna: Howard Hinnant Civil Calendar <-> Epoch Days
 
-Fixa't en com `time.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `time.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: tm adj year Int Int => Int
@@ -335,7 +335,7 @@ fn :: time epoch to utc Int       => Int Int Int Int Int Int
 
 ### 18.4.3. Implementació interna: ISO-8601 / RFC 3339 Formatting & Parsing
 
-Fixa't en com `time.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `time.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: tm pad2 Int => String
@@ -398,7 +398,7 @@ fn :: time parse iso8601 String => Int
 
 ### 18.4.4. Implementació interna: Human-Readable Duration & Exponential Backoff
 
-Fixa't en com `time.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `time.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: tm join part String Int String => String
@@ -440,9 +440,9 @@ fn :: time backoff ms Int Int Int => Int
 ## 18.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `time`
 
 - **Garantia algorísmica i de seguretat**: Conversió de calendari en $O(1)$ sense bucles any per any i validació estricta de dies per mes (rebutjant el 29 de febrer en anys no de traspàs).
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/time.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/time.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test time.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test time.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `time`
 

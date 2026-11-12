@@ -4,12 +4,12 @@ title: Verify Solstice RGF-001 kernel-backed TCP and Unix socket API, status tup
 level: unit
 covers: [FR-SOCK-004, API-SOCK-001]
 status: automated
-automated_in: [src/test/ridgun/test socket.rg]
+automated_in: [src/test/ridgun/test socket.ridgun]
 ---
 # TS-SOCK-004 — Verify Solstice RGF-001 kernel-backed TCP and Unix socket API, status tuples, and timeouts
 
 ## Preconditions / fixtures
-- Pure-Ridgun `socket` module (`src/main/ridgun/lib/socket.rg`).
+- Pure-Ridgun `socket` module (`src/main/ridgun/lib/socket.ridgun`).
 
 ## Steps / inputs
 1. Call `sys_tcp_listen "127.0.0.1" 0 16` and `sys_local_port lfd`; verify `status == 0`, `lfd >= 0`, and `port > 0`. Also call `sys_tcp_listen_reuseport "127.0.0.1" port 16` on two descriptors on the same port and verify both bind/listen with `status == 0` (`SO_REUSEPORT`). Call `sys_unix_listen "/tmp/rg_sock_rgf001.sock" 8` and verify `status == 0`.

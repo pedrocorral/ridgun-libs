@@ -6,11 +6,11 @@
 
 Esa é a primeira pregunta que se fai calquera enxeñeiro de sistemas ao chegar a `cli`. E a resposta resume toda a filosofía de `ridgun-libs`:
 
-Sexamos sinceros: analizar `argv` á man sempre comeza cun bucle inocente e acaba rompéndose cando alguén pasa `-la` agrupado, `--port=9090` con signo igual ou `--` seguido dun ficheiro que comeza por guión `-ficheiro.rg`.
+Sexamos sinceros: analizar `argv` á man sempre comeza cun bucle inocente e acaba rompéndose cando alguén pasa `-la` agrupado, `--port=9090` con signo igual ou `--` seguido dun ficheiro que comeza por guión `-ficheiro.ridgun`.
 
 A lib **`cli`** resolve bandeiras longas (`--verbose`), curtas (`-v`), agrupadas (`-la`), opcións con valor (`--port=8080`, `--port 8080`, `-p 8080`), o separador POSIX `--`, argumentos posicionais, subcomandos e lectura tipada de variables de contorno (`env get int or`, `env get bool or`).
 
-Nun ecosistema tradicional, resolver as tarefas do dominio **`CLI`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`cli`** (`src/main/ridgun/lib/cli.rg`) aborda o problema con catro principios innegociables:
+Nun ecosistema tradicional, resolver as tarefas do dominio **`CLI`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`cli`** (`src/main/ridgun/lib/cli.ridgun`) aborda o problema con catro principios innegociables:
 
 1. **Declara `import cli` (ou `import cli as alias`) ao inicio do ficheiro**: cada lib define o seu espazo de nomes `module :: cli` e en modo `--strict` as funcións multi-palabra invócanse sempre con espazos naturais.
 2. **Encadea as túas tubaxes de esquerda a dereita con `->`**: escribe `entrada paso un -> paso dous -> resultado`, usa máscaras `(+ _ _ +)` para desestruturar secuencias e omite `_ =` en sentenzas secuenciais (ou descarta con `-> ()`).
@@ -21,11 +21,11 @@ Nun ecosistema tradicional, resolver as tarefas do dominio **`CLI`** implica arr
 
 ## 16.2. Artefactos nativos, importación e catálogo completo da API de `cli`
 
-En `ridgun-libs`, **`cli`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/cli.rg` (dominio `CLI`). Ao compilar con `stable bundle`, empaquétase en tres formatos nativos:
+En `ridgun-libs`, **`cli`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/cli.ridgun` (dominio `CLI`). Ao compilar con `stable bundle`, empaquétase en tres formatos nativos:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/cli.rglib` | Distribución e importación directa con `import cli` |
+| **Bundle Ridgun** | `target/bundles/cli.ridgunlib` | Distribución e importación directa con `import cli` |
 | **Ficheiro compilado** | `target/cli.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/libcli.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
@@ -40,9 +40,9 @@ En `ridgun-libs`, **`cli`** é unha **lib** de primeira clase situada en `src/ma
 | `cli positionals / cli subcommand` | Recolle os argumentos posicionais (incluíndo todo o que segue a `--`) |
 | `env get or / env get int or / env get bool or` | Le variables de contorno con conversión tipada e valores de apoio |
 
-### 16.2.2. Catálogo exhaustivo de tipos e sinaturas en `src/main/ridgun/lib/cli.rg`
+### 16.2.2. Catálogo exhaustivo de tipos e sinaturas en `src/main/ridgun/lib/cli.ridgun`
 
-A continuación tes o inventario completo de tipos alxébricos (`type`), operadores (`op ::`) e sinaturas de funcións (`fn ::`) definidos en `src/main/ridgun/lib/cli.rg` (`0` tipos, `0` operadores e `26` funcións):
+A continuación tes o inventario completo de tipos alxébricos (`type`), operadores (`op ::`) e sinaturas de funcións (`fn ::`) definidos en `src/main/ridgun/lib/cli.ridgun` (`0` tipos, `0` operadores e `26` funcións):
 
 | # | Función / Sinatura (`fn ::`) | Tipo de Retorno |
 |---|---|---|
@@ -77,7 +77,7 @@ A continuación tes o inventario completo de tipos alxébricos (`type`), operado
 
 ## 16.3. Explorando `cli` a fondo: Exemplos paso a paso de cada funcionalidade
 
-Non abonda con ver a táboa de sinaturas: imos explorar **cada unha das funcionalidades** da lib `cli` mediante exemplos progresivos e executables en Ridgun. Comezaremos polas dúas receitas tabulares de uso cotián e despois percorreremos en detalle todos os escenarios funcionais, transformacións e casos límite verificados en `src/test/ridgun/test cli.rg`.
+Non abonda con ver a táboa de sinaturas: imos explorar **cada unha das funcionalidades** da lib `cli` mediante exemplos progresivos e executables en Ridgun. Comezaremos polas dúas receitas tabulares de uso cotián e despois percorreremos en detalle todos os escenarios funcionais, transformacións e casos límite verificados en `src/test/ridgun/test cli.ridgun`.
 
 ### 16.3.1. Exemplo 1: Fluxo principal en estilo tabular con `cli`
 
@@ -116,7 +116,7 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `cli` ne
 ```ridgun
 fn :: test cli flags and options => ()
       test cli flags and options =
-        args = ["serve", "-la", "--verbose", "--port=9090", "-h", "127.0.0.1", "--workers", "-4", "--", "--ignored-flag", "-z", "file.rg"]
+        args = ["serve", "-la", "--verbose", "--port=9090", "-h", "127.0.0.1", "--workers", "-4", "--", "--ignored-flag", "-z", "file.ridgun"]
         assert true (cli has flag args "--verbose" "-v") "AC1: long flag --verbose"
         assert true (cli has flag args "--all" "-a") "AC1: bundled short flag -a in -la"
         assert true (cli has flag args "--list" "-l") "AC1: bundled short flag -l in -la"
@@ -146,14 +146,14 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `cli` ne
 ```ridgun
 fn :: test cli positionals subcommand and env => ()
       test cli positionals subcommand and env =
-        args = ["build", "-v", "--output", "target/app", "-j", "8", "--", "-dashfile.rg", "--another-literal", "main.rg"]
+        args = ["build", "-v", "--output", "target/app", "-j", "8", "--", "-dashfile.ridgun", "--another-literal", "main.ridgun"]
         assert str eq (cli subcommand args) "build" "AC3: cli_subcommand first positional"
         assert str eq (cli subcommand ["-v", "--release", "test"]) "test" "AC3: cli_subcommand skips leading flags"
         assert str eq (cli subcommand ["--help", "-v"]) "" "AC3: cli_subcommand empty when only flags"
         assert str eq (cli subcommand []) "" "AC3: cli_subcommand empty on []"
 
         pos = cli positionals with opts args ["--output", "-j"]
-        assert eq pos ["build", "-dashfile.rg", "--another-literal", "main.rg"]
+        assert eq pos ["build", "-dashfile.ridgun", "--another-literal", "main.ridgun"]
 
         -- Single "-" (stdin/stdout convention) is treated as a positional argument, not a flag!
         stdin_args = ["cat", "-n", "-"]
@@ -187,13 +187,13 @@ fn :: despachar comando (argv : [String]) => (String, String, Int, Bool, [String
 
 ---
 
-## 16.4. Baixo o capó: como está construída `cli` en Ridgun puro (`src/main/ridgun/lib/cli.rg`)
+## 16.4. Baixo o capó: como está construída `cli` en Ridgun puro (`src/main/ridgun/lib/cli.ridgun`)
 
-Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**. Podes abrir `src/main/ridgun/lib/cli.rg` e ler exactamente como está implementada cada operación usando *pattern matching*, árbores de gardas `|` / `|.` e recursión de cola (TCO). Vexamos as pezas clave da súa implementación real:
+Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**. Podes abrir `src/main/ridgun/lib/cli.ridgun` e ler exactamente como está implementada cada operación usando *pattern matching*, árbores de gardas `|` / `|.` e recursión de cola (TCO). Vexamos as pezas clave da súa implementación real:
 
 ### 16.4.1. Implementación interna: Internal String & List Helpers
 
-Fíxate en como `cli.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
+Fíxate en como `cli.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 module :: cli
@@ -253,7 +253,7 @@ fn :: cl trim lower loop String Int Int => String
 
 ### 16.4.2. Implementación interna: Positional Arguments & Subcommand Extraction
 
-Fíxate en como `cli.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
+Fíxate en como `cli.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 fn :: cl is flag tok String => Bool
@@ -287,7 +287,7 @@ fn :: cli subcommand [String] => String
 
 ### 16.4.3. Implementación interna: Typed Environment Variable Readers
 
-Fíxate en como `cli.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
+Fíxate en como `cli.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 fn :: cl env val or String String => String
@@ -319,9 +319,9 @@ fn :: env get bool or String Bool => Bool
 ## 16.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` e as 5 Regras de Ouro de `cli`
 
 - **Garantía algorítmica e de seguridade**: Respecto estrito do separador POSIX `--`: ningún argumento situado á dereita de `--` se interpreta xamais como bandeira.
-- **Complexidade de pila $O(1)$ con TCO**: Todos os bucles recursivos en `src/main/ridgun/lib/cli.rg` están en posición de cola, polo que `ridgunc` os compila a saltos nativos sen crecemento de pila.
+- **Complexidade de pila $O(1)$ con TCO**: Todos os bucles recursivos en `src/main/ridgun/lib/cli.ridgun` están en posición de cola, polo que `ridgunc` os compila a saltos nativos sen crecemento de pila.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Cero pausas de colector de lixo; todas as estruturas intermedias libéranse de forma determinista ao saír do ámbito.
-- **Verificación continua**: Probada exhaustivamente con `stable check` e a suite automatizada `src/test/ridgun/test cli.rg`.
+- **Verificación continua**: Probada exhaustivamente con `stable check` e a suite automatizada `src/test/ridgun/test cli.ridgun`.
 
 ### As 5 Regras de Ouro ao programar con `cli`
 

@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/log.rg
+-- src/main/ridgun/lib/log.ridgun
 -- Pure-Ridgun Level-Filtered Text & NDJSON Structured Logging Library with Secret Redaction (LOG)
 -- @implements FR-LOG-001
 -- @implements API-LOG-001

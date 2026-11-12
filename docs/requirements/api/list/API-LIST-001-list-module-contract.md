@@ -1,11 +1,11 @@
 ---
 id: API-LIST-001
-title: Public lib contract for list (list.rglib / liblist.so)
+title: Public lib contract for list (list.ridgunlib / liblist.so)
 status: approved
 implements: [FR-LIST-001, FR-LIST-002]
 auth: none
 ---
-# API-LIST-001 — Public lib contract for `list` (`list.rg`)
+# API-LIST-001 — Public lib contract for `list` (`list.ridgun`)
 
 ## Request
 - Imported via `import list`.

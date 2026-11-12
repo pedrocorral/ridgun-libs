@@ -10,7 +10,7 @@ Siguem sincers: accedir a un índex fora de rang (`IndexError` / `panic!`) o mut
 
 La lib **`list`** proporciona indexació amb valor per defecte, llescat (`take`, `drop`, `slice`), rangs amb pas, deduplicació estable, ordenació **mergesort $O(N \log N)$** per a `[Int]` i `[String]`, i diccionaris associatius immutables `[String String]` (`kv get`, `kv put`, `kv merge`).
 
-En un ecosistema tradicional, resoldre les tasques del domini **`LIST`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`list`** (`src/main/ridgun/lib/list.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`LIST`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`list`** (`src/main/ridgun/lib/list.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import list` (o `import list as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: list` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`LIST`** implica
 
 ## 03.2. Artefactes natius, importació i catàleg complet de l'API de `list`
 
-A `ridgun-libs`, **`list`** és una **lib** de primera classe situada a `src/main/ridgun/lib/list.rg` (domini `LIST`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`list`** és una **lib** de primera classe situada a `src/main/ridgun/lib/list.ridgun` (domini `LIST`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/list.rglib` | Distribució i importació directa amb `import list` |
+| **Bundle Ridgun** | `target/bundles/list.ridgunlib` | Distribució i importació directa amb `import list` |
 | **Fitxer compilat** | `target/list.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/liblist.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -41,9 +41,9 @@ A `ridgun-libs`, **`list`** és una **lib** de primera classe situada a `src/mai
 | `list sort / list str sort / list dedup / list str dedup` | Ordenació mergesort $O(N \log N)$ estable i deduplicació per primera aparició |
 | `kv empty / kv put / kv get / kv get or / kv remove / kv merge` | Operacions sobre diccionaris associatius ordenats `[String String]` |
 
-### 03.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/list.rg`
+### 03.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/list.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/list.rg` (`0` tipus, `0` operadors i `59` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/list.ridgun` (`0` tipus, `0` operadors i `59` funcions):
 
 | # | Funció / Signatura (`fn ::`) | Tipus de Retorn |
 |---|---|---|
@@ -111,7 +111,7 @@ A continuació tens l'inventari complet de tipus algebraics (`type`), operadors 
 
 ## 03.3. Explorant `list` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `list` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test list.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `list` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test list.ridgun`.
 
 ### 03.3.1. Exemple 1: Flux principal en estil tabular amb `list`
 
@@ -261,13 +261,13 @@ fn :: test kv associative map => ()
 
 ---
 
-## 03.4. Sota el capó: com està construïda `list` en Ridgun pur (`src/main/ridgun/lib/list.rg`)
+## 03.4. Sota el capó: com està construïda `list` en Ridgun pur (`src/main/ridgun/lib/list.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/list.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/list.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 03.4.1. Implementació interna: List Length & Emptiness
 
-Fixa't en com `list.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `list.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: list
@@ -291,7 +291,7 @@ fn :: list str is empty [String] => Bool
 
 ### 03.4.2. Implementació interna: Slicing (`take`, `drop`, `slice`) & Reversal
 
-Fixa't en com `list.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `list.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: list take [Int]    Int => [Int]
@@ -360,7 +360,7 @@ fn :: list str reverse [String] => [String]
 
 ### 03.4.3. Implementació interna: Search, Count & Deduplication
 
-Fixa't en com `list.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `list.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: l idx int [Int] Int Int => Int
@@ -420,7 +420,7 @@ fn :: list str dedup [String] => [String]
 
 ### 03.4.4. Implementació interna: Associative Key-Value Map (`[(String, String)]`)
 
-Fixa't en com `list.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `list.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: l kv key (String String) => String
@@ -477,9 +477,9 @@ fn :: kv values [String String] => [String]
 ## 03.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `list`
 
 - **Garantia algorísmica i de seguretat**: Ordenació determinista $O(N \log N)$ en el pitjor cas (sense l'$O(N^2)$ patològic de Quicksort) i preservació de l'ordre d'inserció en mapes `kv`.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/list.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/list.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test list.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test list.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `list`
 

@@ -6,11 +6,11 @@
 
 Hori da edozein sistema-ingeniarik `cli`-era iristean egiten duen lehen galdera. Eta erantzunak `ridgun-libs`-en filosofia osoa laburbiltzen du:
 
-Izan gaitezen zintzoak: `argv` eskuz analizatzea begizta xalo batekin hasten da beti, eta apurtzen amaitzen du norbaitek `-la` elkartuta, `--port=9090` berdin ikurrarekin edo `--` eta jarraian marratxoz hasten den `-fitxategia.rg` bat pasatzen duenean.
+Izan gaitezen zintzoak: `argv` eskuz analizatzea begizta xalo batekin hasten da beti, eta apurtzen amaitzen du norbaitek `-la` elkartuta, `--port=9090` berdin ikurrarekin edo `--` eta jarraian marratxoz hasten den `-fitxategia.ridgun` bat pasatzen duenean.
 
 **`cli`** lib-ak bandera luzeak (`--verbose`), laburrak (`-v`), elkartuak (`-la`), baliodun aukerak (`--port=8080`, `--port 8080`, `-p 8080`), POSIX `--` bereizlea, argumentu posizionalak, azpikomandoak eta ingurune-aldagaien irakurketa tipatua ebazten ditu.
 
-Ekosistema tradizional batean, **`CLI`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`cli`** lib-ak (`src/main/ridgun/lib/cli.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`CLI`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`cli`** lib-ak (`src/main/ridgun/lib/cli.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import cli` (edo `import cli as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: cli` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`CLI`** domeinuko zereginak ebazteak C-ko kanpo
 
 ## 16.2. Artefaktu natiboak, inportazioa eta `cli` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`cli`** lehen mailako **lib** bat da, `src/main/ridgun/lib/cli.rg` bidean kokatua (`CLI` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`cli`** lehen mailako **lib** bat da, `src/main/ridgun/lib/cli.ridgun` bidean kokatua (`CLI` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/cli.rglib` | Banaketa eta inportazio zuzena `import cli` bidez |
+| **Ridgun Bundle-a** | `target/bundles/cli.ridgunlib` | Banaketa eta inportazio zuzena `import cli` bidez |
 | **Fitxategi konpilatua** | `target/cli.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libcli.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`CLI`** domeinuko zereginak ebazteak C-ko kanpo
 | `cli positionals / cli subcommand` | Argumentu posizionalak biltzen ditu (`--` ondorengo guztia barne) |
 | `env get or / env get int or / env get bool or` | Ingurune-aldagaiak irakurtzen ditu bihurketa tipatu eta ordezko balioekin |
 
-### 16.2.2. `src/main/ridgun/lib/cli.rg`-eko mota eta sinadura guztien katalogoa
+### 16.2.2. `src/main/ridgun/lib/cli.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/cli.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `26` funtzio):
+Jarraian duzu `src/main/ridgun/lib/cli.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `26` funtzio):
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
@@ -77,7 +77,7 @@ Jarraian duzu `src/main/ridgun/lib/cli.rg` fitxategian definitutako mota aljebra
 
 ## 16.3. `cli` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `cli` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test cli.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `cli` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test cli.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 16.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `cli` erabiliz
 
@@ -116,7 +116,7 @@ Adibide praktiko honetan `cli` bloke funtzional honetan nola portatzen den sakon
 ```ridgun
 fn :: test cli flags and options => ()
       test cli flags and options =
-        args = ["serve", "-la", "--verbose", "--port=9090", "-h", "127.0.0.1", "--workers", "-4", "--", "--ignored-flag", "-z", "file.rg"]
+        args = ["serve", "-la", "--verbose", "--port=9090", "-h", "127.0.0.1", "--workers", "-4", "--", "--ignored-flag", "-z", "file.ridgun"]
         assert true (cli has flag args "--verbose" "-v") "AC1: long flag --verbose"
         assert true (cli has flag args "--all" "-a") "AC1: bundled short flag -a in -la"
         assert true (cli has flag args "--list" "-l") "AC1: bundled short flag -l in -la"
@@ -146,14 +146,14 @@ Adibide praktiko honetan `cli` bloke funtzional honetan nola portatzen den sakon
 ```ridgun
 fn :: test cli positionals subcommand and env => ()
       test cli positionals subcommand and env =
-        args = ["build", "-v", "--output", "target/app", "-j", "8", "--", "-dashfile.rg", "--another-literal", "main.rg"]
+        args = ["build", "-v", "--output", "target/app", "-j", "8", "--", "-dashfile.ridgun", "--another-literal", "main.ridgun"]
         assert str eq (cli subcommand args) "build" "AC3: cli_subcommand first positional"
         assert str eq (cli subcommand ["-v", "--release", "test"]) "test" "AC3: cli_subcommand skips leading flags"
         assert str eq (cli subcommand ["--help", "-v"]) "" "AC3: cli_subcommand empty when only flags"
         assert str eq (cli subcommand []) "" "AC3: cli_subcommand empty on []"
 
         pos = cli positionals with opts args ["--output", "-j"]
-        assert eq pos ["build", "-dashfile.rg", "--another-literal", "main.rg"]
+        assert eq pos ["build", "-dashfile.ridgun", "--another-literal", "main.ridgun"]
 
         -- Single "-" (stdin/stdout convention) is treated as a positional argument, not a flag!
         stdin_args = ["cat", "-n", "-"]
@@ -187,13 +187,13 @@ fn :: despachar comando (argv : [String]) => (String, String, Int, Bool, [String
 
 ---
 
-## 16.4. Kaputaren azpian: nola dagoen eraikia `cli` Ridgun hutsean (`src/main/ridgun/lib/cli.rg`)
+## 16.4. Kaputaren azpian: nola dagoen eraikia `cli` Ridgun hutsean (`src/main/ridgun/lib/cli.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/cli.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/cli.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 16.4.1. Barne-inplementazioa: Internal String & List Helpers
 
-Ikusi nola `cli.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `cli.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: cli
@@ -253,7 +253,7 @@ fn :: cl trim lower loop String Int Int => String
 
 ### 16.4.2. Barne-inplementazioa: Positional Arguments & Subcommand Extraction
 
-Ikusi nola `cli.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `cli.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: cl is flag tok String => Bool
@@ -287,7 +287,7 @@ fn :: cli subcommand [String] => String
 
 ### 16.4.3. Barne-inplementazioa: Typed Environment Variable Readers
 
-Ikusi nola `cli.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `cli.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: cl env val or String String => String
@@ -319,9 +319,9 @@ fn :: env get bool or String Bool => Bool
 ## 16.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `cli`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: POSIX `--` bereizlearen errespetu zorrotza: `--`-ren eskuinean dagoen inongo argumenturik ez da inoiz banderatzat hartzen.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/cli.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/cli.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test cli.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test cli.ridgun` suite automatizatuaren bidez.
 
 ### `cli`-ekin programatzeko Urrezko 5 Arauak
 

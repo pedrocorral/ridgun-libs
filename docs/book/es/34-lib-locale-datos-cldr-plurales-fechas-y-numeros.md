@@ -4,7 +4,7 @@
 
 > *«¿Por qué necesito una lib `locale` escrita desde cero en Ridgun puro en lugar de depender de `setlocale()` de `libc` o arrastrar 30 MB de `libicu`?»*
 
-En sistemas reales (como pasarelas i18n, plantillas multilingües y motores de catálogos `.po` al estilo de `babel`), `setlocale()` en C muta estado global compartido entre hilos y `libicu` rompe cualquier despliegue ligero. La lib **`locale`** (`src/main/ridgun/lib/locale.rg`, dominio `LOCALE`) incorpora directamente en Ridgun puro las tablas **Unicode CLDR 46** y el calendario civil UTC en $O(1)$ de Howard Hinnant:
+En sistemas reales (como pasarelas i18n, plantillas multilingües y motores de catálogos `.po` al estilo de `babel`), `setlocale()` en C muta estado global compartido entre hilos y `libicu` rompe cualquier despliegue ligero. La lib **`locale`** (`src/main/ridgun/lib/locale.ridgun`, dominio `LOCALE`) incorpora directamente en Ridgun puro las tablas **Unicode CLDR 46** y el calendario civil UTC en $O(1)$ de Howard Hinnant:
 
 1. **Reglas de plurales CLDR en doble modo (`.po` 2 formas por defecto + CLDR 46 estricto con `"many"`)**: `plural category` y `plural index` ofrecen por defecto el modo compatible con catálogos Gettext `.po` (`["one", "other"]` para `es`, `ca`, `gl`, `eu`, `en`, `pt`, `sv`, `it`, `de`, `nl`; regla `n == 0 or n == 1` para `fr`; 3 formas eslavas para `ru`, `uk`, `pl`; 6 formas para `ar`; invariante para `ja`, `zh`, `ko`), mientras `plural category cldr` y `plural categories cldr` activan la categoría `"many"` de CLDR 46 para millones exactos (`1000000`, `2000000`...) en `es`, `ca`, `pt`, `it` y `fr`.
 2. **Formateo de fechas y marcas temporales UTC (`format date`, `format datetime`, `month name`, `weekday name`)**: convierte segundos Unix epoch mediante el algoritmo civil de Howard Hinnant en $O(1)$ y aplica los patrones `short`, `medium`, `long` y `full` de cada idioma (incluyendo declinaciones como `"2026ko urriaren 31"` en euskera o `"31 d'octubre de 2026"` en catalán).
@@ -272,7 +272,7 @@ fn :: test locale autonyms normalization and registry => ()
 ## 34.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` y cierre del libro
 
 - **Garantía algorítmica y de seguridad**: Funciones 100 % puras y sin estado global mutable (`TZ` / `LC_ALL`), calendario civil UTC en $O(1)$ con validación de años bisiestos y fallback determinista a `"en"` ante etiquetas desconocidas.
-- **Complejidad de pila $O(1)$ con TCO**: Todos los recorridos de sustitución y agrupación en `src/main/ridgun/lib/locale.rg` son recursivos de cola.
-- **Verificación continua**: Probada exhaustivamente con `src/test/ridgun/test locale.rg`.
+- **Complejidad de pila $O(1)$ con TCO**: Todos los recorridos de sustitución y agrupación en `src/main/ridgun/lib/locale.ridgun` son recursivos de cola.
+- **Verificación continua**: Probada exhaustivamente con `src/test/ridgun/test locale.ridgun`.
 
 ¡Has completado el recorrido exhaustivo por las **34 libs estándar de `ridgun-libs`**!

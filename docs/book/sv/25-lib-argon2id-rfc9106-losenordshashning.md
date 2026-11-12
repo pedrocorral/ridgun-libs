@@ -10,7 +10,7 @@ Låt oss vara ärliga: att hasha lösenord med enkel SHA-256 låter en modern GP
 
 Lib:en **`argon2id`** implementerar **RFC 9106 Argon2id** och **RFC 7693 Blake2b-512** i 100 % ren Ridgun direkt över inbyggda `Tensor[U64 * 8 * 16]`-block (1 024 byte per block i sammanhängande RMM2-minne), med **PHC**-stränggenerering (`$argon2id$v=19$m=...,t=...,p=...$`), **OWASP**-profiler (`owaspfirst`, `owaspsecond`), *pepper*-stöd (`argon2id hash ctx`), nyckelhärledning (`argon2id derive key`) och detektering av parameteruppgradering (`argon2id needs rehash`).
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`CRYPTO`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`argon2id`** (`src/main/ridgun/lib/argon2id.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`CRYPTO`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`argon2id`** (`src/main/ridgun/lib/argon2id.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import argon2id` (eller `import argon2id as alias`) överst i filen**: varje lib definierar sin `module :: argon2id`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`CRYPTO`** ofta
 
 ## 25.2. Inbyggda artefakter, import och komplett API-katalog för `argon2id`
 
-I `ridgun-libs` är **`argon2id`** en förstklassig **lib** placerad i `src/main/ridgun/lib/argon2id.rg` (domän `CRYPTO`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`argon2id`** en förstklassig **lib** placerad i `src/main/ridgun/lib/argon2id.ridgun` (domän `CRYPTO`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/argon2id.rglib` | Portabel distribution och direkt import med `import argon2id` |
+| **Ridgun-bundle** | `target/bundles/argon2id.ridgunlib` | Portabel distribution och direkt import med `import argon2id` |
 | **Kompilerat arkiv** | `target/argon2id.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libargon2id.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -41,9 +41,9 @@ I `ridgun-libs` är **`argon2id`** en förstklassig **lib** placerad i `src/main
 | `argon2id derive key / argon2id needs rehash` | Rå binär nyckelhärledning och detektering av rehash-behov för lagrade PHC-strängar |
 | `blake2b / blake2b hex` | Allmän kryptografisk RFC 7693 Blake2b-digest (`1..64` byte) |
 
-### 25.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/argon2id.rg`
+### 25.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/argon2id.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/argon2id.rg` (`10` typer, `0` operatorer och `134` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/argon2id.ridgun` (`10` typer, `0` operatorer och `134` funktioner):
 
 **Algebraiska datatyper och poster (`type`) i `argon2id`:**
 
@@ -192,7 +192,7 @@ type A2Ctx   = r_pass: Int, s_slice: Int, l_lane: Int, p_lanes: Int, q_cols: Int
 
 ## 25.3. Djupdykning i `argon2id`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `argon2id` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test argon2id.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `argon2id` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test argon2id.ridgun`.
 
 ### 25.3.1. Exempel 1: Huvudflöde i tabellform med `argon2id`
 
@@ -370,13 +370,13 @@ fn :: verificar y evaluar politica (password : String) (phc_guardado : String) =
 
 ---
 
-## 25.4. Under huven: hur `argon2id` är byggd i ren Ridgun (`src/main/ridgun/lib/argon2id.rg`)
+## 25.4. Under huven: hur `argon2id` är byggd i ren Ridgun (`src/main/ridgun/lib/argon2id.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/argon2id.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/argon2id.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 25.4.1. Intern implementation: Core Implementation Part 1
 
-Se hur `argon2id.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `argon2id.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: argon2id
@@ -1061,7 +1061,7 @@ fn :: a2 set mem A2Mem Int Int Int Int Tensor[U64 * 256] => A2Mem
 
 ### 25.4.2. Intern implementation: Core Implementation Part 9
 
-Se hur `argon2id.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `argon2id.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: a2 blamka g U64 U64 U64 U64 => U64 U64 U64 U64
@@ -1104,7 +1104,7 @@ fn :: a2 blamka col pair Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]
 
 ### 25.4.3. Intern implementation: Core Implementation Part 18
 
-Se hur `argon2id.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `argon2id.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: derive raw tag ctx [Int] [Int] String String Argon2Params => [Int]
@@ -1158,7 +1158,7 @@ fn :: b64 encode nopad [Int]           => String
 
 ### 25.4.4. Intern implementation: Core Implementation Part 26
 
-Se hur `argon2id.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `argon2id.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: argon2id needs rehash String Argon2Params => Bool
@@ -1198,9 +1198,9 @@ fn :: argon2id hash phc String String Int Int Int => String
 ## 25.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `argon2id`
 
 - **Algoritmisk garanti och säkerhet**: Byte-för-byte-överensstämmelse med de officiella testvektorerna i RFC 9106 §5.3 och OpenSSL 3.5, direkt över `Tensor[U64 * 8 * 16]` utan en enda rad C.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/argon2id.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/argon2id.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test argon2id.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test argon2id.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `argon2id`
 

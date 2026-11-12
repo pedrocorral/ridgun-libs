@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/diff.rg
+-- src/main/ridgun/lib/diff.ridgun
 -- Pure-Ridgun Longest Common Subsequence (LCS) Line Diff, Unified Diff & Patch Library (DIFF)
 -- @implements FR-DIFF-001
 -- @implements API-DIFF-001

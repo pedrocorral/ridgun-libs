@@ -10,7 +10,7 @@ Let's be honest: assembling HTML pages or LaTeX reports by manual string concate
 
 The **`template`** lib provides a logic-less **Mustache** engine with contextual auto-escaping (`TmplPlain`, `TmplHtml`, `TmplLatex`), explicit raw interpolation (`{{{raw}}}` / `{{&raw}}`), comments (`{{! ... }}`), truthy sections (`{{#sec}}...{{/sec}}`), and inverted sections (`{{^sec}}...{{/sec}}`).
 
-In a traditional ecosystem, solving **`TMPL`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`template`** lib (`src/main/ridgun/lib/template.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`TMPL`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`template`** lib (`src/main/ridgun/lib/template.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import template` (or `import template as alias`) at the top of your file**: every lib defines its `module :: template` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`TMPL`** tasks means pulling in external C
 
 ## 14.2. Native Artifacts, Imports, and Complete `template` API Catalog
 
-In `ridgun-libs`, **`template`** is a first-class **lib** located at `src/main/ridgun/lib/template.rg` (domain `TMPL`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`template`** is a first-class **lib** located at `src/main/ridgun/lib/template.ridgun` (domain `TMPL`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/template.rglib` | Portable distribution and direct `import template` resolution |
+| **Ridgun Bundle** | `target/bundles/template.ridgunlib` | Portable distribution and direct `import template` resolution |
 | **Compiled Archive** | `target/template.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libtemplate.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -39,9 +39,9 @@ In `ridgun-libs`, **`template`** is a first-class **lib** located at `src/main/r
 | `tmpl escape html / tmpl escape latex` | Escape `& < > " '` for HTML or `\ { } & % $ # _ ~ ^` for LaTeX |
 | `tmpl extract vars / tmpl has unclosed tags` | Inspect required variable names and validate tag balance before rendering |
 
-### 14.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/template.rg`
+### 14.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/template.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/template.rg` (`1` types, `0` operators, and `35` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/template.ridgun` (`1` types, `0` operators, and `35` functions):
 
 **Algebraic Data Types & Records (`type`) in `template`:**
 
@@ -91,7 +91,7 @@ type TmplEscape = TmplEscapeNone | TmplEscapeHtml | TmplEscapeLatex
 
 ## 14.3. Deep Dive into `template`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `template` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test template.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `template` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test template.ridgun`.
 
 ### 14.3.1. Example 1: Core Tabular Workflow with `template`
 
@@ -239,13 +239,13 @@ fn :: test tmpl malformed tags => ()
 
 ---
 
-## 14.4. Under the Hood: How `template` Is Built in Pure Ridgun (`src/main/ridgun/lib/template.rg`)
+## 14.4. Under the Hood: How `template` Is Built in Pure Ridgun (`src/main/ridgun/lib/template.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/template.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/template.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 14.4.1. Internal Implementation: Internal Helpers
 
-Observe how `template.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `template.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: template
@@ -446,7 +446,7 @@ fn :: tm tag var String Int Int [String String] TmplEscape String Int => String
 
 ### 14.4.2. Internal Implementation: Public API
 
-Observe how `template.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `template.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: tmpl render with escape String [String String] TmplEscape => String
@@ -467,9 +467,9 @@ fn :: tmpl render latex String [String String] => String
 ## 14.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `template`
 
 - **Algorithmic & Safety Guarantee**: Default XSS prevention in `tmpl render html` (escaping `&`, `<`, `>`, `"`, `'`), while triple-stache `{{{var}}}` explicitly opts into raw trusted markup.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/template.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/template.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test template.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test template.ridgun`.
 
 ### The 5 Golden Rules When Programming with `template`
 

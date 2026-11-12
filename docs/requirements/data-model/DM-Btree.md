@@ -13,7 +13,7 @@ related: [FR-BTREE-001, API-BTREE-001, ADR-0002]
 | priority_score | Int | Any `Int` | Numeric priority key in `MinHeap` (lowest score dequeued first) |
 
 ## Relations
-- Used by `btree.rg` (`BTreeMap`, `BTreeSet`, `MinHeap`) for $O(\log N)$ ordered key-value lookup, set operations, and priority scheduling.
+- Used by `btree.ridgun` (`BTreeMap`, `BTreeSet`, `MinHeap`) for $O(\log N)$ ordered key-value lookup, set operations, and priority scheduling.
 
 ## Invariants
 - Every `BTreeMap` and `BTreeSet` rotation (`LL`, `LR`, `RL`, `RR`) preserves strict in-order key sorting and height difference $\le 1$ between left and right subtrees.

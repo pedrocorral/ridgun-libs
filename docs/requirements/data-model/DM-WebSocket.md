@@ -16,7 +16,7 @@ related: [FR-WS-001, API-WS-001, ADR-0002, ADR-0010]
 | payload_text | String | Payload bytes unchanged when `ws_opcode` is `1`, otherwise `""` | Text frames only |
 
 ## Relations
-- Used by `ws.rg` (`WsFrame`, `WsRes`) for RFC 6455 opening handshake key derivation (`Sec-WebSocket-Accept`) and frame serialization/parsing.
+- Used by `ws.ridgun` (`WsFrame`, `WsRes`) for RFC 6455 opening handshake key derivation (`Sec-WebSocket-Accept`) and frame serialization/parsing.
 
 ## Invariants
 - `Sec-WebSocket-Accept` is computed as `Base64(SHA-1(client_key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))`.

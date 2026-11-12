@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/mail.rg
+-- src/main/ridgun/lib/mail.ridgun
 -- Pure-Ridgun RFC 5322 message builder/renderer and RFC 5321/6409/8314/3207/4954
 -- SMTP submission client over TLS (implicit TLS on port 465, STARTTLS otherwise).
 -- @implements FR-MAIL-001

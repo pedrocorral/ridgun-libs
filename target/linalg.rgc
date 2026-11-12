@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/linalg.rg
+-- src/main/ridgun/lib/linalg.ridgun
 -- Pure-Ridgun Real Tensor Linear Algebra, Norms, Linear Solver & Neural Activations Library (LINALG)
 -- All values are Real (64-bit floating point). See ADR-0008.
 -- @implements FR-LINALG-001

@@ -10,7 +10,7 @@ Låt oss vara ärliga: datumfunktionerna i `libc` (`localtime`, `gmtime`, `mktim
 
 Lib:en **`time`** implementerar **Howard Hinnants $O(1)$**-algoritm för den proleptiska gregorianska UTC-kalendern, strikt **ISO-8601 / RFC 3339**-formatering och tolkning (`YYYY-MM-DDTHH:MM:SSZ`), läsbara varaktigheter (`1h 1m 1s 5ms`) och exponentiell backoff.
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`TIME`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`time`** (`src/main/ridgun/lib/time.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`TIME`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`time`** (`src/main/ridgun/lib/time.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import time` (eller `import time as alias`) överst i filen**: varje lib definierar sin `module :: time`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`TIME`** ofta a
 
 ## 18.2. Inbyggda artefakter, import och komplett API-katalog för `time`
 
-I `ridgun-libs` är **`time`** en förstklassig **lib** placerad i `src/main/ridgun/lib/time.rg` (domän `TIME`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`time`** en förstklassig **lib** placerad i `src/main/ridgun/lib/time.ridgun` (domän `TIME`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/time.rglib` | Portabel distribution och direkt import med `import time` |
+| **Ridgun-bundle** | `target/bundles/time.ridgunlib` | Portabel distribution och direkt import med `import time` |
 | **Kompilerat arkiv** | `target/time.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libtime.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -40,9 +40,9 @@ I `ridgun-libs` är **`time`** en förstklassig **lib** placerad i `src/main/rid
 | `time format iso8601 / time parse iso8601` | Formaterar och validerar `YYYY-MM-DDTHH:MM:SSZ`-tidsstämplar (`-1` vid ogiltiga datum som 30 feb) |
 | `time format duration ms / time backoff ms` | Läsbara varaktigheter och begränsade exponentiella väntetider $base \cdot 2^{attempt}$ |
 
-### 18.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/time.rg`
+### 18.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/time.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/time.rg` (`0` typer, `0` operatorer och `26` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/time.ridgun` (`0` typer, `0` operatorer och `26` funktioner):
 
 | # | Funktion / Signatur (`fn ::`) | Returtyp |
 |---|---|---|
@@ -77,7 +77,7 @@ Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-o
 
 ## 18.3. Djupdykning i `time`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `time` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test time.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `time` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test time.ridgun`.
 
 ### 18.3.1. Exempel 1: Huvudflöde i tabellform med `time`
 
@@ -217,13 +217,13 @@ fn :: planificar ventana reintentos (iso_inicio : String) => (String, String, In
 
 ---
 
-## 18.4. Under huven: hur `time` är byggd i ren Ridgun (`src/main/ridgun/lib/time.rg`)
+## 18.4. Under huven: hur `time` är byggd i ren Ridgun (`src/main/ridgun/lib/time.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/time.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/time.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 18.4.1. Intern implementation: Leap Year, Month Length & Day of Week
 
-Se hur `time.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `time.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: time
@@ -250,7 +250,7 @@ fn :: time days in month Int Int => Int
 
 ### 18.4.2. Intern implementation: Howard Hinnant Civil Calendar <-> Epoch Days
 
-Se hur `time.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `time.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: tm adj year Int Int => Int
@@ -335,7 +335,7 @@ fn :: time epoch to utc Int       => Int Int Int Int Int Int
 
 ### 18.4.3. Intern implementation: ISO-8601 / RFC 3339 Formatting & Parsing
 
-Se hur `time.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `time.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: tm pad2 Int => String
@@ -398,7 +398,7 @@ fn :: time parse iso8601 String => Int
 
 ### 18.4.4. Intern implementation: Human-Readable Duration & Exponential Backoff
 
-Se hur `time.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `time.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: tm join part String Int String => String
@@ -440,9 +440,9 @@ fn :: time backoff ms Int Int Int => Int
 ## 18.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `time`
 
 - **Algoritmisk garanti och säkerhet**: $O(1)$-kalenderkonvertering utan år-för-år-loopar och strikt validering av dagar per månad (avvisar 29 februari under icke-skottår).
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/time.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/time.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test time.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test time.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `time`
 

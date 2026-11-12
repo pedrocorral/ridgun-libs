@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/ini.rg
+-- src/main/ridgun/lib/ini.ridgun
 -- Pure-Ridgun INI Sectioned Configuration & Dotenv Parser, Interpolator & Serializer Library (INI)
 -- @implements FR-INI-001
 -- @implements API-INI-001

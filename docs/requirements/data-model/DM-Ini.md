@@ -12,7 +12,7 @@ related: [FR-INI-001, API-INI-001, ADR-0002]
 | section_name | String | Trimmed identifier or `""` for root/dotenv scope | Section header `[section]` in INI documents |
 
 ## Relations
-- Used by `ini.rg` (`IniDoc`) to parse, interpolate (`${VAR}`), query, and serialize `.ini` and `.env` configuration files.
+- Used by `ini.ridgun` (`IniDoc`) to parse, interpolate (`${VAR}`), query, and serialize `.ini` and `.env` configuration files.
 
 ## Invariants
 - Blank lines and comment lines starting with `#`, `;`, or `--` are ignored during parsing.

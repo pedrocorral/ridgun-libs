@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: harien artean memoria aldakorra `Mutex`, `RwLock` eta ba
 
 **`agent`** lib-ak Ridgunen **Agenteen Eredu Natiboa** (`agent`, `send ... to`, `receive from`, `try receive from`, `stop`) baliatzen du Copy-on-Write mezu-igorpenezko postontzi isolatuak, gako-balio biltegi konkurrente bat (`KvStore`), token-ontzi bidezko tasa-mugatzaile bat (`RateBucket`) eta egoera-gainbegiratzea (`AgentHealth`) eskaintzeko.
 
-Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`agent`** lib-ak (`src/main/ridgun/lib/agent.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`agent`** lib-ak (`src/main/ridgun/lib/agent.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import agent` (edo `import agent as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: agent` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kan
 
 ## 30.2. Artefaktu natiboak, inportazioa eta `agent` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`agent`** lehen mailako **lib** bat da, `src/main/ridgun/lib/agent.rg` bidean kokatua (`AGENT` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`agent`** lehen mailako **lib** bat da, `src/main/ridgun/lib/agent.ridgun` bidean kokatua (`AGENT` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/agent.rglib` | Banaketa eta inportazio zuzena `import agent` bidez |
+| **Ridgun Bundle-a** | `target/bundles/agent.ridgunlib` | Banaketa eta inportazio zuzena `import agent` bidez |
 | **Fitxategi konpilatua** | `target/agent.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libagent.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kan
 | `rate bucket new / rate bucket allow` | Token-ontzi bidezko tasa-mugatzailea, ontzi eguneratua eta `(allowed, remaining)` itzultzen dituena |
 | `sup mark failed / sup should restart` | Berrabiarazte-aurrekontua (`max_restarts`) kontrolatzen duten gainbegiratze-politikak |
 
-### 30.2.2. `src/main/ridgun/lib/agent.rg`-eko mota eta sinadura guztien katalogoa
+### 30.2.2. `src/main/ridgun/lib/agent.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/agent.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`7` mota, `0` eragile eta `65` funtzio):
+Jarraian duzu `src/main/ridgun/lib/agent.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`7` mota, `0` eragile eta `65` funtzio):
 
 **`agent`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -128,7 +128,7 @@ type LogState     = log_sep: String, log_buf: String
 
 ## 30.3. `agent` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `agent` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test agent.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `agent` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test agent.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 30.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `agent` erabiliz
 
@@ -318,13 +318,13 @@ fn :: test log and kv agents => ()
 
 ---
 
-## 30.4. Kaputaren azpian: nola dagoen eraikia `agent` Ridgun hutsean (`src/main/ridgun/lib/agent.rg`)
+## 30.4. Kaputaren azpian: nola dagoen eraikia `agent` Ridgun hutsean (`src/main/ridgun/lib/agent.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/agent.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/agent.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 30.4.1. Barne-inplementazioa: Status & Reply Formatting
 
-Ikusi nola `agent.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `agent.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: agent
@@ -348,7 +348,7 @@ fn :: format agent reply AgentReply        => String
 
 ### 30.4.2. Barne-inplementazioa: Core Combinators (`agent ask`, `agent try ask`, `agent send batch`, `agent receive count`, `agent map batch`, `agent drain ready`)
 
-Ikusi nola `agent.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `agent.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: agent ask Agent A   => B
@@ -399,7 +399,7 @@ fn :: agent drain step Agent Option [B] => [B]
 
 ### 30.4.3. Barne-inplementazioa: Stateful Counter Agent (`new counter agent`, `counter add`, `counter get`, `counter reset`)
 
-Ikusi nola `agent.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `agent.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: ag counter step CounterState Int   => CounterState Int
@@ -428,7 +428,7 @@ fn :: counter reset (Agent Int Int) => Int
 
 ### 30.4.4. Barne-inplementazioa: Stateful In-Memory Key-Value Agent (`new kv agent`, `kv put`, `kv get`, `kv delete`, `kv has`, `kv count`, `kv keys`, `kv clear`)
 
-Ikusi nola `agent.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `agent.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: ag kv lookup [KvEntry] String => String
@@ -478,9 +478,9 @@ fn :: ag kv has str Bool  => String
 ## 30.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `agent`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Zero memoria aldakor partekatu aktoreen artean: mezu bakoitza balioz / Copy-on-Write bidez transferitzen da eta `stop`-ek agentearen eskualdea modu deterministan askatzen du.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/agent.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/agent.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test agent.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test agent.ridgun` suite automatizatuaren bidez.
 
 ### `agent`-ekin programatzeko Urrezko 5 Arauak
 

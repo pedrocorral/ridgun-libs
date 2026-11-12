@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: HTTP goiburuetako balioetan `\r\n` jauziak iragazten ez 
 
 **`http`** lib-ak **RFC 3986 URIen** deskonposizioa, **RFC 9112 HTTP/1.1** eskaera eta erantzunen eraikuntza zein analisia CRLF garbiketa automatikoarekin (`VUL-INJ-002`) eta `Content-Length` automatikoarekin, `Bearer` tokenen erauzketa eta **nukleoko TCP socketen gaineko zuzeneko HTTP/1.1 bezeroa** (`http get`, `http post`, `http request tcp`) inplementatzen ditu.
 
-Ekosistema tradizional batean, **`HTTP`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`http`** lib-ak (`src/main/ridgun/lib/http.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`HTTP`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`http`** lib-ak (`src/main/ridgun/lib/http.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import http` (edo `import http as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: http` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`HTTP`** domeinuko zereginak ebazteak C-ko kanp
 
 ## 28.2. Artefaktu natiboak, inportazioa eta `http` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`http`** lehen mailako **lib** bat da, `src/main/ridgun/lib/http.rg` bidean kokatua (`HTTP` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`http`** lehen mailako **lib** bat da, `src/main/ridgun/lib/http.ridgun` bidean kokatua (`HTTP` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/http.rglib` | Banaketa eta inportazio zuzena `import http` bidez |
+| **Ridgun Bundle-a** | `target/bundles/http.ridgunlib` | Banaketa eta inportazio zuzena `import http` bidez |
 | **Fitxategi konpilatua** | `target/http.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libhttp.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -41,9 +41,9 @@ Ekosistema tradizional batean, **`HTTP`** domeinuko zereginak ebazteak C-ko kanp
 | `http header get / http bearer token` | Letra larri/xeheekiko sentikorra ez den goiburu-bilaketa eta `Bearer <token>` erauzketa |
 | `http get / http post / http request tcp` | Zuzeneko HTTP/1.1 deiak exekutatzen ditu nukleoko TCP socketen gainean `timeout_ms`-rekin |
 
-### 28.2.2. `src/main/ridgun/lib/http.rg`-eko mota eta sinadura guztien katalogoa
+### 28.2.2. `src/main/ridgun/lib/http.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/http.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `76` funtzio):
+Jarraian duzu `src/main/ridgun/lib/http.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `76` funtzio):
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
@@ -128,7 +128,7 @@ Jarraian duzu `src/main/ridgun/lib/http.rg` fitxategian definitutako mota aljebr
 
 ## 28.3. `http` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `http` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test http.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `http` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test http.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 28.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `http` erabiliz
 
@@ -272,13 +272,13 @@ fn :: test http11 live tcp client and server => ()
 
 ---
 
-## 28.4. Kaputaren azpian: nola dagoen eraikia `http` Ridgun hutsean (`src/main/ridgun/lib/http.rg`)
+## 28.4. Kaputaren azpian: nola dagoen eraikia `http` Ridgun hutsean (`src/main/ridgun/lib/http.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/http.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/http.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 28.4.1. Barne-inplementazioa: Internal String & Case Helpers
 
-Ikusi nola `http.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `http.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: http
@@ -355,7 +355,7 @@ fn :: ht parse int or String Int => Int
 
 ### 28.4.2. Barne-inplementazioa: RFC 3986 URI Parsing
 
-Ikusi nola `http.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `http.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: ht default port String => Int
@@ -442,7 +442,7 @@ fn :: uri query String => String
 
 ### 28.4.3. Barne-inplementazioa: HTTP/1.1 Request & Response Formatting & Parsing
 
-Ikusi nola `http.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `http.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: ht fmt headers [String String] => String
@@ -570,7 +570,7 @@ fn :: http parse response String => Int String String
 
 ### 28.4.4. Barne-inplementazioa: Live Kernel TCP HTTP/1.1 Client (`http request tcp`, `http get`, `http post`)
 
-Ikusi nola `http.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `http.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: ht ensure hdr [String String] String String => [String String]
@@ -665,9 +665,9 @@ fn :: http resp body (Int Int String) => String
 ## 28.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `http`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: `\r` eta `\n` karaktereen garbiketa automatikoa goiburu guztietan (`http sanitize header`) HTTP erantzun-zatikatze erasoak eragozteko.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/http.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/http.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test http.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test http.ridgun` suite automatizatuaren bidez.
 
 ### `http`-ekin programatzeko Urrezko 5 Arauak
 

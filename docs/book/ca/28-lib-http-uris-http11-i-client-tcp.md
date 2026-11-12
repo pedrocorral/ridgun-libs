@@ -10,7 +10,7 @@ Siguem sincers: si no filtres salts `\r\n` en els valors de les capçaleres HTTP
 
 La lib **`http`** implementa descomposició d'**URIs RFC 3986**, construcció i anàlisi de peticions i respostes **HTTP/1.1 RFC 9112** amb sanejament automàtic de CRLF (`VUL-INJ-002`) i `Content-Length` automàtic, extracció de tokens `Bearer` i un **client HTTP/1.1 en viu sobre sockets TCP del nucli** (`http get`, `http post`, `http request tcp`).
 
-En un ecosistema tradicional, resoldre les tasques del domini **`HTTP`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`http`** (`src/main/ridgun/lib/http.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`HTTP`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`http`** (`src/main/ridgun/lib/http.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import http` (o `import http as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: http` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`HTTP`** implica
 
 ## 28.2. Artefactes natius, importació i catàleg complet de l'API de `http`
 
-A `ridgun-libs`, **`http`** és una **lib** de primera classe situada a `src/main/ridgun/lib/http.rg` (domini `HTTP`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`http`** és una **lib** de primera classe situada a `src/main/ridgun/lib/http.ridgun` (domini `HTTP`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/http.rglib` | Distribució i importació directa amb `import http` |
+| **Bundle Ridgun** | `target/bundles/http.ridgunlib` | Distribució i importació directa amb `import http` |
 | **Fitxer compilat** | `target/http.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libhttp.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -41,9 +41,9 @@ A `ridgun-libs`, **`http`** és una **lib** de primera classe situada a `src/mai
 | `http header get / http bearer token` | Cerca de capçaleres insensible a majúscules i extracció d'`Authorization: Bearer <token>` |
 | `http get / http post / http request tcp` | Executa crides HTTP/1.1 en viu sobre sockets TCP del nucli amb `timeout_ms` |
 
-### 28.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/http.rg`
+### 28.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/http.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/http.rg` (`0` tipus, `0` operadors i `76` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/http.ridgun` (`0` tipus, `0` operadors i `76` funcions):
 
 | # | Funció / Signatura (`fn ::`) | Tipus de Retorn |
 |---|---|---|
@@ -128,7 +128,7 @@ A continuació tens l'inventari complet de tipus algebraics (`type`), operadors 
 
 ## 28.3. Explorant `http` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `http` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test http.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `http` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test http.ridgun`.
 
 ### 28.3.1. Exemple 1: Flux principal en estil tabular amb `http`
 
@@ -272,13 +272,13 @@ fn :: test http11 live tcp client and server => ()
 
 ---
 
-## 28.4. Sota el capó: com està construïda `http` en Ridgun pur (`src/main/ridgun/lib/http.rg`)
+## 28.4. Sota el capó: com està construïda `http` en Ridgun pur (`src/main/ridgun/lib/http.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/http.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/http.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 28.4.1. Implementació interna: Internal String & Case Helpers
 
-Fixa't en com `http.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `http.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: http
@@ -355,7 +355,7 @@ fn :: ht parse int or String Int => Int
 
 ### 28.4.2. Implementació interna: RFC 3986 URI Parsing
 
-Fixa't en com `http.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `http.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: ht default port String => Int
@@ -442,7 +442,7 @@ fn :: uri query String => String
 
 ### 28.4.3. Implementació interna: HTTP/1.1 Request & Response Formatting & Parsing
 
-Fixa't en com `http.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `http.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: ht fmt headers [String String] => String
@@ -570,7 +570,7 @@ fn :: http parse response String => Int String String
 
 ### 28.4.4. Implementació interna: Live Kernel TCP HTTP/1.1 Client (`http request tcp`, `http get`, `http post`)
 
-Fixa't en com `http.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `http.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: ht ensure hdr [String String] String String => [String String]
@@ -665,9 +665,9 @@ fn :: http resp body (Int Int String) => String
 ## 28.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `http`
 
 - **Garantia algorísmica i de seguretat**: Sanejament automàtic de `\r` i `\n` en totes les capçaleres (`http sanitize header`) per impedir atacs de divisió de resposta HTTP.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/http.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/http.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test http.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test http.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `http`
 

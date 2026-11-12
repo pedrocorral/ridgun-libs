@@ -10,7 +10,7 @@ Siguem sincers: tothom es pensa que analitzar un CSV és fer `str split linia ",
 
 La lib **`csv`** implementa una màquina d'estats completa conforme a **RFC 4180** per a CSV i TSV, serialització automàtica amb cometes intel·ligents i el tipus `CsvTable` per consultar columnes i files per nom de capçalera.
 
-En un ecosistema tradicional, resoldre les tasques del domini **`CSV`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`csv`** (`src/main/ridgun/lib/csv.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`CSV`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`csv`** (`src/main/ridgun/lib/csv.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import csv` (o `import csv as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: csv` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`CSV`** implica 
 
 ## 09.2. Artefactes natius, importació i catàleg complet de l'API de `csv`
 
-A `ridgun-libs`, **`csv`** és una **lib** de primera classe situada a `src/main/ridgun/lib/csv.rg` (domini `CSV`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`csv`** és una **lib** de primera classe situada a `src/main/ridgun/lib/csv.ridgun` (domini `CSV`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/csv.rglib` | Distribució i importació directa amb `import csv` |
+| **Bundle Ridgun** | `target/bundles/csv.ridgunlib` | Distribució i importació directa amb `import csv` |
 | **Fitxer compilat** | `target/csv.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libcsv.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -40,9 +40,9 @@ A `ridgun-libs`, **`csv`** és una **lib** de primera classe situada a `src/main
 | `csv parse table / csv get cell / csv col` | Consulta sobre `CsvTable` indexada per capçalera `(fila, nom_col)` o columna completa |
 | `csv row to kv / csv table to kv list` | Converteix files tabulars en diccionaris `[String String]` indexats per capçalera |
 
-### 09.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/csv.rg`
+### 09.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/csv.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/csv.rg` (`1` tipus, `0` operadors i `23` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/csv.ridgun` (`1` tipus, `0` operadors i `23` funcions):
 
 **Tipus algebraics i registres (`type`) de `csv`:**
 
@@ -80,7 +80,7 @@ type CsvTable = headers: [String], rows: [[String]], delimiter_char: String, has
 
 ## 09.3. Explorant `csv` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `csv` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test csv.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `csv` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test csv.ridgun`.
 
 ### 09.3.1. Exemple 1: Flux principal en estil tabular amb `csv`
 
@@ -198,13 +198,13 @@ fn :: test csv table lookup => ()
 
 ---
 
-## 09.4. Sota el capó: com està construïda `csv` en Ridgun pur (`src/main/ridgun/lib/csv.rg`)
+## 09.4. Sota el capó: com està construïda `csv` en Ridgun pur (`src/main/ridgun/lib/csv.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/csv.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/csv.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 09.4.1. Implementació interna: RFC 4180 State-Machine Parser
 
-Fixa't en com `csv.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `csv.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: csv
@@ -254,7 +254,7 @@ fn :: csv parse table String Bool => CsvTable
 
 ### 09.4.2. Implementació interna: RFC 4180 Serialization & Escaping
 
-Fixa't en com `csv.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `csv.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: csv needs quotes loop String Int Int Int => Bool
@@ -296,7 +296,7 @@ fn :: tsv stringify [[String]] => String
 
 ### 09.4.3. Implementació interna: Column Extraction & Header-Mapped Lookup
 
-Fixa't en com `csv.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `csv.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: csv nth str [String] Int => String
@@ -339,9 +339,9 @@ fn :: csv row to map [String] [String] => [String String]
 ## 09.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `csv`
 
 - **Garantia algorísmica i de seguretat**: Suport exacte de salts `\r\n` i `\n` tant fora com dins de cometes, i zero pèrdua de dades en viatges d'anada i tornada `csv parse (csv stringify files)`.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/csv.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/csv.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test csv.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test csv.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `csv`
 

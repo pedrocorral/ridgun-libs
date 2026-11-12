@@ -10,7 +10,7 @@ Sejamos sinceros: o protocolo WebSocket (RFC 6455) combina um handshake SHA-1 + 
 
 A lib **`ws`** implementa a **RFC 6455** completa em Ridgun puro: cálculo de `Sec-WebSocket-Accept` (com SHA-1 RFC 3174 integrado para o GUID do handshake), cabeçalhos HTTP `101 Switching Protocols`, codificação e descodificação de tramas (`WsFrame`) de 7, 16 (`126`) e 64 bits (`127`), mascaramento XOR simétrico e construtores de tramas de texto, ping, pong e fecho.
 
-Num ecossistema tradicional, resolver as tarefas do domínio **`WS`** implica arrastar dependências externas em C, lidar com ponteiros brutos, conversões opacas de tipos, exceções não verificadas ou pausas imprevisíveis do coletor de lixo. Em Ridgun, a lib **`ws`** (`src/main/ridgun/lib/ws.rg`) aborda o problema com quatro princípios inegociáveis:
+Num ecossistema tradicional, resolver as tarefas do domínio **`WS`** implica arrastar dependências externas em C, lidar com ponteiros brutos, conversões opacas de tipos, exceções não verificadas ou pausas imprevisíveis do coletor de lixo. Em Ridgun, a lib **`ws`** (`src/main/ridgun/lib/ws.ridgun`) aborda o problema com quatro princípios inegociáveis:
 
 1. **Declare `import ws` (ou `import ws as alias`) no início do ficheiro**: cada lib define o seu espaço de nomes `module :: ws` e em modo `--strict` as funções multi-palavra são sempre invocadas com espaços naturais.
 2. **Encadeie os seus pipelines da esquerda para a direita com `->`**: escreva `entrada passo um -> passo dois -> resultado`, use máscaras `(+ _ _ +)` para desestruturar sequências e omita `_ =` em instruções sequenciais (ou descarte com `-> ()`).
@@ -21,11 +21,11 @@ Num ecossistema tradicional, resolver as tarefas do domínio **`WS`** implica ar
 
 ## 29.2. Artefactos nativos, importação e catálogo completo da API de `ws`
 
-No `ridgun-libs`, **`ws`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/ws.rg` (domínio `WS`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
+No `ridgun-libs`, **`ws`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/ws.ridgun` (domínio `WS`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
 
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/ws.rglib` | Distribuição e importação direta com `import ws` |
+| **Bundle Ridgun** | `target/bundles/ws.ridgunlib` | Distribuição e importação direta com `import ws` |
 | **Ficheiro compilado** | `target/ws.rgc` | Artefacto intermédio verificado pelo `ridgunc` |
 | **Objeto partilhado ELF64** | `target/libws.so` | Biblioteca dinâmica nativa sem dependências de C nem `libc` |
 
@@ -40,9 +40,9 @@ No `ridgun-libs`, **`ws`** é uma **lib** de primeira classe localizada em `src/
 | `ws encode frame / ws decode frame` | Codifica e descodifica tramas `WsFrame` (`fin`, `opcode`, `masked`, `mask_key`, `payload`) |
 | `ws text frame / ws ping frame / ws pong frame / ws close frame` | Construtores de tramas de alto nível e extratores de código de fecho (`1000` normal) |
 
-### 29.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/ws.rg`
+### 29.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/ws.ridgun`
 
-Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/ws.rg` (`3` tipos, `0` operadores e `54` funções):
+Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/ws.ridgun` (`3` tipos, `0` operadores e `54` funções):
 
 **Tipos algébricos e registos (`type`) da `ws`:**
 
@@ -113,7 +113,7 @@ type Sha1State = h0: Int, h1: Int, h2: Int, h3: Int, h4: Int
 
 ## 29.3. Explorando a `ws` a fundo: Exemplos passo a passo de cada funcionalidade
 
-Não basta ver a tabela de assinaturas: vamos explorar **cada uma das funcionalidades** da lib `ws` através de exemplos progressivos e executáveis em Ridgun. Começaremos pelas duas receitas tabulares de uso diário e depois percorreremos em detalhe todos os cenários funcionais, transformações e casos de fronteira verificados em `src/test/ridgun/test ws.rg`.
+Não basta ver a tabela de assinaturas: vamos explorar **cada uma das funcionalidades** da lib `ws` através de exemplos progressivos e executáveis em Ridgun. Começaremos pelas duas receitas tabulares de uso diário e depois percorreremos em detalhe todos os cenários funcionais, transformações e casos de fronteira verificados em `src/test/ridgun/test ws.ridgun`.
 
 ### 29.3.1. Exemplo 1: Fluxo principal em estilo tabular com `ws`
 
@@ -246,13 +246,13 @@ fn :: test ws truncated frames => ()
 
 ---
 
-## 29.4. Debaixo do capô: como a `ws` é construída em Ridgun puro (`src/main/ridgun/lib/ws.rg`)
+## 29.4. Debaixo do capô: como a `ws` é construída em Ridgun puro (`src/main/ridgun/lib/ws.ridgun`)
 
-Uma das maiores vantagens do `ridgun-libs` é que **não existem caixas-pretas em C**. Pode abrir `src/main/ridgun/lib/ws.rg` e ler exatamente como cada operação é implementada usando *pattern matching*, árvores de guardas `|` / `|.` e recursão de cauda (TCO). Vejamos as peças-chave da sua implementação real:
+Uma das maiores vantagens do `ridgun-libs` é que **não existem caixas-pretas em C**. Pode abrir `src/main/ridgun/lib/ws.ridgun` e ler exatamente como cada operação é implementada usando *pattern matching*, árvores de guardas `|` / `|.` e recursão de cauda (TCO). Vejamos as peças-chave da sua implementação real:
 
 ### 29.4.1. Implementação interna: 32-Bit Unsigned Bitwise Helpers for RFC 3174 SHA-1
 
-Observe como `ws.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `ws.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 module :: ws
@@ -307,7 +307,7 @@ fn :: ws byte bxor Int Int => Int
 
 ### 29.4.2. Implementação interna: List & String Byte Conversion Helpers
 
-Observe como `ws.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `ws.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 fn :: ws list len [Int] => Int
@@ -346,7 +346,7 @@ fn :: ws bytes to str [Int] => String
 
 ### 29.4.3. Implementação interna: Pure-Ridgun SHA-1 & Base64 for RFC 6455 Handshake
 
-Observe como `ws.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `ws.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 fn :: ws zeroes Int => [Int]
@@ -470,7 +470,7 @@ fn :: ws build upgrade response String => String
 
 ### 29.4.4. Implementação interna: RFC 6455 XOR Masking & Frame Encoding / Decoding
 
-Observe como `ws.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `ws.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 fn :: ws mask loop [Int] [Int] Int => [Int]
@@ -563,9 +563,9 @@ fn :: ws finish frame Bool Int Bool [Int] Int => WsRes
 ## 29.5. Garantias algorítmicas, memória `RMM1`/`RMM2` e as 5 Regras de Ouro da `ws`
 
 - **Garantia algorítmica e de segurança**: Correspondência exata com o vetor oficial RFC 6455 (`"dGhlIHNhbXBsZSBub25jZQ=="` $\rightarrow$ `"s3pPLMBiTxaQ9kYGzzhZRbK+xOo="`) e desmascaramento automático em `ws decode frame`.
-- **Complexidade de pilha $O(1)$ com TCO**: Todos os ciclos recursivos em `src/main/ridgun/lib/ws.rg` estão em posição de cauda, pelo que o `ridgunc` os compila para saltos nativos sem crescimento de pilha.
+- **Complexidade de pilha $O(1)$ com TCO**: Todos os ciclos recursivos em `src/main/ridgun/lib/ws.ridgun` estão em posição de cauda, pelo que o `ridgunc` os compila para saltos nativos sem crescimento de pilha.
 - **Memória determinística (`RMM1`/`RMM2`)**: Zero pausas de coletor de lixo; todas as estruturas intermédias são libertadas de forma determinística à saída do escopo.
-- **Verificação contínua**: Testada exaustivamente com `stable check` e pela suite automatizada `src/test/ridgun/test ws.rg`.
+- **Verificação contínua**: Testada exaustivamente com `stable check` e pela suite automatizada `src/test/ridgun/test ws.ridgun`.
 
 ### As 5 Regras de Ouro ao programar com a `ws`
 

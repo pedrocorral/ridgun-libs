@@ -1,12 +1,12 @@
 ---
 id: API-SOCK-001
-title: Public lib contract for socket (socket.rglib / libsocket.so)
+title: Public lib contract for socket (socket.ridgunlib / libsocket.so)
 status: approved
 implements: [FR-SOCK-001, FR-SOCK-002, FR-SOCK-003, FR-SOCK-004]
 related: [ADR-0010]
 auth: none
 ---
-# API-SOCK-001 — Public lib contract for `socket` (`socket.rg`)
+# API-SOCK-001 — Public lib contract for `socket` (`socket.ridgun`)
 
 ## Request
 - Imported via `import socket`.

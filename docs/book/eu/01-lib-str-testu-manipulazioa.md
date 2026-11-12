@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: C lengoaian `strtok` eta `strncpy` bidez kateak manipula
 
 **`str`** lib-ak kateak bilatu, moztu, zatitu, elkartu, letra larri/xeheetara bihurtu, $O(\log N)$ bikoizketa bitarrez errepikatu eta betetzeko primitiba huts eta aldaezin guztiak eskaintzen ditu.
 
-Ekosistema tradizional batean, **`STR`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`str`** lib-ak (`src/main/ridgun/lib/str.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`STR`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`str`** lib-ak (`src/main/ridgun/lib/str.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import str` (edo `import str as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: str` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`STR`** domeinuko zereginak ebazteak C-ko kanpo
 
 ## 01.2. Artefaktu natiboak, inportazioa eta `str` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`str`** lehen mailako **lib** bat da, `src/main/ridgun/lib/str.rg` bidean kokatua (`STR` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`str`** lehen mailako **lib** bat da, `src/main/ridgun/lib/str.ridgun` bidean kokatua (`STR` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/str.rglib` | Banaketa eta inportazio zuzena `import str` bidez |
+| **Ridgun Bundle-a** | `target/bundles/str.ridgunlib` | Banaketa eta inportazio zuzena `import str` bidez |
 | **Fitxategi konpilatua** | `target/str.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libstr.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -42,9 +42,9 @@ Ekosistema tradizional batean, **`STR`** domeinuko zereginak ebazteak C-ko kanpo
 | `str replace / str to upper / str to lower` | Gainjartzerik gabeko ordezkapena eta ASCII letra larri/xeheen bihurketa |
 | `str repeat / str pad left / str pad right` | $O(\log N)$ errepikapena eta zabaleraardatzeko zutabe-betegarria |
 
-### 01.2.2. `src/main/ridgun/lib/str.rg`-eko mota eta sinadura guztien katalogoa
+### 01.2.2. `src/main/ridgun/lib/str.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/str.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `42` funtzio):
+Jarraian duzu `src/main/ridgun/lib/str.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`0` mota, `0` eragile eta `42` funtzio):
 
 | # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
@@ -95,7 +95,7 @@ Jarraian duzu `src/main/ridgun/lib/str.rg` fitxategian definitutako mota aljebra
 
 ## 01.3. `str` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `str` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test str.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `str` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test str.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 01.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `str` erabiliz
 
@@ -144,10 +144,10 @@ fn :: test str search and predicates => ()
         assert equals (str index of "" "") 0 "AC1: empty needle in empty haystack -> 0"
         assert equals (str index of "abc" "") 0 "AC1: empty needle -> 0"
 
-        assert true (str ends with "archive.rglib" ".rglib") "AC1: ends_with true"
+        assert true (str ends with "archive.ridgunlib" ".ridgunlib") "AC1: ends_with true"
         assert true (str ends with "exact" "exact") "AC1: ends_with full string"
         assert true (str ends with "any" "") "AC1: ends_with empty suffix true"
-        assert false (str ends with "archive.rg" ".rglib") "AC1: ends_with false"
+        assert false (str ends with "archive.ridgun" ".ridgunlib") "AC1: ends_with false"
         assert false (str ends with "short" "longer_suffix") "AC1: ends_with suffix longer than string"
 
         assert true (str is empty "") "AC1: is_empty true"
@@ -229,13 +229,13 @@ fn :: test str case repeat and padding => ()
 
 ---
 
-## 01.4. Kaputaren azpian: nola dagoen eraikia `str` Ridgun hutsean (`src/main/ridgun/lib/str.rg`)
+## 01.4. Kaputaren azpian: nola dagoen eraikia `str` Ridgun hutsean (`src/main/ridgun/lib/str.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/str.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/str.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 01.4.1. Barne-inplementazioa: ASCII Classification Helpers
 
-Ikusi nola `str.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `str.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: str
@@ -263,7 +263,7 @@ fn :: to lower code Int  => Int
 
 ### 01.4.2. Barne-inplementazioa: Whitespace Trimming
 
-Ikusi nola `str.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `str.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: first non space idx String Int Int => Int
@@ -308,7 +308,7 @@ fn :: str is blank String => Bool
 
 ### 01.4.3. Barne-inplementazioa: String Splitting & Joining
 
-Ikusi nola `str.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `str.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: str split chars String Int Int [String] => [String]
@@ -363,7 +363,7 @@ fn :: str join [String] String => String
 
 ### 01.4.4. Barne-inplementazioa: Repetition & Padding
 
-Ikusi nola `str.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `str.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: str repeat loop String Int String => String
@@ -406,9 +406,9 @@ fn :: str pad right String Int String => String
 ## 01.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `str`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: $O(\log N)$ errepikapena kateen bikoizketaren bidez, predikatu seguruak orratz hutsen aurrean eta zero mutazio bertan.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/str.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/str.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test str.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test str.ridgun` suite automatizatuaren bidez.
 
 ### `str`-ekin programatzeko Urrezko 5 Arauak
 

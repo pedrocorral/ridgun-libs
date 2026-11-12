@@ -17,7 +17,7 @@ related: [FR-FMT-001, API-FMT-001, ADR-0002]
 | color_theme | String | `none`, `dark`, `light` | Selected syntax color palette (`FmtTheme` ADT) |
 
 ## Relations
-- Used by `fmt.rg` (`FmtConfig`, `FmtTarget`, `FmtTheme`, `FmtCategory`) to format Ridgun `.rg` source text into 2D aligned canonical layout and render optional syntax highlighting across 9 enriched text formats.
+- Used by `fmt.ridgun` (`FmtConfig`, `FmtTarget`, `FmtTheme`, `FmtCategory`) to format Ridgun `.ridgun` source text into 2D aligned canonical layout and render optional syntax highlighting across 9 enriched text formats.
 
 ## Invariants
 - 2D column alignment geometry (`sig_cols`, `arrow_col`, `ret_col`) is always computed on raw uncolored source text before any ANSI escape sequence or HTML/Pango/LaTeX/RTF markup is emitted, guaranteeing that color sequences never distort column widths.

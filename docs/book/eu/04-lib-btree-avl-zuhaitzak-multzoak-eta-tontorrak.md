@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: hash-taula aldakorrek gako-talka erasoak (HashDoS) jasat
 
 **`btree`** lib-ak egitura-partekatzea duten $O(\log N)$ hiru datu-egitura funtzional iraunkor inplementatzen ditu: **`BTreeMap`** (bere kabuz orekatzen den AVL zuhaitza), **`BTreeSet`** (multzo-aljebra ordenatua) eta **`MinHeap`** (*leftist heap* lehentasun-ilara).
 
-Ekosistema tradizional batean, **`BTREE`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`btree`** lib-ak (`src/main/ridgun/lib/btree.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`BTREE`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`btree`** lib-ak (`src/main/ridgun/lib/btree.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import btree` (edo `import btree as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: btree` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`BTREE`** domeinuko zereginak ebazteak C-ko kan
 
 ## 04.2. Artefaktu natiboak, inportazioa eta `btree` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`btree`** lehen mailako **lib** bat da, `src/main/ridgun/lib/btree.rg` bidean kokatua (`BTREE` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`btree`** lehen mailako **lib** bat da, `src/main/ridgun/lib/btree.ridgun` bidean kokatua (`BTREE` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/btree.rglib` | Banaketa eta inportazio zuzena `import btree` bidez |
+| **Ridgun Bundle-a** | `target/bundles/btree.ridgunlib` | Banaketa eta inportazio zuzena `import btree` bidez |
 | **Fitxategi konpilatua** | `target/btree.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libbtree.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`BTREE`** domeinuko zereginak ebazteak C-ko kan
 | `bset from list / bset union / bset intersect / bset diff` | Multzo ordenatuen aljebra (`BTreeSet`) eta azpimultzo-predikatua |
 | `heap empty / heap push / heap peek / heap pop / heap sort` | `MinHeap` lehentasun-ilara (*leftist heap*) $O(\log N)$ batuketarekin |
 
-### 04.2.2. `src/main/ridgun/lib/btree.rg`-eko mota eta sinadura guztien katalogoa
+### 04.2.2. `src/main/ridgun/lib/btree.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/btree.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`3` mota, `0` eragile eta `54` funtzio):
+Jarraian duzu `src/main/ridgun/lib/btree.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`3` mota, `0` eragile eta `54` funtzio):
 
 **`btree`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -113,7 +113,7 @@ type MinHeap = HeapEmpty | HeapNode Int String Int MinHeap MinHeap
 
 ## 04.3. `btree` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `btree` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test btree.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `btree` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test btree.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 04.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `btree` erabiliz
 
@@ -284,13 +284,13 @@ fn :: test min heap priority queue => ()
 
 ---
 
-## 04.4. Kaputaren azpian: nola dagoen eraikia `btree` Ridgun hutsean (`src/main/ridgun/lib/btree.rg`)
+## 04.4. Kaputaren azpian: nola dagoen eraikia `btree` Ridgun hutsean (`src/main/ridgun/lib/btree.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/btree.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/btree.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 04.4.1. Barne-inplementazioa: Lexicographical String Comparison & Int Helpers
 
-Ikusi nola `btree.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `btree.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: btree
@@ -315,7 +315,7 @@ fn :: bt str cmp String String => Int
 
 ### 04.4.2. Barne-inplementazioa: AVL-Balanced Ordered Map (`BTreeMap`)
 
-Ikusi nola `btree.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `btree.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: btree empty => BTreeMap
@@ -425,7 +425,7 @@ fn :: btree from list [String String] => BTreeMap
 
 ### 04.4.3. Barne-inplementazioa: AVL-Balanced Ordered Set (`BTreeSet`)
 
-Ikusi nola `btree.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `btree.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: bset empty => BTreeSet
@@ -528,7 +528,7 @@ fn :: bset diff BTreeSet BTreeSet => BTreeSet
 
 ### 04.4.4. Barne-inplementazioa: Leftist MinHeap Priority Queue (`MinHeap`)
 
-Ikusi nola `btree.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `btree.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: heap empty => MinHeap
@@ -571,9 +571,9 @@ fn :: heap size MinHeap => Int
 ## 04.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `btree`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: AVL biraketa zorrotzak (`height diff <= 1`), HashDoS-en aurkako immunitate osoa, tarte-kontsultak $O(\log N + K)$-n eta tontorren batuketa $O(\log N)$-n.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/btree.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/btree.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test btree.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test btree.ridgun` suite automatizatuaren bidez.
 
 ### `btree`-ekin programatzeko Urrezko 5 Arauak
 

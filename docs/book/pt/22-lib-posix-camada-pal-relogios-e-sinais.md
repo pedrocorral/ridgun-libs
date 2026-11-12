@@ -10,7 +10,7 @@ Sejamos sinceros: flags como `O_CREAT`, `O_NONBLOCK` ou números de syscall muda
 
 A lib **`posix`** implementa a **Camada de Abstração de Plataforma (PAL)** de 2 níveis do Ridgun usando guardas tabulares sobre `sys os` (`Linux | MacOS | Windows`) e `sys arch` (`X86_64 | Arm64 | RiscV64`), além de sondagem de descritores (`wait fd`), relógios monotónicos (`RGF-017`), sinais (`RGF-018`) e entropia CSPRNG do kernel (`sys random bytes`).
 
-Num ecossistema tradicional, resolver as tarefas do domínio **`POSIX`** implica arrastar dependências externas em C, lidar com ponteiros brutos, conversões opacas de tipos, exceções não verificadas ou pausas imprevisíveis do coletor de lixo. Em Ridgun, a lib **`posix`** (`src/main/ridgun/lib/posix.rg`) aborda o problema com quatro princípios inegociáveis:
+Num ecossistema tradicional, resolver as tarefas do domínio **`POSIX`** implica arrastar dependências externas em C, lidar com ponteiros brutos, conversões opacas de tipos, exceções não verificadas ou pausas imprevisíveis do coletor de lixo. Em Ridgun, a lib **`posix`** (`src/main/ridgun/lib/posix.ridgun`) aborda o problema com quatro princípios inegociáveis:
 
 1. **Declare `import posix` (ou `import posix as alias`) no início do ficheiro**: cada lib define o seu espaço de nomes `module :: posix` e em modo `--strict` as funções multi-palavra são sempre invocadas com espaços naturais.
 2. **Encadeie os seus pipelines da esquerda para a direita com `->`**: escreva `entrada passo um -> passo dois -> resultado`, use máscaras `(+ _ _ +)` para desestruturar sequências e omita `_ =` em instruções sequenciais (ou descarte com `-> ()`).
@@ -21,11 +21,11 @@ Num ecossistema tradicional, resolver as tarefas do domínio **`POSIX`** implica
 
 ## 22.2. Artefactos nativos, importação e catálogo completo da API de `posix`
 
-No `ridgun-libs`, **`posix`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/posix.rg` (domínio `POSIX`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
+No `ridgun-libs`, **`posix`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/posix.ridgun` (domínio `POSIX`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
 
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/posix.rglib` | Distribuição e importação direta com `import posix` |
+| **Bundle Ridgun** | `target/bundles/posix.ridgunlib` | Distribuição e importação direta com `import posix` |
 | **Ficheiro compilado** | `target/posix.rgc` | Artefacto intermédio verificado pelo `ridgunc` |
 | **Objeto partilhado ELF64** | `target/libposix.so` | Biblioteca dinâmica nativa sem dependências de C nem `libc` |
 
@@ -41,9 +41,9 @@ No `ridgun-libs`, **`posix`** é uma **lib** de primeira classe localizada em `s
 | `signal watch / signal poll / sys random bytes` | Sondagem não bloqueante de sinais (`SIGINT`, `SIGTERM`) e bytes CSPRNG do kernel |
 | `read text / write text / file exists / run cmd` | E/S de ficheiros de alto nível, diretórios e execução de subprocessos |
 
-### 22.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/posix.rg`
+### 22.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/posix.ridgun`
 
-Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/posix.rg` (`2` tipos, `0` operadores e `103` funções):
+Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/posix.ridgun` (`2` tipos, `0` operadores e `103` funções):
 
 **Tipos algébricos e registos (`type`) da `posix`:**
 
@@ -151,7 +151,7 @@ type ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int
 
 ## 22.3. Explorando a `posix` a fundo: Exemplos passo a passo de cada funcionalidade
 
-Não basta ver a tabela de assinaturas: vamos explorar **cada uma das funcionalidades** da lib `posix` através de exemplos progressivos e executáveis em Ridgun. Começaremos pelas duas receitas tabulares de uso diário e depois percorreremos em detalhe todos os cenários funcionais, transformações e casos de fronteira verificados em `src/test/ridgun/test posix.rg`.
+Não basta ver a tabela de assinaturas: vamos explorar **cada uma das funcionalidades** da lib `posix` através de exemplos progressivos e executáveis em Ridgun. Começaremos pelas duas receitas tabulares de uso diário e depois percorreremos em detalhe todos os cenários funcionais, transformações e casos de fronteira verificados em `src/test/ridgun/test posix.ridgun`.
 
 ### 22.3.1. Exemplo 1: Fluxo principal em estilo tabular com `posix`
 
@@ -317,13 +317,13 @@ fn :: medir latencia tuberia => (Int, Int)
 
 ---
 
-## 22.4. Debaixo do capô: como a `posix` é construída em Ridgun puro (`src/main/ridgun/lib/posix.rg`)
+## 22.4. Debaixo do capô: como a `posix` é construída em Ridgun puro (`src/main/ridgun/lib/posix.ridgun`)
 
-Uma das maiores vantagens do `ridgun-libs` é que **não existem caixas-pretas em C**. Pode abrir `src/main/ridgun/lib/posix.rg` e ler exatamente como cada operação é implementada usando *pattern matching*, árvores de guardas `|` / `|.` e recursão de cauda (TCO). Vejamos as peças-chave da sua implementação real:
+Uma das maiores vantagens do `ridgun-libs` é que **não existem caixas-pretas em C**. Pode abrir `src/main/ridgun/lib/posix.ridgun` e ler exatamente como cada operação é implementada usando *pattern matching*, árvores de guardas `|` / `|.` e recursão de cauda (TCO). Vejamos as peças-chave da sua implementação real:
 
 ### 22.4.1. Implementação interna: Poll & Process Status ADTs
 
-Observe como `posix.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `posix.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 module :: posix
@@ -335,7 +335,7 @@ type ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int
 
 ### 22.4.2. Implementação interna: Path Safety Validation (VUL-INJ-002 / VUL-INPUT-001)
 
-Observe como `posix.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `posix.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 fn :: is bad posix code Int => Bool
@@ -360,7 +360,7 @@ fn :: is safe posix path String => Bool
 
 ### 22.4.3. Implementação interna: RG-010 Filesystem & Process Operations
 
-Observe como `posix.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `posix.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 fn :: posix mkdir String => Bool
@@ -428,7 +428,7 @@ fn :: sys readlink String => String
 
 ### 22.4.4. Implementação interna: Ridgun v0.9.5 Target OS / Arch & Process Probe Helpers
 
-Observe como `posix.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `posix.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 fn :: path separator SysOs   => String
@@ -453,9 +453,9 @@ fn :: process exists Int => Bool
 ## 22.5. Garantias algorítmicas, memória `RMM1`/`RMM2` e as 5 Regras de Ouro da `posix`
 
 - **Garantia algorítmica e de segurança**: Os ramos de `sys os` e `sys arch` que não correspondem ao binário alvo são eliminados em tempo de compilação (Dead-Code Elimination) pelo `ridgunc`.
-- **Complexidade de pilha $O(1)$ com TCO**: Todos os ciclos recursivos em `src/main/ridgun/lib/posix.rg` estão em posição de cauda, pelo que o `ridgunc` os compila para saltos nativos sem crescimento de pilha.
+- **Complexidade de pilha $O(1)$ com TCO**: Todos os ciclos recursivos em `src/main/ridgun/lib/posix.ridgun` estão em posição de cauda, pelo que o `ridgunc` os compila para saltos nativos sem crescimento de pilha.
 - **Memória determinística (`RMM1`/`RMM2`)**: Zero pausas de coletor de lixo; todas as estruturas intermédias são libertadas de forma determinística à saída do escopo.
-- **Verificação contínua**: Testada exaustivamente com `stable check` e pela suite automatizada `src/test/ridgun/test posix.rg`.
+- **Verificação contínua**: Testada exaustivamente com `stable check` e pela suite automatizada `src/test/ridgun/test posix.ridgun`.
 
 ### As 5 Regras de Ouro ao programar com a `posix`
 

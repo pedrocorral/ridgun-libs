@@ -2,7 +2,7 @@
 
 ## 34.1. Why does the `locale` lib exist? (Pure-Ridgun CLDR Internationalization)
 
-In systems programming, C's `setlocale()` mutates process-wide global state across threads, while linking `libicu` adds tens of megabytes of C++ dependencies. The **`locale`** lib (`src/main/ridgun/lib/locale.rg`, domain `LOCALE`) brings deterministic **Unicode CLDR 46** rules and Howard Hinnant's $O(1)$ civil calendar directly into pure Ridgun:
+In systems programming, C's `setlocale()` mutates process-wide global state across threads, while linking `libicu` adds tens of megabytes of C++ dependencies. The **`locale`** lib (`src/main/ridgun/lib/locale.ridgun`, domain `LOCALE`) brings deterministic **Unicode CLDR 46** rules and Howard Hinnant's $O(1)$ civil calendar directly into pure Ridgun:
 
 1. **Dual-Mode CLDR Cardinal Plural Rules (`.po`-compatible 2-form default + strict CLDR 46 `"many"`)**: `plural category`, `plural categories`, and `plural index` provide the 2-form `["one", "other"]` mode expected by Gettext `.po` catalogs for Western European locales (`es`, `ca`, `gl`, `eu`, `en`, `pt`, `sv`, `it`, `de`, `nl`), French `0/1 -> "one"`, 3-form Slavic rules (`ru`, `uk`, `pl`), 6-form Arabic rules (`ar`), and invariant East Asian rules (`ja`, `zh`, `ko`), while `plural category cldr` and `plural categories cldr` expose strict CLDR 46 `"many"` for exact millions (`1000000`, `2000000`...) in `es`, `ca`, `pt`, `it`, and `fr`.
 2. **UTC Date & Datetime Formatting (`format date`, `format datetime`, `month name`, `weekday name`)**: converts Unix epoch seconds in $O(1)$ into `short`, `medium`, `long`, and `full` locale patterns.
@@ -270,4 +270,4 @@ fn :: test locale autonyms normalization and registry => ()
 ## 34.5. Algorithmic Guarantees and `RMM1`/`RMM2` Memory
 
 - **Algorithmic & safety guarantee**: 100% pure functions with zero global mutable locale state, $O(1)$ proleptic Gregorian UTC calendar conversion, and deterministic fallback to `"en"`.
-- **Continuous verification**: Verified by `src/test/ridgun/test locale.rg`.
+- **Continuous verification**: Verified by `src/test/ridgun/test locale.ridgun`.

@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/test.rg
+-- src/main/ridgun/lib/test.ridgun
 -- Pure-Ridgun Unit & Functional Test Assertion Library (TST)
 -- @implements FR-TST-001
 -- @implements API-TST-001

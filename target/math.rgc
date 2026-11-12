@@ -1,5 +1,5 @@
 -- ============================================================
--- src/main/ridgun/lib/math.rg
+-- src/main/ridgun/lib/math.ridgun
 -- Pure-Ridgun Integer Mathematics, Number Theory, Combinatorics & Statistics Library (MATH)
 -- @implements FR-MATH-001
 -- @implements API-MATH-001

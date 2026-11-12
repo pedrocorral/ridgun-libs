@@ -9,7 +9,7 @@ verified_by: [TS-MAIL-001]
 # DM-Mail — Email Message, SMTP Configuration, and Typed SMTP Error Model
 
 ## Overview
-Defines the RFC 5322 email message (`MailMessage`, `MailResult`) and RFC 5321/6409 SMTP client configuration and result (`SmtpConfig`, `SmtpError`, `SmtpResult`) ADTs in `src/main/ridgun/lib/mail.rg`.
+Defines the RFC 5322 email message (`MailMessage`, `MailResult`) and RFC 5321/6409 SMTP client configuration and result (`SmtpConfig`, `SmtpError`, `SmtpResult`) ADTs in `src/main/ridgun/lib/mail.ridgun`.
 
 ## Algebraic Data Types
 - `MailMessage`: `from_addr`, `to_addrs`, `reply_to_addr`, `subject_line`, `text_body`, `html_body`, `message_id`, `date_sec`.

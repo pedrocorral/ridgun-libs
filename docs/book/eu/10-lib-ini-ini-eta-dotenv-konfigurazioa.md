@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: `.env` eta `.ini` fitxategiak hutsalkeriak dirudite norb
 
 **`ini`** lib-ak ataldun `.ini` konfigurazioak (`[database]`) eta `export` aurrizkidun `.env` fitxategiak analizatzen ditu, komatxo barruko `#` eta `;` ikurrak mantenduz eta `dotenv parse`-n aldagaien interpolazioak ebatziz.
 
-Ekosistema tradizional batean, **`INI`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`ini`** lib-ak (`src/main/ridgun/lib/ini.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`INI`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`ini`** lib-ak (`src/main/ridgun/lib/ini.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import ini` (edo `import ini as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: ini` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`INI`** domeinuko zereginak ebazteak C-ko kanpo
 
 ## 10.2. Artefaktu natiboak, inportazioa eta `ini` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`ini`** lehen mailako **lib** bat da, `src/main/ridgun/lib/ini.rg` bidean kokatua (`INI` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`ini`** lehen mailako **lib** bat da, `src/main/ridgun/lib/ini.ridgun` bidean kokatua (`INI` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/ini.rglib` | Banaketa eta inportazio zuzena `import ini` bidez |
+| **Ridgun Bundle-a** | `target/bundles/ini.ridgunlib` | Banaketa eta inportazio zuzena `import ini` bidez |
 | **Fitxategi konpilatua** | `target/ini.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libini.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`INI`** domeinuko zereginak ebazteak C-ko kanpo
 | `ini sections / ini section map` | Atal-izen guztiak zerrendatzen ditu edo atal baten `[String String]` mapa erauzten du |
 | `dotenv parse` | `.env` lerroak analizatzen ditu (`export K=V`, komatxoak, iruzkinak eta aldagaien hedapena) |
 
-### 10.2.2. `src/main/ridgun/lib/ini.rg`-eko mota eta sinadura guztien katalogoa
+### 10.2.2. `src/main/ridgun/lib/ini.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/ini.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`3` mota, `0` eragile eta `44` funtzio):
+Jarraian duzu `src/main/ridgun/lib/ini.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`3` mota, `0` eragile eta `44` funtzio):
 
 **`ini`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -103,7 +103,7 @@ type IniDoc = sections: [IniSection]
 
 ## 10.3. `ini` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `ini` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test ini.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `ini` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test ini.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 10.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `ini` erabiliz
 
@@ -214,13 +214,13 @@ fn :: cargar configuracion servicio (raw_ini : String) (raw_env : String) => (St
 
 ---
 
-## 10.4. Kaputaren azpian: nola dagoen eraikia `ini` Ridgun hutsean (`src/main/ridgun/lib/ini.rg`)
+## 10.4. Kaputaren azpian: nola dagoen eraikia `ini` Ridgun hutsean (`src/main/ridgun/lib/ini.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/ini.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/ini.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 10.4.1. Barne-inplementazioa: Whitespace, Comment & Line Helpers
 
-Ikusi nola `ini.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `ini.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: ini
@@ -291,7 +291,7 @@ fn :: ini clean val len String Int => String
 
 ### 10.4.2. Barne-inplementazioa: Key-Value Pair Helpers (`[IniEntry]`)
 
-Ikusi nola `ini.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `ini.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: ini p key IniEntry => String
@@ -315,7 +315,7 @@ fn :: ini kv put [IniEntry] String String => [IniEntry]
 
 ### 10.4.3. Barne-inplementazioa: Sectioned INI Document Helpers
 
-Ikusi nola `ini.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `ini.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: ini sec put [IniSection] String String String => [IniSection]
@@ -394,7 +394,7 @@ fn :: dotenv parse String => [IniEntry]
 
 ### 10.4.4. Barne-inplementazioa: Queries, Updates & Serialization
 
-Ikusi nola `ini.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `ini.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: ini get IniDoc String String String => String
@@ -462,9 +462,9 @@ fn :: ini stringify IniDoc => String
 ## 10.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `ini`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Errespetu osoa `#` eta `;` karaktereekiko komatxo sinple edo bikoitzen artean agertzen direnean, eta bihurketa boolear malgua (`true/1/yes/on` vs `false/0/no/off`).
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/ini.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/ini.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test ini.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test ini.ridgun` suite automatizatuaren bidez.
 
 ### `ini`-ekin programatzeko Urrezko 5 Arauak
 

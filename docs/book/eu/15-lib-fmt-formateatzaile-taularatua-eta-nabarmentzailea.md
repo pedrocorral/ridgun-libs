@@ -10,7 +10,7 @@ Izan gaitezen zintzoak: Ridgun kodearen edertasuna ezin hobeto lerrokatutako zut
 
 **`fmt`** lib-a Ridgunen 2D formateatze taularatuko eta nabarmentze lexikoko motor ofiziala da: `fn ::` sinadurak, ekuazioak, `|` zainak eta `--` iruzkinak lerrokatzen ditu, eta **9 irteera-formatutara** esportatzen du (`FmtPlain`, `FmtTty`, `FmtTrueColor`, `FmtHtmlInline`, `FmtHtmlCss`, `FmtMarkdown`, `FmtPango`, `FmtLatex`, `FmtRtf`).
 
-Ekosistema tradizional batean, **`FMT`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`fmt`** lib-ak (`src/main/ridgun/lib/fmt.rg`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
+Ekosistema tradizional batean, **`FMT`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`fmt`** lib-ak (`src/main/ridgun/lib/fmt.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
 1. **Deklaratu `import fmt` (edo `import fmt as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: fmt` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
 2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
@@ -21,11 +21,11 @@ Ekosistema tradizional batean, **`FMT`** domeinuko zereginak ebazteak C-ko kanpo
 
 ## 15.2. Artefaktu natiboak, inportazioa eta `fmt` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`fmt`** lehen mailako **lib** bat da, `src/main/ridgun/lib/fmt.rg` bidean kokatua (`FMT` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`fmt`** lehen mailako **lib** bat da, `src/main/ridgun/lib/fmt.ridgun` bidean kokatua (`FMT` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Ridgun Bundle-a** | `target/bundles/fmt.rglib` | Banaketa eta inportazio zuzena `import fmt` bidez |
+| **Ridgun Bundle-a** | `target/bundles/fmt.ridgunlib` | Banaketa eta inportazio zuzena `import fmt` bidez |
 | **Fitxategi konpilatua** | `target/fmt.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libfmt.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
@@ -40,9 +40,9 @@ Ekosistema tradizional batean, **`FMT`** domeinuko zereginak ebazteak C-ko kanpo
 | `fmt render / fmt render with` | Kodea formateatu eta koloreztatzen du 9 `FmtTarget` irteera-formatuetako edozeinetara |
 | `fmt tokenize line` | Lerro bat `TokKeyword`, `TokType`, `TokOperator`, `TokString`, `TokNumber`, `TokComment`-etan tokenizatzen du |
 
-### 15.2.2. `src/main/ridgun/lib/fmt.rg`-eko mota eta sinadura guztien katalogoa
+### 15.2.2. `src/main/ridgun/lib/fmt.ridgun`-eko mota eta sinadura guztien katalogoa
 
-Jarraian duzu `src/main/ridgun/lib/fmt.rg` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`7` mota, `0` eragile eta `166` funtzio):
+Jarraian duzu `src/main/ridgun/lib/fmt.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`7` mota, `0` eragile eta `166` funtzio):
 
 **`fmt`-eko mota aljebraikoak eta erregistroak (`type`):**
 
@@ -229,7 +229,7 @@ type FmtWhereBind = NoWhereBind | WhereBindInfo String String
 
 ## 15.3. `fmt` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-Ez da nahikoa sinadura-taula ikustea: `fmt` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test fmt.rg`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
+Ez da nahikoa sinadura-taula ikustea: `fmt` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test fmt.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
 ### 15.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `fmt` erabiliz
 
@@ -343,7 +343,7 @@ fn :: test fmt enriched document targets => ()
         assert true (str contains css_html "<span class=\"rg-logic\">AND</span>") "AC3: HTML CSS logic operator class"
         sheet_dark = fmt html stylesheet FmtThemeDark
         sheet_light = fmt html stylesheet FmtThemeLight
-        assert true (str contains sheet_dark ".rg-kw") "AC3: Dark CSS stylesheet"
+        assert true (str contains sheet_dark ".ridgun-kw") "AC3: Dark CSS stylesheet"
         assert true (str contains sheet_light "#fafafa") "AC3: Light CSS stylesheet"
 
         -- 3. Markdown
@@ -371,13 +371,13 @@ fn :: test fmt enriched document targets => ()
 
 ---
 
-## 15.4. Kaputaren azpian: nola dagoen eraikia `fmt` Ridgun hutsean (`src/main/ridgun/lib/fmt.rg`)
+## 15.4. Kaputaren azpian: nola dagoen eraikia `fmt` Ridgun hutsean (`src/main/ridgun/lib/fmt.ridgun`)
 
-`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/fmt.rg` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/fmt.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
 ### 15.4.1. Barne-inplementazioa: Configuration Constructors
 
-Ikusi nola `fmt.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `fmt.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: fmt
@@ -392,7 +392,7 @@ fn :: fmt config Int Int Int Bool FmtTarget FmtTheme => FmtConfig
 
 ### 15.4.2. Barne-inplementazioa: Signature Parsing (`fn ::` / `op ::`)
 
-Ikusi nola `fmt.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `fmt.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: fmt split sig arrow [FmtToken] [String] => (Bool, [String], String, Int)
@@ -448,7 +448,7 @@ fn :: fmt finish bare sig parse String String (Bool, [String], String, Int) => F
 
 ### 15.4.3. Barne-inplementazioa: Lexical Token Classification & Syntax Highlighting
 
-Ikusi nola `fmt.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `fmt.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: fmt is digit Int => Bool
@@ -488,7 +488,7 @@ fn :: fmt classify word String Bool => String
 
 ### 15.4.4. Barne-inplementazioa: Public Entry Points
 
-Ikusi nola `fmt.rg`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
+Ikusi nola `fmt.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 fn :: fmt source with config String FmtConfig => String
@@ -559,9 +559,9 @@ fn :: fmt to rtf String => String
 ## 15.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `fmt`-en Urrezko 5 Arauak
 
 - **Berme algoritmikoa eta segurtasunekoa**: Idempotentzia zorrotza (`fmt source (fmt source s) == fmt source s`) eta token semantikoen % 100eko kontserbazioa.
-- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/fmt.rg`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/fmt.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
-- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test fmt.rg` suite automatizatuaren bidez.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test fmt.ridgun` suite automatizatuaren bidez.
 
 ### `fmt`-ekin programatzeko Urrezko 5 Arauak
 

@@ -4,12 +4,12 @@ title: Verify raw byte manipulation, 32-bit bitwise operations, SHA-256, HMAC-SH
 level: unit
 covers: [FR-CRYPTO-003, API-CRYPTO-001]
 status: automated
-automated_in: [src/test/ridgun/test crypto.rg]
+automated_in: [src/test/ridgun/test crypto.ridgun]
 ---
 # TS-CRYPTO-003 — Verify raw byte manipulation, 32-bit bitwise operations, SHA-256, HMAC-SHA-256, constant-time equality, and PBKDF2-HMAC-SHA-256
 
 ## Preconditions / fixtures
-- Pure-Ridgun `crypto` module (`src/main/ridgun/lib/crypto.rg`).
+- Pure-Ridgun `crypto` module (`src/main/ridgun/lib/crypto.ridgun`).
 
 ## Steps / inputs
 1. Test `byte_str` for `0`, `127`, `128`, `255` and for every value `0..255` (`str_len == 1`), `bytes_to_list (bytes_from_list [0, 1, 127, 128, 255])`, `bytes_to_list (bytes_from_list [0, 7, 128, 200, 255, 192, 245])` (round-trip, `ADR-0010`), `bytes_from_list [256, -1, 300, -256] == bytes_from_list [0, 255, 44, 0]` (modulo 256), the `Tensor[U8]` helpers `hex str to bytes` / `bytes list to hex`, `bitxor byte strings` and `byte slice` over bytes `>= 128`, and 32-bit bitwise operations `band`, `bor`, `bxor`, `shl`, `shr` against the `RGF-019` test vectors (`band 4294967295 255 == 255`, `bxor 305419896 4294967295 == 3989547399`, `shl 1 31 == 2147483648`, `shl 1 32 == 0`, `shr 2147483648 31 == 1`).

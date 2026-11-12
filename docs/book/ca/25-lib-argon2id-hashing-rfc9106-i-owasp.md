@@ -10,7 +10,7 @@ Siguem sincers: desar contrasenyes amb un simple SHA-256 permet que una GPU mode
 
 La lib **`argon2id`** implementa **RFC 9106 Argon2id** i **RFC 7693 Blake2b-512** al 100 % en Ridgun pur operant directament sobre blocs natius `Tensor[U64 * 8 * 16]` (1 024 bytes per bloc en memòria contigua RMM2), amb generació de cadenes **PHC** (`$argon2id$v=19$m=...,t=...,p=...$`), perfils **OWASP** (`owaspfirst`, `owaspsecond`), suport de *pepper* (`argon2id hash ctx`), derivació de claus (`argon2id derive key`) i detecció d'actualització de paràmetres (`argon2id needs rehash`).
 
-En un ecosistema tradicional, resoldre les tasques del domini **`CRYPTO`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`argon2id`** (`src/main/ridgun/lib/argon2id.rg`) aborda el problema amb quatre principis innegociables:
+En un ecosistema tradicional, resoldre les tasques del domini **`CRYPTO`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`argon2id`** (`src/main/ridgun/lib/argon2id.ridgun`) aborda el problema amb quatre principis innegociables:
 
 1. **Declara `import argon2id` (o `import argon2id as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: argon2id` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
 2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resoldre les tasques del domini **`CRYPTO`** impli
 
 ## 25.2. Artefactes natius, importació i catàleg complet de l'API de `argon2id`
 
-A `ridgun-libs`, **`argon2id`** és una **lib** de primera classe situada a `src/main/ridgun/lib/argon2id.rg` (domini `CRYPTO`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`argon2id`** és una **lib** de primera classe situada a `src/main/ridgun/lib/argon2id.ridgun` (domini `CRYPTO`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/argon2id.rglib` | Distribució i importació directa amb `import argon2id` |
+| **Bundle Ridgun** | `target/bundles/argon2id.ridgunlib` | Distribució i importació directa amb `import argon2id` |
 | **Fitxer compilat** | `target/argon2id.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libargon2id.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
@@ -41,9 +41,9 @@ A `ridgun-libs`, **`argon2id`** és una **lib** de primera classe situada a `src
 | `argon2id derive key / argon2id needs rehash` | Derivació de clau binària crua i detecció de necessitat de rehash en cadenes PHC |
 | `blake2b / blake2b hex` | Resum criptogràfic de propòsit general RFC 7693 Blake2b (`1..64` bytes) |
 
-### 25.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/argon2id.rg`
+### 25.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/argon2id.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/argon2id.rg` (`10` tipus, `0` operadors i `134` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/argon2id.ridgun` (`10` tipus, `0` operadors i `134` funcions):
 
 **Tipus algebraics i registres (`type`) de `argon2id`:**
 
@@ -192,7 +192,7 @@ type A2Ctx   = r_pass: Int, s_slice: Int, l_lane: Int, p_lanes: Int, q_cols: Int
 
 ## 25.3. Explorant `argon2id` a fons: Exemples pas a pas de cada funcionalitat
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `argon2id` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test argon2id.rg`.
+No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `argon2id` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test argon2id.ridgun`.
 
 ### 25.3.1. Exemple 1: Flux principal en estil tabular amb `argon2id`
 
@@ -370,13 +370,13 @@ fn :: verificar y evaluar politica (password : String) (phc_guardado : String) =
 
 ---
 
-## 25.4. Sota el capó: com està construïda `argon2id` en Ridgun pur (`src/main/ridgun/lib/argon2id.rg`)
+## 25.4. Sota el capó: com està construïda `argon2id` en Ridgun pur (`src/main/ridgun/lib/argon2id.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/argon2id.rg` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/argon2id.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
 
 ### 25.4.1. Implementació interna: Core Implementation Part 1
 
-Fixa't en com `argon2id.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `argon2id.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 module :: argon2id
@@ -1061,7 +1061,7 @@ fn :: a2 set mem A2Mem Int Int Int Int Tensor[U64 * 256] => A2Mem
 
 ### 25.4.2. Implementació interna: Core Implementation Part 9
 
-Fixa't en com `argon2id.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `argon2id.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: a2 blamka g U64 U64 U64 U64 => U64 U64 U64 U64
@@ -1104,7 +1104,7 @@ fn :: a2 blamka col pair Tensor[U64 * 8 * 16] Int => Tensor[U64 * 8 * 16]
 
 ### 25.4.3. Implementació interna: Core Implementation Part 18
 
-Fixa't en com `argon2id.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `argon2id.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: derive raw tag ctx [Int] [Int] String String Argon2Params => [Int]
@@ -1158,7 +1158,7 @@ fn :: b64 encode nopad [Int]           => String
 
 ### 25.4.4. Implementació interna: Core Implementation Part 26
 
-Fixa't en com `argon2id.rg` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Fixa't en com `argon2id.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
 
 ```ridgun
 fn :: argon2id needs rehash String Argon2Params => Bool
@@ -1198,9 +1198,9 @@ fn :: argon2id hash phc String String Int Int Int => String
 ## 25.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `argon2id`
 
 - **Garantia algorísmica i de seguretat**: Coincidència byte a byte amb els vectors oficials RFC 9106 §5.3 i OpenSSL 3.5, operant sobre `Tensor[U64 * 8 * 16]` sense ni una sola línia de C.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/argon2id.rg` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
+- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/argon2id.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
 - **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test argon2id.rg`.
+- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test argon2id.ridgun`.
 
 ### Les 5 Regles d'Or en programar amb `argon2id`
 

@@ -10,7 +10,7 @@ Sexamos sinceros: programar sockets BSD en C con `struct sockaddr_in`, `htons`, 
 
 A lib **`socket`** ofrece dúas capas complementarias sen unha liña de C: (1) a API de descritores do kernel **`RGF-001`** para servidores de produción coma **Solstice** (`sys tcp listen`, `sys tcp listen reuseport`, `sys accept`, `sys tcp connect`, `sys send`, `sys recv`, `sys resolve ipv4` mediante `/etc/hosts` + paquetes DNS UDP RFC 1035 no porto 53) e (2) a máquina de estados funcional inmutable `Socket` con framing prefixado por lonxitude, liñas CRLF e subredes CIDR.
 
-Nun ecosistema tradicional, resolver as tarefas do dominio **`SOCK`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`socket`** (`src/main/ridgun/lib/socket.rg`) aborda o problema con catro principios innegociables:
+Nun ecosistema tradicional, resolver as tarefas do dominio **`SOCK`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`socket`** (`src/main/ridgun/lib/socket.ridgun`) aborda o problema con catro principios innegociables:
 
 1. **Declara `import socket` (ou `import socket as alias`) ao inicio do ficheiro**: cada lib define o seu espazo de nomes `module :: socket` e en modo `--strict` as funcións multi-palabra invócanse sempre con espazos naturais.
 2. **Encadea as túas tubaxes de esquerda a dereita con `->`**: escribe `entrada paso un -> paso dous -> resultado`, usa máscaras `(+ _ _ +)` para desestruturar secuencias e omite `_ =` en sentenzas secuenciais (ou descarta con `-> ()`).
@@ -21,11 +21,11 @@ Nun ecosistema tradicional, resolver as tarefas do dominio **`SOCK`** implica ar
 
 ## 27.2. Artefactos nativos, importación e catálogo completo da API de `socket`
 
-En `ridgun-libs`, **`socket`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/socket.rg` (dominio `SOCK`). Ao compilar con `stable bundle`, empaquétase en tres formatos nativos:
+En `ridgun-libs`, **`socket`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/socket.ridgun` (dominio `SOCK`). Ao compilar con `stable bundle`, empaquétase en tres formatos nativos:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/socket.rglib` | Distribución e importación directa con `import socket` |
+| **Bundle Ridgun** | `target/bundles/socket.ridgunlib` | Distribución e importación directa con `import socket` |
 | **Ficheiro compilado** | `target/socket.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/libsocket.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
@@ -41,9 +41,9 @@ En `ridgun-libs`, **`socket`** é unha **lib** de primeira clase situada en `src
 | `sys resolve ipv4 / dns resolve a` | Resolución IPv4 pura en Ridgun mediante `/etc/hosts` e consultas DNS UDP RFC 1035 |
 | `sock send frame / sock recv frame / ipv4 in cidr` | Framing prefixado por lonxitude (`N:payload`) e coincidencia de subredes CIDR IPv4 |
 
-### 27.2.2. Catálogo exhaustivo de tipos e sinaturas en `src/main/ridgun/lib/socket.rg`
+### 27.2.2. Catálogo exhaustivo de tipos e sinaturas en `src/main/ridgun/lib/socket.ridgun`
 
-A continuación tes o inventario completo de tipos alxébricos (`type`), operadores (`op ::`) e sinaturas de funcións (`fn ::`) definidos en `src/main/ridgun/lib/socket.rg` (`10` tipos, `0` operadores e `183` funcións):
+A continuación tes o inventario completo de tipos alxébricos (`type`), operadores (`op ::`) e sinaturas de funcións (`fn ::`) definidos en `src/main/ridgun/lib/socket.ridgun` (`10` tipos, `0` operadores e `183` funcións):
 
 **Tipos alxébricos e rexistros (`type`) de `socket`:**
 
@@ -249,7 +249,7 @@ type SockRecvFromRes  = SockFromOk Socket [Int] SockAddr | SockFromErr String
 
 ## 27.3. Explorando `socket` a fondo: Exemplos paso a paso de cada funcionalidade
 
-Non abonda con ver a táboa de sinaturas: imos explorar **cada unha das funcionalidades** da lib `socket` mediante exemplos progresivos e executables en Ridgun. Comezaremos polas dúas receitas tabulares de uso cotián e despois percorreremos en detalle todos os escenarios funcionais, transformacións e casos límite verificados en `src/test/ridgun/test socket.rg`.
+Non abonda con ver a táboa de sinaturas: imos explorar **cada unha das funcionalidades** da lib `socket` mediante exemplos progresivos e executables en Ridgun. Comezaremos polas dúas receitas tabulares de uso cotián e despois percorreremos en detalle todos os escenarios funcionais, transformacións e casos límite verificados en `src/test/ridgun/test socket.ridgun`.
 
 ### 27.3.1. Exemplo 1: Fluxo principal en estilo tabular con `socket`
 
@@ -669,13 +669,13 @@ fn :: test sock rgf001 kernel tcp and unix => ()
 
 ---
 
-## 27.4. Baixo o capó: como está construída `socket` en Ridgun puro (`src/main/ridgun/lib/socket.rg`)
+## 27.4. Baixo o capó: como está construída `socket` en Ridgun puro (`src/main/ridgun/lib/socket.ridgun`)
 
-Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**. Podes abrir `src/main/ridgun/lib/socket.rg` e ler exactamente como está implementada cada operación usando *pattern matching*, árbores de gardas `|` / `|.` e recursión de cola (TCO). Vexamos as pezas clave da súa implementación real:
+Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**. Podes abrir `src/main/ridgun/lib/socket.ridgun` e ler exactamente como está implementada cada operación usando *pattern matching*, árbores de gardas `|` / `|.` e recursión de cola (TCO). Vexamos as pezas clave da súa implementación real:
 
 ### 27.4.1. Implementación interna: RGF-001 Tuple Accessor Helpers
 
-Fíxate en como `socket.rg` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
+Fíxate en como `socket.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 module :: socket
@@ -707,9 +707,9 @@ fn :: sock recv data (Int String) => String
 ## 27.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` e as 5 Regras de Ouro de `socket`
 
 - **Garantía algorítmica e de seguridade**: Actualización de rexistros con sintaxe inmutable `s with field = val`, resolución DNS sen `glibc`/`libnss` e códigos de estado deterministas (`0` OK, `-1` EOF, `-2` TIMEOUT, `-3` REFUSED).
-- **Complexidade de pila $O(1)$ con TCO**: Todos os bucles recursivos en `src/main/ridgun/lib/socket.rg` están en posición de cola, polo que `ridgunc` os compila a saltos nativos sen crecemento de pila.
+- **Complexidade de pila $O(1)$ con TCO**: Todos os bucles recursivos en `src/main/ridgun/lib/socket.ridgun` están en posición de cola, polo que `ridgunc` os compila a saltos nativos sen crecemento de pila.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Cero pausas de colector de lixo; todas as estruturas intermedias libéranse de forma determinista ao saír do ámbito.
-- **Verificación continua**: Probada exhaustivamente con `stable check` e a suite automatizada `src/test/ridgun/test socket.rg`.
+- **Verificación continua**: Probada exhaustivamente con `stable check` e a suite automatizada `src/test/ridgun/test socket.ridgun`.
 
 ### As 5 Regras de Ouro ao programar con `socket`
 

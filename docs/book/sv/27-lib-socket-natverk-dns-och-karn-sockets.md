@@ -10,7 +10,7 @@ Låt oss vara ärliga: att programmera BSD-sockets i C med `struct sockaddr_in`,
 
 Lib:en **`socket`** erbjuder två kompletterande lager helt utan C: (1) kärndeskriptor-API:et **`RGF-001`** för produktionsservrar som **Solstice** (`sys tcp listen`, `sys tcp listen reuseport`, `sys accept`, `sys tcp connect`, `sys send`, `sys recv`, `sys resolve ipv4` via `/etc/hosts` + RFC 1035 UDP-DNS-paket på port 53) och (2) den oföränderliga funktionella tillståndsmaskinen `Socket` med längdprefixad framing, CRLF-rader och CIDR-subnät.
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`SOCK`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`socket`** (`src/main/ridgun/lib/socket.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`SOCK`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`socket`** (`src/main/ridgun/lib/socket.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import socket` (eller `import socket as alias`) överst i filen**: varje lib definierar sin `module :: socket`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`SOCK`** ofta a
 
 ## 27.2. Inbyggda artefakter, import och komplett API-katalog för `socket`
 
-I `ridgun-libs` är **`socket`** en förstklassig **lib** placerad i `src/main/ridgun/lib/socket.rg` (domän `SOCK`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`socket`** en förstklassig **lib** placerad i `src/main/ridgun/lib/socket.ridgun` (domän `SOCK`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/socket.rglib` | Portabel distribution och direkt import med `import socket` |
+| **Ridgun-bundle** | `target/bundles/socket.ridgunlib` | Portabel distribution och direkt import med `import socket` |
 | **Kompilerat arkiv** | `target/socket.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libsocket.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -41,9 +41,9 @@ I `ridgun-libs` är **`socket`** en förstklassig **lib** placerad i `src/main/r
 | `sys resolve ipv4 / dns resolve a` | Ren Ridgun IPv4-uppslagning via `/etc/hosts` och RFC 1035 UDP DNS-frågor |
 | `sock send frame / sock recv frame / ipv4 in cidr` | Längdprefixad (`N:payload`) framing och IPv4 CIDR-subnätsmatchning |
 
-### 27.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/socket.rg`
+### 27.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/socket.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/socket.rg` (`10` typer, `0` operatorer och `183` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/socket.ridgun` (`10` typer, `0` operatorer och `183` funktioner):
 
 **Algebraiska datatyper och poster (`type`) i `socket`:**
 
@@ -249,7 +249,7 @@ type SockRecvFromRes  = SockFromOk Socket [Int] SockAddr | SockFromErr String
 
 ## 27.3. Djupdykning i `socket`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `socket` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test socket.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `socket` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test socket.ridgun`.
 
 ### 27.3.1. Exempel 1: Huvudflöde i tabellform med `socket`
 
@@ -669,13 +669,13 @@ fn :: test sock rgf001 kernel tcp and unix => ()
 
 ---
 
-## 27.4. Under huven: hur `socket` är byggd i ren Ridgun (`src/main/ridgun/lib/socket.rg`)
+## 27.4. Under huven: hur `socket` är byggd i ren Ridgun (`src/main/ridgun/lib/socket.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/socket.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/socket.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 27.4.1. Intern implementation: RGF-001 Tuple Accessor Helpers
 
-Se hur `socket.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `socket.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: socket
@@ -707,9 +707,9 @@ fn :: sock recv data (Int String) => String
 ## 27.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `socket`
 
 - **Algoritmisk garanti och säkerhet**: Postuppdatering med oföränderlig `s with field = val`-syntax, DNS-uppslagning utan `glibc`/`libnss` och deterministiska statuskoder (`0` OK, `-1` EOF, `-2` TIMEOUT, `-3` REFUSED).
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/socket.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/socket.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test socket.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test socket.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `socket`
 

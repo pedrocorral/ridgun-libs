@@ -10,7 +10,7 @@ Låt oss vara ärliga: en oväntad division med noll i produktion eller `%`-oper
 
 Lib:en **`math`** erbjuder totala divisioner säkra mot `d == 0` (`div ceil`, `div floor`, `div euclid`, `mod euclid`), modulär exponentiering och invers i $O(\log E)$, heltalsrötter och logaritmer, kombinatorik samt mixfix-operatorn `clamp x between lo and hi`.
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`MATH`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`math`** (`src/main/ridgun/lib/math.rg`) problemet genom fyra kompromisslösa principer:
+I ett traditionellt ekosystem innebär uppgifter inom domänen **`MATH`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`math`** (`src/main/ridgun/lib/math.ridgun`) problemet genom fyra kompromisslösa principer:
 
 1. **Deklarera `import math` (eller `import math as alias`) överst i filen**: varje lib definierar sin `module :: math`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
 2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
@@ -21,11 +21,11 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`MATH`** ofta a
 
 ## 02.2. Inbyggda artefakter, import och komplett API-katalog för `math`
 
-I `ridgun-libs` är **`math`** en förstklassig **lib** placerad i `src/main/ridgun/lib/math.rg` (domän `MATH`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`math`** en förstklassig **lib** placerad i `src/main/ridgun/lib/math.ridgun` (domän `MATH`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/math.rglib` | Portabel distribution och direkt import med `import math` |
+| **Ridgun-bundle** | `target/bundles/math.ridgunlib` | Portabel distribution och direkt import med `import math` |
 | **Kompilerat arkiv** | `target/math.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libmath.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
@@ -42,9 +42,9 @@ I `ridgun-libs` är **`math`** en förstklassig **lib** placerad i `src/main/rid
 | `math gcd / math lcm / math mod pow / math mod inv / math is prime` | Euklidisk SGD/MGM, modulär aritmetik och $6k \pm 1$-primtalstest |
 | `math sum / math mean floor / math median floor / math variance floor` | Spillsäker kombinatorik (`nCr`) och heltalsstatistik över listor |
 
-### 02.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/math.rg`
+### 02.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/math.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/math.rg` (`0` typer, `1` operatorer och `56` funktioner):
+Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/math.ridgun` (`0` typer, `1` operatorer och `56` funktioner):
 
 **Mixfix-operatorer (`op ::`) i `math`:**
 
@@ -115,7 +115,7 @@ op :: clamp Int between Int and Int => Int
 
 ## 02.3. Djupdykning i `math`: Steg-för-steg-exempel för varje funktion
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `math` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test math.rg`.
+Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `math` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test math.ridgun`.
 
 ### 02.3.1. Exempel 1: Huvudflöde i tabellform med `math`
 
@@ -250,13 +250,13 @@ fn :: test math list statistics => ()
 
 ---
 
-## 02.4. Under huven: hur `math` är byggd i ren Ridgun (`src/main/ridgun/lib/math.rg`)
+## 02.4. Under huven: hur `math` är byggd i ren Ridgun (`src/main/ridgun/lib/math.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/math.rg` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/math.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
 
 ### 02.4.1. Intern implementation: Bounds, Sign & Parity
 
-Se hur `math.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `math.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 module :: math
@@ -300,7 +300,7 @@ fn :: math is odd Int => Bool
 
 ### 02.4.2. Intern implementation: Powers, Integer Roots & Logarithms
 
-Se hur `math.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `math.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: m pow loop Int Int Int => Int
@@ -368,7 +368,7 @@ fn :: math is power of two Int => Bool
 
 ### 02.4.3. Intern implementation: Combinatorics & Sequences
 
-Se hur `math.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `math.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: m fact loop Int Int => Int
@@ -407,7 +407,7 @@ fn :: math fibonacci Int => Int
 
 ### 02.4.4. Intern implementation: Integer List Statistics
 
-Se hur `math.rg` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Se hur `math.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
 ```ridgun
 fn :: m list len [Int]    => Int
@@ -479,9 +479,9 @@ fn :: math median [Int] => Int
 ## 02.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `math`
 
 - **Algoritmisk garanti och säkerhet**: Totala funktioner (returnerar `0` när divisorn är `<= 0` istället för att krascha med `SIGFPE`), helt utan flyttalsavrundningsfel.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/math.rg` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
+- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/math.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test math.rg`.
+- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test math.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `math`
 

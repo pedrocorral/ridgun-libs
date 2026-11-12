@@ -10,7 +10,7 @@ Sejamos sinceros: usar `UUIDv4` totalmente aleatórios como chave primária numa
 
 A lib **`uuid`** implementa **`UUIDv4`** (aleatório com CSPRNG do kernel) e **`UUIDv7`** (ordenado cronologicamente nos primeiros 48 bits segundo a **RFC 9562**), *checksums* rápidos (**FNV-1a**, **Adler-32**, **CRC-32 IEEE 802.3**) e um PRNG determinístico com semente.
 
-Num ecossistema tradicional, resolver as tarefas do domínio **`UUID`** implica arrastar dependências externas em C, lidar com ponteiros brutos, conversões opacas de tipos, exceções não verificadas ou pausas imprevisíveis do coletor de lixo. Em Ridgun, a lib **`uuid`** (`src/main/ridgun/lib/uuid.rg`) aborda o problema com quatro princípios inegociáveis:
+Num ecossistema tradicional, resolver as tarefas do domínio **`UUID`** implica arrastar dependências externas em C, lidar com ponteiros brutos, conversões opacas de tipos, exceções não verificadas ou pausas imprevisíveis do coletor de lixo. Em Ridgun, a lib **`uuid`** (`src/main/ridgun/lib/uuid.ridgun`) aborda o problema com quatro princípios inegociáveis:
 
 1. **Declare `import uuid` (ou `import uuid as alias`) no início do ficheiro**: cada lib define o seu espaço de nomes `module :: uuid` e em modo `--strict` as funções multi-palavra são sempre invocadas com espaços naturais.
 2. **Encadeie os seus pipelines da esquerda para a direita com `->`**: escreva `entrada passo um -> passo dois -> resultado`, use máscaras `(+ _ _ +)` para desestruturar sequências e omita `_ =` em instruções sequenciais (ou descarte com `-> ()`).
@@ -21,11 +21,11 @@ Num ecossistema tradicional, resolver as tarefas do domínio **`UUID`** implica 
 
 ## 19.2. Artefactos nativos, importação e catálogo completo da API de `uuid`
 
-No `ridgun-libs`, **`uuid`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/uuid.rg` (domínio `UUID`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
+No `ridgun-libs`, **`uuid`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/uuid.ridgun` (domínio `UUID`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
 
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/uuid.rglib` | Distribuição e importação direta com `import uuid` |
+| **Bundle Ridgun** | `target/bundles/uuid.ridgunlib` | Distribuição e importação direta com `import uuid` |
 | **Ficheiro compilado** | `target/uuid.rgc` | Artefacto intermédio verificado pelo `ridgunc` |
 | **Objeto partilhado ELF64** | `target/libuuid.so` | Biblioteca dinâmica nativa sem dependências de C nem `libc` |
 
@@ -40,9 +40,9 @@ No `ridgun-libs`, **`uuid`** é uma **lib** de primeira classe localizada em `sr
 | `fnv1a 32 / adler32 / crc32 / crc32 hex` | Hashes não criptográficos e *checksums* rápidos de 32 bits |
 | `prng next / prng range` | PRNG congruencial linear funcional puro para testes e simulações reprodutíveis |
 
-### 19.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/uuid.rg`
+### 19.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/uuid.ridgun`
 
-Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/uuid.rg` (`0` tipos, `0` operadores e `33` funções):
+Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/uuid.ridgun` (`0` tipos, `0` operadores e `33` funções):
 
 | # | Função / Assinatura (`fn ::`) | Tipo de Retorno |
 |---|---|---|
@@ -84,7 +84,7 @@ Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operado
 
 ## 19.3. Explorando a `uuid` a fundo: Exemplos passo a passo de cada funcionalidade
 
-Não basta ver a tabela de assinaturas: vamos explorar **cada uma das funcionalidades** da lib `uuid` através de exemplos progressivos e executáveis em Ridgun. Começaremos pelas duas receitas tabulares de uso diário e depois percorreremos em detalhe todos os cenários funcionais, transformações e casos de fronteira verificados em `src/test/ridgun/test uuid.rg`.
+Não basta ver a tabela de assinaturas: vamos explorar **cada uma das funcionalidades** da lib `uuid` através de exemplos progressivos e executáveis em Ridgun. Começaremos pelas duas receitas tabulares de uso diário e depois percorreremos em detalhe todos os cenários funcionais, transformações e casos de fronteira verificados em `src/test/ridgun/test uuid.ridgun`.
 
 ### 19.3.1. Exemplo 1: Fluxo principal em estilo tabular com `uuid`
 
@@ -211,13 +211,13 @@ fn :: sellar paquete trazado (ahora_ms : Int) (payload : String) => (String, Int
 
 ---
 
-## 19.4. Debaixo do capô: como a `uuid` é construída em Ridgun puro (`src/main/ridgun/lib/uuid.rg`)
+## 19.4. Debaixo do capô: como a `uuid` é construída em Ridgun puro (`src/main/ridgun/lib/uuid.ridgun`)
 
-Uma das maiores vantagens do `ridgun-libs` é que **não existem caixas-pretas em C**. Pode abrir `src/main/ridgun/lib/uuid.rg` e ler exatamente como cada operação é implementada usando *pattern matching*, árvores de guardas `|` / `|.` e recursão de cauda (TCO). Vejamos as peças-chave da sua implementação real:
+Uma das maiores vantagens do `ridgun-libs` é que **não existem caixas-pretas em C**. Pode abrir `src/main/ridgun/lib/uuid.ridgun` e ler exatamente como cada operação é implementada usando *pattern matching*, árvores de guardas `|` / `|.` e recursão de cauda (TCO). Vejamos as peças-chave da sua implementação real:
 
 ### 19.4.1. Implementação interna: RFC 9562 UUIDv4 & UUIDv7 Generation & Validation (CSPRNG + clock_gettime)
 
-Observe como `uuid.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `uuid.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 module :: uuid
@@ -365,9 +365,9 @@ fn :: uuid version String => Int
 ## 19.5. Garantias algorítmicas, memória `RMM1`/`RMM2` e as 5 Regras de Ouro da `uuid`
 
 - **Garantia algorítmica e de segurança**: `uuid v7 at t1 < uuid v7 at t2` garante ordem lexicográfica monótona crescente ao longo do tempo, ideal para índices `btree` e bases de dados.
-- **Complexidade de pilha $O(1)$ com TCO**: Todos os ciclos recursivos em `src/main/ridgun/lib/uuid.rg` estão em posição de cauda, pelo que o `ridgunc` os compila para saltos nativos sem crescimento de pilha.
+- **Complexidade de pilha $O(1)$ com TCO**: Todos os ciclos recursivos em `src/main/ridgun/lib/uuid.ridgun` estão em posição de cauda, pelo que o `ridgunc` os compila para saltos nativos sem crescimento de pilha.
 - **Memória determinística (`RMM1`/`RMM2`)**: Zero pausas de coletor de lixo; todas as estruturas intermédias são libertadas de forma determinística à saída do escopo.
-- **Verificação contínua**: Testada exaustivamente com `stable check` e pela suite automatizada `src/test/ridgun/test uuid.rg`.
+- **Verificação contínua**: Testada exaustivamente com `stable check` e pela suite automatizada `src/test/ridgun/test uuid.ridgun`.
 
 ### As 5 Regras de Ouro ao programar com a `uuid`
 

@@ -4,7 +4,7 @@
 
 > *«Perché ho bisogno di una lib `locale` scritta da zero in Ridgun puro invece di dipendere da `setlocale()` di `libc` o trascinare 30 MB di `libicu`?»*
 
-Nei sistemi reali (come gateway i18n, modelli multilingue e motori di cataloghi `.po` nello stile di `babel`), `setlocale()` in C muta uno stato globale condiviso tra i thread e `libicu` appesantisce qualsiasi distribuzione statica. La lib **`locale`** (`src/main/ridgun/lib/locale.rg`, dominio `LOCALE`) incorpora direttamente in Ridgun puro le tabelle **Unicode CLDR 46** e il calendario civile UTC in $O(1)$ di Howard Hinnant:
+Nei sistemi reali (come gateway i18n, modelli multilingue e motori di cataloghi `.po` nello stile di `babel`), `setlocale()` in C muta uno stato globale condiviso tra i thread e `libicu` appesantisce qualsiasi distribuzione statica. La lib **`locale`** (`src/main/ridgun/lib/locale.ridgun`, dominio `LOCALE`) incorpora direttamente in Ridgun puro le tabelle **Unicode CLDR 46** e il calendario civile UTC in $O(1)$ di Howard Hinnant:
 
 1. **Regole dei plurali CLDR in doppia modalità (`.po` a 2 forme predefinita + CLDR 46 rigorosa con `"many"`)**: `plural category`, `plural categories` e `plural index` offrono per impostazione predefinita la modalità compatibile con i cataloghi Gettext `.po` (`["one", "other"]` per `it`, `es`, `ca`, `gl`, `eu`, `en`, `pt`, `sv`, `de`, `nl`; regola `n == 0 or n == 1` per `fr`; 3 forme slave per `ru`, `uk`, `pl`; 6 forme per `ar`; invariante per `ja`, `zh`, `ko`), mentre `plural category cldr` e `plural categories cldr` attivano la categoria `"many"` di CLDR 46 per i milioni esatti (`1000000`, `2000000`...) in `it`, `es`, `ca`, `pt` e `fr`.
 2. **Formattazione di date e timestamp UTC (`format date`, `format datetime`, `month name`, `weekday name`)**: converte i secondi Unix epoch tramite l'algoritmo civile di Howard Hinnant in $O(1)$ e applica i pattern `short`, `medium`, `long` e `full` di ciascuna lingua (ad es. `"sabato 31 ottobre 2026"` in italiano).
@@ -272,7 +272,7 @@ fn :: test locale autonyms normalization and registry => ()
 ## 34.5. Garanzie algoritmiche, memoria `RMM1`/`RMM2` e conclusione del libro
 
 - **Garanzia algoritmica e di sicurezza**: Funzioni 100% pure e prive di stato globale mutabile (`TZ` / `LC_ALL`), calendario civile UTC in $O(1)$ con validazione degli anni bisestili e fallback deterministico a `"en"` per i tag sconosciuti.
-- **Complessità dello stack $O(1)$ con TCO**: Tutte le scansioni di sostituzione e raggruppamento in `src/main/ridgun/lib/locale.rg` sono ricorsive di coda.
-- **Verifica continua**: Testata in modo esaustivo con `src/test/ridgun/test locale.rg`.
+- **Complessità dello stack $O(1)$ con TCO**: Tutte le scansioni di sostituzione e raggruppamento in `src/main/ridgun/lib/locale.ridgun` sono ricorsive di coda.
+- **Verifica continua**: Testata in modo esaustivo con `src/test/ridgun/test locale.ridgun`.
 
 Hai completato il percorso esaustivo attraverso tutte le **34 lib standard di `ridgun-libs`**!

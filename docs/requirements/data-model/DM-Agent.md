@@ -14,7 +14,7 @@ related: [FR-AGENT-001, API-AGENT-001, ADR-0002]
 | item_count | Int | `>= 0` | Current integer count or key-value entry count held by a stateful agent |
 
 ## Relations
-- Defined in `agent.rg` (`type AgentStatus = AgentRunning | AgentStopped | AgentTimedOut Int | AgentFailed String`, `type AgentReply = ReplyInt Int | ReplyStr String | ReplyBool Bool | ReplyEmpty | ReplyStopped | ReplyTimeout Int | ReplyError String`, `type KvCmd = KvPut String String | KvGet String | KvDel String | KvHas String | KvCount | KvKeys | KvClear`), `pool.rg` (`type AgentPool = Pool Int [Agent]`), and `net_agent.rg` (`type ConnSlot = ConnSlot Int Agent`, `type StepOutcome = ConnKeep ConnSlot String | ConnClosed`) on top of Ridgun v0.9.14's built-in `Agent` concurrency model.
+- Defined in `agent.ridgun` (`type AgentStatus = AgentRunning | AgentStopped | AgentTimedOut Int | AgentFailed String`, `type AgentReply = ReplyInt Int | ReplyStr String | ReplyBool Bool | ReplyEmpty | ReplyStopped | ReplyTimeout Int | ReplyError String`, `type KvCmd = KvPut String String | KvGet String | KvDel String | KvHas String | KvCount | KvKeys | KvClear`), `pool.ridgun` (`type AgentPool = Pool Int [Agent]`), and `net_agent.ridgun` (`type ConnSlot = ConnSlot Int Agent`, `type StepOutcome = ConnKeep ConnSlot String | ConnClosed`) on top of Ridgun v0.9.14's built-in `Agent` concurrency model.
 
 ## Invariants
 - Every agent encapsulates its mutable state exclusively inside its sequential `agent` loop (`RMM1`/`RMM2` isolated mailbox); callers interact solely by passing immutable messages via `send ... to` and receiving replies via `receive from` or `try receive from`.

@@ -15,15 +15,15 @@ Perché in Ridgun `agent` è la primitiva di concorrenza del linguaggio (mailbox
 
 ## 33.2. Artefatti nativi, importazione e catalogo completo dell'API di `ai`
 
-In `ridgun-libs`, **`ai`** è una **lib** di prima classe situata in `src/main/ridgun/lib/ai.rg` (dominio `AI`). Compilando con `stable bundle`, viene impacchettata in tre artefatti nativi:
+In `ridgun-libs`, **`ai`** è una **lib** di prima classe situata in `src/main/ridgun/lib/ai.ridgun` (dominio `AI`). Compilando con `stable bundle`, viene impacchettata in tre artefatti nativi:
 
 | Artefatto | Percorso | Scopo |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/ai.rglib` | Distribuzione e importazione diretta con `import ai` |
+| **Bundle Ridgun** | `target/bundles/ai.ridgunlib` | Distribuzione e importazione diretta con `import ai` |
 | **File compilato** | `target/ai.rgc` | Artefatto intermedio verificato da `ridgunc` |
 | **Oggetto condiviso ELF64** | `target/libai.so` | Libreria dinamica nativa senza dipendenze C né `libc` |
 
-### 33.2.1. Catalogo esaustivo dei tipi e delle firme pubbliche in `src/main/ridgun/lib/ai.rg`
+### 33.2.1. Catalogo esaustivo dei tipi e delle firme pubbliche in `src/main/ridgun/lib/ai.ridgun`
 
 **Tipi algebrici e record (`type`) di `ai` (`11` tipi):**
 
@@ -41,7 +41,7 @@ type AiStepDecision = AiDecisionDone String | AiDecisionRunTools [AiToolCall] | 
 type AiDoc          = ad_id: String, ad_title: String, ad_body: String
 ```
 
-**Funzioni pubbliche (`50` funzioni principali di `ai.rg`):**
+**Funzioni pubbliche (`50` funzioni principali di `ai.ridgun`):**
 
 | # | Funzione / Firma (`fn ::`) | Tipo di Ritorno |
 |---|---|---|
@@ -148,7 +148,7 @@ fn :: test ai tools and provider codecs => ()
         ai tools to json [t_read] -> tools_j
         assert true ((ai find sub tools_j "\"name\":\"read_file\"" 0) >= 0) "AC2: tools JSON contains tool name"
 
-        AiToolCall "call_1" "read_file" (jobj "\"path\":\"src/main.rg\"") -> valid_call
+        AiToolCall "call_1" "read_file" (jobj "\"path\":\"src/main.ridgun\"") -> valid_call
         ai validate tool call [t_read] valid_call -> v_ok
         assert true (fst bool v_ok) "AC2: valid tool call passes schema validation"
 
@@ -162,7 +162,7 @@ fn :: test ai tools and provider codecs => ()
         assert false (fst bool v_unk) "AC2: unknown tool fails validation"
 
         ai new conv "SysPrompt" -> conv0
-        ai add user conv0 "Read main.rg" -> conv1
+        ai add user conv0 "Read main.ridgun" -> conv1
         ai openai request "gpt-4o" conv1 [t_read] 1024 -> oai_req
         assert true ((ai find sub oai_req "\"model\":\"gpt-4o\"" 0) >= 0) "AC3: OpenAI request encodes model"
         ai anthropic request "claude-3-7-sonnet" conv1 [t_read] 1024 -> ant_req
@@ -170,7 +170,7 @@ fn :: test ai tools and provider codecs => ()
         ai ollama request "qwen2.5-coder" conv1 [t_read] -> oll_req
         assert true ((ai find sub oll_req "\"stream\":false" 0) >= 0) "AC3: Ollama request sets stream false"
 
-        jobj ("\"id\":\"call_abc\",\"type\":\"function\",\"function\":" + (jobj ("\"name\":\"read_file\",\"arguments\":" + (jobj "\"path\":\"a.rg\"")))) -> oai_tc
+        jobj ("\"id\":\"call_abc\",\"type\":\"function\",\"function\":" + (jobj ("\"name\":\"read_file\",\"arguments\":" + (jobj "\"path\":\"a.ridgun\"")))) -> oai_tc
         jobj ("\"choices\":[" + (jobj ("\"message\":" + (jobj ("\"content\":\"Checking file\",\"tool_calls\":[" + oai_tc + "]")))) + "],\"usage\":" + (jobj "\"prompt_tokens\":12,\"completion_tokens\":8,\"total_tokens\":20")) -> oai_resp
         ai openai parse oai_resp -> oai_turn
         assert true (turn is call tools oai_turn) "AC3: OpenAI tool_calls response parsed as AiCallTools"
@@ -179,8 +179,8 @@ fn :: test ai tools and provider codecs => ()
         assert str eq (atc_name parsed_tc) "read_file" "AC3: OpenAI tool call name extracted"
         assert equals (turn total tokens oai_turn) 20 "AC3: OpenAI token usage extracted"
 
-        jobj ("\"type\":\"tool_use\",\"id\":\"toolu_01\",\"name\":\"read_file\",\"input\":" + (jobj "\"path\":\"b.rg\"")) -> ant_tu
-        jobj ("\"content\":[" + (jobj "\"type\":\"text\",\"text\":\"Let me read b.rg\"") + "," + ant_tu + "],\"usage\":" + (jobj "\"input_tokens\":15,\"output_tokens\":10")) -> ant_resp
+        jobj ("\"type\":\"tool_use\",\"id\":\"toolu_01\",\"name\":\"read_file\",\"input\":" + (jobj "\"path\":\"b.ridgun\"")) -> ant_tu
+        jobj ("\"content\":[" + (jobj "\"type\":\"text\",\"text\":\"Let me read b.ridgun\"") + "," + ant_tu + "],\"usage\":" + (jobj "\"input_tokens\":15,\"output_tokens\":10")) -> ant_resp
         ai anthropic parse ant_resp -> ant_turn
         assert true (turn is call tools ant_turn) "AC3: Anthropic tool_use response parsed as AiCallTools"
         first tool call (turn calls ant_turn) -> ant_tc
@@ -188,7 +188,7 @@ fn :: test ai tools and provider codecs => ()
         assert str eq (atc_name ant_tc) "read_file" "AC3: Anthropic tool_use name extracted"
         assert equals (turn total tokens ant_turn) 25 "AC3: Anthropic input+output tokens summed"
 
-        "<tool_call>" + (jobj ("\"name\":\"read_file\",\"arguments\":" + (jobj "\"path\":\"c.rg\""))) + "</tool_call>" -> xml_raw
+        "<tool_call>" + (jobj ("\"name\":\"read_file\",\"arguments\":" + (jobj "\"path\":\"c.ridgun\""))) + "</tool_call>" -> xml_raw
         ai parse xml tool calls xml_raw -> xml_calls
         assert str eq (atc_name (first tool call xml_calls)) "read_file" "AC3: XML <tool_call> parsed accurately"
         ()
@@ -219,7 +219,7 @@ fn :: test ai sse streaming and structured json => ()
         (char from code 123) -> lb
         (char from code 125) -> rb
         ai stream step ts0 (jobj ("\"id\":\"call_s1\",\"name\":\"read_file\",\"arguments\":\"" + lb + "\\\"path\\\":")) -> ts1
-        ai stream step ts1 (jobj ("\"arguments\":\"\\\"foo.rg\\\"" + rb + "\"")) -> ts2
+        ai stream step ts1 (jobj ("\"arguments\":\"\\\"foo.ridgun\\\"" + rb + "\"")) -> ts2
         ai stream finish ts2 -> tfin_turn
         assert true (turn is call tools tfin_turn) "AC4: tool stream finishes as AiCallTools"
         assert str eq (atc_name (first tool call (turn calls tfin_turn))) "read_file" "AC4: streamed tool call name preserved"
@@ -247,7 +247,7 @@ fn :: test ai react guardrails rag handoff and mcp => ()
         ai new conv "AgentSys" -> c0
         ai policy 2 100 ["read_file", "handoff_to_coder"] -> pol
 
-        AiToolCall "c1" "read_file" (jobj "\"path\":\"x.rg\"") -> tc_allowed
+        AiToolCall "c1" "read_file" (jobj "\"path\":\"x.ridgun\"") -> tc_allowed
         AiCallTools "Calling read_file" [tc_allowed] (AiUsage 10 10 20) -> turn1
         ai step c0 turn1 pol -> step1
         step conv step1 -> c1

@@ -1,11 +1,11 @@
 ---
 id: API-TIME-001
-title: Public lib contract for time (time.rglib / libtime.so)
+title: Public lib contract for time (time.ridgunlib / libtime.so)
 status: approved
 implements: [FR-TIME-001]
 auth: none
 ---
-# API-TIME-001 — Public lib contract for `time` (`time.rg`)
+# API-TIME-001 — Public lib contract for `time` (`time.ridgun`)
 
 ## Request
 - Imported via `import time`.

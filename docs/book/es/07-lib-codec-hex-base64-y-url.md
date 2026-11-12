@@ -10,7 +10,7 @@ Seamos sinceros: nada rompe más rápido una integración web que confundir Base
 
 La lib **`codec`** implementa los estándares **RFC 4648** (Hex, Base64 y Base64url), **RFC 3986** (codificación porcentual de URLs y diccionarios `query encode` / `query decode`) y constructores/extractores rápidos de **JSON ligero (RFC 8259)**.
 
-En un ecosistema tradicional, resolver las tareas del dominio **`CODEC`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`codec`** (`src/main/ridgun/lib/codec.rg`) aborda el problema con cuatro principios innegociables:
+En un ecosistema tradicional, resolver las tareas del dominio **`CODEC`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`codec`** (`src/main/ridgun/lib/codec.ridgun`) aborda el problema con cuatro principios innegociables:
 
 1. **Declara `import codec` (o `import codec as alias`) al inicio del archivo**: cada lib define su espacio de nombres `module :: codec` y en modo `--strict` las funciones multi-palabra se invocan siempre con espacios naturales.
 2. **Encadena tus tuberías de izquierda a derecha con `->`**: escribe `entrada paso uno -> paso dos -> resultado`, usa máscaras `(+ _ _ +)` para desestructurar secuencias y omite `_ =` en sentencias secuenciales (o descarta con `-> ()`).
@@ -21,11 +21,11 @@ En un ecosistema tradicional, resolver las tareas del dominio **`CODEC`** implic
 
 ## 07.2. Artefactos nativos, importación y catálogo completo de la API de `codec`
 
-En `ridgun-libs`, **`codec`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/codec.rg` (dominio `CODEC`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
+En `ridgun-libs`, **`codec`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/codec.ridgun` (dominio `CODEC`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/codec.rglib` | Distribución e importación directa con `import codec` |
+| **Bundle Ridgun** | `target/bundles/codec.ridgunlib` | Distribución e importación directa con `import codec` |
 | **Archivo compilado** | `target/codec.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Objeto compartido ELF64** | `target/libcodec.so` | Biblioteca dinámica nativa sin dependencias de C ni `libc` |
 
@@ -41,9 +41,9 @@ En `ridgun-libs`, **`codec`** es una **lib** de primera clase ubicada en `src/ma
 | `url encode / url decode / query encode / query decode` | Codificación porcentual RFC 3986 y diccionarios de query string `k=v&...` |
 | `json quote / json object / json get str / json get int` | Serialización JSON rápida sin AST y extracción de claves de primer nivel |
 
-### 07.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/codec.rg`
+### 07.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/codec.ridgun`
 
-A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/codec.rg` (`0` tipos, `0` operadores y `121` funciones):
+A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/codec.ridgun` (`0` tipos, `0` operadores y `121` funciones):
 
 | # | Función / Firma (`fn ::`) | Tipo de Retorno |
 |---|---|---|
@@ -173,7 +173,7 @@ A continuación tienes el inventario completo de tipos algebraicos (`type`), ope
 
 ## 07.3. Explorando `codec` a fondo: Ejemplos paso a paso de cada funcionalidad
 
-No basta con ver la tabla de firmas: vamos a explorar **cada una de las funcionalidades** de la lib `codec` mediante ejemplos progresivos y ejecutables en Ridgun. Empezaremos por las dos recetas tabulares de uso cotidiano y después recorreremos en detalle todos los escenarios funcionales, transformaciones y casos límite verificados en `src/test/ridgun/test codec.rg`.
+No basta con ver la tabla de firmas: vamos a explorar **cada una de las funcionalidades** de la lib `codec` mediante ejemplos progresivos y ejecutables en Ridgun. Empezaremos por las dos recetas tabulares de uso cotidiano y después recorreremos en detalle todos los escenarios funcionales, transformaciones y casos límite verificados en `src/test/ridgun/test codec.ridgun`.
 
 ### 07.3.1. Ejemplo 1: Flujo principal en estilo tabular con `codec`
 
@@ -298,13 +298,13 @@ fn :: test rfc8259 lightweight json => ()
 
 ---
 
-## 07.4. Bajo el capó: cómo está construida `codec` en Ridgun puro (`src/main/ridgun/lib/codec.rg`)
+## 07.4. Bajo el capó: cómo está construida `codec` en Ridgun puro (`src/main/ridgun/lib/codec.ridgun`)
 
-Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**. Puedes abrir `src/main/ridgun/lib/codec.rg` y leer exactamente cómo está implementada cada operación usando *pattern matching*, árboles de guardas `|` / `|.` y recursión de cola (TCO). Veamos las piezas clave de su implementación real:
+Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**. Puedes abrir `src/main/ridgun/lib/codec.ridgun` y leer exactamente cómo está implementada cada operación usando *pattern matching*, árboles de guardas `|` / `|.` y recursión de cola (TCO). Veamos las piezas clave de su implementación real:
 
 ### 07.4.1. Implementación interna: RFC 4648 Hexadecimal Encoding & Decoding
 
-Fíjate en cómo `codec.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `codec.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 module :: codec
@@ -366,7 +366,7 @@ fn :: hex decode String => String
 
 ### 07.4.2. Implementación interna: RFC 4648 Standard Base64 & URL-Safe Base64url
 
-Fíjate en cómo `codec.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `codec.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 fn :: cd b64 char String Int => String
@@ -491,7 +491,7 @@ fn :: base64url decode String => String
 
 ### 07.4.3. Implementación interna: RFC 3986 URL Percent-Encoding & Query Strings
 
-Fíjate en cómo `codec.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `codec.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 fn :: cd is unreserved Int => Bool
@@ -645,7 +645,7 @@ fn :: query string decode String => [String String]
 
 ### 07.4.4. Implementación interna: RFC 8259 Lightweight JSON Formatting & Field Extraction
 
-Fíjate en cómo `codec.rg` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíjate en cómo `codec.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 fn :: cd is json esc Int => Bool
@@ -912,9 +912,9 @@ fn :: codec json get bool String String Bool => Bool
 ## 07.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` y las 5 Reglas de Oro de `codec`
 
 - **Garantía algorítmica y de seguridad**: Rechazo determinista de entradas hexadecimales o Base64 mal formadas (devolviendo `""` sin lecturas fuera de límites) y reversibilidad exacta $decode(encode(x)) == x$.
-- **Complejidad de pila $O(1)$ con TCO**: Todos los bucles recursivos en `src/main/ridgun/lib/codec.rg` están en posición de cola, por lo que `ridgunc` los compila a saltos nativos sin crecimiento de pila.
+- **Complejidad de pila $O(1)$ con TCO**: Todos los bucles recursivos en `src/main/ridgun/lib/codec.ridgun` están en posición de cola, por lo que `ridgunc` los compila a saltos nativos sin crecimiento de pila.
 - **Memoria determinista (`RMM1`/`RMM2`)**: Cero pausas de recolector de basura; todas las estructuras intermedias se liberan de forma determinista al salir del ámbito.
-- **Verificación continua**: Probada exhaustivamente con `stable check` y la suite automatizada `src/test/ridgun/test codec.rg`.
+- **Verificación continua**: Probada exhaustivamente con `stable check` y la suite automatizada `src/test/ridgun/test codec.ridgun`.
 
 ### Las 5 Reglas de Oro al programar con `codec`
 

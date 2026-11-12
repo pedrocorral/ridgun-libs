@@ -4,12 +4,12 @@ title: Verify configurable 2D Ridgun source formatting and syntax highlighting a
 level: unit
 covers: [FR-FMT-001, API-FMT-001]
 status: automated
-automated_in: [src/test/ridgun/test fmt.rg]
+automated_in: [src/test/ridgun/test fmt.ridgun]
 ---
 # TS-FMT-001 — Verify configurable 2D Ridgun source formatting and syntax highlighting across Plain, TTY, TrueColor, HTML, CSS, Markdown, Pango, LaTeX, and RTF targets
 
 ## Preconditions / fixtures
-- Pure-Ridgun `fmt` and `test` modules (`src/main/ridgun/lib/fmt.rg`, `src/main/ridgun/lib/test.rg`).
+- Pure-Ridgun `fmt` and `test` modules (`src/main/ridgun/lib/fmt.ridgun`, `src/main/ridgun/lib/test.ridgun`).
 
 ## Steps / inputs
 1. Call `format ridgun source` and `fmt source with config` (with both `is_aligned = True` and `is_aligned = False`, and custom `indent_width`) on unaligned Ridgun `fn ::` / `op ::` signatures, clauses (`=`), guards (`|`, `||`), and `where` bindings (`->`); verify 2D column alignment of `=>`, `=`, and `->`.

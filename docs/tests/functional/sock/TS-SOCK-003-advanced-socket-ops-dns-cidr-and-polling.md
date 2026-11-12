@@ -4,12 +4,12 @@ title: Verify socket shutdown, local/peer addr, exact I/O, poll, extended option
 level: unit
 covers: [FR-SOCK-003]
 status: automated
-automated_in: [src/test/ridgun/test socket.rg]
+automated_in: [src/test/ridgun/test socket.ridgun]
 ---
 # TS-SOCK-003 — Verify socket shutdown, local/peer addr, exact I/O, poll, extended options, DNS hostnames, and CIDR matching
 
 ## Preconditions / fixtures
-- Pure-Ridgun `socket` module (`src/main/ridgun/lib/socket.rg`).
+- Pure-Ridgun `socket` module (`src/main/ridgun/lib/socket.ridgun`).
 
 ## Steps / inputs
 1. Connect a socket pair, inspect `sock local addr` and `sock peer addr`, check `sock poll` before and after transferring bytes, and test `sock shutdown` (`"rd"`, `"wr"`, `"rdwr"`), verifying writes fail after `"wr"` shutdown and reads fail after `"rd"` shutdown.

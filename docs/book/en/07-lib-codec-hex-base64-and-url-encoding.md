@@ -10,7 +10,7 @@ Let's be honest: nothing breaks a web integration faster than mixing up standard
 
 The **`codec`** lib implements **RFC 4648** (Hex, Base64, and URL-safe Base64url), **RFC 3986** (URL percent-encoding and `query encode` / `query decode`), and lightweight **RFC 8259 JSON** builders and field extractors.
 
-In a traditional ecosystem, solving **`CODEC`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`codec`** lib (`src/main/ridgun/lib/codec.rg`) tackles the problem with four non-negotiable principles:
+In a traditional ecosystem, solving **`CODEC`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`codec`** lib (`src/main/ridgun/lib/codec.ridgun`) tackles the problem with four non-negotiable principles:
 
 1. **Declare `import codec` (or `import codec as alias`) at the top of your file**: every lib defines its `module :: codec` namespace, and under `--strict` multi-word functions are always called with natural spaces.
 2. **Chain your data pipelines left-to-right with `->`**: write `input step one -> step two -> result`, use `(+ _ _ +)` sequence masks to destructure tuples/lists, and omit `_ =` on sequential statements (or discard with `-> ()`).
@@ -21,11 +21,11 @@ In a traditional ecosystem, solving **`CODEC`** tasks means pulling in external 
 
 ## 07.2. Native Artifacts, Imports, and Complete `codec` API Catalog
 
-In `ridgun-libs`, **`codec`** is a first-class **lib** located at `src/main/ridgun/lib/codec.rg` (domain `CODEC`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`codec`** is a first-class **lib** located at `src/main/ridgun/lib/codec.ridgun` (domain `CODEC`). When built with `stable bundle`, it compiles into three native artifacts:
 
 | Artifact | Path | Purpose |
 |---|---|---|
-| **Ridgun Bundle** | `target/bundles/codec.rglib` | Portable distribution and direct `import codec` resolution |
+| **Ridgun Bundle** | `target/bundles/codec.ridgunlib` | Portable distribution and direct `import codec` resolution |
 | **Compiled Archive** | `target/codec.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libcodec.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
@@ -41,9 +41,9 @@ In `ridgun-libs`, **`codec`** is a first-class **lib** located at `src/main/ridg
 | `url encode / url decode / query encode / query decode` | RFC 3986 percent-encoding and `k=v&...` query string round-trips |
 | `json quote / json object / json get str / json get int` | Fast zero-AST JSON serialization and top-level key lookup |
 
-### 07.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/codec.rg`
+### 07.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/codec.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/codec.rg` (`0` types, `0` operators, and `121` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/codec.ridgun` (`0` types, `0` operators, and `121` functions):
 
 | # | Function / Signature (`fn ::`) | Return Type |
 |---|---|---|
@@ -173,7 +173,7 @@ Below is the complete inventory of algebraic data types (`type`), mixfix operato
 
 ## 07.3. Deep Dive into `codec`: Step-by-Step Examples for Every Feature
 
-A signature table alone is never enough: let's explore **every capability** of the `codec` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test codec.rg`.
+A signature table alone is never enough: let's explore **every capability** of the `codec` lib through progressive, runnable Ridgun examples. We will start with two everyday tabular recipes and then walk through every functional scenario, transformation, and boundary condition verified in `src/test/ridgun/test codec.ridgun`.
 
 ### 07.3.1. Example 1: Core Tabular Workflow with `codec`
 
@@ -298,13 +298,13 @@ fn :: test rfc8259 lightweight json => ()
 
 ---
 
-## 07.4. Under the Hood: How `codec` Is Built in Pure Ridgun (`src/main/ridgun/lib/codec.rg`)
+## 07.4. Under the Hood: How `codec` Is Built in Pure Ridgun (`src/main/ridgun/lib/codec.ridgun`)
 
-One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/codec.rg` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
+One of the biggest advantages of `ridgun-libs` is that **there are no C black boxes**. You can open `src/main/ridgun/lib/codec.ridgun` and read exactly how every operation is implemented using pattern matching, `|` / `|.` guard trees, and tail-call optimization (TCO). Let's inspect the key building blocks of its real implementation:
 
 ### 07.4.1. Internal Implementation: RFC 4648 Hexadecimal Encoding & Decoding
 
-Observe how `codec.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `codec.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 module :: codec
@@ -366,7 +366,7 @@ fn :: hex decode String => String
 
 ### 07.4.2. Internal Implementation: RFC 4648 Standard Base64 & URL-Safe Base64url
 
-Observe how `codec.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `codec.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: cd b64 char String Int => String
@@ -491,7 +491,7 @@ fn :: base64url decode String => String
 
 ### 07.4.3. Internal Implementation: RFC 3986 URL Percent-Encoding & Query Strings
 
-Observe how `codec.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `codec.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: cd is unreserved Int => Bool
@@ -645,7 +645,7 @@ fn :: query string decode String => [String String]
 
 ### 07.4.4. Internal Implementation: RFC 8259 Lightweight JSON Formatting & Field Extraction
 
-Observe how `codec.rg` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
+Observe how `codec.ridgun` declares explicit `fn :: ... => ...` contracts first and resolves each case through aligned equations and tail calls:
 
 ```ridgun
 fn :: cd is json esc Int => Bool
@@ -912,9 +912,9 @@ fn :: codec json get bool String String Bool => Bool
 ## 07.5. Algorithmic Guarantees, `RMM1`/`RMM2` Memory, and the 5 Golden Rules of `codec`
 
 - **Algorithmic & Safety Guarantee**: Deterministic rejection of malformed Hex or Base64 inputs (returning `""` with zero out-of-bounds reads) and exact $decode(encode(x)) == x$ round-trip fidelity.
-- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/codec.rg` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
+- **$O(1)$ Stack Complexity via TCO**: Every recursive loop in `src/main/ridgun/lib/codec.ridgun` is in tail position, so `ridgunc` compiles them into native jumps with zero stack growth.
 - **Deterministic Memory (`RMM1`/`RMM2`)**: Zero garbage-collector pauses; all intermediate allocations are reclaimed deterministically on scope exit.
-- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test codec.rg`.
+- **Continuous Verification**: Statically checked via `stable check` and tested by the automated suite in `src/test/ridgun/test codec.ridgun`.
 
 ### The 5 Golden Rules When Programming with `codec`
 

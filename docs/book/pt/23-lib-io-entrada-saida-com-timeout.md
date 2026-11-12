@@ -10,7 +10,7 @@ Sejamos sinceros: uma chamada `read()` ou um subprocesso filho sem prazo limite 
 
 A lib **`io`** modela cada operação do sistema com ADTs explícitos (`IoError`, `IoResult[A]`), combina `ppoll` não bloqueante com quotas léxicas `with timeout wait_ms do` do Ridgun e oferece os operadores mixfix `read fd ... timeout` e `write fd ... timeout`.
 
-Num ecossistema tradicional, resolver as tarefas do domínio **`IO`** implica arrastar dependências externas em C, lidar com ponteiros brutos, conversões opacas de tipos, exceções não verificadas ou pausas imprevisíveis do coletor de lixo. Em Ridgun, a lib **`io`** (`src/main/ridgun/lib/io.rg`) aborda o problema com quatro princípios inegociáveis:
+Num ecossistema tradicional, resolver as tarefas do domínio **`IO`** implica arrastar dependências externas em C, lidar com ponteiros brutos, conversões opacas de tipos, exceções não verificadas ou pausas imprevisíveis do coletor de lixo. Em Ridgun, a lib **`io`** (`src/main/ridgun/lib/io.ridgun`) aborda o problema com quatro princípios inegociáveis:
 
 1. **Declare `import io` (ou `import io as alias`) no início do ficheiro**: cada lib define o seu espaço de nomes `module :: io` e em modo `--strict` as funções multi-palavra são sempre invocadas com espaços naturais.
 2. **Encadeie os seus pipelines da esquerda para a direita com `->`**: escreva `entrada passo um -> passo dois -> resultado`, use máscaras `(+ _ _ +)` para desestruturar sequências e omita `_ =` em instruções sequenciais (ou descarte com `-> ()`).
@@ -21,11 +21,11 @@ Num ecossistema tradicional, resolver as tarefas do domínio **`IO`** implica ar
 
 ## 23.2. Artefactos nativos, importação e catálogo completo da API de `io`
 
-No `ridgun-libs`, **`io`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/io.rg` (domínio `IO`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
+No `ridgun-libs`, **`io`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/io.ridgun` (domínio `IO`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
 
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/io.rglib` | Distribuição e importação direta com `import io` |
+| **Bundle Ridgun** | `target/bundles/io.ridgunlib` | Distribuição e importação direta com `import io` |
 | **Ficheiro compilado** | `target/io.rgc` | Artefacto intermédio verificado pelo `ridgunc` |
 | **Objeto partilhado ELF64** | `target/libio.so` | Biblioteca dinâmica nativa sem dependências de C nem `libc` |
 
@@ -41,9 +41,9 @@ No `ridgun-libs`, **`io`** é uma **lib** de primeira classe localizada em `src/
 | `io read file / io write file / io read lines` | Funções seguras de ficheiros e fluxos de linhas que devolvem `IoResult` |
 | `exec with timeout : String -> Int -> IoResult[ProcStatus]` | Executa um comando externo limitado por uma quota léxica `with timeout` |
 
-### 23.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/io.rg`
+### 23.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/io.ridgun`
 
-Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/io.rg` (`2` tipos, `2` operadores e `42` funções):
+Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/io.ridgun` (`2` tipos, `2` operadores e `42` funções):
 
 **Tipos algébricos e registos (`type`) da `io`:**
 
@@ -103,7 +103,7 @@ op :: write fd Int data String timeout Int => IoResult
 
 ## 23.3. Explorando a `io` a fundo: Exemplos passo a passo de cada funcionalidade
 
-Não basta ver a tabela de assinaturas: vamos explorar **cada uma das funcionalidades** da lib `io` através de exemplos progressivos e executáveis em Ridgun. Começaremos pelas duas receitas tabulares de uso diário e depois percorreremos em detalhe todos os cenários funcionais, transformações e casos de fronteira verificados em `src/test/ridgun/test io.rg`.
+Não basta ver a tabela de assinaturas: vamos explorar **cada uma das funcionalidades** da lib `io` através de exemplos progressivos e executáveis em Ridgun. Começaremos pelas duas receitas tabulares de uso diário e depois percorreremos em detalhe todos os cenários funcionais, transformações e casos de fronteira verificados em `src/test/ridgun/test io.ridgun`.
 
 ### 23.3.1. Exemplo 1: Fluxo principal em estilo tabular com `io`
 
@@ -269,13 +269,13 @@ fn :: test io file and metadata => ()
 
 ---
 
-## 23.4. Debaixo do capô: como a `io` é construída em Ridgun puro (`src/main/ridgun/lib/io.rg`)
+## 23.4. Debaixo do capô: como a `io` é construída em Ridgun puro (`src/main/ridgun/lib/io.ridgun`)
 
-Uma das maiores vantagens do `ridgun-libs` é que **não existem caixas-pretas em C**. Pode abrir `src/main/ridgun/lib/io.rg` e ler exatamente como cada operação é implementada usando *pattern matching*, árvores de guardas `|` / `|.` e recursão de cauda (TCO). Vejamos as peças-chave da sua implementação real:
+Uma das maiores vantagens do `ridgun-libs` é que **não existem caixas-pretas em C**. Pode abrir `src/main/ridgun/lib/io.ridgun` e ler exatamente como cada operação é implementada usando *pattern matching*, árvores de guardas `|` / `|.` e recursão de cauda (TCO). Vejamos as peças-chave da sua implementação real:
 
 ### 23.4.1. Implementação interna: Extensible I/O Error & Result Sum Types (§5.1)
 
-Observe como `io.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `io.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 module :: io
@@ -308,7 +308,7 @@ fn :: format io result IoResult           => String
 
 ### 23.4.2. Implementação interna: Timeout-Bounded Command Execution (§5.2)
 
-Observe como `io.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `io.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 fn :: has null char String Int Int => Bool
@@ -352,7 +352,7 @@ fn :: exec with timeout String Int        => IoResult
 
 ### 23.4.3. Implementação interna: Safe File Read & Line-Stream Helpers
 
-Observe como `io.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `io.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 fn :: io read file safe String => IoResult
@@ -409,7 +409,7 @@ fn :: io write lines String [String] => Int
 
 ### 23.4.4. Implementação interna: Ridgun v0.9.5 PAL & Ambient Deadline `io read with timeout` (§3.1)
 
-Observe como `io.rg` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
+Observe como `io.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 fn :: io wrap chunk String => IoResult
@@ -455,9 +455,9 @@ fn :: io read with timeout String Int => IoResult
 ## 23.5. Garantias algorítmicas, memória `RMM1`/`RMM2` e as 5 Regras de Ouro da `io`
 
 - **Garantia algorítmica e de segurança**: Nenhuma leitura, escrita ou comando executado através de `io` com quota `wait_ms` pode bloquear indefinidamente a thread ou ator chamador.
-- **Complexidade de pilha $O(1)$ com TCO**: Todos os ciclos recursivos em `src/main/ridgun/lib/io.rg` estão em posição de cauda, pelo que o `ridgunc` os compila para saltos nativos sem crescimento de pilha.
+- **Complexidade de pilha $O(1)$ com TCO**: Todos os ciclos recursivos em `src/main/ridgun/lib/io.ridgun` estão em posição de cauda, pelo que o `ridgunc` os compila para saltos nativos sem crescimento de pilha.
 - **Memória determinística (`RMM1`/`RMM2`)**: Zero pausas de coletor de lixo; todas as estruturas intermédias são libertadas de forma determinística à saída do escopo.
-- **Verificação contínua**: Testada exaustivamente com `stable check` e pela suite automatizada `src/test/ridgun/test io.rg`.
+- **Verificação contínua**: Testada exaustivamente com `stable check` e pela suite automatizada `src/test/ridgun/test io.ridgun`.
 
 ### As 5 Regras de Ouro ao programar com a `io`
 
