@@ -23,7 +23,7 @@ import posix
 import io
 
 type TlsConfig = root_certs_path: String, root_certs_pem: String, alpn_protocols: [String], min_version: Int, max_version: Int, timeout_ms: Int, verify_time_sec: Int
-type TlsConn   = fd: Int, server_name: String, tls_version: Int, cipher_suite: Int, selected_alpn: String, c_key: String, c_iv: String, s_key: String, s_iv: String, timeout_ms: Int, state: Tensor[U64 * 16], rx_buf: Tensor[U64 * 65536]
+type TlsConn   = fd: Int, server_name: String, tls_version: Int, cipher_suite: Int, selected_alpn: String, c_key: String, c_iv: String, s_key: String, s_iv: String, io_timeout_ms: Int, state: Tensor[U64 * 16], rx_buf: Tensor[U64 * 65536]
 type TlsError  = TlsCertExpired String | TlsHostnameMismatch String | TlsInvalidChain String | TlsUnsupportedVersion String | TlsServerAlert Int String | TlsTimeout String | TlsIoError String
 type TlsResult = TlsOk TlsConn | TlsErr TlsError
 
@@ -1181,7 +1181,7 @@ fn :: tls send chunks TlsConn String Int Int => Int
           rec = tls seal record (tls_version conn) (cipher_suite conn) (c_key conn) (c_iv conn) seq 23 (str slice data off (off + n))
           stt_(0) = seq + 1
           res =
-            | tls send all (fd conn) rec (timeout_ms conn) = tls send chunks conn data (off + n) total
+            | tls send all (fd conn) rec (io_timeout_ms conn) = tls send chunks conn data (off + n) total
             | otherwise                                    = 0 - 1
           res
 
@@ -1269,7 +1269,7 @@ fn :: tls recv TlsConn Int => String
         | (tls get (state conn) 3) > 0  = tls take buffered conn max
         | (tls get (state conn) 4) != 0 = ""
         | otherwise                     =
-          rc, ctype, payload = tls read record (fd conn) (timeout_ms conn)
+          rc, ctype, payload = tls read record (fd conn) (io_timeout_ms conn)
           tls on raw record conn max rc ctype payload
 
 -- Send close_notify and close the descriptor.
@@ -1285,7 +1285,7 @@ fn :: tls close TlsConn => ()
 fn :: tls send close notify TlsConn Int Int => Bool
       tls send close notify conn    seq closed =
         | closed != 0 or (fd conn) < 0 = False
-        | otherwise                    = tls send all (fd conn) (tls seal record (tls_version conn) (cipher_suite conn) (c_key conn) (c_iv conn) seq 21 ((byte str 1) + (byte str 0))) (timeout_ms conn)
+        | otherwise                    = tls send all (fd conn) (tls seal record (tls_version conn) (cipher_suite conn) (c_key conn) (c_iv conn) seq 21 ((byte str 1) + (byte str 0))) (io_timeout_ms conn)
 
 -- ============================================================
 -- Result helpers (API-TLS-001)

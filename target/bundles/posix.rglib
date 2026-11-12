@@ -554,11 +554,17 @@ fn :: px path pair sys Int Tensor[U8] Tensor[U8] => Int
 fn :: px path pair call Int String String => Int
       px path pair call kind p1 p2 =  px path pair sys kind (px cstr p1) (px cstr p2)
 
+-- `remove file`, `remove dir` and `rename path` are runtime operations on x86-64 (Linux and Windows).
+-- On ARM64 the runtime does not have them yet, so these use Linux system calls there.
+fn :: px use pal files => Bool
+      px use pal files =  (sys arch) == X86_64
+
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys rmdir String => Bool
       sys rmdir path   =
         | not (is safe posix path path) = False
+        | px use pal files              = (remove dir path) == 0
         | otherwise                     = (px unlinkat path path 512) == 0
 
 -- @implements FR-POSIX-002
@@ -566,6 +572,7 @@ fn :: sys rmdir String => Bool
 fn :: sys unlink String => Bool
       sys unlink path   =
         | not (is safe posix path path) = False
+        | px use pal files              = (remove file path) == 0
         | otherwise                     = (px unlinkat path path 0) == 0
 
 -- @implements FR-POSIX-002
@@ -573,7 +580,8 @@ fn :: sys unlink String => Bool
 fn :: sys rename String String   => Bool
       sys rename old_p  new_path =
         | not (is safe posix path old_p) or not (is safe posix path new_path) = False
-        | otherwise = (px path pair call 0 old_p new_path) == 0
+        | px use pal files = (rename path old_p new_path) == 0
+        | otherwise        = (px path pair call 0 old_p new_path) == 0
 
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001

@@ -376,6 +376,16 @@ fn :: sk resolve after hosts String String => Int String
         | (str len h_ip) > 0 = (0, h_ip)
         | otherwise          = sk resolve after dns (sk udp dns query (sk system nameserver) host 500)
 
+-- The runtime's `net …` operations (FR-VM-003 of the compiler) exist on x86-64, for Linux and Windows.
+-- On ARM64 the runtime does not have them yet, so the libs use Linux system calls there.
+fn :: sk use pal net => Bool
+      sk use pal net =  (sys arch) == X86_64
+
+fn :: sk resolved String => Int String
+      sk resolved ip     =
+        | (str len ip) > 0 = (0, ip)
+        | otherwise        = (0 - 3, "")
+
 -- @implements FR-SOCK-003
 -- @implements FR-SOCK-004
 -- @implements API-SOCK-001
@@ -386,6 +396,7 @@ fn :: sys resolve ipv4 String => Int String
         | host == "0.0.0.0"            = (0, "0.0.0.0")
         | is valid ipv4 host           = (0, host)
         | not (is valid hostname host) = (0 - 7, "")
+        | sk use pal net               = sk resolved (net resolve host)
         | otherwise                    = sk resolve after hosts host (sk lookup etc hosts host)
 
 fn :: sk wrap resolved host (Int String) Int => SockAddrRes
@@ -831,6 +842,8 @@ fn :: sk int opt Int => Tensor[U8]
         t
 
 -- Kernel buffers are `Tensor[U8]` passed to `sys call` (ADR-0010).
+-- Each operation uses the runtime's `net …` when `sk use pal net`, and Linux system calls otherwise.
+-- AF_UNIX and `SO_REUSEPORT` before `bind` have no runtime operation: they always use Linux system calls.
 
 fn :: is valid listen host String => Bool
       is valid listen host host   =
@@ -877,8 +890,27 @@ fn :: sk apply reuseport Int Bool      => Int
         | not reuseport = 0
         | otherwise     = sys call (nr setsockopt) lfd 1 15 (sk int opt 1) 4 0
 
+-- `-13` permission denied → `-6`, `-98` address in use → `-5`, any other error → `-7`.
+fn :: sk listen result Int => Int Int
+      sk listen result rc  =
+        | rc >= 0        = (0, rc)
+        | rc == (0 - 13) = (0 - 6, 0 - 1)
+        | rc == (0 - 98) = (0 - 5, 0 - 1)
+        | otherwise      = (0 - 7, 0 - 1)
+
+fn :: sk listen ip String => String
+      sk listen ip host   =
+        | host == "localhost" = "127.0.0.1"
+        | otherwise           = host
+
+-- `SO_REUSEPORT` must be set between `socket` and `bind`; `net listen` does both in one step.
 fn :: sk exec tcp listen opt String Int Int Bool => Int Int
       sk exec tcp listen opt host port backlog reuseport =
+        | reuseport or not (sk use pal net) = sk kernel tcp listen host port backlog reuseport
+        | otherwise                         = sk listen result (net listen (sk listen ip host) port backlog)
+
+fn :: sk kernel tcp listen String Int Int Bool => Int Int
+      sk kernel tcp listen host port backlog reuseport =
         lfd  = sys call (nr socket) 2 1 0 0 0 0
         _    = sys call (nr setsockopt) lfd 1 2 (sk int opt 1) 4 0
         _    = sk apply reuseport lfd reuseport
@@ -905,7 +937,9 @@ fn :: sys set reuseport Int Bool    => Int
           val =
             | enabled   = 1
             | otherwise = 0
-          rc  = sys call (nr setsockopt) fd 1 15 (sk int opt val) 4 0
+          rc  =
+            | sk use pal net = net option fd "reuseport" val
+            | otherwise      = sys call (nr setsockopt) fd 1 15 (sk int opt val) 4 0
           sk map setsockopt rc rc
 
 -- @implements FR-SOCK-004
@@ -973,12 +1007,20 @@ fn :: sk extract local port Int Tensor[U8] => Int
 fn :: sk socklen Int => Tensor[U8]
       sk socklen n   =  sk int opt n
 
+-- `-22` from `net local port` is a socket that is not IPv4 (AF_UNIX): it has no port.
+fn :: sk local port result Int => Int
+      sk local port result rc  =
+        | rc >= 0        = rc
+        | rc == (0 - 22) = 0
+        | otherwise      = 0 - 7
+
 -- @implements FR-SOCK-004
 -- @implements API-SOCK-001
 fn :: sys local port Int => Int
       sys local port lfd =
-        | lfd < 0 = 0 - 7
-        | otherwise =
+        | lfd < 0        = 0 - 7
+        | sk use pal net = sk local port result (net local port lfd)
+        | otherwise      =
           sa = Tensor[U8 * 112]
           rc = sys call (nr getsockname) lfd sa (sk socklen 112) 0 0 0
           sk extract local port rc sa
@@ -1002,6 +1044,20 @@ fn :: sk exec tcp connect ip String Int => Int Int
         rc  = sys call (nr connect) cfd (tensor from str (sk build sockaddr in ip_addr port True)) 16 0 0 0
         sk finish connect cfd rc
 
+-- `-110` timeout → `-2`, `-13` permission denied → `-6`, any other error (refused, unreachable, unknown host) → `-3`.
+fn :: sk connect result Int => Int Int
+      sk connect result rc  =
+        | rc >= 0         = (0, rc)
+        | rc == (0 - 110) = (0 - 2, 0 - 1)
+        | rc == (0 - 13)  = (0 - 6, 0 - 1)
+        | otherwise       = (0 - 3, 0 - 1)
+
+-- The address `net connect` dials: `localhost` and `0.0.0.0` mean this machine.
+fn :: sk connect ip String => String
+      sk connect ip host   =
+        | host == "localhost" or host == "0.0.0.0" = "127.0.0.1"
+        | otherwise                                = host
+
 fn :: sk connect resolved (Int String)    Int  => Int Int
       sk connect resolved (r_rc, ip_addr) port =
         | r_rc != 0 = (r_rc, 0 - 1)
@@ -1012,10 +1068,12 @@ fn :: sk connect resolved (Int String)    Int  => Int Int
 -- @mitigates VUL-INPUT-001
 fn :: sys tcp connect String Int Int => Int Int
       sys tcp connect host port timeout_ms =
-        | not (is valid port port) or timeout_ms < (0 - 1) = (0 - 7, 0 - 1)
-        | is valid listen host host                        = sk exec tcp connect ip host port
-        | is valid hostname host                           = sk connect resolved (sys resolve ipv4 host) port
-        | otherwise                                        = (0 - 7, 0 - 1)
+        | not (is valid port port) or timeout_ms < (0 - 1)                 = (0 - 7, 0 - 1)
+        | not (is valid listen host host) and not (is valid hostname host) = (0 - 7, 0 - 1)
+        | sk use pal net                                                   = sk connect result (net connect (sk connect ip host) port timeout_ms)
+        | is valid listen host host                                        = sk exec tcp connect ip host port
+        | is valid hostname host                                           = sk connect resolved (sys resolve ipv4 host) port
+        | otherwise                                                        = (0 - 7, 0 - 1)
 
 -- @implements FR-SOCK-004
 -- @implements API-SOCK-001
@@ -1053,6 +1111,18 @@ fn :: sk finish accept Int Tensor[U8] => Int Int String
         | sfd < 0   = (0 - 7, 0 - 1, "")
         | otherwise = (0, sfd, sk format peer ip sa)
 
+-- The peer of an IPv4 connection; an AF_UNIX peer has no address and reads as this machine.
+fn :: sk peer ip String => String
+      sk peer ip ip     =
+        | (str len ip) > 0 = ip
+        | otherwise        = "127.0.0.1"
+
+fn :: sk accept result Int => Int Int String
+      sk accept result rc  =
+        | rc >= 0         = (0, rc, sk peer ip (net peer ip rc))
+        | rc == (0 - 110) = (0 - 2, 0 - 1, "")
+        | otherwise       = (0 - 7, 0 - 1, "")
+
 fn :: sk accept after poll Int Int => Int Int String
       sk accept after poll lfd prc =
         | prc == 0 = (0 - 2, 0 - 1, "")
@@ -1068,6 +1138,7 @@ fn :: sk accept after poll Int Int => Int Int String
 fn :: sys accept Int Int        => Int Int String
       sys accept lfd timeout_ms =
         | lfd < 0 or timeout_ms < (0 - 1) = (0 - 7, 0 - 1, "")
+        | sk use pal net                  = sk accept result (net accept lfd timeout_ms)
         | (sk sock acceptconn lfd) != 1   = (0 - 7, 0 - 1, "")
         | otherwise                       = sk accept after poll lfd (sys poll lfd 1 timeout_ms)
 
@@ -1106,6 +1177,20 @@ fn :: sk send loop Int Tensor[U8] String Int Int Int Int => Int Int
         | sent >= dlen = (0, sent)
         | otherwise    = sk send after poll fd buf data dlen sent timeout_ms deadline (sys poll fd 4 (sk send rem ms timeout_ms deadline))
 
+-- `net send` returns the bytes sent; fewer than the length means the timeout ended first.
+fn :: sk send result Int Int => Int Int
+      sk send result dlen rc  =
+        | rc == dlen                        = (0, rc)
+        | rc > 0                            = (0 - 2, rc)
+        | rc == (0 - 110)                   = (0 - 2, 0)
+        | rc == (0 - 32) or rc == (0 - 104) = (0 - 4, 0 - 1)
+        | otherwise                         = (0 - 7, 0 - 1)
+
+fn :: sk net send Int String Int => Int Int
+      sk net send fd data timeout_ms =
+        | (str len data) == 0 = (0, 0)
+        | otherwise           = sk send result (str len data) (net send fd data timeout_ms)
+
 fn :: sk exec send Int String Int => Int Int
       sk exec send fd data timeout_ms =
         | (str len data) == 0 = (0, 0)
@@ -1117,6 +1202,7 @@ fn :: sk exec send Int String Int => Int Int
 fn :: sys send Int String Int        => Int Int
       sys send fd  data   timeout_ms =
         | fd < 0 or timeout_ms < (0 - 1) = (0 - 7, 0 - 1)
+        | sk use pal net                 = sk net send fd data timeout_ms
         | (sk sock acceptconn fd) != 0   = (0 - 7, 0 - 1)
         | otherwise                      = sk exec send fd data timeout_ms
 
@@ -1125,6 +1211,7 @@ fn :: sys send Int String Int        => Int Int
 fn :: sys shutdown write Int => Int
       sys shutdown write fd  =
         | fd < 0                          = 0 - 7
+        | sk use pal net                  = sk map setsockopt rc (net shutdown fd 1)
         | (sk sock acceptconn fd) != 0    = 0 - 7
         | (sys call (nr shutdown) fd 1 0 0 0 0) == 0 = 0
         | otherwise                       = 0 - 7
@@ -1133,6 +1220,19 @@ fn :: sk wrap recv chunk String => Int String
       sk wrap recv chunk chunk  =
         | (str len chunk) == 0 = (0 - 1, "")
         | otherwise            = (0, chunk)
+
+-- `0` is the peer's close (`-1`), `-110` the timeout (`-2`), any other error `-7`.
+fn :: sk recv result Tensor[U8] Int => Int String
+      sk recv result buf        rc  =
+        | rc > 0          = (0, str slice (tensor to str buf) 0 rc)
+        | rc == 0         = (0 - 1, "")
+        | rc == (0 - 110) = (0 - 2, "")
+        | otherwise       = (0 - 7, "")
+
+fn :: sk net recv Int Int Int => Int String
+      sk net recv fd max_bytes timeout_ms =
+        buf = Tensor[U8 * max_bytes]
+        sk recv result buf (net recv into fd buf 0 max_bytes timeout_ms)
 
 fn :: sk recv after poll Int Int Int => Int String
       sk recv after poll fd max_bytes prc =
@@ -1146,6 +1246,7 @@ fn :: sk recv after poll Int Int Int => Int String
 fn :: sys recv Int Int       Int        => Int String
       sys recv fd  max_bytes timeout_ms =
         | fd < 0 or max_bytes < 1 or timeout_ms < (0 - 1) = (0 - 7, "")
+        | sk use pal net                                  = sk net recv fd max_bytes timeout_ms
         | (sk sock acceptconn fd) != 0                    = (0 - 7, "")
         | otherwise                                       = sk recv after poll fd max_bytes (sys poll fd 1 timeout_ms)
 
