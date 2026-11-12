@@ -285,6 +285,51 @@ fn :: ms kid (String String) => String
 fn :: ms pk (String String) => String
       ms pk (_, p)          =  p
 
+-- ── TS-CRYPTO-003: FIPS 180-4 SHA-1 ─────────────────────────
+
+fn :: a times Int String => String
+      a times n   acc    =
+        | n <= 0    = acc
+        | otherwise = a times (n - 1) (acc + "a")
+
+fn :: all bytes loop Tensor[U8] Int => Tensor[U8]
+      all bytes loop t          i   =
+        | i >= 256  = t
+        | otherwise =
+          t_(i) = i
+          all bytes loop t (i + 1)
+
+-- Bytes 0..255 in order, as a String.
+fn :: all bytes => String
+      all bytes =  tensor to str (all bytes loop (Tensor[U8 * 256]) 0)
+
+-- @tests TS-CRYPTO-003
+fn :: test sha1 fips vectors => ()
+      test sha1 fips vectors =
+        -- FIPS 180-4 examples
+        assert str eq (sha1 hex "") "da39a3ee5e6b4b0d3255bfef95601890afd80709" "SHA-1 empty" -> ()
+        assert str eq (sha1 hex "abc") "a9993e364706816aba3e25717850c26c9cd0d89d" "SHA-1 abc" -> ()
+        assert eq (str len (sha1 bytes "abc")) 20 -> ()
+        assert str eq (bytes to hex str (sha1 bytes "abc")) (sha1 hex "abc") "sha1 bytes matches sha1 hex" -> ()
+        assert str eq (sha1 hex "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq") "84983e441c3bd26ebaae4aa1f95129e5e54670f1" "SHA-1 448-bit" -> ()
+        assert str eq (sha1 hex "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu") "a49b2446a02c645bf419f995b67091253a04a259" "SHA-1 896-bit" -> ()
+
+        -- Padding boundaries: 55 bytes fit one block, 56 and 64 need two
+        assert str eq (sha1 hex (a times 55 "")) "c1c8bbdc22796e28c0e15163d20899b65621d65a" "SHA-1 55 bytes" -> ()
+        assert str eq (sha1 hex (a times 56 "")) "c2db330f6083854c99d4b5bfb6e8f29f201be699" "SHA-1 56 bytes" -> ()
+        assert str eq (sha1 hex (a times 64 "")) "0098ba824b5c16427bd7a1122a5a442a25ec644d" "SHA-1 64 bytes" -> ()
+
+        -- Every byte value, including NUL and bytes above 127
+        assert str eq (sha1 hex (all bytes)) "4916d6bdb7f78e6803698cab32d1586ea457dfc8" "SHA-1 bytes 0..255" -> ()
+        assert str eq (sha1 hex "The quick brown fox jumps over the lazy dog") "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12" "SHA-1 quick brown fox" -> ()
+
+        -- One million "a" characters
+        t0   = sys monotonic ms
+        h1m  = sha1 hex (make a1m)
+        dt1m = (sys monotonic ms) - t0
+        echo ("  [BENCH] SHA-1 1,000,000 x 'a': " + (int to str dt1m) + " ms") -> ()
+        assert str eq h1m "34aa973cd4c4daa4f61eeb2bdbad27316534016f" "SHA-1 1,000,000 'a'" -> ()
+
 -- ── TS-CRYPTO-005: FIPS 180-4 SHA-512, RFC 8032 Ed25519 & Minisign ──
 
 -- @tests TS-CRYPTO-005
@@ -646,6 +691,7 @@ fn :: main => ()
       main =
         test rgf019 bytes and bitops -> ()
         test sha256 hmac and pbkdf2 -> ()
+        test sha1 fips vectors -> ()
         test argon2id five arg and perf -> ()
         test rfc8439 chacha20 poly1305 aead -> ()
         test sha512 fips vectors -> ()

@@ -240,6 +240,116 @@ fn :: byte slice String Int   Int     => String
         _    = c copy bytes out 0 (tensor from str s) st n
         tensor to str out
 
+-- ── SHA-1 (FIPS 180-4 §6.1) ─────────────────────────────────
+-- For protocols that require it (RFC 6455 WebSocket handshake, Git object ids).
+-- SHA-1 is broken for collision resistance: never use it for signatures or certificates.
+
+fn :: sha1 copy loop String Tensor[U8] Int Int => Tensor[U8]
+      sha1 copy loop s      p          i   n   =
+        | i >= n    = p
+        | otherwise =
+          p_(i) = str char at s i
+          sha1 copy loop s p (i + 1) n
+
+-- The message, the 0x80 byte, zeros, and the length in bits as a big-endian u64.
+fn :: sha1 padded String => Tensor[U8]
+      sha1 padded msg    =
+        mlen = str len msg
+        plen = (((mlen + 8) / 64) + 1) * 64
+        p    = sha1 copy loop msg (Tensor[U8 * plen]) 0 mlen
+        p_(mlen) = 128
+        sha1 put len p (plen - 8) (mlen * 8) 0
+
+fn :: sha1 put len Tensor[U8] Int Int  Int => Tensor[U8]
+      sha1 put len p          off bits k   =
+        | k >= 8    = p
+        | otherwise =
+          p_(off + k) = (bits shr (8 * (7 - k))) and 255
+          sha1 put len p off bits (k + 1)
+
+fn :: sha1 be32 at Tensor[U8] Int => Int
+      sha1 be32 at p          off =  (p_(off) shl 24) or (p_(off + 1) shl 16) or (p_(off + 2) shl 8) or p_(off + 3)
+
+fn :: sha1 load w Tensor[U8] Int Tensor[Int] Int => Tensor[Int]
+      sha1 load w p          off w           t   =
+        | t >= 16   = w
+        | otherwise =
+          w_(t) = sha1 be32 at p (off + (4 * t))
+          sha1 load w p off w (t + 1)
+
+fn :: sha1 expand w Tensor[Int] Int => Tensor[Int]
+      sha1 expand w w           t   =
+        | t >= 80   = w
+        | otherwise =
+          w_(t) = rotl32 (w_(t - 3) xor w_(t - 8) xor w_(t - 14) xor w_(t - 16)) 1
+          sha1 expand w w (t + 1)
+
+fn :: sha1 f Int Int Int Int => Int
+      sha1 f t   b   c   d   =
+        | t < 20    = (b and c) or ((b xor 0xFFFFFFFF) and d)
+        | t < 40    = b xor c xor d
+        | t < 60    = (b and c) or (b and d) or (c and d)
+        | otherwise = b xor c xor d
+
+fn :: sha1 k Int => Int
+      sha1 k t   =
+        | t < 20    = 0x5A827999
+        | t < 40    = 0x6ED9EBA1
+        | t < 60    = 0x8F1BBCDC
+        | otherwise = 0xCA62C1D6
+
+fn :: sha1 rounds Tensor[Int] Int Int Int Int Int Int => Int Int Int Int Int
+      sha1 rounds w           t   a   b   c   d   e   =
+        | t >= 80   = (a, b, c, d, e)
+        | otherwise =
+          tmp = ((rotl32 a 5) + (sha1 f t b c d) + e + (sha1 k t) + w_(t)) and 0xFFFFFFFF
+          sha1 rounds w (t + 1) tmp a (rotl32 b 30) c d
+
+fn :: sha1 add Tensor[Int] (Int Int Int Int Int) => Tensor[Int]
+      sha1 add h           (a, b, c, d, e)      =
+        h_(0) = (h_(0) + a) and 0xFFFFFFFF
+        h_(1) = (h_(1) + b) and 0xFFFFFFFF
+        h_(2) = (h_(2) + c) and 0xFFFFFFFF
+        h_(3) = (h_(3) + d) and 0xFFFFFFFF
+        h_(4) = (h_(4) + e) and 0xFFFFFFFF
+        h
+
+fn :: sha1 blocks Tensor[U8] Tensor[Int] Tensor[Int] Int Int  => Tensor[Int]
+      sha1 blocks p          h           w           off total =
+        | off >= total = h
+        | otherwise    =
+          w80 = sha1 expand w (sha1 load w p off w 0) 16
+          h2  = sha1 add h (sha1 rounds w80 0 h_(0) h_(1) h_(2) h_(3) h_(4))
+          sha1 blocks p h2 w (off + 64) total
+
+fn :: sha1 out Tensor[Int] Tensor[U8] Int => Tensor[U8]
+      sha1 out h           out        i   =
+        | i >= 20   = out
+        | otherwise =
+          out_(i) = (h_(i / 4) shr (8 * (3 - (i % 4)))) and 255
+          sha1 out h out (i + 1)
+
+-- @implements FR-CRYPTO-003
+-- @implements API-CRYPTO-001
+-- The 20-byte SHA-1 digest of `msg`, as a raw byte string.
+fn :: sha1 bytes String => String
+      sha1 bytes msg    =
+        p = sha1 padded msg
+        h = Tensor[Int * 5]
+        h_(0) = 0x67452301
+        h_(1) = 0xEFCDAB89
+        h_(2) = 0x98BADCFE
+        h_(3) = 0x10325476
+        h_(4) = 0xC3D2E1F0
+        hf = sha1 blocks p h (Tensor[Int * 80]) 0 ((((str len msg) + 8) / 64 + 1) * 64)
+        tensor to str (sha1 out hf (Tensor[U8 * 20]) 0)
+
+-- @implements FR-CRYPTO-003
+-- @implements API-CRYPTO-001
+-- The SHA-1 digest of `msg` as 40 lowercase hex characters.
+fn :: sha1 hex String => String
+      sha1 hex msg    =  bytes to hex str (sha1 bytes msg)
+
 -- ── RGF-015 SHA-256, HMAC-SHA-256, `ct_equal`, PBKDF2-HMAC-SHA-256 ──
 
 -- @implements FR-CRYPTO-003

@@ -12,7 +12,7 @@ tests: [TS-WS-001]
 # FR-WS-001 — Provide RFC 6455 WebSocket handshake accept-key computation, frame encoding/decoding, and XOR masking
 
 ## Statement
-The `ws` library SHALL provide RFC 6455 opening handshake key derivation (`ws accept key` via pure-Ridgun SHA-1 + Base64), HTTP Upgrade request/response builders (`ws build upgrade request`, `ws build upgrade response`), XOR payload masking (`ws mask bytes`), and frame encoding/decoding (`ws encode frame`, `ws encode text`, `ws encode ping`, `ws encode pong`, `ws encode close`, `ws decode frame`).
+The `ws` library SHALL provide RFC 6455 opening handshake key derivation (`ws accept key` via the `crypto` lib's `sha1 bytes` + Base64), HTTP Upgrade request/response builders (`ws build upgrade request`, `ws build upgrade response`), XOR payload masking (`ws mask bytes`), and frame encoding/decoding (`ws encode frame`, `ws encode text`, `ws encode ping`, `ws encode pong`, `ws encode close`, `ws decode frame`).
 
 ## Rationale
 Real-time bidirectional services over `socket.rg` and `http.rg` require RFC 6455 handshake validation and wire-level WebSocket framing.
