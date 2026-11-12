@@ -53,3 +53,4 @@ auth: none
 - `sys_tcp_listen` sets `SO_REUSEADDR` before `bind`.
 - Kernel arguments (`sockaddr_in`, `sockaddr_un`, option values, `socklen_t`) are `Tensor[U8]` values passed straight to `sys call`; no memfd buffer is used (`ADR-0010`).
 - `sys send` keeps the payload in one `Tensor[U8]`; after a partial `sendto` it rebuilds the tensor from the bytes not yet sent.
+- On x86-64 the TCP functions use the runtime's `net …` operations; status codes are the same on every architecture (`ADR-0013`).

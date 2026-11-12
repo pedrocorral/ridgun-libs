@@ -13,6 +13,6 @@ Defines the configuration (`TlsConfig`), active encrypted session (`TlsConn`), a
 
 ## Algebraic Data Types
 - `TlsConfig`: `root_certs_path`, `root_certs_pem`, `alpn_protocols`, `min_version`, `max_version`, `timeout_ms`, `verify_time_sec`.
-- `TlsConn`: `fd`, `server_name`, `tls_version`, `cipher_suite`, `selected_alpn`, `c_key`, `c_iv`, `s_key`, `s_iv`, `timeout_ms`, `state` (`Tensor[U64 * 16]` holding sequence numbers and flags), `rx_buf` (`Tensor[U64 * 65536]` holding buffered decrypted bytes).
+- `TlsConn`: `fd`, `server_name`, `tls_version`, `cipher_suite`, `selected_alpn`, `c_key`, `c_iv`, `s_key`, `s_iv`, `io_timeout_ms` (the I/O timeout of every send and receive), `state` (`Tensor[U64 * 16]` holding sequence numbers and flags), `rx_buf` (`Tensor[U64 * 65536]` holding buffered decrypted bytes).
 - `TlsError`: `TlsCertExpired String | TlsHostnameMismatch String | TlsInvalidChain String | TlsUnsupportedVersion String | TlsServerAlert Int String | TlsTimeout String | TlsIoError String`.
 - `TlsResult`: `TlsOk TlsConn | TlsErr TlsError`.

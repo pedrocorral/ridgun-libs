@@ -6,7 +6,7 @@ status: implemented
 priority: must
 domain: SOCK
 depends_on: [FR-SOCK-001, FR-SOCK-002, FR-SOCK-003]
-related: [ADR-0002, VUL-INJ-002, VUL-INPUT-001]
+related: [ADR-0002, ADR-0013, VUL-INJ-002, VUL-INPUT-001]
 tests: [TS-SOCK-004]
 ---
 # FR-SOCK-004 — Provide Solstice RGF-001 kernel-backed TCP and Unix socket API with status tuples and timeouts
@@ -28,6 +28,7 @@ Downstream server and network applications (such as Solstice) require non-blocki
 ## Constraints & edge cases
 - `timeout_ms`: `-1` waits forever, `0` is non-blocking poll, `> 0` waits at most `timeout_ms` milliseconds via `sys poll` (`ppoll`).
 - `sys_unix_listen` removes a stale socket path only when safe and rejects path traversal (`..`).
+- On x86-64 the TCP functions use the runtime's `net …` operations; on ARM64, and for `SO_REUSEPORT` and `AF_UNIX` on every architecture, they use `sys call` (`ADR-0013`).
 
 ## Data & privacy
 - Socket payloads are held in transient buffers only.

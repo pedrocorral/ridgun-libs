@@ -13,7 +13,7 @@ verified_by: [TS-TLS-001]
 
 ## Types
 - `type TlsConfig = root_certs_path: String, root_certs_pem: String, alpn_protocols: [String], min_version: Int, max_version: Int, timeout_ms: Int, verify_time_sec: Int`
-- `type TlsConn = fd: Int, server_name: String, tls_version: Int, cipher_suite: Int, selected_alpn: String, c_key: String, c_iv: String, s_key: String, s_iv: String, timeout_ms: Int, state: Tensor[U64 * 16], rx_buf: Tensor[U64 * 65536]`
+- `type TlsConn = fd: Int, server_name: String, tls_version: Int, cipher_suite: Int, selected_alpn: String, c_key: String, c_iv: String, s_key: String, s_iv: String, io_timeout_ms: Int, state: Tensor[U64 * 16], rx_buf: Tensor[U64 * 65536]`
 - `type TlsError = TlsCertExpired String | TlsHostnameMismatch String | TlsInvalidChain String | TlsUnsupportedVersion String | TlsServerAlert Int String | TlsTimeout String | TlsIoError String`
 - `type TlsResult = TlsOk TlsConn | TlsErr TlsError`
 

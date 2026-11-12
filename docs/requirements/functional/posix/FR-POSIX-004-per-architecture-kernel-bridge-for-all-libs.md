@@ -37,6 +37,7 @@ Ridgun builds for x86_64 and arm64. Literal x86_64 numbers call the wrong syscal
 - `dup3` rejects equal descriptors with `EINVAL`, so `posix dup2 fd fd` checks `fd` with `fcntl(F_GETFD)` instead.
 - Flag values passed with the calls (`O_CLOEXEC`, `O_NONBLOCK`, `MSG_*`, `SOL_SOCKET`, `SO_*`, `AT_REMOVEDIR`, `mmap` and `memfd` flags) are the same on both architectures. `O_DIRECTORY` is not, and stays in `o directory`.
 - `posix execve` uses the built-in `sys execve`, which builds the pointer tables itself.
+- On x86-64, `socket` TCP functions and `posix` `sys unlink`, `sys rmdir` and `sys rename` use the runtime's `net …` and file operations instead of the bridge (`ADR-0013`).
 
 ## Data & privacy
 - None.
