@@ -1,5 +1,7 @@
 # ridgun-libs
 
+🌐 **Website and downloads: [ridgun.com](https://ridgun.com)**
+
 Pure-Ridgun (`v0.9.16`) standard and system library suite. Every lib compiles to portable Ridgun library bundles (`.rglib` / `.rgc`) and native ELF64 shared objects (`.so`) using `stable` and `ridgunc` with zero C dependencies or `libc`.
 
 ---
