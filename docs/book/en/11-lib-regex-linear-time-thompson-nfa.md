@@ -26,7 +26,6 @@ In `ridgun-libs`, **`regex`** is a first-class **lib** located at `src/main/ridg
 | Artifact | Path | Purpose |
 |---|---|---|
 | **Ridgun Bundle** | `target/bundles/regex.ridgunlib` | Portable distribution and direct `import regex` resolution |
-| **Compiled Archive** | `target/regex.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libregex.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
 > Every lib declares its own namespace via `module :: regex`: simply write `import regex` (or `import regex as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).

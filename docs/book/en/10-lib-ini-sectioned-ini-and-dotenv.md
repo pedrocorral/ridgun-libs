@@ -26,7 +26,6 @@ In `ridgun-libs`, **`ini`** is a first-class **lib** located at `src/main/ridgun
 | Artifact | Path | Purpose |
 |---|---|---|
 | **Ridgun Bundle** | `target/bundles/ini.ridgunlib` | Portable distribution and direct `import ini` resolution |
-| **Compiled Archive** | `target/ini.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libini.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
 > Every lib declares its own namespace via `module :: ini`: simply write `import ini` (or `import ini as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).

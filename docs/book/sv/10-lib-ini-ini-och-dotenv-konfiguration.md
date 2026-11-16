@@ -26,7 +26,6 @@ I `ridgun-libs` är **`ini`** en förstklassig **lib** placerad i `src/main/ridg
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/ini.ridgunlib` | Portabel distribution och direkt import med `import ini` |
-| **Kompilerat arkiv** | `target/ini.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libini.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: ini`: skriv bara `import ini` (eller `import ini as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).

@@ -26,7 +26,6 @@ In `ridgun-libs`, **`cli`** is a first-class **lib** located at `src/main/ridgun
 | Artifact | Path | Purpose |
 |---|---|---|
 | **Ridgun Bundle** | `target/bundles/cli.ridgunlib` | Portable distribution and direct `import cli` resolution |
-| **Compiled Archive** | `target/cli.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libcli.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
 > Every lib declares its own namespace via `module :: cli`: simply write `import cli` (or `import cli as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).

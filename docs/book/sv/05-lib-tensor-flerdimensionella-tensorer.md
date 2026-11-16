@@ -26,7 +26,6 @@ I `ridgun-libs` är **`tensor`** en förstklassig **lib** placerad i `src/main/r
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/tensor.ridgunlib` | Portabel distribution och direkt import med `import tensor` |
-| **Kompilerat arkiv** | `target/tensor.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libtensor.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: tensor`: skriv bara `import tensor` (eller `import tensor as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).

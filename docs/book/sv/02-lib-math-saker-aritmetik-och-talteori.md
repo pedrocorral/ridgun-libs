@@ -26,7 +26,6 @@ I `ridgun-libs` är **`math`** en förstklassig **lib** placerad i `src/main/rid
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/math.ridgunlib` | Portabel distribution och direkt import med `import math` |
-| **Kompilerat arkiv** | `target/math.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libmath.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: math`: skriv bara `import math` (eller `import math as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).

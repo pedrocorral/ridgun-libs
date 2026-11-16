@@ -26,7 +26,6 @@ A `ridgun-libs`, **`posix`** és una **lib** de primera classe situada a `src/ma
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/posix.ridgunlib` | Distribució i importació directa amb `import posix` |
-| **Fitxer compilat** | `target/posix.rgc` | Artefacte intermedi verificat per `ridgunc` |
 | **Objecte compartit ELF64** | `target/libposix.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
 > Cada lib declara el seu propi espai de noms amb `module :: posix`: n'hi ha prou d'escriure `import posix` (o `import posix as alias`) a la capçalera i cridar les seves funcions amb espais naturals (`la meva funcio x`) i canonades `->` (`x la meva funcio -> resultat`).

@@ -26,7 +26,6 @@ In `ridgun-libs`, **`pool`** is a first-class **lib** located at `src/main/ridgu
 | Artifact | Path | Purpose |
 |---|---|---|
 | **Ridgun Bundle** | `target/bundles/pool.ridgunlib` | Portable distribution and direct `import pool` resolution |
-| **Compiled Archive** | `target/pool.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libpool.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
 > Every lib declares its own namespace via `module :: pool`: simply write `import pool` (or `import pool as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).

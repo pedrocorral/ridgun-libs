@@ -26,7 +26,6 @@ In `ridgun-libs`, **`glob`** è una **lib** di prima classe situata in `src/main
 | Artefatto | Percorso | Scopo |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/glob.ridgunlib` | Distribuzione e importazione diretta con `import glob` |
-| **File compilato** | `target/glob.rgc` | Artefatto intermedio verificato da `ridgunc` |
 | **Oggetto condiviso ELF64** | `target/libglob.so` | Libreria dinamica nativa senza dipendenze C né `libc` |
 
 > Ogni lib dichiara il proprio spazio dei nomi con `module :: glob`: basta scrivere `import glob` (o `import glob as alias`) nell'intestazione e invocare le sue funzioni con spazi naturali (`mia funzione x`) e pipeline `->` (`x mia funzione -> risultato`).

@@ -26,7 +26,6 @@ In `ridgun-libs`, **`time`** è una **lib** di prima classe situata in `src/main
 | Artefatto | Percorso | Scopo |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/time.ridgunlib` | Distribuzione e importazione diretta con `import time` |
-| **File compilato** | `target/time.rgc` | Artefatto intermedio verificato da `ridgunc` |
 | **Oggetto condiviso ELF64** | `target/libtime.so` | Libreria dinamica nativa senza dipendenze C né `libc` |
 
 > Ogni lib dichiara il proprio spazio dei nomi con `module :: time`: basta scrivere `import time` (o `import time as alias`) nell'intestazione e invocare le sue funzioni con spazi naturali (`mia funzione x`) e pipeline `->` (`x mia funzione -> risultato`).

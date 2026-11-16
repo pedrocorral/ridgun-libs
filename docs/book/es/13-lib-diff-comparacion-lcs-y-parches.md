@@ -26,7 +26,6 @@ En `ridgun-libs`, **`diff`** es una **lib** de primera clase ubicada en `src/mai
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/diff.ridgunlib` | Distribución e importación directa con `import diff` |
-| **Archivo compilado** | `target/diff.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Objeto compartido ELF64** | `target/libdiff.so` | Biblioteca dinámica nativa sin dependencias de C ni `libc` |
 
 > Cada lib declara su propio espacio de nombres con `module :: diff`: basta con escribir `import diff` (o `import diff as alias`) en el encabezado y llamar a sus funciones con espacios naturales (`mi funcion x`) y tuberías `->` (`x mi funcion -> resultado`).

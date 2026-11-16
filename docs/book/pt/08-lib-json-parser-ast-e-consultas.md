@@ -26,7 +26,6 @@ No `ridgun-libs`, **`json`** é uma **lib** de primeira classe localizada em `sr
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/json.ridgunlib` | Distribuição e importação direta com `import json` |
-| **Ficheiro compilado** | `target/json.rgc` | Artefacto intermédio verificado pelo `ridgunc` |
 | **Objeto partilhado ELF64** | `target/libjson.so` | Biblioteca dinâmica nativa sem dependências de C nem `libc` |
 
 > Cada lib declara o seu próprio espaço de nomes com `module :: json`: basta escrever `import json` (ou `import json as alias`) no topo e invocar as suas funções com espaços naturais (`minha funcao x`) e pipelines `->` (`x minha funcao -> resultado`).

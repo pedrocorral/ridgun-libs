@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`INI`** domeinuko zereginak ebazteak C-ko kanpo
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/ini.ridgunlib` | Banaketa eta inportazio zuzena `import ini` bidez |
-| **Fitxategi konpilatua** | `target/ini.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libini.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: ini` bidez: nahikoa da goiburuan `import ini` (edo `import ini as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.

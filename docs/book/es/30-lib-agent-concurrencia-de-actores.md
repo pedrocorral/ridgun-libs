@@ -26,7 +26,6 @@ En `ridgun-libs`, **`agent`** es una **lib** de primera clase ubicada en `src/ma
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/agent.ridgunlib` | Distribución e importación directa con `import agent` |
-| **Archivo compilado** | `target/agent.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Objeto compartido ELF64** | `target/libagent.so` | Biblioteca dinámica nativa sin dependencias de C ni `libc` |
 
 > Cada lib declara su propio espacio de nombres con `module :: agent`: basta con escribir `import agent` (o `import agent as alias`) en el encabezado y llamar a sus funciones con espacios naturales (`mi funcion x`) y tuberías `->` (`x mi funcion -> resultado`).

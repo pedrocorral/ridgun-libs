@@ -26,7 +26,6 @@ I `ridgun-libs` är **`posix`** en förstklassig **lib** placerad i `src/main/ri
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/posix.ridgunlib` | Portabel distribution och direkt import med `import posix` |
-| **Kompilerat arkiv** | `target/posix.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libposix.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: posix`: skriv bara `import posix` (eller `import posix as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).

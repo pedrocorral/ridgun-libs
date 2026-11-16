@@ -26,7 +26,6 @@ I `ridgun-libs` är **`str`** en förstklassig **lib** placerad i `src/main/ridg
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/str.ridgunlib` | Portabel distribution och direkt import med `import str` |
-| **Kompilerat arkiv** | `target/str.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libstr.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: str`: skriv bara `import str` (eller `import str as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).

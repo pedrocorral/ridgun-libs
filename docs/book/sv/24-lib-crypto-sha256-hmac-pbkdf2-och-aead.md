@@ -26,7 +26,6 @@ I `ridgun-libs` är **`crypto`** en förstklassig **lib** placerad i `src/main/r
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/crypto.ridgunlib` | Portabel distribution och direkt import med `import crypto` |
-| **Kompilerat arkiv** | `target/crypto.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libcrypto.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: crypto`: skriv bara `import crypto` (eller `import crypto as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).

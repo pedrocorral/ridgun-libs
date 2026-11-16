@@ -26,7 +26,6 @@ En `ridgun-libs`, **`btree`** é unha **lib** de primeira clase situada en `src/
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/btree.ridgunlib` | Distribución e importación directa con `import btree` |
-| **Ficheiro compilado** | `target/btree.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/libbtree.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
 > Cada lib declara o seu propio espazo de nomes con `module :: btree`: abonda con escribir `import btree` (ou `import btree as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).

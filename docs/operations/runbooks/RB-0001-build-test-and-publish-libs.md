@@ -21,7 +21,7 @@ status: approved
    ```bash
    stable test
    ```
-4. **Compile `.rgc`, `.so`, and `.ridgunlib` bundles**:
+4. **Compile `.so` and `.ridgunlib` bundles**:
    ```bash
    stable built lib
    ```

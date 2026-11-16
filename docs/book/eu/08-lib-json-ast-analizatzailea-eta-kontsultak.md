@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`JSON`** domeinuko zereginak ebazteak C-ko kanp
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/json.ridgunlib` | Banaketa eta inportazio zuzena `import json` bidez |
-| **Fitxategi konpilatua** | `target/json.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libjson.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: json` bidez: nahikoa da goiburuan `import json` (edo `import json as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.

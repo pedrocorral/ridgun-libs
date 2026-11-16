@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kan
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/pool.ridgunlib` | Banaketa eta inportazio zuzena `import pool` bidez |
-| **Fitxategi konpilatua** | `target/pool.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libpool.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: pool` bidez: nahikoa da goiburuan `import pool` (edo `import pool as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.

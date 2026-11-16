@@ -26,7 +26,6 @@ I `ridgun-libs` är **`net_agent`** en förstklassig **lib** placerad i `src/mai
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/net_agent.ridgunlib` | Portabel distribution och direkt import med `import net_agent` |
-| **Kompilerat arkiv** | `target/net_agent.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libnet_agent.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: net agent`: skriv bara `import net_agent` (eller `import net_agent as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).

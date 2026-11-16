@@ -26,7 +26,6 @@ En `ridgun-libs`, **`socket`** é unha **lib** de primeira clase situada en `src
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/socket.ridgunlib` | Distribución e importación directa con `import socket` |
-| **Ficheiro compilado** | `target/socket.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/libsocket.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
 > Cada lib declara o seu propio espazo de nomes con `module :: socket`: abonda con escribir `import socket` (ou `import socket as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).

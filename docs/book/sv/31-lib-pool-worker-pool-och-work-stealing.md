@@ -26,7 +26,6 @@ I `ridgun-libs` är **`pool`** en förstklassig **lib** placerad i `src/main/rid
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/pool.ridgunlib` | Portabel distribution och direkt import med `import pool` |
-| **Kompilerat arkiv** | `target/pool.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libpool.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: pool`: skriv bara `import pool` (eller `import pool as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).

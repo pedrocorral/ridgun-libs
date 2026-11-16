@@ -26,7 +26,6 @@ En `ridgun-libs`, **`template`** é unha **lib** de primeira clase situada en `s
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/template.ridgunlib` | Distribución e importación directa con `import template` |
-| **Ficheiro compilado** | `target/template.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/libtemplate.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
 > Cada lib declara o seu propio espazo de nomes con `module :: template`: abonda con escribir `import template` (ou `import template as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).

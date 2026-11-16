@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`DIFF`** domeinuko zereginak ebazteak C-ko kanp
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/diff.ridgunlib` | Banaketa eta inportazio zuzena `import diff` bidez |
-| **Fitxategi konpilatua** | `target/diff.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libdiff.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: diff` bidez: nahikoa da goiburuan `import diff` (edo `import diff as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.

@@ -26,7 +26,6 @@ I `ridgun-libs` är **`argon2id`** en förstklassig **lib** placerad i `src/main
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/argon2id.ridgunlib` | Portabel distribution och direkt import med `import argon2id` |
-| **Kompilerat arkiv** | `target/argon2id.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libargon2id.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: argon2id`: skriv bara `import argon2id` (eller `import argon2id as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).

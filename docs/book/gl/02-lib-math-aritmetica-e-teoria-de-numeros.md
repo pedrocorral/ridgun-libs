@@ -26,7 +26,6 @@ En `ridgun-libs`, **`math`** é unha **lib** de primeira clase situada en `src/m
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/math.ridgunlib` | Distribución e importación directa con `import math` |
-| **Ficheiro compilado** | `target/math.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/libmath.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
 > Cada lib declara o seu propio espazo de nomes con `module :: math`: abonda con escribir `import math` (ou `import math as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).

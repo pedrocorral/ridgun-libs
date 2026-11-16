@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`IO`** domeinuko zereginak ebazteak C-ko kanpo-
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/io.ridgunlib` | Banaketa eta inportazio zuzena `import io` bidez |
-| **Fitxategi konpilatua** | `target/io.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libio.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: io` bidez: nahikoa da goiburuan `import io` (edo `import io as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.

@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`CRYPTO`** domeinuko zereginak ebazteak C-ko ka
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/crypto.ridgunlib` | Banaketa eta inportazio zuzena `import crypto` bidez |
-| **Fitxategi konpilatua** | `target/crypto.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libcrypto.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: crypto` bidez: nahikoa da goiburuan `import crypto` (edo `import crypto as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.

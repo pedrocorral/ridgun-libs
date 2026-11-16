@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`REGEX`** domeinuko zereginak ebazteak C-ko kan
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/regex.ridgunlib` | Banaketa eta inportazio zuzena `import regex` bidez |
-| **Fitxategi konpilatua** | `target/regex.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libregex.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: regex` bidez: nahikoa da goiburuan `import regex` (edo `import regex as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.

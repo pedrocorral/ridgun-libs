@@ -6,7 +6,7 @@ status: approved
 # Vision
 
 ## Problem
-Ridgun (`v0.9.3`) applications, servers, and system tools (`unix-tools`, `Solstice`) need reusable, pure-Ridgun standard and foundational libraries that compile to `.rgc`, `.ridgunlib`, and ELF64 shared objects (`.so`) via `stable` and `ridgunc` without external C/Rust toolchains or `libc`.
+Ridgun (`v0.9.3`) applications, servers, and system tools (`unix-tools`, `Solstice`) need reusable, pure-Ridgun standard and foundational libraries that compile to `.ridgunlib` and ELF64 shared objects (`.so`) via `stable` and `ridgunc` without external C/Rust toolchains or `libc`.
 
 ## Solution in one paragraph
 `ridgun-libs` provides a unified, zero-C suite of pure-Ridgun (`v0.9.16`) libs under a single root `stable` project (`build.ridgun`, `src/main/ridgun/lib/*.ridgun`, `src/test/ridgun/test *.ridgun`). The suite delivers 32 foundational libs across 28 domains:
@@ -28,7 +28,7 @@ Ridgun (`v0.9.3`) applications, servers, and system tools (`unix-tools`, `Solsti
 16. **`http` (`HTTP`)**: Pure-Ridgun RFC 3986 URI parsing (`uri_parse`, `uri_scheme`, `uri_host`, `uri_port`, `uri_path`, `uri_query`) and RFC 9112 HTTP/1.1 request/response building, parsing, and header lookup (`http_status_text`, `http_build_request`, `http_parse_request`, `http_build_response`, `http_parse_response`, `http_parse_headers`, `http_header_get`, `http_bearer_token`).
 
 ## In scope / out of scope
-- **In scope**: Pure-Ridgun reusable libs (`src/main/ridgun/lib/*.ridgun`), `.rgc` / `.ridgunlib` / `.so` artifacts built via `stable` and `ridgunc`, and comprehensive `stable test` suites (`src/test/ridgun/test *.ridgun`).
+- **In scope**: Pure-Ridgun reusable libs (`src/main/ridgun/lib/*.ridgun`), `.ridgunlib` / `.so` artifacts built via `stable` and `ridgunc`, and comprehensive `stable test` suites (`src/test/ridgun/test *.ridgun`).
 - **Out of scope**: Standalone user-facing CLI applications (libs only).
 
 ## Success metrics

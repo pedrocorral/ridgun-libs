@@ -26,7 +26,6 @@ In `ridgun-libs`, **`argon2id`** is a first-class **lib** located at `src/main/r
 | Artifact | Path | Purpose |
 |---|---|---|
 | **Ridgun Bundle** | `target/bundles/argon2id.ridgunlib` | Portable distribution and direct `import argon2id` resolution |
-| **Compiled Archive** | `target/argon2id.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libargon2id.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
 > Every lib declares its own namespace via `module :: argon2id`: simply write `import argon2id` (or `import argon2id as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).

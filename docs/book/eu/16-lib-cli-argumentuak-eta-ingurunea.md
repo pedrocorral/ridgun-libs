@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`CLI`** domeinuko zereginak ebazteak C-ko kanpo
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/cli.ridgunlib` | Banaketa eta inportazio zuzena `import cli` bidez |
-| **Fitxategi konpilatua** | `target/cli.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libcli.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: cli` bidez: nahikoa da goiburuan `import cli` (edo `import cli as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.

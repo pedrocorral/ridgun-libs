@@ -26,7 +26,6 @@ No `ridgun-libs`, **`net_agent`** é uma **lib** de primeira classe localizada e
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/net_agent.ridgunlib` | Distribuição e importação direta com `import net_agent` |
-| **Ficheiro compilado** | `target/net_agent.rgc` | Artefacto intermédio verificado pelo `ridgunc` |
 | **Objeto partilhado ELF64** | `target/libnet_agent.so` | Biblioteca dinâmica nativa sem dependências de C nem `libc` |
 
 > Cada lib declara o seu próprio espaço de nomes com `module :: net agent`: basta escrever `import net_agent` (ou `import net_agent as alias`) no topo e invocar as suas funções com espaços naturais (`minha funcao x`) e pipelines `->` (`x minha funcao -> resultado`).

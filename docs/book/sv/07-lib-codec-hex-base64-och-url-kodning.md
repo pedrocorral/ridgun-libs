@@ -26,7 +26,6 @@ I `ridgun-libs` är **`codec`** en förstklassig **lib** placerad i `src/main/ri
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/codec.ridgunlib` | Portabel distribution och direkt import med `import codec` |
-| **Kompilerat arkiv** | `target/codec.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libcodec.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: codec`: skriv bara `import codec` (eller `import codec as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).

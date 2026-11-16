@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`HTTP`** domeinuko zereginak ebazteak C-ko kanp
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/http.ridgunlib` | Banaketa eta inportazio zuzena `import http` bidez |
-| **Fitxategi konpilatua** | `target/http.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libhttp.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: http` bidez: nahikoa da goiburuan `import http` (edo `import http as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.

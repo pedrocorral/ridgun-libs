@@ -26,7 +26,6 @@ In `ridgun-libs`, **`agent`** is a first-class **lib** located at `src/main/ridg
 | Artifact | Path | Purpose |
 |---|---|---|
 | **Ridgun Bundle** | `target/bundles/agent.ridgunlib` | Portable distribution and direct `import agent` resolution |
-| **Compiled Archive** | `target/agent.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/libagent.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
 > Every lib declares its own namespace via `module :: agent`: simply write `import agent` (or `import agent as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).

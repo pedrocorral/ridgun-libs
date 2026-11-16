@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`FMT`** domeinuko zereginak ebazteak C-ko kanpo
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/fmt.ridgunlib` | Banaketa eta inportazio zuzena `import fmt` bidez |
-| **Fitxategi konpilatua** | `target/fmt.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libfmt.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: fmt` bidez: nahikoa da goiburuan `import fmt` (edo `import fmt as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.

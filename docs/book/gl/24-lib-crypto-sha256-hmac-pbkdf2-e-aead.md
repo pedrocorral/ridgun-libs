@@ -26,7 +26,6 @@ En `ridgun-libs`, **`crypto`** é unha **lib** de primeira clase situada en `src
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/crypto.ridgunlib` | Distribución e importación directa con `import crypto` |
-| **Ficheiro compilado** | `target/crypto.rgc` | Artefacto intermedio verificado por `ridgunc` |
 | **Obxecto compartido ELF64** | `target/libcrypto.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
 > Cada lib declara o seu propio espazo de nomes con `module :: crypto`: abonda con escribir `import crypto` (ou `import crypto as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).

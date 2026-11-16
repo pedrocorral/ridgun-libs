@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`WS`** domeinuko zereginak ebazteak C-ko kanpo-
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/ws.ridgunlib` | Banaketa eta inportazio zuzena `import ws` bidez |
-| **Fitxategi konpilatua** | `target/ws.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libws.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: ws` bidez: nahikoa da goiburuan `import ws` (edo `import ws as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.

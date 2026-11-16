@@ -26,7 +26,6 @@ In `ridgun-libs`, **`list`** is a first-class **lib** located at `src/main/ridgu
 | Artifact | Path | Purpose |
 |---|---|---|
 | **Ridgun Bundle** | `target/bundles/list.ridgunlib` | Portable distribution and direct `import list` resolution |
-| **Compiled Archive** | `target/list.rgc` | Type-checked intermediate artifact verified by `ridgunc` |
 | **ELF64 Shared Object** | `target/liblist.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
 > Every lib declares its own namespace via `module :: list`: simply write `import list` (or `import list as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).

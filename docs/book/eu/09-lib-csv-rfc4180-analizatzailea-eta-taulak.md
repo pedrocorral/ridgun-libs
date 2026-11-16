@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`CSV`** domeinuko zereginak ebazteak C-ko kanpo
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/csv.ridgunlib` | Banaketa eta inportazio zuzena `import csv` bidez |
-| **Fitxategi konpilatua** | `target/csv.rgc` | `ridgunc`-ek egiaztatutako tarteko artefaktua |
 | **ELF64 objektu partekatua** | `target/libcsv.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: csv` bidez: nahikoa da goiburuan `import csv` (edo `import csv as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.

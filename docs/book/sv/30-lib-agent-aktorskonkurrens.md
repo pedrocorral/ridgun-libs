@@ -26,7 +26,6 @@ I `ridgun-libs` är **`agent`** en förstklassig **lib** placerad i `src/main/ri
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/agent.ridgunlib` | Portabel distribution och direkt import med `import agent` |
-| **Kompilerat arkiv** | `target/agent.rgc` | Typkontrollerad mellanartefakt verifierad av `ridgunc` |
 | **Delat ELF64-objekt** | `target/libagent.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: agent`: skriv bara `import agent` (eller `import agent as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).
