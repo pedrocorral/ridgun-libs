@@ -180,8 +180,11 @@ fn :: first line String Int => String
         | idx >= (str len s) or (str char at s idx) == 13 or (str char at s idx) == 10 = str slice s 0 idx
         | otherwise = first line s (idx + 1)
 
+-- A server that cannot be reached: the connection was refused or failed, or it
+-- did not complete in time (a slow or unreachable host is not a TLS failure).
 fn :: live offline TlsResult => Bool
-      live offline res =  (tls error kind res) == "TlsIoError" and (str starts with (tls error reason res) "TCP connect failed")
+      live offline res =
+        ((tls error kind res) == "TlsIoError" and (str starts with (tls error reason res) "TCP connect failed")) or ((tls error kind res) == "TlsTimeout" and (str starts with (tls error reason res) "TCP connect timed out"))
 
 fn :: live check String Int String String TlsResult => ()
       live check server port   expect payload res       =
