@@ -1,6 +1,6 @@
 ---
 id: API-POSIX-001
-title: Public lib contract for posix (posix.ridgunlib / libposix.so)
+title: Public lib contract for posix (posix.ridgunlib)
 status: approved
 implements: [FR-POSIX-001, FR-POSIX-002, FR-POSIX-003, FR-POSIX-004]
 auth: none

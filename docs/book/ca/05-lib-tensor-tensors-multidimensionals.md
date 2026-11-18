@@ -26,7 +26,6 @@ A `ridgun-libs`, **`tensor`** és una **lib** de primera classe situada a `src/m
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/tensor.ridgunlib` | Distribució i importació directa amb `import tensor` |
-| **Objecte compartit ELF64** | `target/libtensor.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
 > Cada lib declara el seu propi espai de noms amb `module :: tensor`: n'hi ha prou d'escriure `import tensor` (o `import tensor as alias`) a la capçalera i cridar les seves funcions amb espais naturals (`la meva funcio x`) i canonades `->` (`x la meva funcio -> resultat`).
 

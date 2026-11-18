@@ -1,6 +1,6 @@
 ---
 id: API-TENSOR-001
-title: Public lib contract for tensor (tensor.ridgunlib / libtensor.so)
+title: Public lib contract for tensor (tensor.ridgunlib)
 status: approved
 implements: [FR-TENSOR-001]
 auth: none

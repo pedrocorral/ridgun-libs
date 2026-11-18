@@ -26,7 +26,6 @@ A `ridgun-libs`, **`log`** és una **lib** de primera classe situada a `src/main
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/log.ridgunlib` | Distribució i importació directa amb `import log` |
-| **Objecte compartit ELF64** | `target/liblog.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
 > Cada lib declara el seu propi espai de noms amb `module :: log`: n'hi ha prou d'escriure `import log` (o `import log as alias`) a la capçalera i cridar les seves funcions amb espais naturals (`la meva funcio x`) i canonades `->` (`x la meva funcio -> resultat`).
 

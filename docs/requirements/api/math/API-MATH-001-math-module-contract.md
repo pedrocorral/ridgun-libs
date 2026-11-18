@@ -1,6 +1,6 @@
 ---
 id: API-MATH-001
-title: Public lib contract for math (math.ridgunlib / libmath.so)
+title: Public lib contract for math (math.ridgunlib)
 status: approved
 implements: [FR-MATH-001]
 auth: none

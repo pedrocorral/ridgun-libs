@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`TIME`** domeinuko zereginak ebazteak C-ko kanp
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/time.ridgunlib` | Banaketa eta inportazio zuzena `import time` bidez |
-| **ELF64 objektu partekatua** | `target/libtime.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: time` bidez: nahikoa da goiburuan `import time` (edo `import time as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 

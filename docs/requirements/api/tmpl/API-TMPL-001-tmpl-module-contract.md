@@ -1,6 +1,6 @@
 ---
 id: API-TMPL-001
-title: Public lib contract for template (template.ridgunlib / libtemplate.so)
+title: Public lib contract for template (template.ridgunlib)
 status: implemented
 implements: [FR-TMPL-001]
 auth: none

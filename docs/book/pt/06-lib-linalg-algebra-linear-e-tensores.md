@@ -26,7 +26,6 @@ No `ridgun-libs`, **`linalg`** é uma **lib** de primeira classe localizada em `
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/linalg.ridgunlib` | Distribuição e importação direta com `import linalg` |
-| **Objeto partilhado ELF64** | `target/liblinalg.so` | Biblioteca dinâmica nativa sem dependências de C nem `libc` |
 
 > Cada lib declara o seu próprio espaço de nomes com `module :: linalg`: basta escrever `import linalg` (ou `import linalg as alias`) no topo e invocar as suas funções com espaços naturais (`minha funcao x`) e pipelines `->` (`x minha funcao -> resultado`).
 

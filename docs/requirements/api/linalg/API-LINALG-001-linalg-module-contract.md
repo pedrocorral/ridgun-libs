@@ -1,6 +1,6 @@
 ---
 id: API-LINALG-001
-title: Public lib contract for linalg (linalg.ridgunlib / liblinalg.so)
+title: Public lib contract for linalg (linalg.ridgunlib)
 status: approved
 implements: [FR-LINALG-001]
 auth: none

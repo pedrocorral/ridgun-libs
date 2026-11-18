@@ -26,7 +26,6 @@ I `ridgun-libs` är **`test`** en förstklassig **lib** placerad i `src/main/rid
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/test.ridgunlib` | Portabel distribution och direkt import med `import test` |
-| **Delat ELF64-objekt** | `target/libtest.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: test`: skriv bara `import test` (eller `import test as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).
 

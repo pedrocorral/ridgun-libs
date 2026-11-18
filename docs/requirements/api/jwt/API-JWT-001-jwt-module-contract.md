@@ -1,6 +1,6 @@
 ---
 id: API-JWT-001
-title: Public lib contract for jwt (jwt.ridgunlib / libjwt.so)
+title: Public lib contract for jwt (jwt.ridgunlib)
 status: approved
 implements: [FR-JWT-001]
 auth: none

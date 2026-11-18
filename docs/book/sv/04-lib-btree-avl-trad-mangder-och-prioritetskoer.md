@@ -26,7 +26,6 @@ I `ridgun-libs` är **`btree`** en förstklassig **lib** placerad i `src/main/ri
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/btree.ridgunlib` | Portabel distribution och direkt import med `import btree` |
-| **Delat ELF64-objekt** | `target/libbtree.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: btree`: skriv bara `import btree` (eller `import btree as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).
 

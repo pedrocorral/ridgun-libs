@@ -26,7 +26,6 @@ En `ridgun-libs`, **`fmt`** é unha **lib** de primeira clase situada en `src/ma
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/fmt.ridgunlib` | Distribución e importación directa con `import fmt` |
-| **Obxecto compartido ELF64** | `target/libfmt.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
 > Cada lib declara o seu propio espazo de nomes con `module :: fmt`: abonda con escribir `import fmt` (ou `import fmt as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).
 

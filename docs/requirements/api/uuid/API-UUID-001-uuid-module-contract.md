@@ -1,6 +1,6 @@
 ---
 id: API-UUID-001
-title: Public lib contract for uuid (uuid.ridgunlib / libuuid.so)
+title: Public lib contract for uuid (uuid.ridgunlib)
 status: approved
 implements: [FR-UUID-001]
 related: [ADR-0010]

@@ -26,7 +26,6 @@ I `ridgun-libs` är **`log`** en förstklassig **lib** placerad i `src/main/ridg
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/log.ridgunlib` | Portabel distribution och direkt import med `import log` |
-| **Delat ELF64-objekt** | `target/liblog.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: log`: skriv bara `import log` (eller `import log as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).
 

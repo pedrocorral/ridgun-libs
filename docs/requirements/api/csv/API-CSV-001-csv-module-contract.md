@@ -1,6 +1,6 @@
 ---
 id: API-CSV-001
-title: Public lib contract for csv (csv.ridgunlib / libcsv.so)
+title: Public lib contract for csv (csv.ridgunlib)
 status: approved
 implements: [FR-CSV-001]
 auth: none

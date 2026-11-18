@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`TENSOR`** domeinuko zereginak ebazteak C-ko ka
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/tensor.ridgunlib` | Banaketa eta inportazio zuzena `import tensor` bidez |
-| **ELF64 objektu partekatua** | `target/libtensor.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: tensor` bidez: nahikoa da goiburuan `import tensor` (edo `import tensor as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 

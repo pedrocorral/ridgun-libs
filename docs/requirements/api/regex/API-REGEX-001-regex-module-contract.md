@@ -1,6 +1,6 @@
 ---
 id: API-REGEX-001
-title: Public lib contract for regex (regex.ridgunlib / libregex.so)
+title: Public lib contract for regex (regex.ridgunlib)
 status: approved
 implements: [FR-REGEX-001]
 auth: none

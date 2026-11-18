@@ -1,6 +1,6 @@
 ---
 id: API-CLI-001
-title: Public lib contract for cli (cli.ridgunlib / libcli.so)
+title: Public lib contract for cli (cli.ridgunlib)
 status: approved
 implements: [FR-CLI-001]
 auth: none

@@ -26,7 +26,6 @@ In `ridgun-libs`, **`path`** is a first-class **lib** located at `src/main/ridgu
 | Artifact | Path | Purpose |
 |---|---|---|
 | **Ridgun Bundle** | `target/bundles/path.ridgunlib` | Portable distribution and direct `import path` resolution |
-| **ELF64 Shared Object** | `target/libpath.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
 > Every lib declares its own namespace via `module :: path`: simply write `import path` (or `import path as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).
 

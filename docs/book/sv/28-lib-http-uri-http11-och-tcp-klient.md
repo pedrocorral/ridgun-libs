@@ -26,7 +26,6 @@ I `ridgun-libs` är **`http`** en förstklassig **lib** placerad i `src/main/rid
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/http.ridgunlib` | Portabel distribution och direkt import med `import http` |
-| **Delat ELF64-objekt** | `target/libhttp.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: http`: skriv bara `import http` (eller `import http as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).
 

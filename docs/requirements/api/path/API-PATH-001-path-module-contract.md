@@ -1,6 +1,6 @@
 ---
 id: API-PATH-001
-title: Public lib contract for path (path.ridgunlib / libpath.so)
+title: Public lib contract for path (path.ridgunlib)
 status: approved
 implements: [FR-PATH-001]
 auth: none

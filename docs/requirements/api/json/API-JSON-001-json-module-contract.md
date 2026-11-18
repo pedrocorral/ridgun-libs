@@ -1,6 +1,6 @@
 ---
 id: API-JSON-001
-title: Public lib contract for json (json.ridgunlib / libjson.so)
+title: Public lib contract for json (json.ridgunlib)
 status: approved
 implements: [FR-JSON-001]
 auth: none

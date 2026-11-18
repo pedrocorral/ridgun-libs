@@ -26,7 +26,6 @@ I `ridgun-libs` är **`linalg`** en förstklassig **lib** placerad i `src/main/r
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/linalg.ridgunlib` | Portabel distribution och direkt import med `import linalg` |
-| **Delat ELF64-objekt** | `target/liblinalg.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: linalg`: skriv bara `import linalg` (eller `import linalg as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).
 

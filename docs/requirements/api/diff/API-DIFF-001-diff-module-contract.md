@@ -1,6 +1,6 @@
 ---
 id: API-DIFF-001
-title: Public lib contract for diff (diff.ridgunlib / libdiff.so)
+title: Public lib contract for diff (diff.ridgunlib)
 status: implemented
 implements: [FR-DIFF-001]
 auth: none

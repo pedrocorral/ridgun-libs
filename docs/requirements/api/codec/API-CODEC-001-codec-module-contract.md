@@ -1,6 +1,6 @@
 ---
 id: API-CODEC-001
-title: Public lib contract for codec (codec.ridgunlib / libcodec.so)
+title: Public lib contract for codec (codec.ridgunlib)
 status: approved
 implements: [FR-CODEC-001]
 auth: none

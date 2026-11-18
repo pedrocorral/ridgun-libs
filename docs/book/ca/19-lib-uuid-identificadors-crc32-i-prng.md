@@ -26,7 +26,6 @@ A `ridgun-libs`, **`uuid`** és una **lib** de primera classe situada a `src/mai
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/uuid.ridgunlib` | Distribució i importació directa amb `import uuid` |
-| **Objecte compartit ELF64** | `target/libuuid.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
 > Cada lib declara el seu propi espai de noms amb `module :: uuid`: n'hi ha prou d'escriure `import uuid` (o `import uuid as alias`) a la capçalera i cridar les seves funcions amb espais naturals (`la meva funcio x`) i canonades `->` (`x la meva funcio -> resultat`).
 

@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`SOCK`** domeinuko zereginak ebazteak C-ko kanp
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/socket.ridgunlib` | Banaketa eta inportazio zuzena `import socket` bidez |
-| **ELF64 objektu partekatua** | `target/libsocket.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: socket` bidez: nahikoa da goiburuan `import socket` (edo `import socket as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 

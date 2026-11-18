@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`CRYPTO`** domeinuko zereginak ebazteak C-ko ka
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/argon2id.ridgunlib` | Banaketa eta inportazio zuzena `import argon2id` bidez |
-| **ELF64 objektu partekatua** | `target/libargon2id.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: argon2id` bidez: nahikoa da goiburuan `import argon2id` (edo `import argon2id as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 

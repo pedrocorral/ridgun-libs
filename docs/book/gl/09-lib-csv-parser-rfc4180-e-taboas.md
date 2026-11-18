@@ -26,7 +26,6 @@ En `ridgun-libs`, **`csv`** é unha **lib** de primeira clase situada en `src/ma
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/csv.ridgunlib` | Distribución e importación directa con `import csv` |
-| **Obxecto compartido ELF64** | `target/libcsv.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
 > Cada lib declara o seu propio espazo de nomes con `module :: csv`: abonda con escribir `import csv` (ou `import csv as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).
 

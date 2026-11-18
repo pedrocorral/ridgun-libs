@@ -26,7 +26,7 @@ The `test` library SHALL provide the `RG-011` message-annotated test assertions 
 - Any Ridgun test suite (`src/test/ridgun/test_*.ridgun`) importing `test`.
 
 ## Constraints & edge cases
-- Must compile as a reusable `.ridgunlib` and `.so` without a `main` entrypoint.
+- Must compile as a reusable `.ridgunlib` without a `main` entrypoint.
 
 ## Data & privacy
 - No persistent data or PII.

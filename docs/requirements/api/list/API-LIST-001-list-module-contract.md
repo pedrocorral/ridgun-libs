@@ -1,6 +1,6 @@
 ---
 id: API-LIST-001
-title: Public lib contract for list (list.ridgunlib / liblist.so)
+title: Public lib contract for list (list.ridgunlib)
 status: approved
 implements: [FR-LIST-001, FR-LIST-002]
 auth: none

@@ -1,6 +1,6 @@
 ---
 id: API-AGENT-001
-title: Public lib contract for agent (agent.ridgunlib / libagent.so)
+title: Public lib contract for agent (agent.ridgunlib)
 status: approved
 implements: [FR-AGENT-001]
 auth: none

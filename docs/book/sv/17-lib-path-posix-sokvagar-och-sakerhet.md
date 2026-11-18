@@ -26,7 +26,6 @@ I `ridgun-libs` är **`path`** en förstklassig **lib** placerad i `src/main/rid
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
 | **Ridgun-bundle** | `target/bundles/path.ridgunlib` | Portabel distribution och direkt import med `import path` |
-| **Delat ELF64-objekt** | `target/libpath.so` | Inbyggt dynamiskt bibliotek helt utan C- eller `libc`-beroenden |
 
 > Varje lib deklarerar sin egen namnrymd med `module :: path`: skriv bara `import path` (eller `import path as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).
 

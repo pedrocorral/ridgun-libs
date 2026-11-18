@@ -1,6 +1,6 @@
 ---
 id: API-HTTP-001
-title: Public lib contract for http (http.ridgunlib / libhttp.so)
+title: Public lib contract for http (http.ridgunlib)
 status: approved
 implements: [FR-HTTP-001]
 auth: none

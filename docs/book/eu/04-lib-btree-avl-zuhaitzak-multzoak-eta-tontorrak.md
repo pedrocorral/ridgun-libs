@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`BTREE`** domeinuko zereginak ebazteak C-ko kan
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/btree.ridgunlib` | Banaketa eta inportazio zuzena `import btree` bidez |
-| **ELF64 objektu partekatua** | `target/libbtree.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: btree` bidez: nahikoa da goiburuan `import btree` (edo `import btree as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 

@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`LIST`** domeinuko zereginak ebazteak C-ko kanp
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/list.ridgunlib` | Banaketa eta inportazio zuzena `import list` bidez |
-| **ELF64 objektu partekatua** | `target/liblist.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: list` bidez: nahikoa da goiburuan `import list` (edo `import list as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 

@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`JWT`** domeinuko zereginak ebazteak C-ko kanpo
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/jwt.ridgunlib` | Banaketa eta inportazio zuzena `import jwt` bidez |
-| **ELF64 objektu partekatua** | `target/libjwt.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: jwt` bidez: nahikoa da goiburuan `import jwt` (edo `import jwt as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 

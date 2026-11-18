@@ -1,6 +1,6 @@
 ---
 id: API-TST-001
-title: Public lib contract for test (test.ridgunlib / libtest.so)
+title: Public lib contract for test (test.ridgunlib)
 status: approved
 implements: [FR-TST-001]
 auth: none

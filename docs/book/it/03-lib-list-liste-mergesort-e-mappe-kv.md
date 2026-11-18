@@ -26,7 +26,6 @@ In `ridgun-libs`, **`list`** è una **lib** di prima classe situata in `src/main
 | Artefatto | Percorso | Scopo |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/list.ridgunlib` | Distribuzione e importazione diretta con `import list` |
-| **Oggetto condiviso ELF64** | `target/liblist.so` | Libreria dinamica nativa senza dipendenze C né `libc` |
 
 > Ogni lib dichiara il proprio spazio dei nomi con `module :: list`: basta scrivere `import list` (o `import list as alias`) nell'intestazione e invocare le sue funzioni con spazi naturali (`mia funzione x`) e pipeline `->` (`x mia funzione -> risultato`).
 

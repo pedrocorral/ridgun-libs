@@ -26,7 +26,6 @@ In `ridgun-libs`, **`codec`** is a first-class **lib** located at `src/main/ridg
 | Artifact | Path | Purpose |
 |---|---|---|
 | **Ridgun Bundle** | `target/bundles/codec.ridgunlib` | Portable distribution and direct `import codec` resolution |
-| **ELF64 Shared Object** | `target/libcodec.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
 > Every lib declares its own namespace via `module :: codec`: simply write `import codec` (or `import codec as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).
 

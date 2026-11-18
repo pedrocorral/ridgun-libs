@@ -20,7 +20,6 @@ En `ridgun-libs`, **`ai`** es una **lib** de primera clase ubicada en `src/main/
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/ai.ridgunlib` | Distribución e importación directa con `import ai` |
-| **Objeto compartido ELF64** | `target/libai.so` | Biblioteca dinámica nativa sin dependencias de C ni `libc` |
 
 ### 33.2.1. Catálogo exhaustivo de tipos y firmas públicas en `src/main/ridgun/lib/ai.ridgun`
 

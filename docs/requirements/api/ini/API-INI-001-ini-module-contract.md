@@ -1,6 +1,6 @@
 ---
 id: API-INI-001
-title: Public lib contract for ini (ini.ridgunlib / libini.so)
+title: Public lib contract for ini (ini.ridgunlib)
 status: approved
 implements: [FR-INI-001]
 auth: none

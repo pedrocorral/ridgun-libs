@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kan
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/agent.ridgunlib` | Banaketa eta inportazio zuzena `import agent` bidez |
-| **ELF64 objektu partekatua** | `target/libagent.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: agent` bidez: nahikoa da goiburuan `import agent` (edo `import agent as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 

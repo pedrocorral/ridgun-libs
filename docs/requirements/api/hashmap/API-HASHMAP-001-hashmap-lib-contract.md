@@ -1,6 +1,6 @@
 ---
 id: API-HASHMAP-001
-title: Public lib contract for hashmap (hashmap.ridgunlib / libhashmap.so)
+title: Public lib contract for hashmap (hashmap.ridgunlib)
 status: approved
 implements: [FR-HASHMAP-001]
 auth: none

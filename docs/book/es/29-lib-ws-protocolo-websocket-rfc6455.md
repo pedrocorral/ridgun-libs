@@ -26,7 +26,6 @@ En `ridgun-libs`, **`ws`** es una **lib** de primera clase ubicada en `src/main/
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/ws.ridgunlib` | Distribución e importación directa con `import ws` |
-| **Objeto compartido ELF64** | `target/libws.so` | Biblioteca dinámica nativa sin dependencias de C ni `libc` |
 
 > Cada lib declara su propio espacio de nombres con `module :: ws`: basta con escribir `import ws` (o `import ws as alias`) en el encabezado y llamar a sus funciones con espacios naturales (`mi funcion x`) y tuberías `->` (`x mi funcion -> resultado`).
 

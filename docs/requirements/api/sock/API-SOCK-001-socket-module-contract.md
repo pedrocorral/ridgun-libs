@@ -1,6 +1,6 @@
 ---
 id: API-SOCK-001
-title: Public lib contract for socket (socket.ridgunlib / libsocket.so)
+title: Public lib contract for socket (socket.ridgunlib)
 status: approved
 implements: [FR-SOCK-001, FR-SOCK-002, FR-SOCK-003, FR-SOCK-004]
 related: [ADR-0010]

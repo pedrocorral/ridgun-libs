@@ -1,4 +1,4 @@
 # operations/runbooks/
 | Runbook | Trigger |
 |---|---|
-| `RB-0001-build-test-and-publish-libs.md` | Building, testing, and packaging `.so` and `.ridgunlib` artifacts |
+| `RB-0001-build-test-and-publish-libs.md` | Building, testing, and packaging `.ridgunlib` artifacts |

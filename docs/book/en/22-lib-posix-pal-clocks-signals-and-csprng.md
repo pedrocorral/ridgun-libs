@@ -26,7 +26,6 @@ In `ridgun-libs`, **`posix`** is a first-class **lib** located at `src/main/ridg
 | Artifact | Path | Purpose |
 |---|---|---|
 | **Ridgun Bundle** | `target/bundles/posix.ridgunlib` | Portable distribution and direct `import posix` resolution |
-| **ELF64 Shared Object** | `target/libposix.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
 > Every lib declares its own namespace via `module :: posix`: simply write `import posix` (or `import posix as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).
 

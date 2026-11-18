@@ -1,6 +1,6 @@
 ---
 id: API-GLOB-001
-title: Public lib contract for glob (glob.ridgunlib / libglob.so)
+title: Public lib contract for glob (glob.ridgunlib)
 status: approved
 implements: [FR-GLOB-001]
 auth: none

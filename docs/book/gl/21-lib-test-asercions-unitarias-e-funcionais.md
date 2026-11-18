@@ -26,7 +26,6 @@ En `ridgun-libs`, **`test`** é unha **lib** de primeira clase situada en `src/m
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/test.ridgunlib` | Distribución e importación directa con `import test` |
-| **Obxecto compartido ELF64** | `target/libtest.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
 > Cada lib declara o seu propio espazo de nomes con `module :: test`: abonda con escribir `import test` (ou `import test as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).
 

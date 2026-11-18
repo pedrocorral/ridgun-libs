@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`UUID`** domeinuko zereginak ebazteak C-ko kanp
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/uuid.ridgunlib` | Banaketa eta inportazio zuzena `import uuid` bidez |
-| **ELF64 objektu partekatua** | `target/libuuid.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: uuid` bidez: nahikoa da goiburuan `import uuid` (edo `import uuid as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 

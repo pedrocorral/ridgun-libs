@@ -1,6 +1,6 @@
 ---
 id: API-WS-001
-title: Public lib contract for ws (ws.ridgunlib / libws.so)
+title: Public lib contract for ws (ws.ridgunlib)
 status: approved
 implements: [FR-WS-001]
 auth: none

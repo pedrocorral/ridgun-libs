@@ -26,7 +26,6 @@ En `ridgun-libs`, **`cli`** es una **lib** de primera clase ubicada en `src/main
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/cli.ridgunlib` | Distribución e importación directa con `import cli` |
-| **Objeto compartido ELF64** | `target/libcli.so` | Biblioteca dinámica nativa sin dependencias de C ni `libc` |
 
 > Cada lib declara su propio espacio de nombres con `module :: cli`: basta con escribir `import cli` (o `import cli as alias`) en el encabezado y llamar a sus funciones con espacios naturales (`mi funcion x`) y tuberías `->` (`x mi funcion -> resultado`).
 

@@ -1,6 +1,6 @@
 ---
 id: API-LOG-001
-title: Public lib contract for log (log.ridgunlib / liblog.so)
+title: Public lib contract for log (log.ridgunlib)
 status: approved
 implements: [FR-LOG-001]
 auth: none

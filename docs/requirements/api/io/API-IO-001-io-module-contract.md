@@ -1,6 +1,6 @@
 ---
 id: API-IO-001
-title: Public lib contract for io (io.ridgunlib / libio.so)
+title: Public lib contract for io (io.ridgunlib)
 status: approved
 implements: [FR-IO-001, FR-IO-002]
 related: [ADR-0010]

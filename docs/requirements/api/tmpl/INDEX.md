@@ -2,4 +2,4 @@
 
 | File | ID | Title | Status |
 |---|---|---|---|
-| `API-TMPL-001-tmpl-module-contract.md` | `API-TMPL-001` | Public lib contract for `template` (`template.ridgunlib` / `libtemplate.so`) | implemented |
+| `API-TMPL-001-tmpl-module-contract.md` | `API-TMPL-001` | Public lib contract for `template` (`template.ridgunlib`) | implemented |

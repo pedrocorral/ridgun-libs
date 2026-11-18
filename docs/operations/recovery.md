@@ -12,8 +12,8 @@ status: approved
 ## Restore procedure (last tested: 2026-10-21)
 1. Clean stale or corrupted build artifacts: `stable clean` (or `rm -rf target/`).
 2. Re-verify all modules and test suites from source: `stable check && stable test`.
-3. Re-generate all `.so` and `.ridgunlib` artifacts: `stable built lib`.
+3. Re-generate all `.ridgunlib` artifacts: `stable built lib`.
 4. Re-verify AIX documentation and coverage matrix: `aix docs validate && aix docs coverage`.
 
 ## Data-loss / corruption playbook
-- If a `.so` or `.ridgunlib` artifact in `target/` is corrupted or out of sync with `src/main/ridgun/lib/*.ridgun`, run `stable clean && stable built lib && stable test` to deterministically rebuild all library binaries from source.
+- If a `.ridgunlib` artifact in `target/` is corrupted or out of sync with `src/main/ridgun/lib/*.ridgun`, run `stable clean && stable built lib && stable test` to deterministically rebuild all library binaries from source.

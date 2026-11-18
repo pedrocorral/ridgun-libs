@@ -1,6 +1,6 @@
 ---
 id: API-STR-001
-title: Public lib contract for str (str.ridgunlib / libstr.so)
+title: Public lib contract for str (str.ridgunlib)
 status: approved
 implements: [FR-STR-001]
 auth: none

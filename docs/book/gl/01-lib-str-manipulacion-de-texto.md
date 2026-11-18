@@ -26,7 +26,6 @@ En `ridgun-libs`, **`str`** é unha **lib** de primeira clase situada en `src/ma
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/str.ridgunlib` | Distribución e importación directa con `import str` |
-| **Obxecto compartido ELF64** | `target/libstr.so` | Biblioteca dinámica nativa sen dependencias de C nin `libc` |
 
 > Cada lib declara o seu propio espazo de nomes con `module :: str`: abonda con escribir `import str` (ou `import str as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).
 

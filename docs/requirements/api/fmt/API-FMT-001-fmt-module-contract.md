@@ -1,6 +1,6 @@
 ---
 id: API-FMT-001
-title: Public lib contract for fmt (fmt.ridgunlib / libfmt.so)
+title: Public lib contract for fmt (fmt.ridgunlib)
 status: approved
 implements: [FR-FMT-001]
 auth: none

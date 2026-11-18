@@ -26,7 +26,6 @@ Ekosistema tradizional batean, **`TMPL`** domeinuko zereginak ebazteak C-ko kanp
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
 | **Ridgun Bundle-a** | `target/bundles/template.ridgunlib` | Banaketa eta inportazio zuzena `import template` bidez |
-| **ELF64 objektu partekatua** | `target/libtemplate.so` | C edo `libc` mendekotasunik gabeko liburutegi dinamiko natiboa |
 
 > Lib bakoitzak bere izen-espazioa deklaratzen du `module :: template` bidez: nahikoa da goiburuan `import template` (edo `import template as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 

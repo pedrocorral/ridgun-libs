@@ -26,7 +26,6 @@ No `ridgun-libs`, **`http`** é uma **lib** de primeira classe localizada em `sr
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/http.ridgunlib` | Distribuição e importação direta com `import http` |
-| **Objeto partilhado ELF64** | `target/libhttp.so` | Biblioteca dinâmica nativa sem dependências de C nem `libc` |
 
 > Cada lib declara o seu próprio espaço de nomes com `module :: http`: basta escrever `import http` (ou `import http as alias`) no topo e invocar as suas funções com espaços naturais (`minha funcao x`) e pipelines `->` (`x minha funcao -> resultado`).
 

@@ -1,6 +1,6 @@
 ---
 id: API-BTREE-001
-title: Public lib contract for btree (btree.ridgunlib / libbtree.so)
+title: Public lib contract for btree (btree.ridgunlib)
 status: approved
 implements: [FR-BTREE-001]
 auth: none

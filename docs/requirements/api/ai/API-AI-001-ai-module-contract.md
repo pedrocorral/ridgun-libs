@@ -1,6 +1,6 @@
 ---
 id: API-AI-001
-title: Public lib contract for ai (ai.ridgunlib / libai.so)
+title: Public lib contract for ai (ai.ridgunlib)
 status: implemented
 implements: [FR-AI-001]
 auth: none

@@ -26,7 +26,6 @@ A `ridgun-libs`, **`io`** és una **lib** de primera classe situada a `src/main/
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/io.ridgunlib` | Distribució i importació directa amb `import io` |
-| **Objecte compartit ELF64** | `target/libio.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
 > Cada lib declara el seu propi espai de noms amb `module :: io`: n'hi ha prou d'escriure `import io` (o `import io as alias`) a la capçalera i cridar les seves funcions amb espais naturals (`la meva funcio x`) i canonades `->` (`x la meva funcio -> resultat`).
 

@@ -1,6 +1,6 @@
 ---
 id: API-TIME-001
-title: Public lib contract for time (time.ridgunlib / libtime.so)
+title: Public lib contract for time (time.ridgunlib)
 status: approved
 implements: [FR-TIME-001]
 auth: none

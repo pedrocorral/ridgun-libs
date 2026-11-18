@@ -26,7 +26,6 @@ In `ridgun-libs`, **`tensor`** is a first-class **lib** located at `src/main/rid
 | Artifact | Path | Purpose |
 |---|---|---|
 | **Ridgun Bundle** | `target/bundles/tensor.ridgunlib` | Portable distribution and direct `import tensor` resolution |
-| **ELF64 Shared Object** | `target/libtensor.so` | Native dynamic shared library with zero C or `libc` dependencies |
 
 > Every lib declares its own namespace via `module :: tensor`: simply write `import tensor` (or `import tensor as alias`) at the top and call its functions with natural spaces (`my fn x`) and left-to-right `->` pipelines (`x my fn -> result`).
 

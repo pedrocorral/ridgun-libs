@@ -26,7 +26,6 @@ A `ridgun-libs`, **`jwt`** és una **lib** de primera classe situada a `src/main
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/jwt.ridgunlib` | Distribució i importació directa amb `import jwt` |
-| **Objecte compartit ELF64** | `target/libjwt.so` | Biblioteca dinàmica nativa sense dependències de C ni `libc` |
 
 > Cada lib declara el seu propi espai de noms amb `module :: jwt`: n'hi ha prou d'escriure `import jwt` (o `import jwt as alias`) a la capçalera i cridar les seves funcions amb espais naturals (`la meva funcio x`) i canonades `->` (`x la meva funcio -> resultat`).
 
