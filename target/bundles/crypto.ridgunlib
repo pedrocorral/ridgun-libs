@@ -865,103 +865,198 @@ fn :: le32 at Tensor[U8] Int => Int
       le32 at bs         off =
         bs_(off) + (bs_(off + 1) * 256) + (bs_(off + 2) * 65536) + (bs_(off + 3) * 16777216)
 
-fn :: chacha qr Int Int Int Int => Int Int Int Int
-      chacha qr a0 b0 c0 d0 =
-        a1 = u32 val (a0 + b0)
-        d1 = rotl32 (bxor d0 a1) 16
-        c1 = u32 val (c0 + d1)
-        b1 = rotl32 (bxor b0 c1) 12
-        a2 = u32 val (a1 + b1)
-        d2 = rotl32 (bxor d1 a2) 8
-        c2 = u32 val (c1 + d2)
-        b2 = rotl32 (bxor b1 c2) 7
-        (a2, b2, c2, d2)
-
-fn :: chacha double round Tensor[Int * 16] => Tensor[Int * 16]
-      chacha double round st               =
-        st_(0), st_(4), st_(8),  st_(12) = chacha qr st_(0) st_(4) st_(8)  st_(12)
-        st_(1), st_(5), st_(9),  st_(13) = chacha qr st_(1) st_(5) st_(9)  st_(13)
-        st_(2), st_(6), st_(10), st_(14) = chacha qr st_(2) st_(6) st_(10) st_(14)
-        st_(3), st_(7), st_(11), st_(15) = chacha qr st_(3) st_(7) st_(11) st_(15)
-        st_(0), st_(5), st_(10), st_(15) = chacha qr st_(0) st_(5) st_(10) st_(15)
-        st_(1), st_(6), st_(11), st_(12) = chacha qr st_(1) st_(6) st_(11) st_(12)
-        st_(2), st_(7), st_(8),  st_(13) = chacha qr st_(2) st_(7) st_(8)  st_(13)
-        st_(3), st_(4), st_(9),  st_(14) = chacha qr st_(3) st_(4) st_(9)  st_(14)
-        st
-
-fn :: chacha rounds loop Tensor[Int * 16] Int => Tensor[Int * 16]
-      chacha rounds loop st               idx =
-        | idx >= 10 = st
-        | otherwise = chacha rounds loop (chacha double round st) (idx + 1)
-
-fn :: chacha20 init st Tensor[U8] Tensor[U8] Int => Tensor[Int * 16]
-      chacha20 init st key_bs nonce_bs counter =
-        st      = Tensor[Int * 16]
-        st_(0)  = 1634760805
-        st_(1)  = 857760878
-        st_(2)  = 2036477234
-        st_(3)  = 1797285236
-        st_(4)  = le32 at key_bs 0
-        st_(5)  = le32 at key_bs 4
-        st_(6)  = le32 at key_bs 8
-        st_(7)  = le32 at key_bs 12
-        st_(8)  = le32 at key_bs 16
-        st_(9)  = le32 at key_bs 20
-        st_(10) = le32 at key_bs 24
-        st_(11) = le32 at key_bs 28
-        st_(12) = u32 val counter
-        st_(13) = le32 at nonce_bs 0
-        st_(14) = le32 at nonce_bs 4
-        st_(15) = le32 at nonce_bs 8
-        st
-
-fn :: chacha20 emit loop Tensor[Int * 16] Tensor[Int * 16] Tensor[U8] Int => Tensor[U8]
-      chacha20 emit loop mixed init out w =
-        | w >= 16   = out
+-- Ten double rounds on n blocks at once: one tensor per state word (RFC 8439 §2.3).
+-- Consecutive element-wise statements run as one loop, and the self call repeats it (FR-COMP-031).
+fn :: chacha rounds Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
+      chacha rounds s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 k =
+        | k <= 0 = (s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15)
         | otherwise =
-          c put le32 out (4 * w) ((mixed_(w) + init_(w)) and 0xFFFFFFFF)
-          chacha20 emit loop mixed init out (w + 1)
+          s0v1 = s0_i + s4_i
+          s12v1 = (s12_i xor s0v1_i) rotl 16
+          s8v1 = s8_i + s12v1_i
+          s4v1 = (s4_i xor s8v1_i) rotl 12
+          s0v2 = s0v1_i + s4v1_i
+          s12v2 = (s12v1_i xor s0v2_i) rotl 8
+          s8v2 = s8v1_i + s12v2_i
+          s4v2 = (s4v1_i xor s8v2_i) rotl 7
+          s1v1 = s1_i + s5_i
+          s13v1 = (s13_i xor s1v1_i) rotl 16
+          s9v1 = s9_i + s13v1_i
+          s5v1 = (s5_i xor s9v1_i) rotl 12
+          s1v2 = s1v1_i + s5v1_i
+          s13v2 = (s13v1_i xor s1v2_i) rotl 8
+          s9v2 = s9v1_i + s13v2_i
+          s5v2 = (s5v1_i xor s9v2_i) rotl 7
+          s2v1 = s2_i + s6_i
+          s14v1 = (s14_i xor s2v1_i) rotl 16
+          s10v1 = s10_i + s14v1_i
+          s6v1 = (s6_i xor s10v1_i) rotl 12
+          s2v2 = s2v1_i + s6v1_i
+          s14v2 = (s14v1_i xor s2v2_i) rotl 8
+          s10v2 = s10v1_i + s14v2_i
+          s6v2 = (s6v1_i xor s10v2_i) rotl 7
+          s3v1 = s3_i + s7_i
+          s15v1 = (s15_i xor s3v1_i) rotl 16
+          s11v1 = s11_i + s15v1_i
+          s7v1 = (s7_i xor s11v1_i) rotl 12
+          s3v2 = s3v1_i + s7v1_i
+          s15v2 = (s15v1_i xor s3v2_i) rotl 8
+          s11v2 = s11v1_i + s15v2_i
+          s7v2 = (s7v1_i xor s11v2_i) rotl 7
+          s0v3 = s0v2_i + s5v2_i
+          s15v3 = (s15v2_i xor s0v3_i) rotl 16
+          s10v3 = s10v2_i + s15v3_i
+          s5v3 = (s5v2_i xor s10v3_i) rotl 12
+          s0v4 = s0v3_i + s5v3_i
+          s15v4 = (s15v3_i xor s0v4_i) rotl 8
+          s10v4 = s10v3_i + s15v4_i
+          s5v4 = (s5v3_i xor s10v4_i) rotl 7
+          s1v3 = s1v2_i + s6v2_i
+          s12v3 = (s12v2_i xor s1v3_i) rotl 16
+          s11v3 = s11v2_i + s12v3_i
+          s6v3 = (s6v2_i xor s11v3_i) rotl 12
+          s1v4 = s1v3_i + s6v3_i
+          s12v4 = (s12v3_i xor s1v4_i) rotl 8
+          s11v4 = s11v3_i + s12v4_i
+          s6v4 = (s6v3_i xor s11v4_i) rotl 7
+          s2v3 = s2v2_i + s7v2_i
+          s13v3 = (s13v2_i xor s2v3_i) rotl 16
+          s8v3 = s8v2_i + s13v3_i
+          s7v3 = (s7v2_i xor s8v3_i) rotl 12
+          s2v4 = s2v3_i + s7v3_i
+          s13v4 = (s13v3_i xor s2v4_i) rotl 8
+          s8v4 = s8v3_i + s13v4_i
+          s7v4 = (s7v3_i xor s8v4_i) rotl 7
+          s3v3 = s3v2_i + s4v2_i
+          s14v3 = (s14v2_i xor s3v3_i) rotl 16
+          s9v3 = s9v2_i + s14v3_i
+          s4v3 = (s4v2_i xor s9v3_i) rotl 12
+          s3v4 = s3v3_i + s4v3_i
+          s14v4 = (s14v3_i xor s3v4_i) rotl 8
+          s9v4 = s9v3_i + s14v4_i
+          s4v4 = (s4v3_i xor s9v4_i) rotl 7
+          chacha rounds s0v4 s1v4 s2v4 s3v4 s4v4 s5v4 s6v4 s7v4 s8v4 s9v4 s10v4 s11v4 s12v4 s13v4 s14v4 s15v4 (k - 1)
+
+fn :: chacha fill counter Tensor[U32 * n] Int Int Int => Tensor[U32 * n]
+      chacha fill counter t first i n =
+        | i >= n    = t
+        | otherwise =
+          t_(i) = (first + i) and 0xFFFFFFFF
+          chacha fill counter t first (i + 1) n
+
+-- The key stream of `nb` blocks from block `ctr` on, as 16 tensors of `nb` words (word w of block b is o<w>_(b)).
+fn :: chacha page Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
+      chacha page key_bs nonce_bs ctr nb =
+        s0 = Tensor[U32 * nb] with 1634760805
+        s1 = Tensor[U32 * nb] with 857760878
+        s2 = Tensor[U32 * nb] with 2036477234
+        s3 = Tensor[U32 * nb] with 1797285236
+        s4 = Tensor[U32 * nb] with (le32 at key_bs 0)
+        s5 = Tensor[U32 * nb] with (le32 at key_bs 4)
+        s6 = Tensor[U32 * nb] with (le32 at key_bs 8)
+        s7 = Tensor[U32 * nb] with (le32 at key_bs 12)
+        s8 = Tensor[U32 * nb] with (le32 at key_bs 16)
+        s9 = Tensor[U32 * nb] with (le32 at key_bs 20)
+        s10 = Tensor[U32 * nb] with (le32 at key_bs 24)
+        s11 = Tensor[U32 * nb] with (le32 at key_bs 28)
+        s12 = chacha fill counter (Tensor[U32 * nb]) ctr 0 nb
+        s13 = Tensor[U32 * nb] with (le32 at nonce_bs 0)
+        s14 = Tensor[U32 * nb] with (le32 at nonce_bs 4)
+        s15 = Tensor[U32 * nb] with (le32 at nonce_bs 8)
+        w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15 = chacha rounds s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 10
+        o0 = w0_i + s0_i
+        o1 = w1_i + s1_i
+        o2 = w2_i + s2_i
+        o3 = w3_i + s3_i
+        o4 = w4_i + s4_i
+        o5 = w5_i + s5_i
+        o6 = w6_i + s6_i
+        o7 = w7_i + s7_i
+        o8 = w8_i + s8_i
+        o9 = w9_i + s9_i
+        o10 = w10_i + s10_i
+        o11 = w11_i + s11_i
+        o12 = w12_i + s12_i
+        o13 = w13_i + s13_i
+        o14 = w14_i + s14_i
+        o15 = w15_i + s15_i
+        (o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15)
+
+-- Writes word `w` of every block of the page into the key stream `ks` as 4 little-endian bytes:
+-- bytes off + 64 b + 4 w + (0..3), while below `n`.
+fn :: chacha put word Tensor[U8] Int Int Tensor[U32 * n] Int Int Int => Int
+      chacha put word ks off n ow w b nb =
+        | b >= nb   = 0
+        | (off + (64 * b) + (4 * w) + 3) < n =
+          p = off + (64 * b) + (4 * w)
+          v = ow_(b)
+          ks_(p)     = v and 255
+          ks_(p + 1) = (v shr 8) and 255
+          ks_(p + 2) = (v shr 16) and 255
+          ks_(p + 3) = v shr 24
+          chacha put word ks off n ow w (b + 1) nb
+        | otherwise =
+          p = off + (64 * b) + (4 * w)
+          v = ow_(b)
+          chacha put byte ks p n (v and 255)
+          chacha put byte ks (p + 1) n ((v shr 8) and 255)
+          chacha put byte ks (p + 2) n ((v shr 16) and 255)
+          chacha put byte ks (p + 3) n (v shr 24)
+          chacha put word ks off n ow w (b + 1) nb
+
+fn :: chacha put byte Tensor[U8] Int Int Int => Int
+      chacha put byte ks p n v =
+        | p >= n    = 0
+        | otherwise =
+          ks_(p) = v
+          0
+
+fn :: chacha put page Tensor[U8] Int Int Int Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] => Int
+      chacha put page ks off n nb o0 o1 o2 o3 o4 o5 o6 o7 o8 o9 o10 o11 o12 o13 o14 o15 =
+        chacha put word ks off n o0 0 0 nb
+        chacha put word ks off n o1 1 0 nb
+        chacha put word ks off n o2 2 0 nb
+        chacha put word ks off n o3 3 0 nb
+        chacha put word ks off n o4 4 0 nb
+        chacha put word ks off n o5 5 0 nb
+        chacha put word ks off n o6 6 0 nb
+        chacha put word ks off n o7 7 0 nb
+        chacha put word ks off n o8 8 0 nb
+        chacha put word ks off n o9 9 0 nb
+        chacha put word ks off n o10 10 0 nb
+        chacha put word ks off n o11 11 0 nb
+        chacha put word ks off n o12 12 0 nb
+        chacha put word ks off n o13 13 0 nb
+        chacha put word ks off n o14 14 0 nb
+        chacha put word ks off n o15 15 0 nb
+        0
+
+-- The first `n` bytes of the key stream from block `ctr` on, 64 blocks (one page) at a time.
+fn :: chacha20 key stream loop Tensor[U8] Tensor[U8] Tensor[U8] Int Int Int => Tensor[U8]
+      chacha20 key stream loop key_bs nonce_bs ks off n ctr =
+        | off >= n  = ks
+        | otherwise =
+          left = ((n - off) + 63) / 64
+          nb   = | left < 64 = left | otherwise = 64 |.
+          o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15 = chacha page key_bs nonce_bs ctr nb
+          chacha put page ks off n nb o0 o1 o2 o3 o4 o5 o6 o7 o8 o9 o10 o11 o12 o13 o14 o15
+          chacha20 key stream loop key_bs nonce_bs ks (off + (64 * nb)) n (ctr + nb)
+
+fn :: chacha20 key stream Tensor[U8] Tensor[U8] Int Int => Tensor[U8]
+      chacha20 key stream key_bs nonce_bs ctr n =
+        chacha20 key stream loop key_bs nonce_bs (Tensor[U8 * n]) 0 n ctr
 
 -- The 64-byte keystream block `counter` (RFC 8439 §2.3).
-fn :: chacha20 block Tensor[U8] Tensor[U8] Int     => Tensor[U8]
-      chacha20 block key_bs     nonce_bs   counter =
-        init_st = chacha20 init st key_bs nonce_bs counter
-        work_st = chacha20 init st key_bs nonce_bs counter
-        mixed   = chacha rounds loop work_st 0
-        chacha20 emit loop mixed init_st (Tensor[U8 * 64]) 0
+fn :: chacha20 block Tensor[U8] Tensor[U8] Int => Tensor[U8]
+      chacha20 block key_bs nonce_bs counter =  chacha20 key stream key_bs nonce_bs counter 64
 
-fn :: chacha copy st Tensor[Int * 16] Tensor[Int * 16] Int => Tensor[Int * 16]
-      chacha copy st src              dst              i   =
-        | i >= 16   = dst
-        | otherwise =
-          dst_(i) = src_(i)
-          chacha copy st src dst (i + 1)
-
-fn :: chacha20 mix block Tensor[Int * 16] Tensor[Int * 16] Tensor[U8] Tensor[U8] Int Int Int => Int
-      chacha20 mix block mixed init msg out off n i =
-        | i >= 64 or (off + i) >= n = 0
-        | otherwise =
-          w             = i shr 2
-          ks            = ((mixed_(w) + init_(w)) shr (8 * (i and 3))) and 255
-          out_(off + i) = msg_(off + i) xor ks
-          chacha20 mix block mixed init msg out off n (i + 1)
-
-fn :: chacha20 bitxor loop Tensor[Int * 16] Tensor[U8] Tensor[U8] Int Int Int => Tensor[U8]
-      chacha20 bitxor loop init msg out off n ctr =
-        | off >= n  = out
-        | otherwise =
-          init_(12) = ctr and 0xFFFFFFFF
-          mixed     = chacha rounds loop (chacha copy st init (Tensor[Int * 16]) 0) 0
-          chacha20 mix block mixed init msg out off n 0
-          chacha20 bitxor loop init msg out (off + 64) n (ctr + 1)
+fn :: chacha bitxor bytes Tensor[U8 * n] Tensor[U8 * n] => Tensor[U8 * n]
+      chacha bitxor bytes a b =  a_i xor b_i
 
 -- RFC 8439 §2.4 encryption: `msg` XOR the keystream from block `ctr` on.
 fn :: chacha20 bitxor Tensor[U8] Tensor[U8] Int Tensor[U8] => Tensor[U8]
-      chacha20 bitxor key_bs     nonce_bs   ctr msg        =
-        n    = c u8 len msg
-        out  = Tensor[U8 * n]
-        init = chacha20 init st key_bs nonce_bs ctr
-        chacha20 bitxor loop init msg out 0 n ctr
+      chacha20 bitxor key_bs nonce_bs ctr msg =
+        chacha bitxor bytes msg (chacha20 key stream key_bs nonce_bs ctr (c u8 len msg))
 
 -- ── RFC 8439 Poly1305 One-Time Authenticator (5 x 26-bit limbs) ──
 
