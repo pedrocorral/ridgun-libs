@@ -22,7 +22,14 @@ import argon2id
 type CT16     = ct0: A, ct1: A, ct2: A, ct3: A, ct4: A, ct5: A, ct6: A, ct7: A, ct8: A, ct9: A, ct10: A, ct11: A, ct12: A, ct13: A, ct14: A, ct15: A
 type CPbkCtx  = cptbl: CT16, cpipad: String, cpopad: String
 type EcPoint  = ecx: Tensor[U64 * 260], ecy: Tensor[U64 * 260], ecz: Tensor[U64 * 260], ec_inf: Bool
-type EcCurve  = ecp: Tensor[U64 * 260], ecn: Tensor[U64 * 260], ecb: Tensor[U64 * 260], ecgx: Tensor[U64 * 260], ecgy: Tensor[U64 * 260], eclimbs: Int
+-- Montgomery multiplication on 16-bit limbs as one repeated element-wise loop (ridgunc 1.0.39).
+-- R = 2^(16 lim). The context holds what depends only on the modulus:
+--   bm_minv = -m^-1 mod 2^16; bm_one = R mod m; bm_r2 = R^2 mod m;
+--   bm_sh_(j) = j + 1 (the next limb), bm_nx the same but kept inside the lanes, bm_zr = 0 (limb 0 for every lane),
+--   bm_e0 = 1 at lane 0 and 0 elsewhere.
+type BnMont = bm_m: Tensor[U64 * 260], bm_lim: Int, bm_minv: Int, bm_one: Tensor[U64 * 260], bm_r2: Tensor[U64 * 260], bm_unit: Tensor[U64 * 260], bm_sh: Tensor[U64 * n], bm_nx: Tensor[U64 * n], bm_zr: Tensor[U64 * n], bm_e0: Tensor[U64 * n]
+-- `ecm` is the Montgomery context of the field prime `ecp`; point coordinates are kept in Montgomery form (x R mod p).
+type EcCurve  = ecp: Tensor[U64 * 260], ecn: Tensor[U64 * 260], ecb: Tensor[U64 * 260], ecgx: Tensor[U64 * 260], ecgy: Tensor[U64 * 260], eclimbs: Int, ecm: BnMont
 type X509Cert = tbs_der: String, issuer_der: String, subject_der: String, issuer_cn: String, subject_cn: String, not_before_at: Int, not_after_at: Int, key_alg: String, pubkey_bytes: String, rsa_exp_bytes: String, sig_alg: String, sig_bytes: String, san_dns: [String], is_ca: Bool, key_usage_bits: Int, has_server_auth: Bool
 
 -- ── RGF-019 Raw Byte Manipulation (`byte_str`, `bytes_from_list`, `bytes_to_list`) ──
@@ -3453,6 +3460,119 @@ fn :: bn mod from be String Tensor[U64 * 260] Int => Tensor[U64 * 260]
         prod1 = bn mul full loop prod0 a one 0 lim
         bn reduce520 prod1 m lim
 
+-- One step per limb of a: t = (t + a_i b + q m) / 2^16, with q chosen so the low limb is 0.
+-- The limbs of t are not carried (each stays below 2^41); only the low 16 bits of limb 0 decide q,
+-- and the carry of the limb that drops out goes to the new limb 0.
+fn :: bn mont loop Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int => Tensor[U64 * n] Tensor[U64 * n]
+      bn mont loop t ci a b m sh nx zr e0 minv k =
+        | k <= 0 = (t, ci)
+        | otherwise =
+          ai  = a_(ci_i)
+          l0  = t_(zr_i) + (ai_i * b_(zr_i))
+          q   = (l0_i * minv) and 65535
+          t1  = ((t_(nx_i) + (ai_i * b_(sh_i))) + (q_i * m_(sh_i))) + (((l0_i + (q_i * m_(zr_i))) shr 16) * e0_i)
+          ci1 = ci_i + 1
+          bn mont loop t1 ci1 a b m sh nx zr e0 minv (k - 1)
+
+-- Carries the limbs of t into `out` (16 bits each); returns the carry out of limb lim - 1.
+fn :: bn mont carry Tensor[U64 * n] Tensor[U64 * 260] Int Int Int => Int
+      bn mont carry t out j lim carry =
+        | j >= lim  = carry
+        | otherwise =
+          v = t_(j) + carry
+          out_(j) = v and 65535
+          bn mont carry t out (j + 1) lim (v shr 16)
+
+-- a * b / R mod m, for a, b < m.
+fn :: bn mont mul BnMont Tensor[U64 * 260] Tensor[U64 * 260] => Tensor[U64 * 260]
+      bn mont mul ctx a b =
+        lim   = bm_lim ctx
+        m     = bm_m ctx
+        t, ci = bn mont loop (Tensor[U64 * (lim + 2)]) (Tensor[U64 * (lim + 2)]) a b m (bm_sh ctx) (bm_nx ctx) (bm_zr ctx) (bm_e0 ctx) (bm_minv ctx) lim
+        out   = bn zero lim
+        top   = bn mont carry t out 0 lim 0
+        bn add mod finish (top > 0 or (bn cmp out m lim) >= 0) out m lim
+
+-- t_(j) = j + 1, but never above `cap`, for the `len` lanes.
+fn :: bn mont ix Tensor[U64 * n] Int Int Int => Tensor[U64 * n]
+      bn mont ix t cap j len =
+        | j >= len  = t
+        | otherwise =
+          t_(j) = | (j + 1) > cap = cap | otherwise = j + 1 |.
+          bn mont ix t cap (j + 1) len
+
+-- -m^-1 mod 2^16 for odd m (Newton: each step doubles the correct bits).
+fn :: bn mont minv Int => Int
+      bn mont minv m0 =
+        x1 = m0
+        x2 = (x1 * (2 - (m0 * x1))) and 65535
+        x3 = (x2 * (2 - (m0 * x2))) and 65535
+        x4 = (x3 * (2 - (m0 * x3))) and 65535
+        x5 = (x4 * (2 - (m0 * x4))) and 65535
+        (65536 - x5) and 65535
+
+-- 2^e in Montgomery form (2^e R mod m), by square and multiply from `two` = 2 R mod m.
+fn :: bn mont pow2 BnMont Tensor[U64 * 260] Tensor[U64 * 260] Int Int => Tensor[U64 * 260]
+      bn mont pow2 ctx acc two e bit =
+        | bit < 0   = acc
+        | otherwise =
+          sq = bn mont mul ctx acc acc
+          nx = | ((e shr bit) and 1) == 1 = bn mont mul ctx sq two | otherwise = sq |.
+          bn mont pow2 ctx nx two e (bit - 1)
+
+-- The context of an odd modulus of `lim` limbs.
+fn :: bn mont ctx Tensor[U64 * 260] Int => BnMont
+      bn mont ctx m lim =
+        sh    = bn mont ix (Tensor[U64 * (lim + 2)]) (lim + 2) 0 (lim + 2)
+        nx    = bn mont ix (Tensor[U64 * (lim + 2)]) (lim + 1) 0 (lim + 2)
+        zr    = Tensor[U64 * (lim + 2)]
+        e0    = Tensor[U64 * (lim + 2)]
+        e0_(0) = 1
+        prod  = bn zero520 ((2 * lim) + 4)
+        prod_(lim) = 1
+        one   = bn reduce520 prod m lim
+        unit  = bn zero lim
+        unit_(0) = 1
+        ctx0  = BnMont m lim (bn mont minv m_(0)) one one unit sh nx zr e0
+        two   = bn add mod one one m lim
+        r2    = bn mont pow2 ctx0 one two (16 * lim) 12
+        ctx0 with bm_r2 = r2
+
+-- a * b mod m through the context: (a b / R) * R^2 / R.
+fn :: bn mont mul mod BnMont Tensor[U64 * 260] Tensor[U64 * 260] => Tensor[U64 * 260]
+      bn mont mul mod ctx a b =  bn mont mul ctx (bn mont mul ctx a b) (bm_r2 ctx)
+
+fn :: bn mont sq BnMont Tensor[U64 * 260] => Tensor[U64 * 260]
+      bn mont sq ctx a =  bn mont mul ctx a a
+
+-- To Montgomery form (a R mod m) and back.
+fn :: bn mont in BnMont Tensor[U64 * 260] => Tensor[U64 * 260]
+      bn mont in ctx a =  bn mont mul ctx a (bm_r2 ctx)
+
+fn :: bn mont out BnMont Tensor[U64 * 260] => Tensor[U64 * 260]
+      bn mont out ctx a =  bn mont mul ctx a (bm_unit ctx)
+
+fn :: bn mont pow bits Tensor[U64 * 260] BnMont Tensor[U64 * 260] Int Int => Tensor[U64 * 260]
+      bn mont pow bits acc ctx base e_word bit_idx =
+        | bit_idx < 0 = acc
+        | otherwise   =
+          acc2 = bn mont mul ctx acc acc
+          acc3 =
+            | ((e_word shr bit_idx) and 1) == 1 = bn mont mul ctx acc2 base
+            | otherwise                         = acc2
+          bn mont pow bits acc3 ctx base e_word (bit_idx - 1)
+
+fn :: bn mont pow bytes Tensor[U64 * 260] BnMont Tensor[U64 * 260] String Int Int => Tensor[U64 * 260]
+      bn mont pow bytes acc ctx base exp_s idx elen =
+        | idx >= elen = acc
+        | otherwise   = bn mont pow bytes (bn mont pow bits acc ctx base (norm byte (str char at exp_s idx)) 7) ctx base exp_s (idx + 1) elen
+
+-- base^exp for `base` and the result in Montgomery form; `exp_be` is the exponent as big-endian bytes.
+fn :: bn mont pow BnMont Tensor[U64 * 260] String => Tensor[U64 * 260]
+      bn mont pow ctx base exp_be =
+        exp_s = bn strip leading zeroes exp_be 0 (str len exp_be)
+        bn mont pow bytes (bn clone (bm_one ctx) (bm_lim ctx)) ctx base exp_s 0 (str len exp_s)
+
 fn :: bn mod exp bits loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int Int => Tensor[U64 * 260]
       bn mod exp bits loop acc base m lim e_word bit_idx =
         | bit_idx < 0 = acc
@@ -3472,12 +3592,22 @@ fn :: bn mod exp bytes loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260
           acc1 = bn mod exp bits loop acc base m lim b 7
           bn mod exp bytes loop acc1 base m lim exp_s (idx + 1) elen
 
-fn :: bn mod exp Tensor[U64 * 260] String Tensor[U64 * 260] Int => Tensor[U64 * 260]
-      bn mod exp base exp_be m lim =
+-- base^exp mod m, one limb-by-limb product and division per step. For even m, or a base not below m.
+fn :: bn mod exp plain Tensor[U64 * 260] String Tensor[U64 * 260] Int => Tensor[U64 * 260]
+      bn mod exp plain base exp_be m lim =
         exp_s = bn strip leading zeroes exp_be 0 (str len exp_be)
         acc0  = bn zero lim
         acc0_(0) = 1
         bn mod exp bytes loop acc0 base m lim exp_s 0 (str len exp_s)
+
+fn :: bn mod exp mont Tensor[U64 * 260] String BnMont => Tensor[U64 * 260]
+      bn mod exp mont base exp_be ctx =  bn mont out ctx (bn mont pow ctx (bn mont in ctx base) exp_be)
+
+-- base^exp mod m. An odd modulus (RSA, the curve primes and orders) goes through Montgomery multiplication.
+fn :: bn mod exp Tensor[U64 * 260] String Tensor[U64 * 260] Int => Tensor[U64 * 260]
+      bn mod exp base exp_be m lim =
+        | (m_(0) and 1) == 0 or (bn cmp base m lim) >= 0 = bn mod exp plain base exp_be m lim
+        | otherwise                                      = bn mod exp mont base exp_be (bn mont ctx m lim)
 
 fn :: bn mod inv Tensor[U64 * 260] Tensor[U64 * 260] Int => Tensor[U64 * 260]
       bn mod inv a m lim =
@@ -3498,7 +3628,7 @@ fn :: p256 curve => EcCurve
         b  = bn from hex "5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b" 16
         gx = bn from hex "6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296" 16
         gy = bn from hex "4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5" 16
-        EcCurve p n b gx gy 16
+        EcCurve p n b gx gy 16 (bn mont ctx p 16)
 
 fn :: p384 curve => EcCurve
       p384 curve =
@@ -3507,17 +3637,17 @@ fn :: p384 curve => EcCurve
         b  = bn from hex "b3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef" 24
         gx = bn from hex "aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7" 24
         gy = bn from hex "3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f" 24
-        EcCurve p n b gx gy 24
+        EcCurve p n b gx gy 24 (bn mont ctx p 24)
 
 fn :: ec inf point Int => EcPoint
       ec inf point lim =
         EcPoint (bn zero lim) (bn zero lim) (bn zero lim) True
 
-fn :: ec affine point Tensor[U64 * 260] Tensor[U64 * 260] Int => EcPoint
-      ec affine point x y lim =
-        z = bn zero lim
-        z_(0) = 1
-        EcPoint x y z False
+-- The point (x, y) with its coordinates taken into Montgomery form.
+fn :: ec affine point EcCurve Tensor[U64 * 260] Tensor[U64 * 260] => EcPoint
+      ec affine point crv x y =
+        fm = ecm crv
+        EcPoint (bn mont in fm x) (bn mont in fm y) (bn clone (bm_one fm) (eclimbs crv)) False
 
 fn :: ec point on curve EcCurve Tensor[U64 * 260] Tensor[U64 * 260] => Bool
       ec point on curve crv x y =
@@ -3526,9 +3656,10 @@ fn :: ec point on curve EcCurve Tensor[U64 * 260] Tensor[U64 * 260] => Bool
           p   = ecp crv
           b   = ecb crv
           lim = eclimbs crv
-          lhs = bn sq mod y p lim
-          x2  = bn sq mod x p lim
-          x3  = bn mul mod x2 x p lim
+          fm  = ecm crv
+          lhs = bn mont mul mod fm y y
+          x2  = bn mont mul mod fm x x
+          x3  = bn mont mul mod fm x2 x
           x_3 = bn add mod x (bn add mod x x p lim) p lim
           rhs = bn add mod (bn sub mod x3 x_3 p lim) b p lim
           (bn cmp lhs rhs lim) == 0
@@ -3539,27 +3670,28 @@ fn :: ec dbl EcCurve EcPoint => EcPoint
         | otherwise =
           p     = ecp crv
           lim   = eclimbs crv
+          fm    = ecm crv
           x1    = ecx pt
           y1    = ecy pt
           z1    = ecz pt
-          delta = bn sq mod z1 p lim
-          gamma = bn sq mod y1 p lim
-          beta  = bn mul mod x1 gamma p lim
+          delta = bn mont sq fm z1
+          gamma = bn mont sq fm y1
+          beta  = bn mont mul fm x1 gamma
           x_m_d = bn sub mod x1 delta p lim
           x_p_d = bn add mod x1 delta p lim
-          prod  = bn mul mod x_m_d x_p_d p lim
+          prod  = bn mont mul fm x_m_d x_p_d
           alpha = bn add mod prod (bn add mod prod prod p lim) p lim
           b2    = bn add mod beta beta p lim
           b4    = bn add mod b2 b2 p lim
           b8    = bn add mod b4 b4 p lim
-          x3    = bn sub mod (bn sq mod alpha p lim) b8 p lim
-          yz    = bn mul mod y1 z1 p lim
+          x3    = bn sub mod (bn mont sq fm alpha) b8 p lim
+          yz    = bn mont mul fm y1 z1
           z3    = bn add mod yz yz p lim
-          g_sq  = bn sq mod gamma p lim
+          g_sq  = bn mont sq fm gamma
           g2    = bn add mod g_sq g_sq p lim
           g4    = bn add mod g2 g2 p lim
           g8    = bn add mod g4 g4 p lim
-          y3    = bn sub mod (bn mul mod alpha (bn sub mod b4 x3 p lim) p lim) g8 p lim
+          y3    = bn sub mod (bn mont mul fm alpha (bn sub mod b4 x3 p lim)) g8 p lim
           EcPoint x3 y3 z3 False
 
 fn :: ec add diff EcCurve EcPoint Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] => EcPoint
@@ -3569,15 +3701,16 @@ fn :: ec add diff EcCurve EcPoint Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64
         | otherwise =
           p   = ecp crv
           lim = eclimbs crv
+          fm  = ecm crv
           h   = bn sub mod u2 u1 p lim
           r   = bn sub mod s2 s1 p lim
-          hh  = bn sq mod h p lim
-          hhh = bn mul mod h hh p lim
-          v   = bn mul mod u1 hh p lim
+          hh  = bn mont sq fm h
+          hhh = bn mont mul fm h hh
+          v   = bn mont mul fm u1 hh
           v2  = bn add mod v v p lim
-          x3  = bn sub mod (bn sub mod (bn sq mod r p lim) hhh p lim) v2 p lim
-          y3  = bn sub mod (bn mul mod r (bn sub mod v x3 p lim) p lim) (bn mul mod s1 hhh p lim) p lim
-          z3  = bn mul mod (bn mul mod z1 z2 p lim) h p lim
+          x3  = bn sub mod (bn sub mod (bn mont sq fm r) hhh p lim) v2 p lim
+          y3  = bn sub mod (bn mont mul fm r (bn sub mod v x3 p lim)) (bn mont mul fm s1 hhh) p lim
+          z3  = bn mont mul fm (bn mont mul fm z1 z2) h
           EcPoint x3 y3 z3 False
 
 fn :: ec add EcCurve EcPoint EcPoint => EcPoint
@@ -3585,33 +3718,36 @@ fn :: ec add EcCurve EcPoint EcPoint => EcPoint
         | ec_inf p1 = p2
         | ec_inf p2 = p1
         | otherwise =
-          p    = ecp crv
-          lim  = eclimbs crv
+          fm   = ecm crv
           x1   = ecx p1
           y1   = ecy p1
           z1   = ecz p1
           x2   = ecx p2
           y2   = ecy p2
           z2   = ecz p2
-          z1z1 = bn sq mod z1 p lim
-          z2z2 = bn sq mod z2 p lim
-          u1   = bn mul mod x1 z2z2 p lim
-          u2   = bn mul mod x2 z1z1 p lim
-          s1   = bn mul mod y1 (bn mul mod z2 z2z2 p lim) p lim
-          s2   = bn mul mod y2 (bn mul mod z1 z1z1 p lim) p lim
+          z1z1 = bn mont sq fm z1
+          z2z2 = bn mont sq fm z2
+          u1   = bn mont mul fm x1 z2z2
+          u2   = bn mont mul fm x2 z1z1
+          s1   = bn mont mul fm y1 (bn mont mul fm z2 z2z2)
+          s2   = bn mont mul fm y2 (bn mont mul fm z1 z1z1)
           ec add diff crv p1 u1 u2 s1 s2 z1 z2
 
+-- The affine coordinates of a point, out of Montgomery form.
 fn :: ec to affine EcCurve EcPoint => Bool Tensor[U64 * 260] Tensor[U64 * 260]
       ec to affine crv     pt      =
         | (ec_inf pt) or (bn is zero (ecz pt) (eclimbs crv)) = (False, bn zero (eclimbs crv), bn zero (eclimbs crv))
         | otherwise =
           p     = ecp crv
           lim   = eclimbs crv
-          zinv  = bn mod inv (ecz pt) p lim
-          zinv2 = bn sq mod zinv p lim
-          zinv3 = bn mul mod zinv2 zinv p lim
-          ax    = bn mul mod (ecx pt) zinv2 p lim
-          ay    = bn mul mod (ecy pt) zinv3 p lim
+          fm    = ecm crv
+          two   = bn zero lim
+          two_(0) = 2
+          zinv  = bn mont pow fm (ecz pt) (bn to be (bn sub mod p two p lim) lim)
+          zinv2 = bn mont sq fm zinv
+          zinv3 = bn mont mul fm zinv2 zinv
+          ax    = bn mont out fm (bn mont mul fm (ecx pt) zinv2)
+          ay    = bn mont out fm (bn mont mul fm (ecy pt) zinv3)
           (True, ax, ay)
 
 fn :: ec cselect bn loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] U64 Int Int => Tensor[U64 * 260]
@@ -3669,7 +3805,7 @@ fn :: p256 public key inner EcCurve Tensor[U64 * 260] => String
       p256 public key inner crv k =
         | (bn is zero k 16) or (bn cmp k (ecn crv) 16) >= 0 = ""
         | otherwise =
-          g_pt       = ec affine point (ecgx crv) (ecgy crv) 16
+          g_pt       = ec affine point crv (ecgx crv) (ecgy crv)
           pub_pt     = ec scalar mul crv g_pt k
           ok, ax, ay = ec to affine crv pub_pt
           out_s      =
@@ -3691,7 +3827,7 @@ fn :: p256 ecdh inner EcCurve Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 2
         | (bn is zero k 16) or (bn cmp k (ecn crv) 16) >= 0 = ""
         | not (ec point on curve crv px py)                  = ""
         | otherwise =
-          peer_pt   = ec affine point px py 16
+          peer_pt   = ec affine point crv px py
           sh_pt     = ec scalar mul crv peer_pt k
           ok, sx, _ = ec to affine crv sh_pt
           out_s     =
@@ -3756,8 +3892,8 @@ fn :: ecdsa verify shamir EcCurve Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64
           w     = bn mod inv s n lim
           u1    = bn mul mod e_bn w n lim
           u2    = bn mul mod r w n lim
-          g_pt  = ec affine point (ecgx crv) (ecgy crv) lim
-          q_pt  = ec affine point qx qy lim
+          g_pt  = ec affine point crv (ecgx crv) (ecgy crv)
+          q_pt  = ec affine point crv qx qy
           gq_pt = ec add crv g_pt q_pt
           r_pt  = ec shamir loop crv (ec inf point lim) g_pt q_pt gq_pt u1 u2 ((lim * 16) - 1)
           ok_a, rx, _ = ec to affine crv r_pt
