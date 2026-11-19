@@ -16,3 +16,4 @@ Accepted ADRs are settled: do not re-open a decision ("should we switch to Mongo
 | `ADR-0011-jwt-uses-the-standard-hmac-and-aead.md` | jwt uses the crypto lib's HMAC-SHA256 and ChaCha20-Poly1305 | accepted |
 | `ADR-0012-generic-list-helpers-come-from-the-prelude.md` | Generic list helpers and str join come from the compiler prelude | accepted |
 | `ADR-0013-x86-64-uses-the-runtime-net-and-file-operations.md` | On x86-64, socket and posix use the runtime's net and file operations | accepted |
+| `ADR-0014-crypto-runs-on-whole-tensor-operations.md` | The hot loops of crypto and argon2id run on element-wise tensor operations | accepted |
