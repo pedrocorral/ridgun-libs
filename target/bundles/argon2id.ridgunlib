@@ -421,42 +421,26 @@ fn :: a2 perm cols Tensor[U64 * m] Tensor[U64 * n] => Tensor[U64 * n] Tensor[U64
         db2 = (db1_i xor dc2_i) rotr 63
         (da2, db2, dc2, dd2)
 
--- Writes the 32 lanes of result k (rotated by k) back to their words of `q`, row layout.
-fn :: a2 put rows Tensor[U64 * m] Tensor[U64 * n] Int Int => Int
-      a2 put rows q t k e =
-        | e >= 32   = 0
-        | otherwise =
-          q_((16 * (e shr 2)) + (4 * k) + ((e + k) and 3)) = t_(e)
-          a2 put rows q t k (e + 1)
-
--- The same for the column layout.
-fn :: a2 put cols Tensor[U64 * m] Tensor[U64 * n] Int Int => Int
-      a2 put cols q t k e =
-        | e >= 32   = 0
-        | otherwise =
-          j = (e + k) and 3
-          q_((2 * (e shr 2)) + (16 * ((2 * k) + (j shr 1))) + (j and 1)) = t_(e)
-          a2 put cols q t k (e + 1)
-
 fn :: a2 bitxor blk8 Tensor[U64 * 128] Tensor[U64 * 128] => Tensor[U64 * 128]
       a2 bitxor blk8 a b =  a_i xor b_i
 
 -- P on every row and then on every column of `r` (RFC 9106 §3.5).
+-- The results come back rotated by k lanes (see `a2 perm rows`); the indexed writes put each lane in its word.
 fn :: a2 blamka block Tensor[U64 * 128] => Tensor[U64 * 128]
       a2 blamka block r =
         e  = a2 lane ids (Tensor[U64 * 32]) 0
         ra, rb, rc, rd = a2 perm rows r e
         q  = Tensor[U64 * 128]
-        a2 put rows q ra 0 0
-        a2 put rows q rb 1 0
-        a2 put rows q rc 2 0
-        a2 put rows q rd 3 0
+        q_(((e_i shr 2) shl 4) + (e_i and 3)) = ra_i
+        q_((((e_i shr 2) shl 4) + 4) + ((e_i + 1) and 3)) = rb_i
+        q_((((e_i shr 2) shl 4) + 8) + ((e_i + 2) and 3)) = rc_i
+        q_((((e_i shr 2) shl 4) + 12) + ((e_i + 3) and 3)) = rd_i
         ka, kb, kc, kd = a2 perm cols q e
         z  = Tensor[U64 * 128]
-        a2 put cols z ka 0 0
-        a2 put cols z kb 1 0
-        a2 put cols z kc 2 0
-        a2 put cols z kd 3 0
+        z_((((e_i shr 2) shl 1) + (((e_i and 3) shr 1) shl 4)) + (e_i and 1)) = ka_i
+        z_(((((e_i shr 2) shl 1) + ((((e_i + 1) and 3) shr 1) shl 4)) + 32) + ((e_i + 1) and 1)) = kb_i
+        z_(((((e_i shr 2) shl 1) + ((((e_i + 2) and 3) shr 1) shl 4)) + 64) + ((e_i + 2) and 1)) = kc_i
+        z_(((((e_i shr 2) shl 1) + ((((e_i + 3) and 3) shr 1) shl 4)) + 96) + ((e_i + 3) and 1)) = kd_i
         z
 
 -- G(x, y) = P(x xor y) xor x xor y (RFC 9106 §3.5).
