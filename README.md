@@ -54,8 +54,8 @@ Pure-Ridgun standard and system library suite. Every lib compiles to portable Ri
 
 ## Requirements & Toolchain
 
-- **Compiler**: `ridgunc` 1.0.39 or later (pure-Ridgun self-hosted compiler)
-- **Build & Test Runner**: `stable` 1.0.39 or later (`build.ridgun`)
+- **Compiler**: `ridgunc` 1.0.40 or later (pure-Ridgun self-hosted compiler)
+- **Build & Test Runner**: `stable` 1.0.40 or later (`build.ridgun`)
 - **Supported Targets**: `Linux` (`X86_64`, `Arm64`) with cross-platform PAL dispatch (`Linux | MacOS | Windows`)
 
 ---

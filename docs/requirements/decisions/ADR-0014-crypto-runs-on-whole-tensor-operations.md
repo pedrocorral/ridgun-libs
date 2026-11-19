@@ -25,9 +25,10 @@ Option 2, for these primitives. The public functions and their results do not ch
 - **Argon2id:** a block is `Tensor[U64 * 128]` (it was 256 halves of 32 bits); the permutation P runs on the eight rows, then on the eight columns, with 4 tensors of 32 lanes.
 
 ## Consequences
-- Libs need ridgunc 1.0.39 or later.
-- Measured on a Ryzen 7 8845HS, one core: ChaCha20 1 MiB 120 ms to 7 ms; `aead seal` 1 MiB 142 ms to 12 ms; `aes128 gcm seal` 64 KiB 49 ms to 4 ms; Argon2id m=19456 t=2 p=1 0.647 s to 0.346 s.
+- Libs need ridgunc 1.0.40 or later.
+- Measured on a Ryzen 7 8845HS, one core: ChaCha20 1 MiB 120 ms to 1 ms; `aead seal` 1 MiB 142 ms to 6 ms; `aes128 gcm seal` 64 KiB 49 ms to 3 ms; Argon2id m=19456 t=2 p=1 0.647 s to 0.346 s.
 - Each rewrite was compared with the code it replaces (same bytes for several lengths, offsets and counters) before the suites ran.
-- Words are still written to bytes one element at a time, and results are put back into a block one element at a time: the compiler has no operation for that yet. This is now most of the time of ChaCha20 and a third of Blamka.
+- ChaCha20 and AES-CTR turn their word and byte tensors into the key stream with `tensor interleave` and `tensor bytes` (ridgunc 1.0.40), all the blocks of a chunk of 1 MiB at once.
+- Blamka still puts its results back into a block one element at a time: the compiler has no operation for that yet. It is a third of its time.
 - The vector loops exist on x86-64 Linux with LLVM. Other targets run the same statements element by element, more slowly.
 - Not done: SHA-1, SHA-512, PBKDF2, X25519, Ed25519 and the bignum still work one element at a time.

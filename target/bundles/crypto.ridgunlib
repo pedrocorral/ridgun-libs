@@ -982,69 +982,26 @@ fn :: chacha page Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * 
         o15 = w15_i + s15_i
         (o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15)
 
--- Writes word `w` of every block of the page into the key stream `ks` as 4 little-endian bytes:
--- bytes off + 64 b + 4 w + (0..3), while below `n`.
-fn :: chacha put word Tensor[U8] Int Int Tensor[U32 * n] Int Int Int => Int
-      chacha put word ks off n ow w b nb =
-        | b >= nb   = 0
-        | (off + (64 * b) + (4 * w) + 3) < n =
-          p = off + (64 * b) + (4 * w)
-          v = ow_(b)
-          ks_(p)     = v and 255
-          ks_(p + 1) = (v shr 8) and 255
-          ks_(p + 2) = (v shr 16) and 255
-          ks_(p + 3) = v shr 24
-          chacha put word ks off n ow w (b + 1) nb
-        | otherwise =
-          p = off + (64 * b) + (4 * w)
-          v = ow_(b)
-          chacha put byte ks p n (v and 255)
-          chacha put byte ks (p + 1) n ((v shr 8) and 255)
-          chacha put byte ks (p + 2) n ((v shr 16) and 255)
-          chacha put byte ks (p + 3) n (v shr 24)
-          chacha put word ks off n ow w (b + 1) nb
+-- The first `n` bytes of `stream` (the key stream is made in whole blocks).
+fn :: c first bytes Tensor[U8] Int Int => Tensor[U8]
+      c first bytes stream have n =
+        | have == n = stream
+        | otherwise = tensor from str (byte slice (tensor to str stream) 0 n)
 
-fn :: chacha put byte Tensor[U8] Int Int Int => Int
-      chacha put byte ks p n v =
-        | p >= n    = 0
-        | otherwise =
-          ks_(p) = v
-          0
+-- The first `n` bytes (at most 1 MiB) of the key stream from block `ctr` on: all the blocks at once,
+-- then the 16 word tensors side by side and their bytes (ridgunc 1.0.40).
+fn :: chacha20 key stream chunk Tensor[U8] Tensor[U8] Int Int => Tensor[U8]
+      chacha20 key stream chunk key_bs nonce_bs ctr n =
+        nb = (n + 63) / 64
+        o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15 = chacha page key_bs nonce_bs ctr nb
+        c first bytes (tensor bytes (tensor interleave [o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15])) (64 * nb) n
 
-fn :: chacha put page Tensor[U8] Int Int Int Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] => Int
-      chacha put page ks off n nb o0 o1 o2 o3 o4 o5 o6 o7 o8 o9 o10 o11 o12 o13 o14 o15 =
-        chacha put word ks off n o0 0 0 nb
-        chacha put word ks off n o1 1 0 nb
-        chacha put word ks off n o2 2 0 nb
-        chacha put word ks off n o3 3 0 nb
-        chacha put word ks off n o4 4 0 nb
-        chacha put word ks off n o5 5 0 nb
-        chacha put word ks off n o6 6 0 nb
-        chacha put word ks off n o7 7 0 nb
-        chacha put word ks off n o8 8 0 nb
-        chacha put word ks off n o9 9 0 nb
-        chacha put word ks off n o10 10 0 nb
-        chacha put word ks off n o11 11 0 nb
-        chacha put word ks off n o12 12 0 nb
-        chacha put word ks off n o13 13 0 nb
-        chacha put word ks off n o14 14 0 nb
-        chacha put word ks off n o15 15 0 nb
-        0
-
--- The first `n` bytes of the key stream from block `ctr` on, 64 blocks (one page) at a time.
-fn :: chacha20 key stream loop Tensor[U8] Tensor[U8] Tensor[U8] Int Int Int => Tensor[U8]
-      chacha20 key stream loop key_bs nonce_bs ks off n ctr =
-        | off >= n  = ks
-        | otherwise =
-          left = ((n - off) + 63) / 64
-          nb   = | left < 64 = left | otherwise = 64 |.
-          o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15 = chacha page key_bs nonce_bs ctr nb
-          chacha put page ks off n nb o0 o1 o2 o3 o4 o5 o6 o7 o8 o9 o10 o11 o12 o13 o14 o15
-          chacha20 key stream loop key_bs nonce_bs ks (off + (64 * nb)) n (ctr + nb)
-
+-- The first `n` bytes of the key stream from block `ctr` on, 1 MiB at a time.
 fn :: chacha20 key stream Tensor[U8] Tensor[U8] Int Int => Tensor[U8]
       chacha20 key stream key_bs nonce_bs ctr n =
-        chacha20 key stream loop key_bs nonce_bs (Tensor[U8 * n]) 0 n ctr
+        | n <= 0       = Tensor[U8 * 0]
+        | n <= 1048576 = chacha20 key stream chunk key_bs nonce_bs ctr n
+        | otherwise    = tensor from str ((tensor to str (chacha20 key stream chunk key_bs nonce_bs ctr 1048576)) + (tensor to str (chacha20 key stream key_bs nonce_bs (ctr + 16384) (n - 1048576))))
 
 -- The 64-byte keystream block `counter` (RFC 8439 §2.3).
 fn :: chacha20 block Tensor[U8] Tensor[U8] Int => Tensor[U8]
@@ -3089,44 +3046,24 @@ fn :: aes ctr page Tensor[U8 * 256] Tensor[U64 * 176] Tensor[U8] Int Int => Tens
         r9x0, r9x1, r9x2, r9x3, r9x4, r9x5, r9x6, r9x7, r9x8, r9x9, r9x10, r9x11, r9x12, r9x13, r9x14, r9x15 = aes ctr round sb r8x0 r8x1 r8x2 r8x3 r8x4 r8x5 r8x6 r8x7 r8x8 r8x9 r8x10 r8x11 r8x12 r8x13 r8x14 r8x15 rk_(144) rk_(145) rk_(146) rk_(147) rk_(148) rk_(149) rk_(150) rk_(151) rk_(152) rk_(153) rk_(154) rk_(155) rk_(156) rk_(157) rk_(158) rk_(159)
         aes ctr last round sb r9x0 r9x1 r9x2 r9x3 r9x4 r9x5 r9x6 r9x7 r9x8 r9x9 r9x10 r9x11 r9x12 r9x13 r9x14 r9x15 rk_(160) rk_(161) rk_(162) rk_(163) rk_(164) rk_(165) rk_(166) rk_(167) rk_(168) rk_(169) rk_(170) rk_(171) rk_(172) rk_(173) rk_(174) rk_(175)
 
--- Writes byte `k` of every block of the page into the key stream: ks_(off + 16 b + k), while below `n`.
-fn :: aes ctr put Tensor[U8] Int Int Tensor[U8 * n] Int Int Int => Int
-      aes ctr put ks off n t k b nb =
-        | b >= nb or (off + (16 * b) + k) >= n = 0
-        | otherwise =
-          ks_(off + (16 * b) + k) = t_(b)
-          aes ctr put ks off n t k (b + 1) nb
+-- The first `n` bytes (at most 1 MiB) of the CTR key stream from counter `ctr` on: all the blocks at once,
+-- then the 16 byte tensors side by side (ridgunc 1.0.40).
+fn :: aes ctr key stream chunk Tensor[U8 * 256] Tensor[U64 * 176] Tensor[U8] Int Int => Tensor[U8]
+      aes ctr key stream chunk sb8 rk nonce_bs ctr n =
+        nb = (n + 15) / 16
+        o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15 = aes ctr page sb8 rk nonce_bs ctr nb
+        c first bytes (tensor interleave [o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15]) (16 * nb) n
 
-fn :: aes ctr key stream loop Tensor[U8 * 256] Tensor[U64 * 176] Tensor[U8] Tensor[U8] Int Int Int => Tensor[U8]
-      aes ctr key stream loop sb rk nonce_bs ks off n ctr =
-        | off >= n  = ks
-        | otherwise =
-          left = ((n - off) + 15) / 16
-          nb   = | left < 256 = left | otherwise = 256 |.
-          o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15 = aes ctr page sb rk nonce_bs ctr nb
-          aes ctr put ks off n o0 0 0 nb
-          aes ctr put ks off n o1 1 0 nb
-          aes ctr put ks off n o2 2 0 nb
-          aes ctr put ks off n o3 3 0 nb
-          aes ctr put ks off n o4 4 0 nb
-          aes ctr put ks off n o5 5 0 nb
-          aes ctr put ks off n o6 6 0 nb
-          aes ctr put ks off n o7 7 0 nb
-          aes ctr put ks off n o8 8 0 nb
-          aes ctr put ks off n o9 9 0 nb
-          aes ctr put ks off n o10 10 0 nb
-          aes ctr put ks off n o11 11 0 nb
-          aes ctr put ks off n o12 12 0 nb
-          aes ctr put ks off n o13 13 0 nb
-          aes ctr put ks off n o14 14 0 nb
-          aes ctr put ks off n o15 15 0 nb
-          aes ctr key stream loop sb rk nonce_bs ks (off + (16 * nb)) n (ctr + nb)
+fn :: aes ctr key stream loop Tensor[U8 * 256] Tensor[U64 * 176] Tensor[U8] Int Int => Tensor[U8]
+      aes ctr key stream loop sb8 rk nonce_bs ctr n =
+        | n <= 0       = Tensor[U8 * 0]
+        | n <= 1048576 = aes ctr key stream chunk sb8 rk nonce_bs ctr n
+        | otherwise    = tensor from str ((tensor to str (aes ctr key stream chunk sb8 rk nonce_bs ctr 1048576)) + (tensor to str (aes ctr key stream loop sb8 rk nonce_bs (ctr + 65536) (n - 1048576))))
 
--- The first `n` bytes of the CTR key stream from counter `ctr` on, 256 blocks at a time.
+-- The first `n` bytes of the CTR key stream from counter `ctr` on.
 fn :: aes ctr key stream Tensor[U64 * 256] Tensor[U64 * 176] Tensor[U8] Int Int => Tensor[U8]
       aes ctr key stream sb rk nonce_bs ctr n =
-        sb8 = aes sbox u8 loop sb (Tensor[U8 * 256]) 0
-        aes ctr key stream loop sb8 rk nonce_bs (Tensor[U8 * n]) 0 n ctr
+        aes ctr key stream loop (aes sbox u8 loop sb (Tensor[U8 * 256]) 0) rk nonce_bs ctr n
 
 -- GHASH product (NIST SP 800-38D §6.3) of two blocks, each as two big-endian 64-bit integers (high, low).
 -- Read that way the bits of the field element are reversed, so the carry-less product comes out one place
