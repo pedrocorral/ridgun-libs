@@ -19,6 +19,7 @@ auth: none
 - Digest, MAC, Constant-Time & PBKDF2 API (`RGF-015` in `crypto.ridgun`):
   - `sha256_bytes String => String`, `sha256_hex String => String`
   - `sha1 bytes String => String` (20 raw bytes), `sha1 hex String => String` (40 hex characters); only for protocols that require SHA-1 (`FR-CRYPTO-003`)
+  - `md5 bytes String => String` (16 raw bytes), `md5 hex String => String` (32 hex characters); only for protocols that still require MD5 (PostgreSQL md5 passwords).
   - `hmac_sha256 String String => String`
   - `ct_equal String String => Bool`
   - `pbkdf2_hmac_sha256 String String Int Int => String`

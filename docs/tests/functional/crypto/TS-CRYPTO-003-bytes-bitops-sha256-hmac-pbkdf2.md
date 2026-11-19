@@ -22,6 +22,7 @@ automated_in: [src/test/ridgun/test crypto.ridgun]
 - AC2 → `sha256_bytes`, `sha256_hex`, `hmac_sha256`, and `ct_equal` match FIPS 180-4 and RFC 4231 test vectors.
 - AC3 → `pbkdf2_hmac_sha256` matches RFC 6070 test vectors for `c=1` and `c=4096`.
 - AC4 → `sha1 hex` and `sha1 bytes` match every vector; `sha1 bytes` is 20 bytes.
+- AC5 → `md5 hex` matches the seven vectors of RFC 1321 A.5; `md5 bytes` agrees with it.
 
 ## Not covered here (to avoid duplication)
 - see `TS-CRYPTO-004` for 5-arg `argon2id_hash`/`argon2id_verify` and RFC 8439 ChaCha20-Poly1305 `aead_seal`/`aead_open`.

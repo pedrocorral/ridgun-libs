@@ -22,6 +22,7 @@ Cryptographic protocols, binary wire framing, and password-based key derivation 
 - AC2: Given arbitrary byte strings, when `sha256_bytes`, `sha256_hex`, `hmac_sha256`, and `ct_equal` are called, then `sha256_bytes` returns the 32-byte raw digest (`sha256_bytes "abc"` matches NIST FIPS 180-4 `ba7816bf...`), `sha256_hex` returns the 64-character lowercase hex digest, `hmac_sha256` returns the 32-byte MAC matching RFC 4231 Test Case 2 (`"Jefe"` / `"what do ya want for nothing?"` → `5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843`), and `ct_equal a b` compares all bytes in constant time when lengths match.
 - AC3: Given a password, salt, iteration count (`>= 1`), and derived key length (`dk_len >= 1`), when `pbkdf2_hmac_sha256 password salt iterations dk_len` is called, then it returns a `dk_len`-byte raw key matching RFC 6070 and Python `hashlib.pbkdf2_hmac` test vectors (including `c=600000` -> `6c4a646aad10d067add5fb79d9078a16da83d50f81670a8e7593b249e6d94936` in under `3500` ms on one core in-process per `RG-043`, a >12x speedup over the 32.6 s unoptimized baseline).
 - AC4: Given any byte string, when `sha1 bytes` and `sha1 hex` are called, then `sha1 bytes` returns the 20-byte raw digest and `sha1 hex` the 40-character lowercase hex digest, matching FIPS 180-4 (`"abc"` → `a9993e36...`, one million `a` → `34aa973c...`), across the 55/56/64-byte padding boundaries and all byte values `0..255`.
+- AC5: Given any byte string, when `md5 bytes` and `md5 hex` are called, then `md5 bytes` returns the 16-byte raw digest of RFC 1321 and `md5 hex` the same digest as 32 lowercase hex characters.
 
 ## Actors & permissions
 - Any Ridgun program or lib importing `crypto`.
@@ -32,6 +33,7 @@ Cryptographic protocols, binary wire framing, and password-based key derivation 
 - `bytes_from_list` takes each value modulo 256 (`-1` gives `255`, `256` gives `0`), as `byte_str` does.
 - The internal byte helpers take and return `Tensor[U8]`: `bytes list to hex Tensor[U8] => String`, `hex str to bytes String => Tensor[U8]`, `bitxor byte lists Tensor[U8] Tensor[U8] => Tensor[U8]` (XOR over the shorter length), and the HMAC key block (`normalize hmac key`, `normalize hmac384 key`, `bitxor key pad`). The String forms (`bytes to hex str`, `hex to byte str`, `bitxor byte strings`, `byte slice`) keep their signatures.
 - SHA-1 is only for protocols that require it (RFC 6455 handshake in `ws`, Git object ids). It is broken for collision resistance and SHALL NOT be used for signatures, certificates or password hashing.
+- MD5 is only for protocols that still name it (PostgreSQL md5 password authentication). It is broken and SHALL NOT be used for signatures, integrity or passwords of our own.
 - `pbkdf2_hmac_sha256` supports arbitrary `dk_len` across multiple 32-byte SHA-256 blocks and executes 100% in-process in pure Ridgun (`RG-050`, `RG-043`, zero external subprocesses).
 
 ## Data & privacy

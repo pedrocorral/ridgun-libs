@@ -686,12 +686,25 @@ fn :: test crypto006 edge cases and certs => ()
         two = pem decode blocks (ca_pem + leaf_pem) "CERTIFICATE"
         assert eq (c str list len two 0) 2 -> ()
 
+-- RFC 1321 A.5 test suite
+-- @tests TS-CRYPTO-003
+fn :: test md5 rfc1321 vectors => ()
+      test md5 rfc1321 vectors =
+        md5 hex "" -> assert str eq "d41d8cd98f00b204e9800998ecf8427e" "MD5 empty"
+        md5 hex "a" -> assert str eq "0cc175b9c0f1b6a831c399e269772661" "MD5 a"
+        md5 hex "abc" -> assert str eq "900150983cd24fb0d6963f7d28e17f72" "MD5 abc"
+        md5 hex "message digest" -> assert str eq "f96b697d7cb7938d525a2f31aaf161d0" "MD5 message digest"
+        md5 hex "abcdefghijklmnopqrstuvwxyz" -> assert str eq "c3fcd3d76192e4007dfb496cca67e13b" "MD5 alphabet"
+        md5 hex "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" -> assert str eq "d174ab98d277d9f5a5611c2c9f419d9f" "MD5 62 characters (two blocks)"
+        md5 hex "12345678901234567890123456789012345678901234567890123456789012345678901234567890" -> assert str eq "57edf4a22be3c955ac49da2e2107b67a" "MD5 80 digits"
+        bytes to hex str (md5 bytes "abc") -> assert str eq (md5 hex "abc") "md5 bytes matches md5 hex"
 
 fn :: main => ()
       main =
         test rgf019 bytes and bitops -> ()
         test sha256 hmac and pbkdf2 -> ()
         test sha1 fips vectors -> ()
+        test md5 rfc1321 vectors -> ()
         test argon2id five arg and perf -> ()
         test rfc8439 chacha20 poly1305 aead -> ()
         test sha512 fips vectors -> ()

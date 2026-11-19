@@ -359,6 +359,103 @@ fn :: sha1 bytes String => String
 fn :: sha1 hex String => String
       sha1 hex msg    =  bytes to hex str (sha1 bytes msg)
 
+-- ── RFC 1321 MD5 (`md5 bytes`, `md5 hex`) ───────────────────
+-- MD5 is broken as a hash. It is here only for protocols that still name it (PostgreSQL md5 passwords).
+
+fn :: md5 k => Tensor[Int]
+      md5 k =  tensor from list [3614090360, 3905402710, 606105819, 3250441966, 4118548399, 1200080426, 2821735955, 4249261313, 1770035416, 2336552879, 4294925233, 2304563134, 1804603682, 4254626195, 2792965006, 1236535329, 4129170786, 3225465664, 643717713, 3921069994, 3593408605, 38016083, 3634488961, 3889429448, 568446438, 3275163606, 4107603335, 1163531501, 2850285829, 4243563512, 1735328473, 2368359562, 4294588738, 2272392833, 1839030562, 4259657740, 2763975236, 1272893353, 4139469664, 3200236656, 681279174, 3936430074, 3572445317, 76029189, 3654602809, 3873151461, 530742520, 3299628645, 4096336452, 1126891415, 2878612391, 4237533241, 1700485571, 2399980690, 4293915773, 2240044497, 1873313359, 4264355552, 2734768916, 1309151649, 4149444226, 3174756917, 718787259, 3951481745]
+
+fn :: md5 s => Tensor[Int]
+      md5 s =  tensor from list [7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21]
+
+-- The message, the 0x80 byte, zeros, and the length in bits as a little-endian u64.
+fn :: md5 padded String => Tensor[U8]
+      md5 padded msg    =
+        mlen = str len msg
+        plen = (((mlen + 8) / 64) + 1) * 64
+        p    = sha1 copy loop msg (Tensor[U8 * plen]) 0 mlen
+        p_(mlen) = 128
+        md5 put len p (plen - 8) (mlen * 8) 0
+
+fn :: md5 put len Tensor[U8] Int Int Int => Tensor[U8]
+      md5 put len p off bits k =
+        | k >= 8    = p
+        | otherwise =
+          p_(off + k) = (bits shr (8 * k)) and 255
+          md5 put len p off bits (k + 1)
+
+fn :: md5 load w Tensor[U8] Int Tensor[Int] Int => Tensor[Int]
+      md5 load w p off w t =
+        | t >= 16   = w
+        | otherwise =
+          w_(t) = p_(off + (4 * t)) or (p_(off + (4 * t) + 1) shl 8) or (p_(off + (4 * t) + 2) shl 16) or (p_(off + (4 * t) + 3) shl 24)
+          md5 load w p off w (t + 1)
+
+fn :: md5 f Int Int Int Int => Int
+      md5 f i b c d =
+        | i < 16    = (b and c) or ((b xor 0xFFFFFFFF) and d)
+        | i < 32    = (d and b) or ((d xor 0xFFFFFFFF) and c)
+        | i < 48    = b xor c xor d
+        | otherwise = c xor (b or (d xor 0xFFFFFFFF))
+
+-- Which message word step i uses.
+fn :: md5 g Int => Int
+      md5 g i =
+        | i < 16    = i
+        | i < 32    = ((5 * i) + 1) and 15
+        | i < 48    = ((3 * i) + 5) and 15
+        | otherwise = (7 * i) and 15
+
+fn :: md5 rounds Tensor[Int] Tensor[Int] Tensor[Int] Int Int Int Int Int => Int Int Int Int
+      md5 rounds w k s i a b c d =
+        | i >= 64   = (a, b, c, d)
+        | otherwise =
+          f = ((md5 f i b c d) + a + k_(i) + w_(md5 g i)) and 0xFFFFFFFF
+          md5 rounds w k s (i + 1) d ((b + (rotl32 f s_(i))) and 0xFFFFFFFF) b c
+
+fn :: md5 add Tensor[Int] (Int Int Int Int) => Tensor[Int]
+      md5 add h (a, b, c, d) =
+        h_(0) = (h_(0) + a) and 0xFFFFFFFF
+        h_(1) = (h_(1) + b) and 0xFFFFFFFF
+        h_(2) = (h_(2) + c) and 0xFFFFFFFF
+        h_(3) = (h_(3) + d) and 0xFFFFFFFF
+        h
+
+fn :: md5 blocks Tensor[U8] Tensor[Int] Tensor[Int] Tensor[Int] Tensor[Int] Int Int => Tensor[Int]
+      md5 blocks p h w k s off total =
+        | off >= total = h
+        | otherwise    =
+          w16 = md5 load w p off w 0
+          h2  = md5 add h (md5 rounds w16 k s 0 h_(0) h_(1) h_(2) h_(3))
+          md5 blocks p h2 w k s (off + 64) total
+
+fn :: md5 out Tensor[Int] Tensor[U8] Int => Tensor[U8]
+      md5 out h out i =
+        | i >= 16   = out
+        | otherwise =
+          out_(i) = (h_(i / 4) shr (8 * (i % 4))) and 255
+          md5 out h out (i + 1)
+
+-- @implements FR-CRYPTO-003
+-- @implements API-CRYPTO-001
+-- The 16-byte MD5 digest of `msg`, as a raw byte string.
+fn :: md5 bytes String => String
+      md5 bytes msg    =
+        p = md5 padded msg
+        h = Tensor[Int * 4]
+        h_(0) = 0x67452301
+        h_(1) = 0xEFCDAB89
+        h_(2) = 0x98BADCFE
+        h_(3) = 0x10325476
+        hf = md5 blocks p h (Tensor[Int * 16]) (md5 k) (md5 s) 0 ((((str len msg) + 8) / 64 + 1) * 64)
+        tensor to str (md5 out hf (Tensor[U8 * 16]) 0)
+
+-- @implements FR-CRYPTO-003
+-- @implements API-CRYPTO-001
+-- The MD5 digest of `msg` as 32 lowercase hex characters.
+fn :: md5 hex String => String
+      md5 hex msg    =  bytes to hex str (md5 bytes msg)
+
 -- ── RGF-015 SHA-256, HMAC-SHA-256, `ct_equal`, PBKDF2-HMAC-SHA-256 ──
 
 -- @implements FR-CRYPTO-003
