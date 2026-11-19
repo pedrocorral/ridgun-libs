@@ -1,0 +1,59 @@
+-- src/test/ridgun/test hash.ridgun
+-- Test suite for the hash lib (SipHash-1-3)
+-- @tests TS-HASH-001
+
+import test
+import hash
+
+-- The bytes 0, 1, ..., n - 1.
+fn :: seq bytes Tensor[U8] Int Int => Tensor[U8]
+      seq bytes t i n =
+        | i >= n    = t
+        | otherwise =
+          t_(i) = i
+          seq bytes t (i + 1) n
+
+-- Vectors from a reference implementation that reproduces the official SipHash-2-4 vectors; key 00 01 .. 0f, input 00 01 .. n-1.
+-- @tests TS-HASH-001
+fn :: test siphash13 vectors => ()
+      test siphash13 vectors =
+        key = tensor to str (seq bytes (Tensor[U8 * 16]) 0 16)
+        msg = tensor to str (seq bytes (Tensor[U8 * 64]) 0 64)
+        siphash13 range low key msg 0 0 -> assert int equals 84919516 "low 32 bits, 0 bytes"
+        (siphash13 range key msg 0 0) shr 32 -> assert int equals 2880176472 "high 32 bits, 0 bytes"
+        siphash13 range low key msg 0 1 -> assert int equals 2102905491 "low 32 bits, 1 bytes"
+        (siphash13 range key msg 0 1) shr 32 -> assert int equals 3388251123 "high 32 bits, 1 bytes"
+        siphash13 range low key msg 0 7 -> assert int equals 2612072768 "low 32 bits, 7 bytes"
+        (siphash13 range key msg 0 7) shr 32 -> assert int equals 3549592984 "high 32 bits, 7 bytes"
+        siphash13 range low key msg 0 8 -> assert int equals 2368313998 "low 32 bits, 8 bytes"
+        (siphash13 range key msg 0 8) shr 32 -> assert int equals 915445009 "high 32 bits, 8 bytes"
+        siphash13 range low key msg 0 9 -> assert int equals 1812348388 "low 32 bits, 9 bytes"
+        (siphash13 range key msg 0 9) shr 32 -> assert int equals 631541427 "high 32 bits, 9 bytes"
+        siphash13 range low key msg 0 15 -> assert int equals 709990742 "low 32 bits, 15 bytes"
+        (siphash13 range key msg 0 15) shr 32 -> assert int equals 3542145133 "high 32 bits, 15 bytes"
+        siphash13 range low key msg 0 16 -> assert int equals 2106624870 "low 32 bits, 16 bytes"
+        (siphash13 range key msg 0 16) shr 32 -> assert int equals 3427786010 "high 32 bits, 16 bytes"
+        siphash13 range low key msg 0 17 -> assert int equals 1675352076 "low 32 bits, 17 bytes"
+        (siphash13 range key msg 0 17) shr 32 -> assert int equals 2633132176 "high 32 bits, 17 bytes"
+        siphash13 range low key msg 0 25 -> assert int equals 1885014393 "low 32 bits, 25 bytes"
+        (siphash13 range key msg 0 25) shr 32 -> assert int equals 1171085608 "high 32 bits, 25 bytes"
+        siphash13 range low key msg 0 63 -> assert int equals 3082531752 "low 32 bits, 63 bytes"
+        (siphash13 range key msg 0 63) shr 32 -> assert int equals 2635698274 "high 32 bits, 63 bytes"
+        siphash13 range low key msg 0 64 -> assert int equals 1263165541 "low 32 bits, 64 bytes"
+        (siphash13 range key msg 0 64) shr 32 -> assert int equals 4051277804 "high 32 bits, 64 bytes"
+        (siphash13 range key msg 0 15) == (siphash13 key (str slice msg 0 15)) -> assert true "whole data equals the range"
+        siphash13 range low key ("xx" + msg) 2 27 -> assert int equals 1885014393 "a range inside a longer string"
+        siphash13 range low "0123456789abcdef" "abc" 0 3 -> assert int equals 1783201848 "printable key"
+        siphash13 range "short" msg 0 8 -> assert int equals 0 "a key that is not 16 bytes gives 0"
+        siphash13 range key msg 9 8 -> assert int equals 0 "a reversed range gives 0"
+        siphash13 range key msg 0 65 -> assert int equals 0 "a range past the data gives 0"
+        (siphash13 range low key msg 0 8) != (siphash13 range low "0123456789abcdef" msg 0 8) -> assert true "another key, another hash"
+        k1 = siphash new key
+        k2 = siphash new key
+        str len k1 -> assert int equals 16 "a new key has 16 bytes"
+        k1 != k2 -> assert true "two new keys differ"
+
+fn :: main => ()
+      main =
+        test siphash13 vectors
+        echo "[PASS] test hash: TS-HASH-001 passed"
