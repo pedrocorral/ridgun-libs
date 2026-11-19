@@ -25,6 +25,7 @@ auth: none
   - `posix kill Int Int => Int`
 - Filesystem, Process, Clock, Signal Watch & CSPRNG Functions (`RG-010`, `RGF-014`, `RGF-017`, `RGF-018`):
   - `sys_mkdir String => Int`, `sys_rmdir String => Int`, `sys_rename String String => Int`, `sys_symlink String String => Int`, `sys_readlink String => String`, `sys_unlink String => Int`, `sys_chmod String Int => Int`, `sys_chdir String => Int`, `sys_getcwd () => String`, `sys_getenv String => String`, `sys_getpid () => Int`
+  - `posix mkdir all String Int => Int`: makes the directory and every missing parent with that mode, as `mkdir -p`; 0 when the directory is there at the end. (The compiler's `sys mkdir` makes one level only since ridgunc 1.0.19.)
   - `sys monotonic ms => Int` and `sys monotonic ns => Int` return the built-ins `sys time ms` / `sys time ns` (vDSO). The wall clock is the built-in `sys wall time ms => Int`; `posix` does not define it (`ADR-0010`). `sys sleep ms Int => ()` is a built-in.
   - `sys_signal_watch [Int] => (Int, Int)` (a list of signal numbers), `sys_signal_wait Int Int => (Int, Int)`
   - `sys random bytes Int => Int String` (`(status, bytes)`)

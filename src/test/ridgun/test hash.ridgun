@@ -53,7 +53,26 @@ fn :: test siphash13 vectors => ()
         str len k1 -> assert int equals 16 "a new key has 16 bytes"
         k1 != k2 -> assert true "two new keys differ"
 
+-- The native operation against the reference in plain Ridgun, for every length 0..70 and three offsets.
+fn :: same as reference String String Int Int Int => Int
+      same as reference key msg from n bad =
+        | n > 70    = bad
+        | otherwise =
+          lo = | (siphash13 range low key msg from (from + n)) == (siphash13 reference key msg from (from + n) 0) = 0 | otherwise = 1 |.
+          hi = | (siphash13 range key msg from (from + n)) == (siphash13 reference key msg from (from + n) 1) = 0 | otherwise = 1 |.
+          same as reference key msg from (n + 1) (bad + lo + hi)
+
+-- @tests TS-HASH-001
+fn :: test native matches reference => ()
+      test native matches reference =
+        key = "0123456789abcdef"
+        msg = tensor to str (seq bytes (Tensor[U8 * 96]) 0 96)
+        same as reference key msg 0 0 0 -> assert int equals 0 "native equals reference, offset 0"
+        same as reference key msg 3 0 0 -> assert int equals 0 "native equals reference, offset 3"
+        same as reference key msg 25 0 0 -> assert int equals 0 "native equals reference, offset 25"
+
 fn :: main => ()
       main =
         test siphash13 vectors
+        test native matches reference
         echo "[PASS] test hash: TS-HASH-001 passed"

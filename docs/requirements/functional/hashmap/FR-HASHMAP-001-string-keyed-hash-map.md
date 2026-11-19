@@ -46,7 +46,7 @@ Solstice groups, counts and indexes text by key (request `2026-11-07-comparar-te
 - In-memory only.
 
 ## Security & observability notes
-- Mitigates `VUL-INPUT-001`: slots are chosen with SHA-256 of a per-map random seed and the key, so input cannot be chosen to make keys collide on purpose.
+- Mitigates `VUL-INPUT-001`: slots are chosen with SipHash-1-3 of the key under a per-map random 16-byte seed (the compiler's native `siphash13 range low`), so input cannot be chosen to make keys collide on purpose.
 
 ## Out of scope
 - Removing keys.

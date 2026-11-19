@@ -9,8 +9,9 @@ auth: none
 
 ## Request
 - Imported via `import hash`.
-- `siphash13 range String String Int Int => Int`: key (16 bytes), data, from (included), to (excluded). The 64 bits of SipHash-1-3.
-- `siphash13 range low String String Int Int => Int`: the low 32 bits of the same hash.
+- `siphash13 range key data from to => Int`: key (16 bytes), data, from (included), to (excluded). The 64 bits of SipHash-1-3. Native operation of the compiler (ridgunc 1.0.44); it needs no import.
+- `siphash13 range low key data from to => Int`: the low 32 bits of the same hash. Native too.
+- `siphash13 reference String String Int Int Int => Int`: the same hash in plain Ridgun (last argument 0 for the low 32 bits, 1 for the 64 bits). For tests and for reading.
 - `siphash13 String String => Int`: key, the whole data.
 - `siphash new key => String`: 16 random bytes.
 
@@ -23,4 +24,4 @@ auth: none
 
 ## Rules
 - The same key and bytes give the same result in every version and on every architecture (`FR-HASH-001`).
-- Speed: see `FR-HASH-001`, Constraints.
+- Speed: see `FR-HASH-001`, Constraints. The lib does not define `siphash13 range`, so that the native operation is the one called.

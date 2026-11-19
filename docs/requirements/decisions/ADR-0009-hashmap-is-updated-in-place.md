@@ -29,7 +29,7 @@ Option 3.
 - The slot table holds `hash * 2^31 + position` in one `Int`, so a probe reads one tensor and growing the table rehashes `Int` only.
 - Keys and values live in dense tensors at most twice the number of keys, so the slow non-numeric tensor creation touches half as many elements as in option 2.
 - `pairs` returns the keys in first-insertion order. `list count by` and `list group by` rely on it for first-appearance order.
-- The hash is SHA-256 of a per-map random seed and the key, so input cannot force collisions.
+- The hash is SipHash-1-3 of the key under a per-map random seed (it was SHA-256 until 2026-11-19), so input cannot force collisions.
 
 ## Consequences
 - Callers must use the map linearly. Keeping an old map and using it after a `put` sees the new contents.

@@ -13,9 +13,11 @@ automated_in: [src/test/ridgun/test hash.ridgun]
 2. Hash a range inside a longer string and the same bytes alone.
 3. Call with a short key, a reversed range and a range past the data.
 4. Make two keys with `siphash new key`.
+5. For every length from 0 to 70 and the offsets 0, 3 and 25, compare the native operation with `siphash13 reference`.
 
 ## Expected
 - AC1 → the 22 values match.
 - AC2 → both results are equal.
 - AC3 → every result is 0.
 - AC4 → 16 bytes each, and different.
+- AC5 → no difference.

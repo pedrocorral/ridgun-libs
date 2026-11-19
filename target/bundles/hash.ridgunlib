@@ -7,9 +7,7 @@
 -- ============================================================
 -- A 64-bit word is kept as two halves of 32 bits, because an Int holds 63 bits in place and a value
 -- that needs all 64 is stored apart. The low 32 bits of the result never leave a plain Int.
--- SPEED: this is the reference in plain Ridgun: about 2 µs for a 25-byte key (some 600 bit operations).
--- It defines the result; a native `siphash13 range` was asked of the compiler on 2026-11-19 (see
--- docs/requirements/functional/hash/FR-HASH-001). Until it exists, do not put this on a hot path.
+-- The fast path is the compiler's native `siphash13 range` (ridgunc 1.0.44); the code below is the reference.
 
 module :: hash
 
@@ -212,28 +210,23 @@ fn :: siphash13 start String String Int Int Int => Int
         n   = to - from
         siphash13 loop s from (from + ((n shr 3) shl 3)) to n want (k0h xor 0x736f6d65) (k0l xor 0x70736575) (k1h xor 0x646f7261) (k1l xor 0x6e646f6d) (k0h xor 0x6c796765) (k0l xor 0x6e657261) (k1h xor 0x74656462) (k1l xor 0x79746573)
 
--- @implements FR-HASH-001
--- @implements API-HASH-001
--- SipHash-1-3 of the bytes `from` (included) to `to` (excluded) of `data`, with a 16-byte key: 64 bits.
--- A key that is not 16 bytes, or a range outside `data`, gives 0.
-fn :: siphash13 range String String Int Int => Int
-      siphash13 range key data from to =
-        | (str len key) != 16 or from < 0 or to < from or to > (str len data) = 0
-        | otherwise = siphash13 start key data from to 1
-
--- @implements FR-HASH-001
--- @implements API-HASH-001
--- The low 32 bits of `siphash13 range`: enough for a table index, and cheaper (it stays a plain Int).
-fn :: siphash13 range low String String Int Int => Int
-      siphash13 range low key data from to =
-        | (str len key) != 16 or from < 0 or to < from or to > (str len data) = 0
-        | otherwise = siphash13 start key data from to 0
+-- `siphash13 range key data from to` (64 bits) and `siphash13 range low key data from to` (the low 32 bits)
+-- are operations of the compiler since ridgunc 1.0.44: native, some tens of ns for a short key. They take
+-- a 16-byte key and the bytes `from` (included) to `to` (excluded) of `data`; a key of another length or a
+-- range outside `data` gives 0. This lib does not define them, so that the native ones are used.
 
 -- @implements FR-HASH-001
 -- @implements API-HASH-001
 -- SipHash-1-3 of the whole of `data`.
 fn :: siphash13 String String => Int
       siphash13 key data =  siphash13 range key data 0 (str len data)
+
+-- The same hash written in plain Ridgun (about 2 µs for a 25-byte key): the definition the native operation
+-- is tested against, and the one to read. `want` 0 gives the low 32 bits, anything else the 64 bits.
+fn :: siphash13 reference String String Int Int Int => Int
+      siphash13 reference key data from to want =
+        | (str len key) != 16 or from < 0 or to < from or to > (str len data) = 0
+        | otherwise = siphash13 start key data from to want
 
 -- @implements FR-HASH-001
 -- @implements API-HASH-001

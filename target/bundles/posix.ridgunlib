@@ -559,6 +559,31 @@ fn :: px path pair call Int String String => Int
 fn :: px use pal files => Bool
       px use pal files =  (sys arch) == X86_64
 
+
+-- @implements FR-POSIX-002
+-- @implements API-POSIX-001
+-- Creates `path` and every missing parent, each with `mode` (as `mkdir -p`). 0 when the last directory was made
+-- or was already there; otherwise the negative errno of the last step.
+-- The compiler's `sys mkdir` makes one level only since ridgunc 1.0.19 (it made the parents before).
+fn :: posix mkdir all String Int => Int
+      posix mkdir all path mode =
+        | (str len path) == 0 = 0 - 2
+        | otherwise           = px mkdir step path mode 1 (str len path) 0
+
+-- At each "/" after the first byte, and at the end, makes the path so far. `last` is the result of the latest step.
+fn :: px mkdir step String Int Int Int Int => Int
+      px mkdir step path mode i n last =
+        | i > n                                       = last
+        | i < n and (str char at path i) != 47        = px mkdir step path mode (i + 1) n last
+        | (str char at path (i - 1)) == 47            = px mkdir step path mode (i + 1) n last
+        | otherwise                                   = px mkdir step path mode (i + 1) n (px mkdir rc (sys mkdir (str slice path 0 i) mode))
+
+-- "Already there" (EEXIST, -17) counts as made.
+fn :: px mkdir rc Int => Int
+      px mkdir rc rc =
+        | rc == (0 - 17) = 0
+        | otherwise      = rc
+
 -- @implements FR-POSIX-002
 -- @implements API-POSIX-001
 fn :: sys rmdir String => Bool

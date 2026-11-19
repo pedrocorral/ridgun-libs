@@ -22,6 +22,7 @@ A hash table whose hash can be predicted lets whoever chooses the keys put them 
 - AC2: Given a range inside a longer string, when `siphash13 range` is called, then the result equals that of the same bytes alone, and no substring is made.
 - AC3: Given a key that is not 16 bytes, or a range outside the data, when any function is called, then the result is 0.
 - AC4: Given two calls of `siphash new key`, then each result has 16 bytes and they differ.
+- AC5: Given any length from 0 to 70 and a range starting at 0, 3 or 25, when the native operation and `siphash13 reference` are called, then the low 32 bits and the 64 bits are equal.
 
 ## Actors & permissions
 - Any Ridgun program or lib importing `hash`.
@@ -29,7 +30,7 @@ A hash table whose hash can be predicted lets whoever chooses the keys put them 
 ## Constraints & edge cases
 - `siphash13 range low` gives the low 32 bits of the same hash.
 - The result does not depend on the architecture: words are read little-endian from the bytes.
-- **Speed.** The lib is written in plain Ridgun with 32-bit halves: about 2 µs for a 25-byte key, against 0.3 µs for `sha256 raw` and 0.06 µs for `crc32 range`. A native `siphash13 range` was asked of the compiler on 2026-11-19 (`/tmp/ridgun-compiler/2026-11-19/siphash-nativo.md`). Until it exists the lib defines the result and is not for hot paths; `hashmap` keeps its SHA-256.
+- **Speed.** `siphash13 range` and `siphash13 range low` are native operations of the compiler since ridgunc 1.0.44: 19 ns for a 25-byte key on a Ryzen 7 8845HS (52 ns for `crc32 range`, 222 ns for `sha256 raw`). The lib keeps the same hash in plain Ridgun as `siphash13 reference` (about 2 µs per key); the tests compare both for every length from 0 to 70. `hashmap` uses the native one.
 
 ## Data & privacy
 - The key is a secret of the program that owns the table.

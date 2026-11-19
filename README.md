@@ -20,7 +20,7 @@ Pure-Ridgun standard and system library suite. Every lib compiles to portable Ri
 | **`str`** | `src/main/ridgun/lib/str.ridgun` | `str.ridgunlib` | `STR` | String search (`str index of`), trimming (`str trim`, `str trim left`, `str trim right`), replacement (`str replace`), splitting (`str split`), ASCII case conversion (`str to upper`, `str to lower`), joining, repeating, and padding. |
 | **`math`** | `src/main/ridgun/lib/math.ridgun` | `math.ridgunlib` | `MATH` | Integer bounds (`math abs`, `math clamp`, `clamp x between lo and hi`), division-by-zero-safe rounding (`math div ceil`, `math div floor`, `math div euclid`, `math mod euclid`), powers/roots/logs (`math pow`, `math isqrt`, `math ilog2`, `math ilog10`), modular number theory (`math gcd`, `math lcm`, `math mod pow`, `math mod inv`, `math is prime`), combinatorics, and list statistics. |
 | **`list`** | `src/main/ridgun/lib/list.ridgun` | `list.ridgunlib` | `LIST` | `[Int]` and `[String]` indexing, slicing (`list str take`, `list str drop`, `list slice`), reversal, ranges (`list range`, `list range step`), search, deduplication, deterministic $O(N \log N)$ mergesort (`list sort`, `list str sort`), and associative `[String String]` key-value maps (`list kv get`, `list kv put`, `list kv remove`, `list kv merge`). |
-| **`hash`** | `src/main/ridgun/lib/hash.ridgun` | `hash.ridgunlib` | `HASH` | Keyed hash for hash tables: SipHash-1-3 with a 128-bit key over a string or a range of it (`siphash13`, `siphash13 range`, `siphash13 range low`, `siphash new key`). Reference in plain Ridgun (about 2 µs per short key) until the compiler has the native operation. |
+| **`hash`** | `src/main/ridgun/lib/hash.ridgun` | `hash.ridgunlib` | `HASH` | Keyed hash for hash tables: SipHash-1-3 with a 128-bit key over a string or a range of it. `siphash13 range` and `siphash13 range low` are native operations of the compiler (19 ns for a short key); the lib adds `siphash13`, `siphash new key` and the same hash in plain Ridgun as `siphash13 reference`. |
 | **`hashmap`** | `src/main/ridgun/lib/hashmap.ridgun` | `hashmap.ridgunlib` | `HASHMAP` | Mutable `String`-keyed `HashMap V` with open addressing (`hashmap empty`, `hashmap put`, `hashmap get`, `hashmap has`, `hashmap add`, `hashmap size`, `hashmap pairs`); `put` and `add` update the map in place and return it. |
 | **`codec`** | `src/main/ridgun/lib/codec.ridgun` | `codec.ridgunlib` | `CODEC` | RFC 4648 Hex (`hex encode`, `hex decode`), Base64 (`base64 encode`, `base64 decode`), and URL-safe Base64url (`base64url encode`, `base64url decode`), RFC 3986 URL percent-encoding and query strings, and RFC 8259 lightweight JSON formatting and field extraction. |
 | **`cli`** | `src/main/ridgun/lib/cli.ridgun` | `cli.ridgunlib` | `CLI` | Command-line flag (`--flag`, `-f`, bundled `-la`), option (`--key=val`, `--key val`, `-k val`), `--` end-of-options separator, positional/subcommand parser, and typed environment variable readers (`env get or`, `env get int or`, `env get bool or`). |
@@ -55,8 +55,8 @@ Pure-Ridgun standard and system library suite. Every lib compiles to portable Ri
 
 ## Requirements & Toolchain
 
-- **Compiler**: `ridgunc` 1.0.42 or later (pure-Ridgun self-hosted compiler)
-- **Build & Test Runner**: `stable` 1.0.42 or later (`build.ridgun`)
+- **Compiler**: `ridgunc` 1.0.44 or later (pure-Ridgun self-hosted compiler)
+- **Build & Test Runner**: `stable` 1.0.44 or later (`build.ridgun`)
 - **Supported Targets**: `Linux` (`X86_64`, `Arm64`) with cross-platform PAL dispatch (`Linux | MacOS | Windows`)
 
 ---
