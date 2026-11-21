@@ -21,7 +21,7 @@ Ekosistema tradizional batean, **`INI`** domeinuko zereginak ebazteak C-ko kanpo
 
 ## 10.2. Artefaktu natiboak, inportazioa eta `ini` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`ini`** lehen mailako **lib** bat da, `src/main/ridgun/lib/ini.ridgun` bidean kokatua (`INI` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`ini`** lehen mailako **lib** bat da, `src/main/ridgun/lib/ini.ridgun` bidean kokatua (`INI` domeinua). `stable bundle`-ekin konpilatzean, formatu natibo bakarrean paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
@@ -35,7 +35,7 @@ Ekosistema tradizional batean, **`INI`** domeinuko zereginak ebazteak C-ko kanpo
 |---|---|
 | `ini parse / ini stringify` | Atalkako `.ini` testua `IniDoc`-era analizatzen du eta testu kanonikora serializatzen du |
 | `ini get / ini get int / ini get bool / ini set` | Atal+gako bidezko kontsulta tipatuak (`""` atal globalerako) eta eguneratze aldaezina |
-| `ini sections / ini section map` | Atal-izen guztiak zerrendatzen ditu edo atal baten `[String String]` mapa erauzten du |
+| `ini sections` | Atal-izen guztiak zerrendatzen ditu edo atal baten `[String String]` mapa erauzten du |
 | `dotenv parse` | `.env` lerroak analizatzen ditu (`export K=V`, komatxoak, iruzkinak eta aldagaien hedapena) |
 
 ### 10.2.2. `src/main/ridgun/lib/ini.ridgun`-eko mota eta sinadura guztien katalogoa
@@ -121,18 +121,18 @@ fn :: cargar base de datos String => String Int Bool
 
 ### 10.3.2. 2. adibidea: Konposizio segurua eta muga-kasuen kudeaketa
 
-`ini` lib-eko funtzio oro `|` guarda boolearrekin eta `ridgun-libs`-eko gainerako 32 lib-ekin konposatzeko diseinatuta dago:
+`ini` lib-eko funtzio oro `|` guarda boolearrekin eta `ridgun-libs`-eko gainerako 38 lib-ekin konposatzeko diseinatuta dago:
 
 ```ridgun
 import ini
 
-fn :: actualizar puerto [String String String] String => String
+fn :: actualizar puerto IniDoc String => String
       actualizar puerto doc nuevo =
         ini set doc "database" "port" nuevo -> doc2
-        doc2 ini encode
+        ini stringify doc2
 ```
 
-### 10.3.3. 3. adibidea: `[atala]` atalak, iruzkinak (`;` eta `#`), irakurketa tipatuak (`get str`, `get int`, `get bool`) eta eguneratze aldaezina (`ini set`)
+### 10.3.3. 3. adibidea: `[atala]` atalak, iruzkinak (`;` eta `#`), irakurketa tipatuak (`ini get`, `ini get int`, `ini get bool`) eta eguneratze aldaezina (`ini set`)
 
 Adibide praktiko honetan `ini` bloke funtzional honetan nola portatzen den sakonki aztertzen dugu, sarrera estandarrak, parametro-konbinazioak eta muga-balioak barne:
 
@@ -142,21 +142,21 @@ fn :: test ini sections and typed getters => ()
         nl = char from code 10
         src = "# Global header comment" + nl + "; Secondary comment" + nl + "global_env = production" + nl + nl + "[database]" + nl + "host = \"127.0.0.1\"" + nl + "port = 5432 ; default pg" + nl + "timeout = -1 # infinite" + nl + "password = \"p@ss#word;123\"" + nl + "ssl = true" + nl + "pool_enabled = yes" + nl + "readonly = 0" + nl + "debug_sql = no" + nl + nl + "[server]" + nl + "workers = 4" + nl + "enabled = 1" + nl
         doc = ini parse src
-        assert str eq (ini get doc "" "global_env" "") "production" "AC1: global sectionless key in root '' section"
-        assert str eq (ini get doc "database" "host" "") "127.0.0.1" "AC1: ini get quoted string"
-        assert int equals (ini get int doc "database" "port" 0) 5432 "AC1: ini get int with ';' inline comment"
-        assert int equals (ini get int doc "database" "timeout" 0) (-1) "AC1: ini get negative int with '#' inline comment"
-        assert str eq (ini get doc "database" "password" "") "p@ss#word;123" "AC1: quoted '#' and ';' preserved inside string"
-        assert true (ini get bool doc "database" "ssl" False) "AC1: ini get bool 'true'"
-        assert true (ini get bool doc "database" "pool_enabled" False) "AC1: ini get bool 'yes'"
-        assert false (ini get bool doc "database" "readonly" True) "AC1: ini get bool '0'"
-        assert false (ini get bool doc "database" "debug_sql" True) "AC1: ini get bool 'off'"
-        assert int equals (ini get int doc "server" "workers" 0) 4 "AC1: ini get second section"
-        assert true (ini get bool doc "server" "enabled" False) "AC1: ini get bool '1'"
-        assert str eq (ini get doc "server" "missing" "default_v") "default_v" "AC1: ini get fallback on missing key"
-        assert str eq (ini get doc "no_such_section" "k" "fallback") "fallback" "AC1: ini get fallback on missing section"
+        ini get doc "" "global_env" "" -> assert str eq "production" "AC1: global sectionless key in root '' section"
+        ini get doc "database" "host" "" -> assert str eq "127.0.0.1" "AC1: ini get quoted string"
+        ini get int doc "database" "port" 0 -> assert int equals 5432 "AC1: ini get int with ';' inline comment"
+        ini get int doc "database" "timeout" 0 -> assert int equals (-1) "AC1: ini get negative int with '#' inline comment"
+        ini get doc "database" "password" "" -> assert str eq "p@ss#word;123" "AC1: quoted '#' and ';' preserved inside string"
+        ini get bool doc "database" "ssl" False -> assert true "AC1: ini get bool 'true'"
+        ini get bool doc "database" "pool_enabled" False -> assert true "AC1: ini get bool 'yes'"
+        ini get bool doc "database" "readonly" True -> assert false "AC1: ini get bool '0'"
+        ini get bool doc "database" "debug_sql" True -> assert false "AC1: ini get bool 'off'"
+        ini get int doc "server" "workers" 0 -> assert int equals 4 "AC1: ini get second section"
+        ini get bool doc "server" "enabled" False -> assert true "AC1: ini get bool '1'"
+        ini get doc "server" "missing" "default_v" -> assert str eq "default_v" "AC1: ini get fallback on missing key"
+        ini get doc "no_such_section" "k" "fallback" -> assert str eq "fallback" "AC1: ini get fallback on missing section"
         secs = ini sections doc
-        assert int equals (ini sec count secs) 3 "AC1: 3 sections (root '', database, server)"
+        ini sec count secs -> assert int equals 3 "AC1: 3 sections (root '', database, server)"
         ()
 ```
 
@@ -172,12 +172,12 @@ fn :: test dotenv interpolation and roundtrip => ()
         rb = char from code 125
         env_src = "# .env test" + nl + "export BASE_DIR=/srv/app" + nl + "APP_NAME='solstice'" + nl + "LOG_DIR=\"$" + lb + "BASE_DIR" + rb + "/$" + lb + "APP_NAME" + rb + "/logs\"" + nl + "WITH_UNKNOWN=\"prefix_$" + lb + "UNDEFINED_VAR" + rb + "_suffix\"" + nl + "PORT=8080 # inline comment" + nl
         env = dotenv parse env_src
-        assert str eq (dotenv get env "BASE_DIR" "") "/srv/app" "AC2: dotenv export key"
-        assert str eq (dotenv get env "APP_NAME" "") "solstice" "AC2: dotenv single-quoted value"
-        assert str eq (dotenv get env "LOG_DIR" "") "/srv/app/solstice/logs" "AC2: dotenv multiple variable interpolations"
-        assert str eq (dotenv get env "WITH_UNKNOWN" "") "prefix__suffix" "AC2: dotenv undefined variable expands to empty"
-        assert str eq (dotenv get env "PORT" "") "8080" "AC2: dotenv inline comment stripped"
-        assert str eq (dotenv get env "MISSING_KEY" "def") "def" "AC2: dotenv missing key fallback"
+        dotenv get env "BASE_DIR" "" -> assert str eq "/srv/app" "AC2: dotenv export key"
+        dotenv get env "APP_NAME" "" -> assert str eq "solstice" "AC2: dotenv single-quoted value"
+        dotenv get env "LOG_DIR" "" -> assert str eq "/srv/app/solstice/logs" "AC2: dotenv multiple variable interpolations"
+        dotenv get env "WITH_UNKNOWN" "" -> assert str eq "prefix__suffix" "AC2: dotenv undefined variable expands to empty"
+        dotenv get env "PORT" "" -> assert str eq "8080" "AC2: dotenv inline comment stripped"
+        dotenv get env "MISSING_KEY" "def" -> assert str eq "def" "AC2: dotenv missing key fallback"
 
         doc0 = ini parse ("[app]" + nl + "name = demo" + nl + "port = 3000" + nl)
         doc1 = ini set doc0 "app" "version" "1.0"
@@ -185,10 +185,10 @@ fn :: test dotenv interpolation and roundtrip => ()
         doc3 = ini set doc2 "metrics" "enabled" "true"
         out_s = ini stringify doc3
         doc_rt = ini parse out_s
-        assert str eq (ini get doc_rt "app" "name" "") "demo" "AC3: ini stringify round-trip name"
-        assert str eq (ini get doc_rt "app" "version" "") "1.0" "AC3: ini set new key + round-trip"
-        assert int equals (ini get int doc_rt "app" "port" 0) 9090 "AC3: ini set overwrite existing key + round-trip"
-        assert true (ini get bool doc_rt "metrics" "enabled" False) "AC3: ini set new section + round-trip"
+        ini get doc_rt "app" "name" "" -> assert str eq "demo" "AC3: ini stringify round-trip name"
+        ini get doc_rt "app" "version" "" -> assert str eq "1.0" "AC3: ini set new key + round-trip"
+        ini get int doc_rt "app" "port" 0 -> assert int equals 9090 "AC3: ini set overwrite existing key + round-trip"
+        ini get bool doc_rt "metrics" "enabled" False -> assert true "AC3: ini set new section + round-trip"
         ()
 ```
 
@@ -199,11 +199,11 @@ Adibide praktiko honetan `ini` bloke funtzional honetan nola portatzen den sakon
 ```ridgun
 import ini
 
-fn :: cargar configuracion servicio (raw_ini : String) (raw_env : String) => (String, Int, Bool, String)
+fn :: cargar configuracion servicio String String => String Int Bool String
       cargar configuracion servicio raw_ini raw_env =
         env_entries = dotenv parse raw_env
         doc         = ini parse raw_ini
-        db_host     = ini get str doc "database" "host" "localhost"
+        db_host     = ini get doc "database" "host" "localhost"
         db_port     = ini get int doc "database" "port" 5432
         tls_activo  = ini get bool doc "database" "tls" True
         doc_act     = ini set doc "server" "dsn" "{db_host}:{db_port}"
@@ -466,7 +466,7 @@ fn :: ini stringify IniDoc => String
 
 ### `ini`-ekin programatzeko Urrezko 5 Arauak
 
-1. **Deklaratu `import ini` fitxategiaren hasieran** eta baliatu zuriuneen eta azpimarren arteko baliokidetasuna zure kodea prosa bezala irakur dadin.
+1. **Deklaratu `import ini` fitxategiaren hasieran** eta deitu bere funtzioei zuriuneekin, deklaratuta dauden bezala, zure kodea prosa bezala irakur dadin.
 2. **Lerrokatu zure datu-hodiak `=` ikurrarekin**: kateatu `ini`-erako deiak izen propioko urratsetan eta utzi `stable format`-i zutabeak lerrokatzen.
 3. **Baliatu `ini`-eko funtzio osoak zure `|` guardetan**: egiaztatu itzulera-balioak edo askatu ADTak *pattern matching* bidez, kanpoko sarrera beti baliozkoa dela suposatu beharrean.
 4. **Saihestu egitura handiak kopiatzea eremu bat kontsultatu besterik behar ez baduzu**: gogoratu `RMM2`-n sarrerako argumentuek ez dituztela kontagailuak handitzen edo txikitzen (`+0` / `-0`).

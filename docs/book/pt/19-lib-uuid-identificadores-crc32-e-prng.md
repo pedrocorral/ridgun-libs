@@ -21,7 +21,7 @@ Num ecossistema tradicional, resolver as tarefas do domínio **`UUID`** implica 
 
 ## 19.2. Artefactos nativos, importação e catálogo completo da API de `uuid`
 
-No `ridgun-libs`, **`uuid`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/uuid.ridgun` (domínio `UUID`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
+No `ridgun-libs`, **`uuid`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/uuid.ridgun` (domínio `UUID`). Ao compilar com `stable bundle`, é empacotada num formato nativo:
 
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
@@ -35,12 +35,12 @@ No `ridgun-libs`, **`uuid`** é uma **lib** de primeira classe localizada em `sr
 |---|---|
 | `uuid v4 / uuid v7 / uuid v7 at` | Gera UUIDs canónicos de 36 caracteres RFC 9562 v4 (aleatório) e v7 (ordenado no tempo) |
 | `uuid is valid / uuid version` | Valida o formato 8-4-4-4-12 e os bits de variante RFC 9562 (`8, 9, a, b`) |
-| `fnv1a 32 / adler32 / crc32 / crc32 hex` | Hashes não criptográficos e *checksums* rápidos de 32 bits |
+| `fnv1a 32 / adler32 / crc32` | Hashes não criptográficos e *checksums* rápidos de 32 bits |
 | `prng next / prng range` | PRNG congruencial linear funcional puro para testes e simulações reprodutíveis |
 
 ### 19.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/uuid.ridgun`
 
-Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/uuid.ridgun` (`0` tipos, `0` operadores e `33` funções):
+Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/uuid.ridgun` (`0` tipos, `0` operadores e `24` funções):
 
 | # | Função / Assinatura (`fn ::`) | Tipo de Retorno |
 |---|---|---|
@@ -52,31 +52,22 @@ Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operado
 | `6` | `fn :: fnv1a 32 String` | `Int` |
 | `7` | `fn :: uu adler loop String Int Int Int Int` | `Int` |
 | `8` | `fn :: adler32 String` | `Int` |
-| `9` | `fn :: uu crc bit loop Int Int` | `Int` |
-| `10` | `fn :: uu crc byte loop String Int Int Int` | `Int` |
-| `11` | `fn :: crc32 String` | `Int` |
-| `12` | `fn :: uu abs Int` | `Int` |
-| `13` | `fn :: prng next Int` | `Int` |
-| `14` | `fn :: uu prng range step Int Int Int` | `Int Int` |
-| `15` | `fn :: prng range Int Int Int` | `Int Int` |
-| `16` | `fn :: uu alloc page Int` | `Int` |
-| `17` | `fn :: uu free page Int Int Int` | `Int` |
-| `18` | `fn :: uu alloc mfd` | `Int` |
-| `19` | `fn :: uu peek Int Int Int` | `String` |
-| `20` | `fn :: uu decode u32 le String Int` | `Int` |
-| `21` | `fn :: uu decode u64 le String Int` | `Int` |
-| `22` | `fn :: uu wall time ms` | `Int` |
-| `23` | `fn :: uu bytes to hex loop String Int Int` | `String` |
-| `24` | `fn :: uu random hex16` | `String` |
-| `25` | `fn :: uu hex val Int` | `Int` |
-| `26` | `fn :: uu variant char String` | `String` |
-| `27` | `fn :: uuid v4` | `String` |
-| `28` | `fn :: uu hex48 loop Int Int` | `String` |
-| `29` | `fn :: uuid v7 at Int` | `String` |
-| `30` | `fn :: uuid v7` | `String` |
-| `31` | `fn :: uu is hex range String Int Int` | `Bool` |
-| `32` | `fn :: uuid is valid String` | `Bool` |
-| `33` | `fn :: uuid version String` | `Int` |
+| `9` | `fn :: crc32 String` | `Int` |
+| `10` | `fn :: uu abs Int` | `Int` |
+| `11` | `fn :: prng next Int` | `Int` |
+| `12` | `fn :: uu prng range step Int Int Int` | `Int Int` |
+| `13` | `fn :: prng range Int Int Int` | `Int Int` |
+| `14` | `fn :: uu bytes to hex loop Tensor[U8] Int Int` | `String` |
+| `15` | `fn :: uu random hex16` | `String` |
+| `16` | `fn :: uu hex val Int` | `Int` |
+| `17` | `fn :: uu variant char String` | `String` |
+| `18` | `fn :: uuid v4` | `String` |
+| `19` | `fn :: uu hex48 loop Int Int` | `String` |
+| `20` | `fn :: uuid v7 at Int` | `String` |
+| `21` | `fn :: uuid v7` | `String` |
+| `22` | `fn :: uu is hex range String Int Int` | `Bool` |
+| `23` | `fn :: uuid is valid String` | `Bool` |
+| `24` | `fn :: uuid version String` | `Int` |
 
 ---
 
@@ -101,15 +92,15 @@ fn :: generar ids ordenados => String String Bool
 
 ### 19.3.2. Exemplo 2: Composição segura e tratamento de casos de fronteira
 
-Todas as funções da lib `uuid` foram desenhadas para se comporem com guardas booleanas `|` e com as restantes 32 libs do `ridgun-libs`:
+Todas as funções da lib `uuid` foram desenhadas para se comporem com guardas booleanas `|` e com as restantes 38 libs do `ridgun-libs`:
 
 ```ridgun
 import uuid
 
 fn :: firmar paquete String => Int Int
       firmar paquete payload =
-        payload crc32 -> c32
-        payload fnv1a 32 -> fnv
+        crc32 payload -> c32
+        fnv1a 32 payload -> fnv
         (c32, fnv)
 ```
 
@@ -122,36 +113,36 @@ fn :: test uuidv4 and uuidv7 => ()
       test uuidv4 and uuidv7 =
         u4a = uuid v4
         u4b = uuid v4
-        assert int equals (str len u4a) 36 "AC1: uuid_v4 length 36"
-        assert true (uuid is valid u4a) "AC1: uuid_v4 valid RFC 9562 format"
-        assert true (uuid is valid u4b) "AC1: second uuid_v4 valid"
-        assert false (u4a == u4b) "AC1: CSPRNG uuid_v4 calls are unique"
-        assert int equals (uuid version u4a) 4 "AC1: uuid_v4 version == 4"
+        str len u4a -> assert int equals 36 "AC1: uuid_v4 length 36"
+        uuid is valid u4a -> assert true "AC1: uuid_v4 valid RFC 9562 format"
+        uuid is valid u4b -> assert true "AC1: second uuid_v4 valid"
+        u4a == u4b -> assert false "AC1: CSPRNG uuid_v4 calls are unique"
+        uuid version u4a -> assert int equals 4 "AC1: uuid_v4 version == 4"
 
         -- RFC 9562 UUIDv7 timestamp encoding & chronological prefix ordering
         u7_zero = uuid v7 at 0
         u7a = uuid v7 at 1700000000000
         u7b = uuid v7 at 1800000000000
         u7_live = uuid v7
-        assert true (uuid is valid u7_zero) "AC1: uuid_v7 at epoch 0 valid"
-        assert str eq (str slice u7_zero 0 13) "00000000-0000" "AC1: uuid_v7 at epoch 0 zero prefix"
-        assert true (uuid is valid u7a) "AC1: uuid_v7 at 1700000000000 valid"
-        assert true (uuid is valid u7b) "AC1: uuid_v7 at 1800000000000 valid"
-        assert true (uuid is valid u7_live) "AC1: live uuid_v7 valid"
-        assert int equals (uuid version u7a) 7 "AC1: uuid_v7 version == 7"
-        assert int equals (uuid version u7_live) 7 "AC1: live uuid_v7 version == 7"
-        assert str eq (str slice u7a 0 8) "018bcfe5" "AC1: uuid_v7 timestamp prefix 1700000000000"
-        assert str eq (str slice u7b 0 8) "01a3185c" "AC1: uuid_v7 timestamp prefix 1800000000000"
+        uuid is valid u7_zero -> assert true "AC1: uuid_v7 at epoch 0 valid"
+        str slice u7_zero 0 13 -> assert str eq "00000000-0000" "AC1: uuid_v7 at epoch 0 zero prefix"
+        uuid is valid u7a -> assert true "AC1: uuid_v7 at 1700000000000 valid"
+        uuid is valid u7b -> assert true "AC1: uuid_v7 at 1800000000000 valid"
+        uuid is valid u7_live -> assert true "AC1: live uuid_v7 valid"
+        uuid version u7a -> assert int equals 7 "AC1: uuid_v7 version == 7"
+        uuid version u7_live -> assert int equals 7 "AC1: live uuid_v7 version == 7"
+        str slice u7a 0 8 -> assert str eq "018bcfe5" "AC1: uuid_v7 timestamp prefix 1700000000000"
+        str slice u7b 0 8 -> assert str eq "01a3185c" "AC1: uuid_v7 timestamp prefix 1800000000000"
 
         -- Uppercase valid UUID acceptance & RFC 9562 variant nibble (8, 9, a, b) validation
-        assert true (uuid is valid "550E8400-E29B-41D4-A716-446655440000") "AC1: uppercase RFC 9562 UUID valid"
-        assert false (uuid is valid "") "AC1: empty string invalid"
-        assert false (uuid is valid "not-a-uuid") "AC1: short string invalid"
-        assert false (uuid is valid "550e8400-e29b-41d4-1716-446655440000") "AC1: variant nibble '1' (< 8) rejected"
-        assert false (uuid is valid "550e8400-e29b-41d4-c716-446655440000") "AC1: variant nibble 'c' (> b) rejected"
-        assert false (uuid is valid "550e8400Xe29b-41d4-a716-446655440000") "AC1: missing hyphen at index 8 rejected"
-        assert false (uuid is valid "550e8400-e29b-41d4-a716-44665544000g") "AC1: non-hex character 'g' rejected"
-        assert int equals (uuid version "not-a-uuid") (0 - 1) "AC1: invalid uuid version -> -1"
+        uuid is valid "550E8400-E29B-41D4-A716-446655440000" -> assert true "AC1: uppercase RFC 9562 UUID valid"
+        uuid is valid "" -> assert false "AC1: empty string invalid"
+        uuid is valid "not-a-uuid" -> assert false "AC1: short string invalid"
+        uuid is valid "550e8400-e29b-41d4-1716-446655440000" -> assert false "AC1: variant nibble '1' (< 8) rejected"
+        uuid is valid "550e8400-e29b-41d4-c716-446655440000" -> assert false "AC1: variant nibble 'c' (> b) rejected"
+        uuid is valid "550e8400Xe29b-41d4-a716-446655440000" -> assert false "AC1: missing hyphen at index 8 rejected"
+        uuid is valid "550e8400-e29b-41d4-a716-44665544000g" -> assert false "AC1: non-hex character 'g' rejected"
+        uuid version "not-a-uuid" -> assert int equals (0 - 1) "AC1: invalid uuid version -> -1"
         ()
 ```
 
@@ -163,48 +154,50 @@ Neste exemplo prático exploramos de forma exaustiva como a `uuid` se comporta n
 fn :: test checksums and prng => ()
       test checksums and prng =
         -- Official FNV-1a 32-bit vectors (isthe.com/chongo/tech/comp/fnv/)
-        assert int equals (fnv1a 32 "") 2166136261 "AC2: FNV-1a 32 '' == 0x811c9dc5 (offset basis)"
-        assert int equals (fnv1a 32 "a") 3826002220 "AC2: FNV-1a 32 'a' == 0xe40c292c"
-        assert int equals (fnv1a 32 "foobar") 3214735720 "AC2: FNV-1a 32 'foobar' == 0xbf9cf968"
+        fnv1a 32 "" -> assert int equals 2166136261 "AC2: FNV-1a 32 '' == 0x811c9dc5 (offset basis)"
+        fnv1a 32 "a" -> assert int equals 3826002220 "AC2: FNV-1a 32 'a' == 0xe40c292c"
+        fnv1a 32 "foobar" -> assert int equals 3214735720 "AC2: FNV-1a 32 'foobar' == 0xbf9cf968"
 
         -- Official RFC 1950 Adler-32 vectors
-        assert int equals (adler32 "") 1 "AC2: Adler-32 '' == 1"
-        assert int equals (adler32 "a") 6422626 "AC2: Adler-32 'a' == 0x00620062"
-        assert int equals (adler32 "Wikipedia") 300286872 "AC2: Adler-32 'Wikipedia' == 0x11e60398"
+        adler32 "" -> assert int equals 1 "AC2: Adler-32 '' == 1"
+        adler32 "a" -> assert int equals 6422626 "AC2: Adler-32 'a' == 0x00620062"
+        adler32 "Wikipedia" -> assert int equals 300286872 "AC2: Adler-32 'Wikipedia' == 0x11e60398"
 
         -- Official IEEE 802.3 / ISO-HDLC CRC-32 vectors
-        assert int equals (crc32 "") 0 "AC2: CRC-32 '' == 0"
-        assert int equals (crc32 "a") 3904355907 "AC2: CRC-32 'a' == 0xe8b7be43"
-        assert int equals (crc32 "123456789") 3421780262 "AC2: CRC-32 '123456789' == 0xcbf43926"
+        crc32 "" -> assert int equals 0 "AC2: CRC-32 '' == 0"
+        crc32 "a" -> assert int equals 3904355907 "AC2: CRC-32 'a' == 0xe8b7be43"
+        crc32 "123456789" -> assert int equals 3421780262 "AC2: CRC-32 '123456789' == 0xcbf43926"
+        crc32 "The quick brown fox jumps over the lazy dog" -> assert int equals 1095738169 "AC2: CRC-32 pangram == 0x414fa339"
+        crc32 (str slice "x123456789" 1 10) -> assert int equals 3421780262 "AC2: CRC-32 of a slice matches the whole-string vector"
 
         -- Deterministic 31-bit LCG PRNG
         s1 = prng next 42
         s2 = prng next 42
         s3 = prng next s1
-        assert int equals s1 s2 "AC3: prng_next deterministic for same seed"
-        assert false (s1 == s3) "AC3: prng_next advances state"
+        s1 -> assert int equals s2 "AC3: prng_next deterministic for same seed"
+        s1 == s3 -> assert false "AC3: prng_next advances state"
         r1 = prng range 42 10 20
         v1 = prng val r1
-        assert true (v1 >= 10 and v1 <= 20) "AC3: prng_range within [10, 20]"
+        v1 >= 10 and v1 <= 20 -> assert true "AC3: prng_range within [10, 20]"
         r_deg = prng range 42 50 10
-        assert int equals (prng val r_deg) 50 "AC3: prng_range with hi <= lo clamps to lo"
+        prng val r_deg -> assert int equals 50 "AC3: prng_range with hi <= lo clamps to lo"
         ()
 ```
 
-### 19.3.5. Exemplo 5: Rastreabilidade distribuída com UUIDv7 ordenáveis por tempo e integridade de pacotes com CRC32 e FNV-1a (`uuid v7`, `uuid v7 timestamp ms`, `crc32 hex`)
+### 19.3.5. Exemplo 5: Rastreabilidade distribuída com UUIDv7 ordenáveis por tempo e integridade de pacotes com CRC32 e FNV-1a (`uuid v7`, `uuid version`)
 
 Neste exemplo prático exploramos de forma exaustiva como a `uuid` se comporta neste bloco funcional, incluindo entradas padrão, combinações de parâmetros e valores limite:
 
 ```ridgun
 import uuid
 
-fn :: sellar paquete trazado (ahora_ms : Int) (payload : String) => (String, Int, String, Int)
+fn :: sellar paquete trazado Int String => String Int Int Int
       sellar paquete trazado ahora_ms payload =
-        trace_id = uuid v7 ahora_ms
-        ts_extra = uuid v7 timestamp ms trace_id
-        crc_hex  = crc32 hex payload
-        hash_fnv = fnv1a 64 payload
-        (trace_id, ts_extra, crc_hex, hash_fnv)
+        trace_id = uuid v7 at ahora_ms
+        version  = uuid version trace_id
+        crc      = crc32 payload
+        hash_fnv = fnv1a 32 payload
+        (trace_id, version, crc, hash_fnv)
 ```
 
 ---
@@ -213,74 +206,29 @@ fn :: sellar paquete trazado (ahora_ms : Int) (payload : String) => (String, Int
 
 Uma das maiores vantagens do `ridgun-libs` é que **não existem caixas-pretas em C**. Pode abrir `src/main/ridgun/lib/uuid.ridgun` e ler exatamente como cada operação é implementada usando *pattern matching*, árvores de guardas `|` / `|.` e recursão de cauda (TCO). Vejamos as peças-chave da sua implementação real:
 
-### 19.4.1. Implementação interna: RFC 9562 UUIDv4 & UUIDv7 Generation & Validation (CSPRNG + clock_gettime)
+### 19.4.1. Implementação interna: RFC 9562 UUIDv4 & UUIDv7 Generation & Validation (CSPRNG + wall clock)
 
 Observe como `uuid.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
 module :: uuid
 
-fn :: uu alloc page Int => Int
-      uu alloc page sz  =
-        neg1 = 0 - 1
-        sys call 9 0 sz 3 34 neg1 0
+-- Random bytes go through `getrandom` into a `Tensor[U8]`; the clock is the built-in `sys wall time ms` (ADR-0010).
 
-fn :: uu free page Int Int Int => Int
-      uu free page mfd ptr sz =
-        sys close mfd -> ()
-        sys call 11 ptr sz 0 0 0 0
-
-fn :: uu alloc mfd => Int
-      uu alloc mfd =  sys call 319 4194311 1 0 0 0 0
-
-fn :: uu peek Int Int Int => String
-      uu peek mfd ptr len =
-        sys call 18 mfd ptr len 0 0 0 -> ()
-        sys call 8 mfd 0 0 0 0 0 -> ()
-        sys read fd mfd len
-
-fn :: uu decode u32 le String Int => Int
-      uu decode u32 le s off =
-        b0 = str char at s off
-        b1 = str char at s (off + 1)
-        b2 = str char at s (off + 2)
-        b3 = str char at s (off + 3)
-        b0 + (b1 * 256) + (b2 * 65536) + (b3 * 16777216)
-
-fn :: uu decode u64 le String Int => Int
-      uu decode u64 le s off =
-        uu decode u32 le s off -> lo
-        uu decode u32 le s (off + 4) -> hi
-        lo + (hi * 4294967296)
-
-fn :: uu wall time ms => Int
-      uu wall time ms =
-        uu alloc page 4096 -> ptr
-        uu alloc mfd -> mfd
-        sys call 228 0 ptr 0 0 0 0 -> ()
-        uu peek mfd ptr 16 -> raw
-        uu free page mfd ptr 4096 -> ()
-        uu decode u64 le raw 0 -> sec
-        uu decode u64 le raw 8 -> nsec
-        (sec * 1000) + (nsec / 1000000)
-
-fn :: uu bytes to hex loop String Int Int => String
-      uu bytes to hex loop s idx len =
+fn :: uu bytes to hex loop Tensor[U8] Int Int => String
+      uu bytes to hex loop t          idx len =
         | idx >= len = ""
         | otherwise =
-          b   = ((str char at s idx) % 256 + 256) % 256
+          b   = t_(idx)
           hi  = b / 16
           lo  = b % 16
           tbl = uu hex lut 0
-          (str slice tbl hi (hi + 1)) + (str slice tbl lo (lo + 1)) + (uu bytes to hex loop s (idx + 1) len)
+          (str slice tbl hi (hi + 1)) + (str slice tbl lo (lo + 1)) + (uu bytes to hex loop t (idx + 1) len)
 
 fn :: uu random hex16 => String
       uu random hex16 =
-        uu alloc page 4096 -> ptr
-        uu alloc mfd -> mfd
-        sys call 318 ptr 16 0 0 0 0 -> ()
-        uu peek mfd ptr 16 -> raw
-        uu free page mfd ptr 4096 -> ()
+        raw = Tensor[U8 * 16]
+        sys call (nr getrandom) raw 16 0 0 0 0
         uu bytes to hex loop raw 0 16
 
 fn :: uu hex val Int => Int
@@ -328,7 +276,7 @@ fn :: uuid v7 at Int   => String
         "{p1}-{p2}-{p3}-{p4}-{p5}"
 
 fn :: uuid v7 => String
-      uuid v7 =  uuid v7 at (uu wall time ms)
+      uuid v7 =  uuid v7 at (sys wall time ms)
 
 fn :: uu is hex range String Int Int => Bool
       uu is hex range s idx end_idx =
@@ -369,7 +317,7 @@ fn :: uuid version String => Int
 
 ### As 5 Regras de Ouro ao programar com a `uuid`
 
-1. **Declare `import uuid` no início do ficheiro** e aproveite a equivalência entre espaços e underscores para que o seu código se leia como prosa.
+1. **Declare `import uuid` no início do ficheiro** e chame as suas funções com espaços, tal como estão declaradas, para que o seu código se leia como prosa.
 2. **Alinhe os seus pipelines de dados com `=`**: encadeie as chamadas à `uuid` em passos nomeados e deixe o `stable format` alinhar as colunas.
 3. **Aproveite as funções totais da `uuid` nas suas guardas `|`**: verifique os valores de retorno ou desempacote os ADTs com *pattern matching* em vez de assumir que a entrada externa é sempre válida.
 4. **Evite copiar grandes estruturas se só precisa de consultar um campo**: lembre-se de que no `RMM2` os argumentos de entrada não incrementam nem decrementam contadores (`+0` / `-0`).

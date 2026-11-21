@@ -8,7 +8,7 @@ Esa é a primeira pregunta que se fai calquera enxeñeiro de sistemas ao chegar 
 
 Sexamos sinceros: unir rutas con `base + "/" + ficheiro` sen limpar segmentos `..` nin validar prefixos é coma deixar a porta aberta para que alguén pida `../../etc/passwd` no teu servidor web.
 
-A lib **`path`** implementa normalización léxica POSIX (`path clean` ao estilo `filepath.Clean` de Go), unión segura (`path join`), descomposición (`dirname`, `basename`, `stem`, `ext`, `replace ext`) e o predicado de seguridade **`path is safe subpath`** (`VUL-INJ-001`) contra escapes de directorio.
+A lib **`path`** implementa normalización léxica POSIX (`path clean` ao estilo `filepath.Clean` de Go), unión segura (`path join`), descomposición (`dirname`, `basename`, `stem`, `ext`, `path replace ext`) e o predicado de seguridade **`path is safe subpath`** (`VUL-INJ-001`) contra escapes de directorio.
 
 Nun ecosistema tradicional, resolver as tarefas do dominio **`PATH`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`path`** (`src/main/ridgun/lib/path.ridgun`) aborda o problema con catro principios innegociables:
 
@@ -21,7 +21,7 @@ Nun ecosistema tradicional, resolver as tarefas do dominio **`PATH`** implica ar
 
 ## 17.2. Artefactos nativos, importación e catálogo completo da API de `path`
 
-En `ridgun-libs`, **`path`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/path.ridgun` (dominio `PATH`). Ao compilar con `stable bundle`, empaquétase en tres formatos nativos:
+En `ridgun-libs`, **`path`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/path.ridgun` (dominio `PATH`). Ao compilar con `stable bundle`, empaquétase nun formato nativo:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
@@ -97,21 +97,21 @@ fn :: resolver archivo estatico String String => Bool String
 
 ### 17.3.2. Exemplo 2: Composición segura e manexo de casos de bordo
 
-Toda función da lib `path` está deseñada para compoñerse con gardas booleanas `|` e co resto das 32 libs de `ridgun-libs`:
+Toda función da lib `path` está deseñada para compoñerse con gardas booleanas `|` e co resto das 38 libs de `ridgun-libs`:
 
 ```ridgun
 import path
 
 fn :: cambiar salida a objeto String => String String String
       cambiar salida a objeto fuente =
-        fuente path dirname -> dir
-        fuente path stem -> nom
-        fuente path clean -> limpio
-        path with ext limpio ".ridgunlib" -> obj
+        path dirname fuente -> dir
+        path stem fuente -> nom
+        path clean fuente -> limpio
+        path replace ext limpio ".ridgunlib" -> obj
         (dir, nom, obj)
 ```
 
-### 17.3.3. Exemplo 3: Normalización léxica POSIX (`path clean`) e unión segura de segmentos (`path join`, `path join all`)
+### 17.3.3. Exemplo 3: Normalización léxica POSIX (`path clean`) e unión segura de segmentos (`path join`, `path join list`)
 
 Neste exemplo práctico exploramos de forma exhaustiva como se comporta `path` neste bloque funcional, incluíndo entradas estándar, combinacións de parámetros e valores fronteira:
 
@@ -119,32 +119,32 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `path` n
 fn :: test path clean and join => ()
       test path clean and join =
         -- Go path/path_test.go cleantests vectors
-        assert str eq (path clean "") "." "AC1: empty -> ."
-        assert str eq (path clean ".") "." "AC1: . -> ."
-        assert str eq (path clean "././.") "." "AC1: ././. -> ."
-        assert str eq (path clean "/") "/" "AC1: / -> /"
-        assert str eq (path clean "///") "/" "AC1: /// -> /"
-        assert str eq (path clean "/././") "/" "AC1: /././ -> /"
-        assert str eq (path clean "/../a") "/a" "AC1: /../a clamped at root"
-        assert str eq (path clean "/../../..") "/" "AC1: /../../.. clamped at root"
-        assert str eq (path clean "a/b/..") "a" "AC1: a/b/.. -> a"
-        assert str eq (path clean "a/../b") "b" "AC1: a/../b -> b"
-        assert str eq (path clean "a/../../b") "../b" "AC1: relative .. preserved when above ."
-        assert str eq (path clean "../../a/b/..") "../../a" "AC1: leading ../.. preserved"
-        assert str eq (path clean "/a/b/../c/./d//") "/a/c/d" "AC1: complex absolute normalization"
+        path clean "" -> assert str eq "." "AC1: empty -> ."
+        path clean "." -> assert str eq "." "AC1: . -> ."
+        path clean "././." -> assert str eq "." "AC1: ././. -> ."
+        path clean "/" -> assert str eq "/" "AC1: / -> /"
+        path clean "///" -> assert str eq "/" "AC1: /// -> /"
+        path clean "/././" -> assert str eq "/" "AC1: /././ -> /"
+        path clean "/../a" -> assert str eq "/a" "AC1: /../a clamped at root"
+        path clean "/../../.." -> assert str eq "/" "AC1: /../../.. clamped at root"
+        path clean "a/b/.." -> assert str eq "a" "AC1: a/b/.. -> a"
+        path clean "a/../b" -> assert str eq "b" "AC1: a/../b -> b"
+        path clean "a/../../b" -> assert str eq "../b" "AC1: relative .. preserved when above ."
+        path clean "../../a/b/.." -> assert str eq "../../a" "AC1: leading ../.. preserved"
+        path clean "/a/b/../c/./d//" -> assert str eq "/a/c/d" "AC1: complex absolute normalization"
 
-        -- path join & path join list
-        assert str eq (path join "" "") "." "AC1: join empty empty"
-        assert str eq (path join "/var/log" "") "/var/log" "AC1: join with empty right"
-        assert str eq (path join "" "app.log") "app.log" "AC1: join with empty left"
-        assert str eq (path join "/var/log" "app/server.log") "/var/log/app/server.log" "AC1: join relative child"
-        assert str eq (path join "/var/log" "/etc/hosts") "/etc/hosts" "AC1: join absolute child overrides base"
-        assert str eq (path join list []) "." "AC1: join_list [] -> ."
-        assert str eq (path join list ["src", "main", "ridgun", "lib", "path.ridgun"]) "src/main/ridgun/lib/path.ridgun" "AC1: join_list 5 segments"
+        -- path_join & path_join_list
+        path join "" "" -> assert str eq "." "AC1: join empty empty"
+        path join "/var/log" "" -> assert str eq "/var/log" "AC1: join with empty right"
+        path join "" "app.log" -> assert str eq "app.log" "AC1: join with empty left"
+        path join "/var/log" "app/server.log" -> assert str eq "/var/log/app/server.log" "AC1: join relative child"
+        path join "/var/log" "/etc/hosts" -> assert str eq "/etc/hosts" "AC1: join absolute child overrides base"
+        path join list [] -> assert str eq "." "AC1: join_list [] -> ."
+        path join list ["src", "main", "ridgun", "lib", "path.ridgun"] -> assert str eq "src/main/ridgun/lib/path.ridgun" "AC1: join_list 5 segments"
         ()
 ```
 
-### 17.3.4. Exemplo 4: Descomposición (`dirname`, `basename`, `ext`, `stem`) e confinamento contra *path traversal* (`path is safe rel`, `path resolve under`)
+### 17.3.4. Exemplo 4: Descomposición (`dirname`, `basename`, `ext`, `stem`) e confinamento contra *path traversal* (`path is safe subpath`)
 
 Neste exemplo práctico exploramos de forma exhaustiva como se comporta `path` neste bloque funcional, incluíndo entradas estándar, combinacións de parámetros e valores fronteira:
 
@@ -152,43 +152,43 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `path` n
 fn :: test path components and confinement => ()
       test path components and confinement =
         p = "/home/boogie/ridgun-libs/src/socket.ridgun"
-        assert true (path is abs p) "AC2: path_is_abs true"
-        assert false (path is rel p) "AC2: path_is_rel false"
-        assert false (path is abs "") "AC2: empty is not abs"
-        assert true (path is rel "src/socket.ridgun") "AC2: relative path_is_rel"
-        assert str eq (path dirname p) "/home/boogie/ridgun-libs/src" "AC2: dirname"
-        assert str eq (path basename p) "socket.ridgun" "AC2: basename"
+        path is abs p -> assert true "AC2: path_is_abs true"
+        path is rel p -> assert false "AC2: path_is_rel false"
+        path is abs "" -> assert false "AC2: empty is not abs"
+        path is rel "src/socket.ridgun" -> assert true "AC2: relative path_is_rel"
+        path dirname p -> assert str eq "/home/boogie/ridgun-libs/src" "AC2: dirname"
+        path basename p -> assert str eq "socket.ridgun" "AC2: basename"
         sp = path split p
-        assert str eq (pair fst sp) "/home/boogie/ridgun-libs/src" "AC2: split dirname"
-        assert str eq (pair snd sp) "socket.ridgun" "AC2: split basename"
-        assert str eq (path dirname "/") "/" "AC2: dirname of / is /"
-        assert str eq (path basename "/") "/" "AC2: basename of / is /"
-        assert str eq (path dirname "/top") "/" "AC2: dirname of /top is /"
-        assert str eq (path dirname "barefile.txt") "." "AC2: dirname of bare filename is ."
+        pair fst sp -> assert str eq "/home/boogie/ridgun-libs/src" "AC2: split dirname"
+        pair snd sp -> assert str eq "socket.ridgun" "AC2: split basename"
+        path dirname "/" -> assert str eq "/" "AC2: dirname of / is /"
+        path basename "/" -> assert str eq "/" "AC2: basename of / is /"
+        path dirname "/top" -> assert str eq "/" "AC2: dirname of /top is /"
+        path dirname "barefile.txt" -> assert str eq "." "AC2: dirname of bare filename is ."
 
         -- Multi-dot filenames, dotfiles, and extension replacement
-        assert str eq (path stem p) "socket" "AC2: stem"
-        assert str eq (path ext p) ".ridgun" "AC2: ext"
-        assert str eq (path stem "archive.tar.gz") "archive.tar" "AC2: multi-dot stem"
-        assert str eq (path ext "archive.tar.gz") ".gz" "AC2: multi-dot ext"
-        assert str eq (path stem ".gitignore") ".gitignore" "AC2: dotfile stem"
-        assert str eq (path ext ".gitignore") "" "AC2: dotfile empty ext"
-        assert str eq (path replace ext p "ridgunlib") "/home/boogie/ridgun-libs/src/socket.ridgunlib" "AC2: replace_ext without leading dot"
-        assert str eq (path replace ext p ".so") "/home/boogie/ridgun-libs/src/socket.so" "AC2: replace_ext with leading dot"
-        assert str eq (path replace ext "main.ridgun" "") "main" "AC2: replace_ext with empty removes extension"
+        path stem p -> assert str eq "socket" "AC2: stem"
+        path ext p -> assert str eq ".ridgun" "AC2: ext"
+        path stem "archive.tar.gz" -> assert str eq "archive.tar" "AC2: multi-dot stem"
+        path ext "archive.tar.gz" -> assert str eq ".gz" "AC2: multi-dot ext"
+        path stem ".gitignore" -> assert str eq ".gitignore" "AC2: dotfile stem"
+        path ext ".gitignore" -> assert str eq "" "AC2: dotfile empty ext"
+        path replace ext p "ridgunlib" -> assert str eq "/home/boogie/ridgun-libs/src/socket.ridgunlib" "AC2: replace_ext without leading dot"
+        path replace ext p ".so" -> assert str eq "/home/boogie/ridgun-libs/src/socket.so" "AC2: replace_ext with leading dot"
+        path replace ext "main.ridgun" "" -> assert str eq "main" "AC2: replace_ext with empty removes extension"
 
         -- OWASP Path Traversal & Shell Injection Confinement (VUL-INJ-002)
-        assert true (path is safe subpath "/srv/www" "assets/app.js") "AC3: safe child subpath"
-        assert true (path is safe subpath "/srv/www" "a/b/../c_1-2.txt") "AC3: safe normalized internal .."
-        assert false (path is safe subpath "/srv/www" "") "AC3: empty child rejected"
-        assert false (path is safe subpath "" "assets/app.js") "AC3: empty base rejected"
-        assert false (path is safe subpath "/srv/www" "../etc/passwd") "AC3: direct .. traversal rejected"
-        assert false (path is safe subpath "/srv/www" "a/b/../../../etc/passwd") "AC3: deep .. traversal escaping base rejected"
-        assert false (path is safe subpath "/srv/www" "/etc/passwd") "AC3: absolute child path rejected"
-        assert false (path is safe subpath "/srv/www" "/srv/www/index.html") "AC3: absolute child matching base still rejected"
-        assert false (path is safe subpath "/srv/www" "bad;rm -rf /") "AC3: shell semicolon metachar rejected"
-        assert false (path is safe subpath "/srv/www" "bad|cat") "AC3: shell pipe metachar rejected"
-        assert false (path is safe subpath "/srv/www" "bad$var") "AC3: shell dollar metachar rejected"
+        path is safe subpath "/srv/www" "assets/app.js" -> assert true "AC3: safe child subpath"
+        path is safe subpath "/srv/www" "a/b/../c_1-2.txt" -> assert true "AC3: safe normalized internal .."
+        path is safe subpath "/srv/www" "" -> assert false "AC3: empty child rejected"
+        path is safe subpath "" "assets/app.js" -> assert false "AC3: empty base rejected"
+        path is safe subpath "/srv/www" "../etc/passwd" -> assert false "AC3: direct .. traversal rejected"
+        path is safe subpath "/srv/www" "a/b/../../../etc/passwd" -> assert false "AC3: deep .. traversal escaping base rejected"
+        path is safe subpath "/srv/www" "/etc/passwd" -> assert false "AC3: absolute child path rejected"
+        path is safe subpath "/srv/www" "/srv/www/index.html" -> assert false "AC3: absolute child matching base still rejected"
+        path is safe subpath "/srv/www" "bad;rm -rf /" -> assert false "AC3: shell semicolon metachar rejected"
+        path is safe subpath "/srv/www" "bad|cat" -> assert false "AC3: shell pipe metachar rejected"
+        path is safe subpath "/srv/www" "bad$var" -> assert false "AC3: shell dollar metachar rejected"
         ()
 ```
 
@@ -199,16 +199,18 @@ Neste exemplo práctico exploramos de forma exhaustiva como se comporta `path` n
 ```ridgun
 import path
 
-fn :: resolver archivo seguro (raiz : String) (peticion : String) => (String, String, String, String)
+fn :: describir ruta String => String String String String
+      describir ruta ruta_final =
+        dir  = path dirname ruta_final
+        base = path basename ruta_final
+        ext  = path ext ruta_final
+        stem = path stem ruta_final
+        (ruta_final, dir, base, "{stem} ({ext})")
+
+fn :: resolver archivo seguro String String => String String String String
       resolver archivo seguro raiz peticion =
-        ruta_final = path resolve under raiz peticion
-        | ruta_final == "" = ("denegado", "", "", "")
-        | otherwise        =
-          dir  = path dirname ruta_final
-          base = path basename ruta_final
-          ext  = path ext ruta_final
-          stem = path stem ruta_final
-          (ruta_final, dir, base, "{stem} ({ext})")
+        | path is safe subpath raiz peticion = describir ruta (path clean (path join raiz peticion))
+        | otherwise                          = ("denegado", "", "", "")
 ```
 
 ---
@@ -486,7 +488,7 @@ fn :: path is safe subpath String String => Bool
 
 ### As 5 Regras de Ouro ao programar con `path`
 
-1. **Declara `import path` ao inicio do ficheiro** e aproveita a equivalencia entre espazos e guións baixos para que o teu código se lea coma prosa.
+1. **Declara `import path` ao inicio do ficheiro** e chama as súas funcións con espazos, tal como están declaradas, para que o teu código se lea coma prosa.
 2. **Aliña as túas tubaxes de datos con `=`**: encadea as chamadas a `path` en pasos con nome propio e deixa que `stable format` aliñe as columnas.
 3. **Aproveita as funcións totais de `path` nas túas gardas `|`**: comproba os valores de retorno ou desenvolve os ADTs con *pattern matching* en vez de asumir que a entrada externa sempre é válida.
 4. **Evita copiar grandes estruturas se só necesitas consultar un campo**: lembra que en `RMM2` os argumentos de entrada non incrementan nin decrementan contadores (`+0` / `-0`).

@@ -27,7 +27,7 @@ type AiStepDecision = AiDecisionDone String | AiDecisionRunTools [AiToolCall] | 
 type AiDoc          = ad_id: String, ad_title: String, ad_body: String
 ```
 
-| # | Función / Firma (`fn ::`) | Tipo de Retorno |
+| # | Function / Signature (`fn ::`) | Return Type |
 |---|---|---|
 | `1` | `fn :: ai zero usage` | `AiUsage` |
 | `2` | `fn :: ai add usage AiUsage AiUsage` | `AiUsage` |
@@ -313,3 +313,7 @@ fn :: test ai react guardrails rag handoff and mcp => ()
         assert str eq (snd err mcp_err) "Method not found" "AC8: MCP error message extracted"
         ()
 ```
+
+---
+
+In **Chapter 34**, we will explore the **`locale`** lib in full depth (The `locale` Lib — CLDR Plural Rules, UTC Date & Number Formatting, and Language Autonyms).

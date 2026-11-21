@@ -21,7 +21,7 @@ En un ecosistema tradicional, resolver las tareas del dominio **`IO`** implica a
 
 ## 23.2. Artefactos nativos, importación y catálogo completo de la API de `io`
 
-En `ridgun-libs`, **`io`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/io.ridgun` (dominio `IO`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
+En `ridgun-libs`, **`io`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/io.ridgun` (dominio `IO`). Al compilar con `stable bundle`, se empaqueta en un artefacto nativo:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
@@ -33,11 +33,12 @@ En `ridgun-libs`, **`io`** es una **lib** de primera clase ubicada en `src/main/
 
 | Firma / Función / Tipo | Qué hace y cuándo usarla |
 |---|---|
-| `type IoError / type IoResult[A]` | `IoNotFound | IoPermission | IoTimeout | IoRefused | IoReset | IoEOF | IoInvalid | IoSysError` |
-| `io read with timeout / io write with timeout` | Lectura/escritura no bloqueante de descriptor acotada por `wait_ms` |
-| `read fd N max M timeout T / write fd N data S timeout T` | Operadores mixfix ergonómicos (`op ::`) para E/S de descriptor con fecha límite |
-| `io read file / io write file / io read lines` | Funciones seguras de archivos y flujos de líneas que devuelven `IoResult` |
-| `exec with timeout : String -> Int -> IoResult[ProcStatus]` | Ejecuta un comando externo acotado por una cuota léxica `with timeout` |
+| `IoError / IoResult` | Errores tipados (`Timeout`, `Eof`, `SysErr`, `NotFound`) y el resultado de cada operación |
+| `io read with timeout / read fd N max M timeout T / write fd N data S timeout T` | Lecturas y escrituras de descriptores acotadas por un timeout, también como operadores mixfix (`op ::`) |
+| `io exec timeout / exec with timeout` | Ejecuta un comando externo acotado por un timeout |
+| `file exists / is file / is dir / is symlink / file size / file mtime / file mode` | Predicados y metadatos del sistema de archivos |
+| `io read file safe / io read lines / io write lines / append file` | Lectura y escritura seguras de archivos completos y de líneas |
+| `format io error / format io result` | Texto legible para un error o para un resultado |
 
 ### 23.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/io.ridgun`
 
@@ -74,28 +75,33 @@ op :: write fd Int data String timeout Int => IoResult
 | `13` | `fn :: io exec timeout String Int` | `IoResult` |
 | `14` | `fn :: exec with timeout String Int` | `IoResult` |
 | `15` | `fn :: read existing or empty String` | `String` |
-| `16` | `fn :: append file String String` | `Int` |
-| `17` | `fn :: file exists String` | `Bool` |
-| `18` | `fn :: is file String` | `Bool` |
-| `19` | `fn :: is dir String` | `Bool` |
-| `20` | `fn :: is symlink String` | `Bool` |
-| `21` | `fn :: extract size (Bool String Int Int Int String String Int String)` | `Int` |
-| `22` | `fn :: file size String` | `Int` |
-| `23` | `fn :: extract mtime (Bool String Int Int Int String String Int String)` | `Int` |
-| `24` | `fn :: file mtime String` | `Int` |
-| `25` | `fn :: extract mode (Bool String Int Int Int String String Int String)` | `Int` |
-| `26` | `fn :: file mode String` | `Int` |
-| `27` | `fn :: io read file safe String` | `IoResult` |
-| `28` | `fn :: split lines loop String Int Int Int` | `[String]` |
-| `29` | `fn :: split non empty lines String Int` | `[String]` |
-| `30` | `fn :: io read lines String` | `[String]` |
-| `31` | `fn :: str list is empty [String]` | `Bool` |
-| `32` | `fn :: join lines nl [String]` | `String` |
-| `33` | `fn :: io write lines String [String]` | `Int` |
-| `34` | `fn :: io wrap chunk String` | `IoResult` |
-| `35` | `fn :: io read after poll Int Int` | `IoResult` |
-| `36` | `fn :: io read poll step Int` | `IoResult` |
-| `37` | `fn :: io read with timeout String Int` | `IoResult` |
+| `16` | `fn :: append file step String String` | `Int` |
+| `17` | `fn :: append file String String` | `Int` |
+| `18` | `fn :: file exists String` | `Bool` |
+| `19` | `fn :: is file String` | `Bool` |
+| `20` | `fn :: is dir String` | `Bool` |
+| `21` | `fn :: is symlink String` | `Bool` |
+| `22` | `fn :: extract size (Bool String Int Int Int String String Int String)` | `Int` |
+| `23` | `fn :: file size String` | `Int` |
+| `24` | `fn :: extract mtime (Bool String Int Int Int String String Int String)` | `Int` |
+| `25` | `fn :: file mtime String` | `Int` |
+| `26` | `fn :: extract mode (Bool String Int Int Int String String Int String)` | `Int` |
+| `27` | `fn :: file mode String` | `Int` |
+| `28` | `fn :: io read file safe String` | `IoResult` |
+| `29` | `fn :: split lines loop String Int Int Int` | `[String]` |
+| `30` | `fn :: split non empty lines String Int` | `[String]` |
+| `31` | `fn :: io read lines String` | `[String]` |
+| `32` | `fn :: str list is empty [String]` | `Bool` |
+| `33` | `fn :: join lines nl [String]` | `String` |
+| `34` | `fn :: io write lines step String [String]` | `Int` |
+| `35` | `fn :: io write lines String [String]` | `Int` |
+| `36` | `fn :: io wrap chunk String` | `IoResult` |
+| `37` | `fn :: io close and return Int IoResult` | `IoResult` |
+| `38` | `fn :: io read chunk and close Int` | `IoResult` |
+| `39` | `fn :: io read after poll Int Int` | `IoResult` |
+| `40` | `fn :: io poll and read Int` | `IoResult` |
+| `41` | `fn :: io read poll step Int` | `IoResult` |
+| `42` | `fn :: io read with timeout String Int` | `IoResult` |
 
 ---
 
@@ -118,7 +124,7 @@ fn :: leer peticion segura Int => String
 
 ### 23.3.2. Ejemplo 2: Composición segura y manejo de casos de borde
 
-Toda función de la lib `io` está diseñada para componerse con guardas booleanas `|` y con el resto de las 32 libs de `ridgun-libs`:
+Toda función de la lib `io` está diseñada para componerse con guardas booleanas `|` y con el resto de las 38 libs de `ridgun-libs`:
 
 ```ridgun
 import io
@@ -128,17 +134,17 @@ fn :: describir fallo => String
         format io error (Timeout 250)
 ```
 
-### 23.3.3. Ejemplo 3: Jerarquía extensible de errores `IoError` (`Timeout`, `Eof`, `InvalidInput`, `PermissionDenied`, `NotFound`, `PosixErrno`) y formateo `io error message`
+### 23.3.3. Ejemplo 3: Jerarquía extensible de errores `IoError` (`Timeout`, `Eof`, `NotFound`, `SysErr`) y formateo `format io error`
 
 En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `io` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
 
 ```ridgun
 fn :: test io error formatting => ()
       test io error formatting =
-        assert str eq (format io error (Timeout 500)) "timeout after 500 ms" "format Timeout 500"
-        assert str eq (format io error Eof) "unexpected end of file" "format Eof"
-        assert str eq (format io error (SysErr 9 "poll")) "syscall error 9 in poll" "format SysErr"
-        assert str eq (format io error (NotFound "/missing")) "file not found: /missing" "format NotFound"
+        format io error (Timeout 500) -> assert str eq "timeout after 500 ms" "format Timeout 500"
+        format io error Eof -> assert str eq "unexpected end of file" "format Eof"
+        format io error (SysErr 9 "poll") -> assert str eq "syscall error 9 in poll" "format SysErr"
+        format io error (NotFound "/missing") -> assert str eq "file not found: /missing" "format NotFound"
         ()
 ```
 
@@ -153,35 +159,35 @@ fn :: test io pipe timeout and eof => ()
         rc     = pipe rc3 pt
         rfd    = pipe rfd3 pt
         wfd    = pipe wfd3 pt
-        assert eq rc 0
+        rc -> assert eq 0
 
         -- 1. Empty pipe read with 50 ms timeout must time out within [40, 300) ms (TS-PERF-001 AC2)
-        t3     = sys monotonic ms
+        t3     = sys time ms
         r_to   = read fd rfd max 32 timeout 50
-        t4     = sys monotonic ms
+        t4     = sys time ms
         dt     = t4 - t3
-        assert str eq (format io result r_to) "err:timeout after 50 ms" "empty pipe read Timeout 50"
-        assert true (dt >= 40 and dt < 300) "dt in [40, 300): {dt}"
+        format io result r_to -> assert str eq "err:timeout after 50 ms" "empty pipe read Timeout 50"
+        dt >= 40 and dt < 300 -> assert true "dt in [40, 300): {dt}"
 
         -- 2. Write payload via mixfix `write fd ... data ... timeout ...`
         w_res  = write fd wfd data "stream-ok" timeout 100
-        assert str eq (format io result w_res) "ok:int:9" "write fd returns 9 bytes"
+        format io result w_res -> assert str eq "ok:int:9" "write fd returns 9 bytes"
 
         -- 3. Read payload via mixfix `read fd ... max ... timeout ...`
         r_ok   = read fd rfd max 64 timeout 100
-        assert str eq (format io result r_ok) "ok:str:stream-ok" "read fd returns stream-ok"
+        format io result r_ok -> assert str eq "ok:str:stream-ok" "read fd returns stream-ok"
 
         -- 4. Close write end and verify subsequent read returns Eof
-        posix close wfd -> ()
+        posix close wfd
         r_eof  = read fd rfd max 64 timeout 100
-        assert str eq (format io result r_eof) "err:unexpected end of file" "closed pipe read returns Eof"
-        posix close rfd -> ()
+        format io result r_eof -> assert str eq "err:unexpected end of file" "closed pipe read returns Eof"
+        posix close rfd
 
         -- 5. Bad fd / invalid max_bytes
         r_bad  = read fd (0 - 1) max 64 timeout 50
-        assert str eq (format io result r_bad) "err:syscall error 9 in read" "negative fd read SysErr 9"
+        format io result r_bad -> assert str eq "err:syscall error 9 in read" "negative fd read SysErr 9"
         r_zero = read fd rfd max 0 timeout 50
-        assert str eq (format io result r_zero) "err:syscall error 22 in read" "zero max_bytes read SysErr 22"
+        format io result r_zero -> assert str eq "err:syscall error 22 in read" "zero max_bytes read SysErr 22"
         ()
 ```
 
@@ -193,13 +199,13 @@ En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `io` 
 fn :: test io exec timeout => ()
       test io exec timeout =
         ok_res = io exec timeout "true" 500
-        assert str eq (format io result ok_res) "ok:int:0" "io exec timeout true succeeds"
+        format io result ok_res -> assert str eq "ok:int:0" "io exec timeout true succeeds"
         to_res = io exec timeout "sleep 2" 40
-        assert str eq (format io result to_res) "err:timeout after 40 ms" "io exec timeout sleep 2 times out"
+        format io result to_res -> assert str eq "err:timeout after 40 ms" "io exec timeout sleep 2 times out"
         ()
 ```
 
-### 23.3.6. Ejemplo 6: Predicados de sistema de archivos (`file exists`, `is dir`, `is regular file`, `file size`), lectura por líneas (`io read lines`) y copia (`copy file`)
+### 23.3.6. Ejemplo 6: Predicados de sistema de archivos (`file exists`, `is dir`, `is file`, `file size`), lectura por líneas (`io read lines`) y copia
 
 En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `io` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
 
@@ -213,55 +219,59 @@ fn :: test io file and metadata => ()
         bpath = "{dpath}/bytes.bin"
         lpath = "{dpath}/lines.txt"
 
-        sys rmdir dpath -> ()
-        posix mkdir dpath -> ()
-        assert true (is dir dpath) "is dir dpath"
-        assert false (is file dpath) "not is file dpath"
+        sys rmdir dpath
+        posix mkdir dpath
+        is dir dpath -> assert true "is dir dpath"
+        is file dpath -> assert false "not is file dpath"
 
-        -- 1. write file + append file + read file
+        -- 1. write_file + append_file + read_file
         write file fpath "hello "
         w2    = append file fpath "world"
-        assert eq w2 0
-        assert str eq (read file fpath) "hello world" "write_file + append_file content"
+        w2 -> assert eq 0
+        read file fpath -> assert str eq "hello world" "write_file + append_file content"
 
-        -- 2. write_bytes + read_bytes
+        -- 2. write_bytes + read_bytes (`read bytes` returns Tensor[U8], ADR-0010)
         write bytes bpath [65, 66, 67, 0, 255]
         rb    = read bytes bpath
-        assert eq (int list len rb) 5
+        bytes len rb -> assert eq 5
+        tensor to list rb -> assert eq [65, 66, 67, 0, 255]
+        rb_(4) -> assert eq 255
+        write bytes bpath (tensor from str "A\nB")
+        tensor to str (read bytes bpath) -> assert str eq "A\nB" "write bytes Tensor[U8] round trip"
 
         -- 3. symlink + metadata predicates
-        assert true (sys symlink fpath spath) "sys symlink fpath spath"
-        assert true (file exists fpath) "file exists fpath"
-        assert true (is file fpath) "is file fpath"
-        assert false (is symlink fpath) "not is symlink fpath"
-        assert true (is symlink spath) "is symlink spath"
-        assert eq (file size fpath) 11
-        assert true ((file mtime fpath) > 1700000000) "file mtime > 1700000000"
-        assert true ((file mode fpath) > 0) "file mode > 0"
-        assert false (file exists "/tmp/rg_io_nonexistent_999999.txt") "missing file exists False"
+        sys symlink fpath spath -> assert true "sys symlink fpath spath"
+        file exists fpath -> assert true "file exists fpath"
+        is file fpath -> assert true "is file fpath"
+        is symlink fpath -> assert false "not is symlink fpath"
+        is symlink spath -> assert true "is symlink spath"
+        file size fpath -> assert eq 11
+        (file mtime fpath) > 1700000000 -> assert true "file mtime > 1700000000"
+        (file mode fpath) > 0 -> assert true "file mode > 0"
+        file exists "/tmp/rg_io_nonexistent_999999.txt" -> assert false "missing file exists False"
 
         -- 4. io read file safe + io write lines / io read lines
         miss  = io read file safe "/tmp/rg_io_missing_999.txt"
-        assert str eq (format io result miss) "err:file not found: /tmp/rg_io_missing_999.txt" "NotFound missing file"
+        format io result miss -> assert str eq "err:file not found: /tmp/rg_io_missing_999.txt" "NotFound missing file"
         hit   = io read file safe fpath
-        assert str eq (format io result hit) "ok:str:hello world" "safe read existing file"
+        format io result hit -> assert str eq "ok:str:hello world" "safe read existing file"
 
-        io write lines lpath ["alpha", "beta", "gamma"] -> ()
+        io write lines lpath ["alpha", "beta", "gamma"]
         lines = io read lines lpath
-        assert eq (str list len lines) 3
+        str list len lines -> assert eq 3
 
         -- 5. v0.9.5 PAL `io read with timeout` (`with timeout wait_ms do` + `sys open path 2048 0` + `sys poll fd 1 -1`)
         r_amb  = io read with timeout fpath 200_ms
-        assert str eq (format io result r_amb) "ok:str:hello world" "io read with timeout 200_ms"
+        format io result r_amb -> assert str eq "ok:str:hello world" "io read with timeout 200_ms"
         r_miss = io read with timeout "/tmp/rg_io_missing_999.txt" 50_ms
-        assert true (str starts with (format io result r_miss) "err:io error -") "io read with timeout missing file -> IoError"
+        str starts with (format io result r_miss) "err:io error -" -> assert true "io read with timeout missing file -> IoError"
 
         -- Cleanup
-        sys unlink spath -> ()
-        sys unlink fpath -> ()
-        sys unlink bpath -> ()
-        sys unlink lpath -> ()
-        sys rmdir dpath -> ()
+        sys unlink spath
+        sys unlink fpath
+        sys unlink bpath
+        sys unlink lpath
+        sys rmdir dpath
         ()
 ```
 
@@ -459,7 +469,7 @@ fn :: io read with timeout String Int => IoResult
 
 ### Las 5 Reglas de Oro al programar con `io`
 
-1. **Declara `import io` al inicio del archivo** y aprovecha la equivalencia entre espacios y guiones bajos para que tu código se lea como prosa.
+1. **Declara `import io` al inicio del archivo** y llama a sus funciones con espacios, tal como están declaradas, para que tu código se lea como prosa.
 2. **Alinea tus tuberías de datos con `=`**: encadena las llamadas a `io` en pasos con nombre propio y deja que `stable format` alinee las columnas.
 3. **Aprovecha las funciones totales de `io` en tus guardas `|`**: comprueba los valores de retorno o desenvuelve los ADTs con *pattern matching* en lugar de asumir que la entrada externa siempre es válida.
 4. **Evita copiar grandes estructuras si solo necesitas consultar un campo**: recuerda que en `RMM2` los argumentos de entrada no incrementan ni decrementan contadores (`+0` / `-0`).

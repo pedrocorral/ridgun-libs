@@ -2,12 +2,12 @@
 
 | Path | What | Read when |
 |---|---|---|
-| `index.html` | Llibre online interactiu en HTML/CSS/JS (Català) | Obrir al navegador per llegir el llibre complet de les 34 libs |
+| `index.html` | Llibre online interactiu en HTML/CSS/JS (Català) | Obrir al navegador per llegir el llibre complet de les 38 libs |
 | `01-lib-str-manipulacio-de-text.md` | Capítol 01: La lib `str` — Manipulació de Text, Cerca i Format Tabular | Aprendre i fer servir la lib `str` (`STR`) en projectes Ridgun |
 | `02-lib-math-aritmetica-i-teoria-de-nombres.md` | Capítol 02: La lib `math` — Aritmètica Segura, Teoria de Nombres i Estadística | Aprendre i fer servir la lib `math` (`MATH`) en projectes Ridgun |
 | `03-lib-list-llistes-mergesort-i-mapes-kv.md` | Capítol 03: La lib `list` — Llistes, Mergesort $O(N \log N)$ i Mapes Clau-Valor | Aprendre i fer servir la lib `list` (`LIST`) en projectes Ridgun |
 | `04-lib-btree-arbres-avl-conjunts-i-monticles.md` | Capítol 04: La lib `btree` — Arbres AVL Persistents $O(\log N)$, Conjunts i Monticles | Aprendre i fer servir la lib `btree` (`BTREE`) en projectes Ridgun |
-| `05-lib-tensor-tensors-multidimensionals.md` | Capítol 05: La lib `tensor` — Tensors Multidimensionals, Vistes i Contracció d'Einstein | Aprendre i fer servir la lib `tensor` (`TENSOR`) en projectes Ridgun |
+| `05-lib-tensor-tensors-multidimensionals.md` | Capítol 05: La lib `tensor` — Formes, Files i Columnes, Producte Matricial i Operacions per Blocs | Aprendre i fer servir la lib `tensor` (`TENSOR`) en projectes Ridgun |
 | `06-lib-linalg-algebra-lineal-i-tensors.md` | Capítol 06: La lib `linalg` — Àlgebra Lineal sobre `Tensor[Real]`, Bareiss i Activacions | Aprendre i fer servir la lib `linalg` (`LINALG`) en projectes Ridgun |
 | `07-lib-codec-hex-base64-i-url.md` | Capítol 07: La lib `codec` — Hex, Base64, Base64url, URL Percent-Encoding i JSON Lleuger | Aprendre i fer servir la lib `codec` (`CODEC`) en projectes Ridgun |
 | `08-lib-json-parser-ast-i-consultes.md` | Capítol 08: La lib `json` — Arbre AST Recursiu RFC 8259, Pretty-Printer i Consultes per Ruta | Aprendre i fer servir la lib `json` (`JSON`) en projectes Ridgun |
@@ -26,14 +26,18 @@
 | `21-lib-test-assercions-unitaries-i-funcionals.md` | Capítol 21: La lib `test` — Primitives d'Asserció Unitària i Funcional (`RG-011`) | Aprendre i fer servir la lib `test` (`TST`) en projectes Ridgun |
 | `22-lib-posix-capa-pal-rellotges-i-senyals.md` | Capítol 22: La lib `posix` — Capa d'Abstracció de Plataforma (PAL), Rellotges, Senyals i CSPRNG | Aprendre i fer servir la lib `posix` (`POSIX`) en projectes Ridgun |
 | `23-lib-io-entrada-sortida-amb-timeout.md` | Capítol 23: La lib `io` — Errors Tipats `IoResult`, E/S amb `with timeout` i Processos | Aprendre i fer servir la lib `io` (`IO`) en projectes Ridgun |
-| `24-lib-crypto-sha256-hmac-pbkdf2-i-aead.md` | Capítol 24: La lib `crypto` — SHA-256, HMAC, PBKDF2, Argon2id i ChaCha20-Poly1305 AEAD | Aprendre i fer servir la lib `crypto` (`CRYPTO`) en projectes Ridgun |
-| `25-lib-argon2id-hashing-rfc9106-i-owasp.md` | Capítol 25: La lib `argon2id` — RFC 9106 Argon2id sobre `Tensor[U64 * 8 * 16]`, Blake2b i Presets OWASP | Aprendre i fer servir la lib `argon2id` (`CRYPTO`) en projectes Ridgun |
+| `24-lib-crypto-sha256-hmac-pbkdf2-i-aead.md` | Capítol 24: La lib `crypto` — Hashes, HMAC, HKDF, PBKDF2, Xifratges AEAD, X25519, Ed25519, ECDSA, RSA i X.509 | Aprendre i fer servir la lib `crypto` (`CRYPTO`) en projectes Ridgun |
+| `25-lib-argon2id-hashing-rfc9106-i-owasp.md` | Capítol 25: La lib `argon2id` — RFC 9106 Argon2id sobre `Tensor[U64 * 128]`, Blake2b i Presets OWASP | Aprendre i fer servir la lib `argon2id` (`CRYPTO`) en projectes Ridgun |
 | `26-lib-jwt-tokens-rfc7519-i-aead.md` | Capítol 26: La lib `jwt` — JSON Web Tokens RFC 7519 (`HS256`) i Tokens Xifrats ChaCha20-Poly1305 | Aprendre i fer servir la lib `jwt` (`JWT`) en projectes Ridgun |
 | `27-lib-socket-xarxes-dns-i-kernel-sockets.md` | Capítol 27: La lib `socket` — TCP, UDP, AF_UNIX, Framing, DNS RFC 1035 i Kernel Sockets (`RGF-001`) | Aprendre i fer servir la lib `socket` (`SOCK`) en projectes Ridgun |
 | `28-lib-http-uris-http11-i-client-tcp.md` | Capítol 28: La lib `http` — URIs RFC 3986, Codec HTTP/1.1 RFC 9112 i Client TCP en Viu | Aprendre i fer servir la lib `http` (`HTTP`) en projectes Ridgun |
 | `29-lib-ws-protocol-websocket-rfc6455.md` | Capítol 29: La lib `ws` — Handshake WebSocket RFC 6455, Framing de 16/64 bits i Emmascament XOR | Aprendre i fer servir la lib `ws` (`WS`) en projectes Ridgun |
-| `30-lib-agent-concurrencia-d-actors.md` | Capítol 30: La lib `agent` — Model Natiu d'Actors (`agent`, `send`, `receive`), KV Store i Rate Limiter | Aprendre i fer servir la lib `agent` (`AGENT`) en projectes Ridgun |
-| `31-lib-pool-treballadors-i-work-stealing.md` | Capítol 31: La lib `pool` — Pool Acotat de Treballadors, Round-Robin i Robatori de Treball | Aprendre i fer servir la lib `pool` (`AGENT`) en projectes Ridgun |
-| `32-lib-net-agent-supervisor-de-connexions.md` | Capítol 32: La lib `net_agent` — Supervisor de Connexions de Xarxa i Pont d'Esdeveniments No Bloquejant | Aprendre i fer servir la lib `net_agent` (`AGENT`) en projectes Ridgun |
+| `30-lib-agent-concurrencia-d-actors.md` | Capítol 30: La lib `agent` — Model Natiu d'Actors (`agent`, `send`, `receive`), Combinadors de Petició-Resposta i Agents de Comptador, Bitàcola i Clau-Valor | Aprendre i fer servir la lib `agent` (`AGENT`) en projectes Ridgun |
+| `31-lib-pool-treballadors-i-work-stealing.md` | Capítol 31: La lib `pool` — Pools d'Agents: Partició per Clau, Difusió i Drenatge No Bloquejant | Aprendre i fer servir la lib `pool` (`AGENT`) en projectes Ridgun |
+| `32-lib-net-agent-supervisor-de-connexions.md` | Capítol 32: La lib `net_agent` — Un Agent per Connexió: Sondeig No Bloquejant i Escombrat del Reactor | Aprendre i fer servir la lib `net_agent` (`AGENT`) en projectes Ridgun |
 | `33-lib-ai-agents-ia-eines-streaming-rag-i-mcp.md` | Capítol 33: La lib `ai` — Agents d'IA, Tool Calling, Streaming SSE, ReAct Acotat, Guardarraïls, Mini-RAG i MCP (`AI`) | Aprendre i utilitzar la lib `ai` (`AI`) en projectes Ridgun |
 | `34-lib-locale-dades-cldr-plurals-dates-i-nombres.md` | Capítol 34: La lib `locale` — Regles de Plurals CLDR, Format UTC de Dates i Nombres i Autònims | Aprendre i fer servir la lib `locale` (`LOCALE`) en projectes Ridgun |
+| `35-lib-hash-hashing-amb-clau-siphash.md` | Capítol 35: La lib `hash` — Hashing amb Clau SipHash-1-3 per a Taules Hash | Aprendre i fer servir la lib `hash` (`HASH`) en projectes Ridgun |
+| `36-lib-hashmap-mapa-hash-de-claus-string-sobre-tensors.md` | Capítol 36: La lib `hashmap` — Un Mapa Hash de Claus `String` a Qualsevol Valor, sobre Tensors i amb Llavor SipHash | Aprendre i fer servir la lib `hashmap` (`HASHMAP`) en projectes Ridgun |
+| `37-lib-tls-client-tls13-tls12-i-validacio-x509.md` | Capítol 37: La lib `tls` — Client TLS 1.3 i TLS 1.2, Validació de Cadenes X.509 i Verificació del Hostname | Aprendre i fer servir la lib `tls` (`TLS`) en projectes Ridgun |
+| `38-lib-mail-missatges-rfc5322-i-smtp-sobre-tls.md` | Capítol 38: La lib `mail` — Missatges RFC 5322 i Enviament SMTP sobre TLS | Aprendre i fer servir la lib `mail` (`MAIL`) en projectes Ridgun |

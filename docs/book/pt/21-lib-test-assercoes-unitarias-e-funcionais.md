@@ -21,7 +21,7 @@ Num ecossistema tradicional, resolver as tarefas do domínio **`TST`** implica a
 
 ## 21.2. Artefactos nativos, importação e catálogo completo da API de `test`
 
-No `ridgun-libs`, **`test`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/test.ridgun` (domínio `TST`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
+No `ridgun-libs`, **`test`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/test.ridgun` (domínio `TST`). Ao compilar com `stable bundle`, é empacotada num formato nativo:
 
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
@@ -80,7 +80,7 @@ fn :: suite matematicas => ()
 
 ### 21.3.2. Exemplo 2: Composição segura e tratamento de casos de fronteira
 
-Todas as funções da lib `test` foram desenhadas para se comporem com guardas booleanas `|` e com as restantes 32 libs do `ridgun-libs`:
+Todas as funções da lib `test` foram desenhadas para se comporem com guardas booleanas `|` e com as restantes 38 libs do `ridgun-libs`:
 
 ```ridgun
 import test
@@ -97,21 +97,21 @@ Neste exemplo prático exploramos de forma exaustiva como a `test` se comporta n
 ```ridgun
 fn :: test rg011 assertions => ()
       test rg011 assertions =
-        assert equals 4 4 "math int equality"
+        4 -> assert equals 4 "math int equality"
         assert equals "ok" "ok" "string equality"
-        assert equals True True "bool equality"
-        assert true (1 < 2) "1 < 2 holds"
-        assert false (1 > 2) "1 > 2 is false"
+        True -> assert equals True "bool equality"
+        1 < 2 -> assert true "1 < 2 holds"
+        1 > 2 -> assert false "1 > 2 is false"
         assert str eq "ridgun" "ridgun" "str eq helper"
-        assert int equals 42 42 "int eq helper"
-        assert eq 10 10
-        assert ok True
-        assert not False
-        assert true (check eq 2 2) "check eq True"
-        assert false (check eq 1 2) "check eq False"
-        assert true (check str eq "a" "a") "check str eq True"
-        assert false (check str eq "a" "b") "check str eq False"
-        assert true (check true True) "check true True"
+        42 -> assert int equals 42 "int eq helper"
+        10 -> assert eq 10
+        True -> assert ok
+        False -> assert not
+        check eq 2 2 -> assert true "check eq True"
+        check eq 1 2 -> assert false "check eq False"
+        check str eq "a" "a" -> assert true "check str eq True"
+        check str eq "a" "b" -> assert false "check str eq False"
+        check true True -> assert true "check true True"
         assert false (check true False) "check true False"
 ```
 
@@ -122,7 +122,7 @@ Neste exemplo prático exploramos de forma exaustiva como a `test` se comporta n
 ```ridgun
 import test
 
-fn :: validar invariantes de dominio (x : Int) (nombre : String) => Bool
+fn :: validar invariantes de dominio Int String => Bool
       validar invariantes de dominio x nombre =
         ok_num = check eq (x * 2) (x + x)
         ok_str = check str eq nombre "ridgun"
@@ -130,15 +130,15 @@ fn :: validar invariantes de dominio (x : Int) (nombre : String) => Bool
 
 fn :: ejecutar suite de ejemplo => ()
       ejecutar suite de ejemplo =
-        -- 1. Predicados puros sin salida del proceso (`check_*`)
-        assert true (validar invariantes de dominio 21 "ridgun") "predicado compuesto"
-        -- 2. Aserciones anotadas con mensaje diagnóstico (`assert_*`)
-        assert int equals (20 + 22) 42 "suma entera exacta"
-        assert str eq "ridgunlib" "ridgunlib" "etiqueta de artefacto"
+        -- 1. Predicados puros sin salida del proceso (`check ...`)
+        validar invariantes de dominio 21 "ridgun" -> assert true "predicado compuesto"
+        -- 2. Aserciones anotadas con mensaje diagnóstico (`assert ...`)
+        20 + 22 -> assert int equals 42 "suma entera exacta"
+        "ridgunlib" -> assert str eq "ridgunlib" "etiqueta de artefacto"
         -- 3. Aserciones concisas sin etiqueta (`assert ok`, `assert not`, `assert eq`)
         assert ok (10 > 5)
         assert not (10 < 5)
-        assert eq [1, 2, 3] [1, 2, 3]
+        [1, 2, 3] -> assert eq [1, 2, 3]
         ()
 ```
 
@@ -222,7 +222,7 @@ fn :: assert eq A      A        => ()
 
 ### As 5 Regras de Ouro ao programar com a `test`
 
-1. **Declare `import test` no início do ficheiro** e aproveite a equivalência entre espaços e underscores para que o seu código se leia como prosa.
+1. **Declare `import test` no início do ficheiro** e chame as suas funções com espaços, tal como estão declaradas, para que o seu código se leia como prosa.
 2. **Alinhe os seus pipelines de dados com `=`**: encadeie as chamadas à `test` em passos nomeados e deixe o `stable format` alinhar as colunas.
 3. **Aproveite as funções totais da `test` nas suas guardas `|`**: verifique os valores de retorno ou desempacote os ADTs com *pattern matching* em vez de assumir que a entrada externa é sempre válida.
 4. **Evite copiar grandes estruturas se só precisa de consultar um campo**: lembre-se de que no `RMM2` os argumentos de entrada não incrementam nem decrementam contadores (`+0` / `-0`).

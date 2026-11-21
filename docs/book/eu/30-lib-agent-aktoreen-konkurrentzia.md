@@ -1,4 +1,4 @@
-# 30. kapitulua: `agent` lib-a — Aktoreen Eredu Natiboa (`agent`, `send`, `receive`), KV Biltegia eta Rate Limiter-a
+# 30. kapitulua: `agent` lib-a — Aktoreen Konkurrentzia Natiboa (`agent`, `send`, `receive`), Eskaera-erantzun Konbinatzaileak eta Kontagailu, Erregistro eta Gako-balio Agenteak
 
 ## 30.1. Zergatik existitzen da `agent` lib-a? (Benetako arazoa eta Ridgun filosofia)
 
@@ -8,7 +8,7 @@ Hori da edozein sistema-ingeniarik `agent`-era iristean egiten duen lehen galder
 
 Izan gaitezen zintzoak: harien artean memoria aldakorra `Mutex`, `RwLock` eta baldintza-aldagaiekin partekatzea *deadlock* eta lasterketa-baldintzen fabrika agortezina da.
 
-**`agent`** lib-ak Ridgunen **Agenteen Eredu Natiboa** (`agent`, `send ... to`, `receive from`, `try receive from`, `stop`) baliatzen du Copy-on-Write mezu-igorpenezko postontzi isolatuak, gako-balio biltegi konkurrente bat (`KvStore`), token-ontzi bidezko tasa-mugatzaile bat (`RateBucket`) eta egoera-gainbegiratzea (`AgentHealth`) eskaintzeko.
+**`agent`** lib-ak Ridgunen **Agenteen Eredu Natiboa** (`agent`, `send ... to`, `receive from`, `try receive from`, `stop`) baliatzen du honako hauek eskaintzeko: eskaera-erantzun konbinatzaileak, blokeatzaileak, ez-blokeatzaileak edo epemuga batez mugatuak (`agent ask`, `agent try ask`, `ask int with timeout`), sorten bidalketa eta hustuketa (`agent send batch`, `agent map batch`, `agent drain ready`), bizi-zikloaren ikuskapena (`is agent alive`, `agent status`, `stop agent`) eta erabiltzeko prest dauden hiru agente egoeradun: kontagailu bat, gehitze hutseko erregistro bat eta memoriako gako-balio biltegi bat.
 
 Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`agent`** lib-ak (`src/main/ridgun/lib/agent.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
@@ -21,7 +21,7 @@ Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kan
 
 ## 30.2. Artefaktu natiboak, inportazioa eta `agent` APIaren katalogo osoa
 
-`ridgun-libs`-en, **`agent`** lehen mailako **lib** bat da, `src/main/ridgun/lib/agent.ridgun` bidean kokatua (`AGENT` domeinua). `stable bundle`-ekin konpilatzean, hiru formatu natibotan paketatzen da:
+`ridgun-libs`-en, **`agent`** lehen mailako **lib** bat da, `src/main/ridgun/lib/agent.ridgun` bidean kokatua (`AGENT` domeinua). `stable bundle`-ekin konpilatzean, formatu natibo bakarrean paketatzen da:
 
 | Artefaktua | Bidea | Helburua |
 |---|---|---|
@@ -33,10 +33,12 @@ Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kan
 
 | Sinadura / Funtzioa / Mota | Zer egiten duen eta noiz erabili |
 |---|---|
-| `agent roundtrip / agent drain count` | Aktore natiboak (`agent`) abiarazi, mezuak trukatu (`send ... to` / `receive from`) eta `stop` egiten du |
-| `kv store new / kv store apply` | Aktoreentzako gako-balio biltegi aldaezina (`KvPut`, `KvGet`, `KvDelete`, `KvClear`) |
-| `rate bucket new / rate bucket allow` | Token-ontzi bidezko tasa-mugatzailea, ontzi eguneratua eta `(allowed, remaining)` itzultzen dituena |
-| `sup mark failed / sup should restart` | Berrabiarazte-aurrekontua (`max_restarts`) kontrolatzen duten gainbegiratze-politikak |
+| `agent ask / agent try ask / ask int / ask str / ask int with timeout / ask str with timeout` | Eskaera-erantzuna agente batekin: blokeatzailea, ez-blokeatzailea edo epemuga batez mugatua |
+| `agent send batch / agent map batch / agent receive count / agent drain ready / relay int / relay str` | Mezu-sorta bat bidaltzen du, erantzunak biltzen ditu eta emaitza bat agente batetik bestera birbidaltzen du |
+| `is agent alive / agent status / stop agent / agent stop all` | Bizi-zikloaren ikuskapena eta geldialdi ordenatua, `AgentStatus` tipatu batekin |
+| `new counter agent / counter add / counter get / counter reset` | Agente baten barruan gordetako kontagailu bat |
+| `new log agent / log append / log read / log clear` | Agente baten barruan gordetako gehitze hutseko erregistro bat |
+| `new kv agent / agent kv put / agent kv get / agent kv delete / agent kv has / agent kv count / agent kv keys / agent kv clear` | Agente baten barruan gordetako memoriako gako-balio biltegi bat |
 
 ### 30.2.2. `src/main/ridgun/lib/agent.ridgun`-eko mota eta sinadura guztien katalogoa
 
@@ -113,14 +115,14 @@ type LogState     = log_sep: String, log_buf: String
 | `55` | `fn :: ag kv step KvState KvCmd` | `KvState String` |
 | `56` | `fn :: new kv agent` | `Agent KvCmd String` |
 | `57` | `fn :: ag kv call (Agent KvCmd String) KvCmd` | `String` |
-| `58` | `fn :: kv put (Agent KvCmd String) String String` | `String` |
-| `59` | `fn :: kv get (Agent KvCmd String) String` | `String` |
-| `60` | `fn :: kv delete (Agent KvCmd String) String` | `String` |
-| `61` | `fn :: kv has (Agent KvCmd String) String` | `Bool` |
+| `58` | `fn :: agent kv put (Agent KvCmd String) String String` | `String` |
+| `59` | `fn :: agent kv get (Agent KvCmd String) String` | `String` |
+| `60` | `fn :: agent kv delete (Agent KvCmd String) String` | `String` |
+| `61` | `fn :: agent kv has (Agent KvCmd String) String` | `Bool` |
 | `62` | `fn :: ag parse int String` | `Int` |
-| `63` | `fn :: kv count (Agent KvCmd String)` | `Int` |
-| `64` | `fn :: kv keys (Agent KvCmd String)` | `String` |
-| `65` | `fn :: kv clear (Agent KvCmd String)` | `String` |
+| `63` | `fn :: agent kv count (Agent KvCmd String)` | `Int` |
+| `64` | `fn :: agent kv keys (Agent KvCmd String)` | `String` |
+| `65` | `fn :: agent kv clear (Agent KvCmd String)` | `String` |
 
 ---
 
@@ -146,7 +148,7 @@ fn :: probar contador actor => Int Int
 
 ### 30.3.2. 2. adibidea: Konposizio segurua eta muga-kasuen kudeaketa
 
-`agent` lib-eko funtzio oro `|` guarda boolearrekin eta `ridgun-libs`-eko gainerako 32 lib-ekin konposatzeko diseinatuta dago:
+`agent` lib-eko funtzio oro `|` guarda boolearrekin eta `ridgun-libs`-eko gainerako 38 lib-ekin konposatzeko diseinatuta dago:
 
 ```ridgun
 import agent
@@ -154,14 +156,14 @@ import agent
 fn :: consultar almacen kv => String Int
       consultar almacen kv =
         new kv agent -> kv
-        kv put kv "modo" "produccion" -> ()
-        kv get kv "modo" -> modo
-        kv count kv -> total
-        kv stop agent -> ()
+        agent kv put kv "modo" "produccion" -> ()
+        agent kv get kv "modo" -> modo
+        agent kv count kv -> total
+        stop agent kv -> ()
         (modo, total)
 ```
 
-### 30.3.3. 3. adibidea: Aktore-konbinatzaileak (`agent ask`, `try ask`, `send batch`, `map batch`, `drain ready`), zatikatutako pool-ak eta konexio-erreaktorea
+### 30.3.3. 3. adibidea: Aktore-konbinatzaileak (`agent ask`, `agent try ask`, `agent send batch`, `agent map batch`, `agent drain ready`), zatikatutako pool-ak eta konexio-erreaktorea
 
 Adibide praktiko honetan `agent` bloke funtzional honetan nola portatzen den sakonki aztertzen dugu, sarrera estandarrak, parametro-konbinazioak eta muga-balioak barne:
 
@@ -169,45 +171,45 @@ Adibide praktiko honetan `agent` bloke funtzional honetan nola portatzen den sak
 fn :: test spec combinators pool and net agent => ()
       test spec combinators pool and net agent =
         w1 = agent (ag double worker)
-        assert int equals (agent ask w1 21) 42 "agent ask 21 -> 42"
+        agent ask w1 21 -> assert int equals 42 "agent ask 21 -> 42"
         mb = agent map batch w1 [3, 5, 7]
-        assert int equals (ag sum ints mb) 30 "agent map batch [3,5,7] -> [6,10,14] sum 30"
-        agent send batch w1 [10, 20] -> ()
+        ag sum ints mb -> assert int equals 30 "agent map batch [3,5,7] -> [6,10,14] sum 30"
+        agent send batch w1 [10, 20]
         rc = agent receive count w1 2
-        assert int equals (ag sum ints rc) 60 "agent send batch + agent receive count -> 60"
+        ag sum ints rc -> assert int equals 60 "agent send batch + agent receive count -> 60"
         c_dr = new counter agent 100
         send 5 to c_dr
         send 10 to c_dr
         dr = agent drain ready c_dr
-        assert int equals (ag sum ints dr) 220 "agent drain ready [105, 115] -> 220"
-        agent stop all [w1, c_dr] -> ()
-        assert false (is agent alive w1) "w1 stopped by agent stop all"
-        assert false (is agent alive c_dr) "c_dr stopped by agent stop all"
+        ag sum ints dr -> assert int equals 220 "agent drain ready [105, 115] -> 220"
+        agent stop all [w1, c_dr]
+        is agent alive w1 -> assert false "w1 stopped by agent stop all"
+        is agent alive c_dr -> assert false "c_dr stopped by agent stop all"
 
         s0 = new counter agent 0
         s1 = new counter agent 1000
         pl = Pool 2 [s0, s1]
-        assert int equals (pool size pl) 2 "pool size 2"
-        assert int equals (pool ask shard pl 0 5) 5 "pool ask shard 0 -> 5"
-        assert int equals (pool ask shard pl 1 7) 1007 "pool ask shard 1 -> 1007"
-        assert int equals (pool ask shard pl (0 - 3) 3) 1010 "pool ask shard negative key -> shard 1"
-        pool broadcast pl 10 -> ()
+        pool size pl -> assert int equals 2 "pool size 2"
+        pool ask shard pl 0 5 -> assert int equals 5 "pool ask shard 0 -> 5"
+        pool ask shard pl 1 7 -> assert int equals 1007 "pool ask shard 1 -> 1007"
+        pool ask shard pl (0 - 3) 3 -> assert int equals 1010 "pool ask shard negative key -> shard 1"
+        pool broadcast pl 10
         all_dr = pool drain all pl
-        assert int equals (ag sum ints all_dr) 1035 "pool drain all [15, 1020] -> 1035"
-        pool shutdown pl -> ()
-        assert false (is agent alive s0) "pool s0 stopped"
-        assert false (is agent alive s1) "pool s1 stopped"
+        ag sum ints all_dr -> assert int equals 1035 "pool drain all [15, 1020] -> 1035"
+        pool shutdown pl
+        is agent alive s0 -> assert false "pool s0 stopped"
+        is agent alive s1 -> assert false "pool s1 stopped"
 
         ca = agent (ag echo conn step) (CounterState 0)
         cb = agent (ag echo conn step) (CounterState 0)
         s_eof = conn feed payload (0 - 1) ca ""
         s_err = conn handle event (0 - 1) cb 8
         kept  = reactor sweep next s_eof (reactor sweep next s_err [])
-        assert int equals (agent list len kept 0) 0 "reactor sweep next prunes closed slots"
-        assert false (is agent alive ca) "ca stopped on EOF"
-        assert false (is agent alive cb) "cb stopped on POLLERR"
+        agent list len kept 0 -> assert int equals 0 "reactor sweep next prunes closed slots"
+        is agent alive ca -> assert false "ca stopped on EOF"
+        is agent alive cb -> assert false "cb stopped on POLLERR"
         cc = agent (ag echo conn step) (CounterState 0)
-        reactor shutdown [ConnSlot (0 - 1) cc] -> ()
+        reactor shutdown [ConnSlot (0 - 1) cc]
         assert false (is agent alive cc) "cc stopped on reactor shutdown"
 ```
 
@@ -218,48 +220,48 @@ Adibide praktiko honetan `agent` bloke funtzional honetan nola portatzen den sak
 ```ridgun
 fn :: test agent lifecycle and counter => ()
       test agent lifecycle and counter =
-        assert str eq (format agent status AgentRunning) "running" "format AgentRunning"
-        assert str eq (format agent status AgentStopped) "stopped" "format AgentStopped"
-        assert str eq (format agent status (AgentTimedOut 250)) "timeout after 250 ms" "format AgentTimedOut"
-        assert str eq (format agent status (AgentFailed "boom")) "failed: boom" "format AgentFailed"
-        assert str eq (format agent reply (ReplyInt 42)) "42" "format ReplyInt"
-        assert str eq (format agent reply (ReplyStr "ok")) "ok" "format ReplyStr"
-        assert str eq (format agent reply (ReplyBool True)) "true" "format ReplyBool True"
-        assert str eq (format agent reply (ReplyBool False)) "false" "format ReplyBool False"
-        assert str eq (format agent reply ReplyEmpty) "agent outbox empty" "format ReplyEmpty"
-        assert str eq (format agent reply ReplyStopped) "agent stopped" "format ReplyStopped"
-        assert str eq (format agent reply (ReplyTimeout 50)) "agent timeout after 50 ms" "format ReplyTimeout"
-        assert str eq (format agent reply (ReplyError "bad")) "agent error: bad" "format ReplyError"
+        format agent status AgentRunning -> assert str eq "running" "format AgentRunning"
+        format agent status AgentStopped -> assert str eq "stopped" "format AgentStopped"
+        format agent status (AgentTimedOut 250) -> assert str eq "timeout after 250 ms" "format AgentTimedOut"
+        format agent status (AgentFailed "boom") -> assert str eq "failed: boom" "format AgentFailed"
+        format agent reply (ReplyInt 42) -> assert str eq "42" "format ReplyInt"
+        format agent reply (ReplyStr "ok") -> assert str eq "ok" "format ReplyStr"
+        format agent reply (ReplyBool True) -> assert str eq "true" "format ReplyBool True"
+        format agent reply (ReplyBool False) -> assert str eq "false" "format ReplyBool False"
+        format agent reply ReplyEmpty -> assert str eq "agent outbox empty" "format ReplyEmpty"
+        format agent reply ReplyStopped -> assert str eq "agent stopped" "format ReplyStopped"
+        format agent reply (ReplyTimeout 50) -> assert str eq "agent timeout after 50 ms" "format ReplyTimeout"
+        format agent reply (ReplyError "bad") -> assert str eq "agent error: bad" "format ReplyError"
 
         c   = new counter agent 10
-        assert ok (is agent alive c)
-        assert str eq (format agent status (agent status c)) "running" "counter running"
-        assert str eq (format agent reply (try poll int c)) "agent outbox empty" "empty outbox before send"
-        assert eq (counter get c) 10
-        assert eq (counter add c 5) 15
-        assert eq (counter add c 7) 22
-        assert str eq (format agent reply (ask int c 8)) "30" "ask int 8 -> 30"
-        assert str eq (format agent reply (ask int with timeout c 12 200)) "42" "ask int with timeout -> 42"
-        assert eq (counter reset c) 0
-        assert eq (counter get c) 0
+        is agent alive c -> assert ok
+        format agent status (agent status c) -> assert str eq "running" "counter running"
+        format agent reply (try poll int c) -> assert str eq "agent outbox empty" "empty outbox before send"
+        counter get c -> assert eq 10
+        counter add c 5 -> assert eq 15
+        counter add c 7 -> assert eq 22
+        format agent reply (ask int c 8) -> assert str eq "30" "ask int 8 -> 30"
+        format agent reply (ask int with timeout c 12 200) -> assert str eq "42" "ask int with timeout -> 42"
+        counter reset c -> assert eq 0
+        counter get c -> assert eq 0
         bs  = ask batch int c [1, 2, 3, 4]
-        assert eq (ag sum ints bs) 20
+        ag sum ints bs -> assert eq 20
 
         c2  = new counter agent 100
         rel = relay int c c2 5
-        assert str eq (format agent reply rel) "115" "relay int c (10+5=15) -> c2 (100+15=115)"
+        format agent reply rel -> assert str eq "115" "relay int c (10+5=15) -> c2 (100+15=115)"
 
         st1 = stop agent c
-        assert str eq (format agent status st1) "stopped" "stop agent returns AgentStopped"
-        assert eq (is agent alive c) False
-        assert str eq (format agent status (agent status c)) "stopped" "agent status after stop"
-        assert str eq (format agent reply (ask int c 1)) "agent stopped" "ask int after stop"
-        assert str eq (format agent reply (try poll int c)) "agent stopped" "try poll int after stop"
-        assert str eq (format agent reply (ask int with timeout c 1 50)) "agent stopped" "ask int with timeout after stop"
-        assert str eq (format agent reply (relay int c c2 1)) "agent stopped" "relay int after stop"
+        format agent status st1 -> assert str eq "stopped" "stop agent returns AgentStopped"
+        is agent alive c -> assert eq False
+        format agent status (agent status c) -> assert str eq "stopped" "agent status after stop"
+        format agent reply (ask int c 1) -> assert str eq "agent stopped" "ask int after stop"
+        format agent reply (try poll int c) -> assert str eq "agent stopped" "try poll int after stop"
+        format agent reply (ask int with timeout c 1 50) -> assert str eq "agent stopped" "ask int with timeout after stop"
+        format agent reply (relay int c c2 1) -> assert str eq "agent stopped" "relay int after stop"
         c0  = new counter agent 0
-        assert int equals (counter get c0) 0 "counter 0 initial"
-        assert int equals (counter add c0 3) 3 "counter 0 add 3"
+        counter get c0 -> assert int equals 0 "counter 0 initial"
+        counter add c0 3 -> assert int equals 3 "counter 0 add 3"
         stop agent c0
         stop agent c2
         assert eq (is agent alive c2) False
@@ -273,45 +275,50 @@ Adibide praktiko honetan `agent` bloke funtzional honetan nola portatzen den sak
 fn :: test log and kv agents => ()
       test log and kv agents =
         lg  = new log agent "\n"
-        assert ok (is agent alive lg)
-        assert str eq (format agent reply (try poll str lg)) "agent outbox empty" "log empty outbox"
-        assert str eq (log read lg) "" "initial log empty"
-        assert str eq (log append lg "alpha") "alpha" "log append alpha"
-        assert str eq (log append lg "beta") "alpha\nbeta" "log append beta"
-        assert str eq (format agent reply (ask str with timeout lg "gamma" 200)) "alpha\nbeta\ngamma" "ask str with timeout gamma"
-        assert str eq (log read lg) "alpha\nbeta\ngamma" "log read"
-        assert str eq (log clear lg) "" "log clear"
-        assert str eq (log read lg) "" "log read after clear"
+        is agent alive lg -> assert ok
+        format agent reply (try poll str lg) -> assert str eq "agent outbox empty" "log empty outbox"
+        log read lg -> assert str eq "" "initial log empty"
+        log append lg "alpha" -> assert str eq "alpha" "log append alpha"
+        log append lg "beta" -> assert str eq "alpha\nbeta" "log append beta"
+        format agent reply (ask str with timeout lg "gamma" 200) -> assert str eq "alpha\nbeta\ngamma" "ask str with timeout gamma"
+        log read lg -> assert str eq "alpha\nbeta\ngamma" "log read"
+        log clear lg -> assert str eq "" "log clear"
+        log read lg -> assert str eq "" "log read after clear"
         b   = ask batch str lg ["one", "two"]
-        assert str eq (ag join strs b) "one|one\ntwo" "ask batch str"
+        ag join strs b -> assert str eq "one|one\ntwo" "ask batch str"
         lg2 = new log agent ":"
-        assert str eq (format agent reply (relay str lg lg2 "three")) "one\ntwo\nthree" "relay str"
+        format agent reply (relay str lg lg2 "three") -> assert str eq "one\ntwo\nthree" "relay str"
         stop agent lg
         stop agent lg2
-        assert str eq (format agent reply (ask str lg "x")) "agent stopped" "ask str after stop"
+        format agent reply (ask str lg "x") -> assert str eq "agent stopped" "ask str after stop"
 
         kv  = new kv agent
-        assert ok (is agent alive kv)
-        assert int equals (kv count kv) 0 "kv count 0"
-        assert false (kv has kv "host") "kv has host false"
-        assert str eq (kv put kv "host" "127.0.0.1") "127.0.0.1" "kv put host"
-        assert str eq (kv put kv "port" "8080") "8080" "kv put port"
-        assert int equals (kv count kv) 2 "kv count 2"
-        assert ok (kv has kv "host")
-        assert ok (kv has kv "port")
-        assert str eq (kv get kv "host") "127.0.0.1" "kv get host"
-        assert str eq (kv get kv "port") "8080" "kv get port"
-        assert str eq (kv keys kv) "host,port" "kv keys"
-        assert str eq (kv put kv "port" "9090") "9090" "kv overwrite port"
-        assert str eq (kv get kv "port") "9090" "kv get updated port"
-        assert int equals (kv count kv) 2 "kv count after overwrite"
-        assert str eq (kv delete kv "host") "127.0.0.1" "kv delete host"
-        assert false (kv has kv "host") "kv has host after delete"
-        assert int equals (kv count kv) 1 "kv count 1"
-        assert str eq (kv clear kv) "" "kv clear"
-        assert int equals (kv count kv) 0 "kv count after clear"
+        is agent alive kv -> assert ok
+        agent kv count kv -> assert int equals 0 "agent kv count 0"
+        agent kv has kv "host" -> assert false "agent kv has host false"
+        agent kv put kv "host" "127.0.0.1" -> assert str eq "127.0.0.1" "agent kv put host"
+        agent kv put kv "port" "8080" -> assert str eq "8080" "agent kv put port"
+        agent kv count kv -> assert int equals 2 "agent kv count 2"
+        agent kv has kv "host" -> assert ok
+        agent kv has kv "port" -> assert ok
+        agent kv get kv "host" -> assert str eq "127.0.0.1" "agent kv get host"
+        agent kv get kv "port" -> assert str eq "8080" "agent kv get port"
+        agent kv keys kv -> assert str eq "host,port" "agent kv keys"
+        agent kv put kv "port" "9090" -> assert str eq "9090" "agent kv overwrite port"
+        agent kv get kv "port" -> assert str eq "9090" "agent kv get updated port"
+        agent kv count kv -> assert int equals 2 "agent kv count after overwrite"
+        agent kv delete kv "host" -> assert str eq "127.0.0.1" "agent kv delete host"
+        agent kv has kv "host" -> assert false "agent kv has host after delete"
+        agent kv count kv -> assert int equals 1 "agent kv count 1"
+        agent kv clear kv -> assert str eq "" "agent kv clear"
+        agent kv count kv -> assert int equals 0 "agent kv count after clear"
         stop agent kv
-        assert false (is agent alive kv) "kv stopped"
+        is agent alive kv -> assert false "kv stopped"
+
+        -- RG-066: verify `list kv *` works in the same file that imports `agent`
+        lm  = list kv put (list kv empty) "k" "v"
+        list kv get lm "k" -> assert str eq "v" "RG-066: list kv get in test agent.ridgun"
+        ()
 ```
 
 ---
@@ -414,7 +421,7 @@ fn :: counter add (Agent Int Int) Int   => Int
       counter add ag              delta =
         | not (agent alive ag) = 0
         | otherwise            =
-          _ = send delta to ag
+          send delta to ag
           receive from ag
 
 fn :: counter get (Agent Int Int) => Int
@@ -424,7 +431,7 @@ fn :: counter reset (Agent Int Int) => Int
       counter reset ag              =  counter add ag (0 - 999999999)
 ```
 
-### 30.4.4. Barne-inplementazioa: Stateful In-Memory Key-Value Agent (`new kv agent`, `kv put`, `kv get`, `kv delete`, `kv has`, `kv count`, `kv keys`, `kv clear`)
+### 30.4.4. Barne-inplementazioa: Stateful In-Memory Key-Value Agent (`new kv agent`, `agent kv put`, `agent kv get`, `agent kv delete`, `agent kv has`, `agent kv count`, `agent kv keys`, `agent kv clear`)
 
 Ikusi nola `agent.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
@@ -469,6 +476,70 @@ fn :: ag kv keys str [KvEntry] => String
 fn :: ag kv has str Bool  => String
       ag kv has str True  =  "1"
       ag kv has str False =  "0"
+
+fn :: ag kv next state KvState KvCmd => KvState
+      ag kv next state st (KvPut key val) =
+        p2 = ag kv put list (kv_items st) key val
+        KvState (ag kv len p2) p2
+      ag kv next state st (KvGet _) = st
+      ag kv next state st (KvDel key) =
+        p2 = ag kv del list (kv_items st) key
+        KvState (ag kv len p2) p2
+      ag kv next state st (KvHas _) = st
+      ag kv next state st KvCount = st
+      ag kv next state st KvKeys = st
+      ag kv next state _ KvClear = KvState 0 []
+
+fn :: ag kv next reply KvState KvCmd => String
+      ag kv next reply _ (KvPut _   val) = val
+      ag kv next reply st (KvGet key) = ag kv lookup (kv_items st) key
+      ag kv next reply st (KvDel key) = ag kv lookup (kv_items st) key
+      ag kv next reply st (KvHas key) = ag kv has str (ag kv exists (kv_items st) key)
+      ag kv next reply st KvCount = int to str (kv_size st)
+      ag kv next reply st KvKeys = ag kv keys str (kv_items st)
+      ag kv next reply _ KvClear = ""
+
+fn :: ag kv step KvState KvCmd => KvState String
+      ag kv step st      cmd   =
+        st2 = ag kv next state st cmd
+        rep = ag kv next reply st cmd
+        (st2, rep)
+
+fn :: new kv agent => Agent KvCmd String
+      new kv agent =  agent (ag kv step) (KvState 0 [])
+
+fn :: ag kv call (Agent KvCmd String) KvCmd => String
+      ag kv call ag                   cmd   =
+        | not (agent alive ag) = ""
+        | otherwise            =
+          send cmd to ag
+          receive from ag
+
+fn :: agent kv put (Agent KvCmd String) String String => String
+      agent kv put ag                   key    val    =  ag kv call ag (KvPut key val)
+
+fn :: agent kv get (Agent KvCmd String) String => String
+      agent kv get ag                   key    =  ag kv call ag (KvGet key)
+
+fn :: agent kv delete (Agent KvCmd String) String => String
+      agent kv delete ag                   key    =  ag kv call ag (KvDel key)
+
+fn :: agent kv has (Agent KvCmd String) String => Bool
+      agent kv has ag                   key    =  (ag kv call ag (KvHas key)) == "1"
+
+fn :: ag parse int String => Int
+      ag parse int s      =
+        | (str len s) == 0 = 0
+        | otherwise        = str to int s
+
+fn :: agent kv count (Agent KvCmd String) => Int
+      agent kv count ag                   =  ag parse int (ag kv call ag KvCount)
+
+fn :: agent kv keys (Agent KvCmd String) => String
+      agent kv keys ag                   =  ag kv call ag KvKeys
+
+fn :: agent kv clear (Agent KvCmd String) => String
+      agent kv clear ag                   =  ag kv call ag KvClear
 ```
 
 ---
@@ -482,7 +553,7 @@ fn :: ag kv has str Bool  => String
 
 ### `agent`-ekin programatzeko Urrezko 5 Arauak
 
-1. **Deklaratu `import agent` fitxategiaren hasieran** eta baliatu zuriuneen eta azpimarren arteko baliokidetasuna zure kodea prosa bezala irakur dadin.
+1. **Deklaratu `import agent` fitxategiaren hasieran** eta deitu bere funtzioei zuriuneekin, deklaratuta dauden bezala, zure kodea prosa bezala irakur dadin.
 2. **Lerrokatu zure datu-hodiak `=` ikurrarekin**: kateatu `agent`-erako deiak izen propioko urratsetan eta utzi `stable format`-i zutabeak lerrokatzen.
 3. **Baliatu `agent`-eko funtzio osoak zure `|` guardetan**: egiaztatu itzulera-balioak edo askatu ADTak *pattern matching* bidez, kanpoko sarrera beti baliozkoa dela suposatu beharrean.
 4. **Saihestu egitura handiak kopiatzea eremu bat kontsultatu besterik behar ez baduzu**: gogoratu `RMM2`-n sarrerako argumentuek ez dituztela kontagailuak handitzen edo txikitzen (`+0` / `-0`).

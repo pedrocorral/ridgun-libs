@@ -8,7 +8,7 @@ Essa é a primeira pergunta que qualquer engenheiro de sistemas faz ao chegar à
 
 Sejamos sinceros: nada quebra mais depressa uma integração web do que confundir Base64 padrão (`+/=`) com Base64url (`-_` sem preenchimento) num token JWT, ou construir uma query string sem escapar caracteres.
 
-A lib **`codec`** implementa as normas **RFC 4648** (Hex, Base64 e Base64url), **RFC 3986** (codificação percentual de URLs e `query encode` / `query decode`) e construtores/extratores rápidos de **JSON leve (RFC 8259)**.
+A lib **`codec`** implementa as normas **RFC 4648** (Hex, Base64 e Base64url), **RFC 3986** (codificação percentual de URLs e `query string encode` / `query string decode`) e construtores/extratores rápidos de **JSON leve (RFC 8259)**.
 
 Num ecossistema tradicional, resolver as tarefas do domínio **`CODEC`** implica arrastar dependências externas em C, lidar com ponteiros brutos, conversões opacas de tipos, exceções não verificadas ou pausas imprevisíveis do coletor de lixo. Em Ridgun, a lib **`codec`** (`src/main/ridgun/lib/codec.ridgun`) aborda o problema com quatro princípios inegociáveis:
 
@@ -21,7 +21,7 @@ Num ecossistema tradicional, resolver as tarefas do domínio **`CODEC`** implica
 
 ## 07.2. Artefactos nativos, importação e catálogo completo da API de `codec`
 
-No `ridgun-libs`, **`codec`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/codec.ridgun` (domínio `CODEC`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
+No `ridgun-libs`, **`codec`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/codec.ridgun` (domínio `CODEC`). Ao compilar com `stable bundle`, é empacotada num formato nativo:
 
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
@@ -33,11 +33,11 @@ No `ridgun-libs`, **`codec`** é uma **lib** de primeira classe localizada em `s
 
 | Assinatura / Função / Tipo | O que faz e quando usar |
 |---|---|
-| `hex encode / hex decode / hex is valid` | Codificação hexadecimal RFC 4648 em minúsculas e descodificação validada |
+| `hex encode / hex decode` | Codificação hexadecimal RFC 4648 em minúsculas e descodificação validada |
 | `base64 encode / base64 decode` | Base64 padrão RFC 4648 §4 com preenchimento `=` |
 | `base64url encode / base64url decode` | Base64url seguro para URLs RFC 4648 §5 (`-`, `_`, sem preenchimento) |
-| `url encode / url decode / query encode / query decode` | Codificação percentual RFC 3986 e dicionários de query string `k=v&...` |
-| `json quote / json object / json get str / json get int` | Serialização JSON rápida sem AST e extração de chaves de primeiro nível |
+| `url encode / url decode / query string encode / query string decode` | Codificação percentual RFC 3986 e dicionários de query string `k=v&...` |
+| `json quote / json object / codec json get str / codec json get int` | Serialização JSON rápida sem AST e extração de chaves de primeiro nível |
 
 ### 07.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/codec.ridgun`
 
@@ -182,13 +182,13 @@ import codec
 
 fn :: empaquetar parametros String String => String
       empaquetar parametros usuario redir =
-        usuario base64url encode -> token_b64
-        query encode [("token", token_b64), ("next", redir)]
+        base64url encode usuario -> token_b64
+        query string encode [("token", token_b64), ("next", redir)]
 ```
 
 ### 07.3.2. Exemplo 2: Composição segura e tratamento de casos de fronteira
 
-Todas as funções da lib `codec` foram desenhadas para se comporem com guardas booleanas `|` e com as restantes 32 libs do `ridgun-libs`:
+Todas as funções da lib `codec` foram desenhadas para se comporem com guardas booleanas `|` e com as restantes 38 libs do `ridgun-libs`:
 
 ```ridgun
 import codec
@@ -196,7 +196,7 @@ import codec
 fn :: construir respuesta rapida Int String => String Int
       construir respuesta rapida id nombre =
         json object [("id", json int id), ("name", json quote nombre), ("ok", json bool True)] -> doc
-        json get int doc "id" 0 -> leido
+        codec json get int doc "id" 0 -> leido
         (doc, leido)
 ```
 
@@ -208,48 +208,48 @@ Neste exemplo prático exploramos de forma exaustiva como a `codec` se comporta 
 fn :: test rfc4648 hex and base64 => ()
       test rfc4648 hex and base64 =
         -- 1. Hexadecimal RFC 4648 test vectors & negative validation
-        assert str eq (hex encode "") "" "hex_encode empty"
-        assert str eq (hex encode "foobar") "666f6f626172" "hex_encode foobar"
-        assert str eq (hex decode "666f6f626172") "foobar" "hex_decode lowercase"
-        assert str eq (hex decode "666F6F626172") "foobar" "hex_decode uppercase"
-        assert true (is valid hex "deadBEEF09") "is_valid_hex valid"
-        assert false (is valid hex "abc") "is_valid_hex odd length"
-        assert false (is valid hex "deadZZ") "is_valid_hex invalid chars"
-        assert str eq (hex decode "abc") "" "hex_decode odd -> empty"
+        hex encode "" -> assert str eq "" "hex_encode empty"
+        hex encode "foobar" -> assert str eq "666f6f626172" "hex_encode foobar"
+        hex decode "666f6f626172" -> assert str eq "foobar" "hex_decode lowercase"
+        hex decode "666F6F626172" -> assert str eq "foobar" "hex_decode uppercase"
+        is valid hex "deadBEEF09" -> assert true "is_valid_hex valid"
+        is valid hex "abc" -> assert false "is_valid_hex odd length"
+        is valid hex "deadZZ" -> assert false "is_valid_hex invalid chars"
+        hex decode "abc" -> assert str eq "" "hex_decode odd -> empty"
 
         -- 2. Base64 & Base64url RFC 4648 test vectors
-        assert str eq (base64 encode "") "" "b64 empty"
-        assert str eq (base64 encode "f") "Zg==" "b64 f"
-        assert str eq (base64 encode "fo") "Zm8=" "b64 fo"
-        assert str eq (base64 encode "foo") "Zm9v" "b64 foo"
-        assert str eq (base64 encode "foob") "Zm9vYg==" "b64 foob"
-        assert str eq (base64 encode "fooba") "Zm9vYmE=" "b64 fooba"
-        assert str eq (base64 encode "foobar") "Zm9vYmFy" "b64 foobar"
-        assert str eq (base64 decode "Zg==") "f" "b64 dec f"
-        assert str eq (base64 decode "Zm8=") "fo" "b64 dec fo"
-        assert str eq (base64 decode "Zm9v") "foo" "b64 dec foo"
-        assert str eq (base64 decode "Zm9vYg==") "foob" "b64 dec foob"
-        assert str eq (base64 decode "Zm9vYmE=") "fooba" "b64 dec fooba"
-        assert str eq (base64 decode "Zm9vYmFy") "foobar" "b64 dec foobar"
-        assert str eq (base64url encode "foob") "Zm9vYg" "b64url nopad"
-        assert str eq (base64url decode "Zm9vYg") "foob" "b64url dec"
-        assert false (is valid base64 "A") "invalid base64 len%4==1"
-        assert false (is valid base64 "Zm$v") "invalid base64 char"
-        assert str eq (base64 decode "Zm$v") "" "invalid base64 -> empty"
+        base64 encode "" -> assert str eq "" "b64 empty"
+        base64 encode "f" -> assert str eq "Zg==" "b64 f"
+        base64 encode "fo" -> assert str eq "Zm8=" "b64 fo"
+        base64 encode "foo" -> assert str eq "Zm9v" "b64 foo"
+        base64 encode "foob" -> assert str eq "Zm9vYg==" "b64 foob"
+        base64 encode "fooba" -> assert str eq "Zm9vYmE=" "b64 fooba"
+        base64 encode "foobar" -> assert str eq "Zm9vYmFy" "b64 foobar"
+        base64 decode "Zg==" -> assert str eq "f" "b64 dec f"
+        base64 decode "Zm8=" -> assert str eq "fo" "b64 dec fo"
+        base64 decode "Zm9v" -> assert str eq "foo" "b64 dec foo"
+        base64 decode "Zm9vYg==" -> assert str eq "foob" "b64 dec foob"
+        base64 decode "Zm9vYmE=" -> assert str eq "fooba" "b64 dec fooba"
+        base64 decode "Zm9vYmFy" -> assert str eq "foobar" "b64 dec foobar"
+        base64url encode "foob" -> assert str eq "Zm9vYg" "b64url nopad"
+        base64url decode "Zm9vYg" -> assert str eq "foob" "b64url dec"
+        is valid base64 "A" -> assert false "invalid base64 len%4==1"
+        is valid base64 "Zm$v" -> assert false "invalid base64 char"
+        base64 decode "Zm$v" -> assert str eq "" "invalid base64 -> empty"
 
         -- 3. LIB-8: Binary-safe decoding for raw octets >= 0x80 and 0x00
         raw4 = hex decode "c800ff41"
-        assert int equals (str len raw4) 4 "str_len (hex_decode c800ff41) == 4"
-        assert int equals (str char at raw4 0) 200 "raw4[0] == 0xc8"
-        assert int equals (str char at raw4 1) 0 "raw4[1] == 0x00"
-        assert int equals (str char at raw4 2) 255 "raw4[2] == 0xff"
-        assert int equals (str char at raw4 3) 65 "raw4[3] == 0x41"
-        assert str eq (hex encode raw4) "c800ff41" "hex_encode raw4 == c800ff41"
-        check binary roundtrip loop 10 -> ()
+        str len raw4 -> assert int equals 4 "str_len (hex_decode c800ff41) == 4"
+        str char at raw4 0 -> assert int equals 200 "raw4[0] == 0xc8"
+        str char at raw4 1 -> assert int equals 0 "raw4[1] == 0x00"
+        str char at raw4 2 -> assert int equals 255 "raw4[2] == 0xff"
+        str char at raw4 3 -> assert int equals 65 "raw4[3] == 0x41"
+        hex encode raw4 -> assert str eq "c800ff41" "hex_encode raw4 == c800ff41"
+        check binary roundtrip loop 10
         ()
 ```
 
-### 07.3.4. Exemplo 4: Codificação percentual RFC 3986 (`url encode`, `url decode`) e strings de consulta (`query encode`, `query get`)
+### 07.3.4. Exemplo 4: Codificação percentual RFC 3986 (`url encode`, `url decode`) e strings de consulta (`query string encode`, `query string decode`)
 
 Neste exemplo prático exploramos de forma exaustiva como a `codec` se comporta neste bloco funcional, incluindo entradas padrão, combinações de parâmetros e valores limite:
 
@@ -258,17 +258,17 @@ fn :: test rfc3986 url and query strings => ()
       test rfc3986 url and query strings =
         raw = "hello world&x=1+2%"
         enc = url encode raw
-        assert str eq enc "hello%20world%26x%3D1%2B2%25" "url_encode"
-        assert str eq (url decode enc) raw "url_decode roundtrip"
-        assert str eq (url decode "a+b%20c") "a b c" "url_decode plus as space"
+        enc -> assert str eq "hello%20world%26x%3D1%2B2%25" "url_encode"
+        url decode enc -> assert str eq raw "url_decode roundtrip"
+        url decode "a+b%20c" -> assert str eq "a b c" "url_decode plus as space"
         qs  = query string encode [("q", "ridgun libs"), ("page", "2")]
-        assert str eq qs "q=ridgun%20libs&page=2" "query_string_encode"
+        qs -> assert str eq "q=ridgun%20libs&page=2" "query_string_encode"
         dec = query string decode ("?" + qs)
-        assert eq dec [("q", "ridgun libs"), ("page", "2")]
+        dec -> assert eq [("q", "ridgun libs"), ("page", "2")]
         ()
 ```
 
-### 07.3.5. Exemplo 5: Escape e formatação JSON leve RFC 8259 (`json escape`, `json unescape`, `json encode kv`, `json get str/int/bool`)
+### 07.3.5. Exemplo 5: Escape e formatação JSON leve RFC 8259 (`json escape`, `json unescape`, `json str object`, `codec json get str/int/bool`)
 
 Neste exemplo prático exploramos de forma exaustiva como a `codec` se comporta neste bloco funcional, incluindo entradas padrão, combinações de parâmetros e valores limite:
 
@@ -276,21 +276,21 @@ Neste exemplo prático exploramos de forma exaustiva como a `codec` se comporta 
 fn :: test rfc8259 lightweight json => ()
       test rfc8259 lightweight json =
         esc = json escape "line1\n\"quoted\"\\tab\t"
-        assert str eq esc "line1\\n\\\"quoted\\\"\\\\tab\\t" "json_escape"
-        assert str eq (json unescape esc) "line1\n\"quoted\"\\tab\t" "json_unescape"
+        esc -> assert str eq "line1\\n\\\"quoted\\\"\\\\tab\\t" "json_escape"
+        json unescape esc -> assert str eq "line1\n\"quoted\"\\tab\t" "json_unescape"
         doc = json object [("service", json quote "solstice"), ("port", json int 8443), ("tls", json bool True), ("extra", json null)]
-        assert str eq doc "{\"service\":\"solstice\",\"port\":8443,\"tls\":true,\"extra\":null}" "json_object"
-        assert str eq (json get str doc "service") "solstice" "json_get_str"
-        assert str eq (json get str doc "missing") "" "json_get_str missing"
-        assert int equals (json get int doc "port" 80) 8443 "json_get_int"
-        assert int equals (json get int doc "missing" 80) 80 "json_get_int fallback"
-        assert int equals (json get int doc "service" 80) 80 "json_get_int non-int fallback"
-        assert true (json get bool doc "tls" False) "json_get_bool"
-        assert false (json get bool doc "missing" False) "json_get_bool fallback"
+        doc -> assert str eq "{\"service\":\"solstice\",\"port\":8443,\"tls\":true,\"extra\":null}" "json_object"
+        codec json get str doc "service" -> assert str eq "solstice" "codec_json_get_str"
+        codec json get str doc "missing" -> assert str eq "" "codec_json_get_str missing"
+        codec json get int doc "port" 80 -> assert int equals 8443 "codec_json_get_int"
+        codec json get int doc "missing" 80 -> assert int equals 80 "codec_json_get_int fallback"
+        codec json get int doc "service" 80 -> assert int equals 80 "codec_json_get_int non-int fallback"
+        codec json get bool doc "tls" False -> assert true "codec_json_get_bool"
+        codec json get bool doc "missing" False -> assert false "codec_json_get_bool fallback"
         arr = json array [json int 1, json int 2, json quote "three"]
-        assert str eq arr "[1,2,\"three\"]" "json_array"
+        arr -> assert str eq "[1,2,\"three\"]" "json_array"
         s_o = json str object [("k1", "v1"), ("k2", "v\"2")]
-        assert str eq (json get str s_o "k2") "v\"2" "json_str_object escaped roundtrip"
+        codec json get str s_o "k2" -> assert str eq "v\"2" "json_str_object escaped roundtrip"
         ()
 ```
 
@@ -916,7 +916,7 @@ fn :: codec json get bool String String Bool => Bool
 
 ### As 5 Regras de Ouro ao programar com a `codec`
 
-1. **Declare `import codec` no início do ficheiro** e aproveite a equivalência entre espaços e underscores para que o seu código se leia como prosa.
+1. **Declare `import codec` no início do ficheiro** e chame as suas funções com espaços, tal como estão declaradas, para que o seu código se leia como prosa.
 2. **Alinhe os seus pipelines de dados com `=`**: encadeie as chamadas à `codec` em passos nomeados e deixe o `stable format` alinhar as colunas.
 3. **Aproveite as funções totais da `codec` nas suas guardas `|`**: verifique os valores de retorno ou desempacote os ADTs com *pattern matching* em vez de assumir que a entrada externa é sempre válida.
 4. **Evite copiar grandes estruturas se só precisa de consultar um campo**: lembre-se de que no `RMM2` os argumentos de entrada não incrementam nem decrementam contadores (`+0` / `-0`).

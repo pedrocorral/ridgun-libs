@@ -21,7 +21,7 @@ Nun ecosistema tradicional, resolver as tarefas do dominio **`CSV`** implica arr
 
 ## 09.2. Artefactos nativos, importación e catálogo completo da API de `csv`
 
-En `ridgun-libs`, **`csv`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/csv.ridgun` (dominio `CSV`). Ao compilar con `stable bundle`, empaquétase en tres formatos nativos:
+En `ridgun-libs`, **`csv`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/csv.ridgun` (dominio `CSV`). Ao compilar con `stable bundle`, empaquétase nun formato nativo:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
@@ -33,10 +33,10 @@ En `ridgun-libs`, **`csv`** é unha **lib** de primeira clase situada en `src/ma
 
 | Sinatura / Función / Tipo | Que fai e cando usala |
 |---|---|
-| `csv parse / tsv parse / csv parse with` | Analiza texto CSV/TSV (incluíndo celas multiliña e escapes `""`) en `[[String]]` |
+| `csv parse / tsv parse / csv parse with delim` | Analiza texto CSV/TSV (incluíndo celas multiliña e escapes `""`) en `[[String]]` |
 | `csv stringify / tsv stringify` | Serializa `[[String]]` entrecomiñando só celas con delimitadores, comiñas ou saltos |
-| `csv parse table / csv get cell / csv col` | Consulta sobre `CsvTable` indexada por cabeceira `(fila, nome_col)` ou columna completa |
-| `csv row to kv / csv table to kv list` | Converte filas tabulares en dicionarios `[String String]` indexados por cabeceira |
+| `csv parse table / csv get by header / csv col` | Consulta sobre `CsvTable` indexada por cabeceira `(fila, nome_col)` ou columna completa |
+| `csv row to map` | Converte filas tabulares en dicionarios `[String String]` indexados por cabeceira |
 
 ### 09.2.2. Catálogo exhaustivo de tipos e sinaturas en `src/main/ridgun/lib/csv.ridgun`
 
@@ -89,23 +89,23 @@ import csv
 
 fn :: extraer columna precios String => [String] String
       extraer columna precios raw_csv =
-        raw_csv csv parse -> tabla
-        csv col by name tabla "precio" -> precios
-        csv cell by name tabla 0 "producto" -> primero
+        csv parse table raw_csv True -> tabla
+        csv col (rows tabla) 1 -> precios
+        csv get by header tabla 0 "producto" -> primero
         (precios, primero)
 ```
 
 ### 09.3.2. Exemplo 2: Composición segura e manexo de casos de bordo
 
-Toda función da lib `csv` está deseñada para compoñerse con gardas booleanas `|` e co resto das 32 libs de `ridgun-libs`:
+Toda función da lib `csv` está deseñada para compoñerse con gardas booleanas `|` e co resto das 38 libs de `ridgun-libs`:
 
 ```ridgun
 import csv
 
 fn :: exportar informe => String
       exportar informe =
-        [["id", "nota"], ["1", "Contiene, coma"], ["2", "Dijo "hola""]] -> filas
-        filas csv encode
+        [["id", "nota"], ["1", "Contiene, coma"], ["2", "Dijo \"hola\""]] -> filas
+        csv stringify filas
 ```
 
 ### 09.3.3. Exemplo 3: Ida e volta RFC 4180 CSV/TSV con comiñas escapadas `""`, comas internas e saltos de liña incrustados
@@ -119,18 +119,18 @@ fn :: test csv tsv roundtrip => ()
         tab = char from code 9
         raw_csv = "name,role,note" + nl + "Ada,\"Admin, Lead\",\"Quote \"\"here\"\"\"" + nl + "Bob,User,\"Line 1" + nl + "Line 2\"" + nl
         parsed = csv parse raw_csv
-        assert int equals (csv row count parsed) 3 "AC1: 3 rows parsed including multiline quoted cell"
-        assert str eq (csv cell at parsed 1 1) "Admin, Lead" "AC1: quoted comma preserved"
-        assert str eq (csv cell at parsed 1 2) "Quote \"here\"" "AC1: doubled quote unescaped"
-        assert str eq (csv cell at parsed 2 2) ("Line 1" + nl + "Line 2") "AC1: embedded newline in quoted cell preserved"
+        csv row count parsed -> assert int equals 3 "AC1: 3 rows parsed including multiline quoted cell"
+        csv cell at parsed 1 1 -> assert str eq "Admin, Lead" "AC1: quoted comma preserved"
+        csv cell at parsed 1 2 -> assert str eq "Quote \"here\"" "AC1: doubled quote unescaped"
+        csv cell at parsed 2 2 -> assert str eq ("Line 1" + nl + "Line 2") "AC1: embedded newline in quoted cell preserved"
         re_csv = csv stringify parsed
-        assert str eq re_csv raw_csv "AC1/AC2: RFC 4180 CSV quoted comma, escaped quote, and newline round-trip"
+        re_csv -> assert str eq raw_csv "AC1/AC2: RFC 4180 CSV quoted comma, escaped quote, and newline round-trip"
 
         raw_tsv = "col1" + tab + "col2" + nl + "val,1" + tab + "val2" + nl
         parsed_tsv = tsv parse raw_tsv
-        assert str eq (csv cell at parsed_tsv 1 0) "val,1" "AC1: TSV unquoted comma preserved"
+        csv cell at parsed_tsv 1 0 -> assert str eq "val,1" "AC1: TSV unquoted comma preserved"
         re_tsv = tsv stringify parsed_tsv
-        assert str eq re_tsv raw_tsv "AC1/AC2: TSV round-trip"
+        re_tsv -> assert str eq raw_tsv "AC1/AC2: TSV round-trip"
         ()
 ```
 
@@ -146,22 +146,22 @@ fn :: test csv crlf and empty cells => ()
         crlf = cr + nl
         raw_crlf = "a,b,c" + crlf + "1,,3" + crlf + ",2," + crlf
         rows_crlf = csv parse raw_crlf
-        assert int equals (csv row count rows_crlf) 3 "AC1: CRLF row count"
-        assert str eq (csv cell at rows_crlf 1 0) "1" "AC1: cell (1,0)"
-        assert str eq (csv cell at rows_crlf 1 1) "" "AC1: middle empty cell (1,1)"
-        assert str eq (csv cell at rows_crlf 1 2) "3" "AC1: cell (1,2)"
-        assert str eq (csv cell at rows_crlf 2 0) "" "AC1: leading empty cell (2,0)"
-        assert str eq (csv cell at rows_crlf 2 1) "2" "AC1: cell (2,1)"
-        assert str eq (csv cell at rows_crlf 2 2) "" "AC1: trailing empty cell (2,2)"
+        csv row count rows_crlf -> assert int equals 3 "AC1: CRLF row count"
+        csv cell at rows_crlf 1 0 -> assert str eq "1" "AC1: cell (1,0)"
+        csv cell at rows_crlf 1 1 -> assert str eq "" "AC1: middle empty cell (1,1)"
+        csv cell at rows_crlf 1 2 -> assert str eq "3" "AC1: cell (1,2)"
+        csv cell at rows_crlf 2 0 -> assert str eq "" "AC1: leading empty cell (2,0)"
+        csv cell at rows_crlf 2 1 -> assert str eq "2" "AC1: cell (2,1)"
+        csv cell at rows_crlf 2 2 -> assert str eq "" "AC1: trailing empty cell (2,2)"
 
         semi_rows = csv parse with delim ("k1;k2" + nl + "v1;v2" + nl) ";"
-        assert int equals (csv row count semi_rows) 2 "AC1: semicolon delimiter row count"
-        assert str eq (csv cell at semi_rows 1 1) "v2" "AC1: semicolon delimiter cell (1,1)"
-        assert int equals (csv row count (csv parse "")) 0 "AC1: empty input yields 0 rows"
+        csv row count semi_rows -> assert int equals 2 "AC1: semicolon delimiter row count"
+        csv cell at semi_rows 1 1 -> assert str eq "v2" "AC1: semicolon delimiter cell (1,1)"
+        csv row count (csv parse "") -> assert int equals 0 "AC1: empty input yields 0 rows"
         ()
 ```
 
-### 09.3.5. Exemplo 5: Táboas con cabeceira (`CsvTable`): busca por fila e nome de columna (`csv get cell`), extracción de columnas e rexistros clave-valor
+### 09.3.5. Exemplo 5: Táboas con cabeceira (`CsvTable`): busca por fila e nome de columna (`csv get by header`), extracción de columnas e rexistros clave-valor
 
 Neste exemplo práctico exploramos de forma exhaustiva como se comporta `csv` neste bloque funcional, incluíndo entradas estándar, combinacións de parámetros e valores fronteira:
 
@@ -171,26 +171,26 @@ fn :: test csv table lookup => ()
         nl = char from code 10
         raw_csv = "id,name,dept" + nl + "10,Ada,Math" + nl + "20,Grace,Compilers" + nl
         tbl = csv parse table raw_csv True
-        assert true (has_headers tbl) "AC3: table has_headers True"
-        assert int equals (csv len (headers tbl)) 3 "AC3: 3 headers extracted"
-        assert str eq (csv get by header tbl 0 "name") "Ada" "AC3: csv get by header row 0"
-        assert str eq (csv get by header tbl 1 "dept") "Compilers" "AC3: csv get by header row 1"
-        assert str eq (csv get by header tbl 0 "missing") "" "AC3: csv get by header missing column"
-        assert str eq (csv get by header tbl 99 "name") "" "AC3: csv get by header out-of-bounds row"
+        has_headers tbl -> assert true "AC3: table has_headers True"
+        csv len (headers tbl) -> assert int equals 3 "AC3: 3 headers extracted"
+        csv get by header tbl 0 "name" -> assert str eq "Ada" "AC3: csv get by header row 0"
+        csv get by header tbl 1 "dept" -> assert str eq "Compilers" "AC3: csv get by header row 1"
+        csv get by header tbl 0 "missing" -> assert str eq "" "AC3: csv get by header missing column"
+        csv get by header tbl 99 "name" -> assert str eq "" "AC3: csv get by header out-of-bounds row"
 
         tbl_no_h = csv parse table raw_csv False
-        assert false (has_headers tbl_no_h) "AC3: table has_headers False"
-        assert int equals (csv row count (rows tbl_no_h)) 3 "AC3: headerless table keeps all 3 rows"
+        has_headers tbl_no_h -> assert false "AC3: table has_headers False"
+        csv row count (rows tbl_no_h) -> assert int equals 3 "AC3: headerless table keeps all 3 rows"
 
         names = csv col (rows tbl) 1
-        assert int equals (csv len names) 2 "AC3: csv col length"
-        assert str eq (csv str at names 0) "Ada" "AC3: csv col[0]"
-        assert str eq (csv str at names 1) "Grace" "AC3: csv col[1]"
+        csv len names -> assert int equals 2 "AC3: csv col length"
+        csv str at names 0 -> assert str eq "Ada" "AC3: csv col[0]"
+        csv str at names 1 -> assert str eq "Grace" "AC3: csv col[1]"
 
         rmap = csv row to map ["id", "name", "dept"] ["10", "Ada", "Math"]
-        assert str eq (csv pair val rmap "id") "10" "AC3: csv row to map id"
-        assert str eq (csv pair val rmap "name") "Ada" "AC3: csv row to map name"
-        assert str eq (csv pair val rmap "dept") "Math" "AC3: csv row to map dept"
+        csv pair val rmap "id" -> assert str eq "10" "AC3: csv row to map id"
+        csv pair val rmap "name" -> assert str eq "Ada" "AC3: csv row to map name"
+        csv pair val rmap "dept" -> assert str eq "Math" "AC3: csv row to map dept"
         ()
 ```
 
@@ -343,7 +343,7 @@ fn :: csv row to map [String] [String] => [String String]
 
 ### As 5 Regras de Ouro ao programar con `csv`
 
-1. **Declara `import csv` ao inicio do ficheiro** e aproveita a equivalencia entre espazos e guións baixos para que o teu código se lea coma prosa.
+1. **Declara `import csv` ao inicio do ficheiro** e chama as súas funcións con espazos, tal como están declaradas, para que o teu código se lea coma prosa.
 2. **Aliña as túas tubaxes de datos con `=`**: encadea as chamadas a `csv` en pasos con nome propio e deixa que `stable format` aliñe as columnas.
 3. **Aproveita as funcións totais de `csv` nas túas gardas `|`**: comproba os valores de retorno ou desenvolve os ADTs con *pattern matching* en vez de asumir que a entrada externa sempre é válida.
 4. **Evita copiar grandes estruturas se só necesitas consultar un campo**: lembra que en `RMM2` os argumentos de entrada non incrementan nin decrementan contadores (`+0` / `-0`).

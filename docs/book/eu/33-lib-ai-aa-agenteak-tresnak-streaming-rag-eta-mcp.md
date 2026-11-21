@@ -22,7 +22,7 @@ type AiStepDecision = AiDecisionDone String | AiDecisionRunTools [AiToolCall] | 
 type AiDoc          = ad_id: String, ad_title: String, ad_body: String
 ```
 
-| # | Función / Firma (`fn ::`) | Tipo de Retorno |
+| # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
 | `1` | `fn :: ai zero usage` | `AiUsage` |
 | `2` | `fn :: ai add usage AiUsage AiUsage` | `AiUsage` |
@@ -308,3 +308,7 @@ fn :: test ai react guardrails rag handoff and mcp => ()
         assert str eq (snd err mcp_err) "Method not found" "AC8: MCP error message extracted"
         ()
 ```
+
+---
+
+**34. kapituluan** **`locale`** lib-a sakonki esploratuko dugu (`locale` lib-a — CLDR Plural-arauak, Data eta Zenbakien UTC Formatua eta Autonimoak).

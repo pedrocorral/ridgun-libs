@@ -21,7 +21,7 @@ En un ecosistema tradicional, resolver las tareas del dominio **`WS`** implica a
 
 ## 29.2. Artefactos nativos, importación y catálogo completo de la API de `ws`
 
-En `ridgun-libs`, **`ws`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/ws.ridgun` (dominio `WS`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
+En `ridgun-libs`, **`ws`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/ws.ridgun` (dominio `WS`). Al compilar con `stable bundle`, se empaqueta en un artefacto nativo:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
@@ -36,76 +36,61 @@ En `ridgun-libs`, **`ws`** es una **lib** de primera clase ubicada en `src/main/
 | `ws accept key : String -> String` | Calcula `Sec-WebSocket-Accept` (RFC 6455 §1.3) a partir de `Sec-WebSocket-Key` |
 | `ws build upgrade request / ws build upgrade response` | Formatea los mensajes HTTP/1.1 de negociación (upgrade handshake) WebSocket |
 | `ws encode frame / ws decode frame` | Codifica y decodifica tramas `WsFrame` (`fin`, `opcode`, `masked`, `mask_key`, `payload`) |
-| `ws text frame / ws ping frame / ws pong frame / ws close frame` | Constructores de tramas de alto nivel y extractores de código de cierre (`1000` normal) |
+| `ws encode text / ws encode ping / ws encode pong / ws encode close` | Constructores de tramas de alto nivel y extractores de código de cierre (`1000` normal) |
 
 ### 29.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/ws.ridgun`
 
-A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/ws.ridgun` (`3` tipos, `0` operadores y `54` funciones):
+A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/ws.ridgun` (`2` tipos, `0` operadores y `40` funciones):
 
 **Tipos algebraicos y registros (`type`) de `ws`:**
 
 ```ridgun
-type WsFrame = is_fin: Bool, ws_opcode: Int, is_masked: Bool, payload_bytes: [Int], payload_text: String
+type WsFrame = is_fin: Bool, ws_opcode: Int, is_masked: Bool, payload_bytes: Tensor[U8], payload_text: String
 type WsRes = WsOk WsFrame Int | WsErr String
-type Sha1State = h0: Int, h1: Int, h2: Int, h3: Int, h4: Int
 ```
 
 | # | Función / Firma (`fn ::`) | Tipo de Retorno |
 |---|---|---|
 | `1` | `fn :: ws u32 Int` | `Int` |
-| `2` | `fn :: ws u32 xor loop Int Int Int Int` | `Int` |
-| `3` | `fn :: ws u32 xor Int Int` | `Int` |
-| `4` | `fn :: ws u32 and loop Int Int Int Int` | `Int` |
-| `5` | `fn :: ws u32 and Int Int` | `Int` |
-| `6` | `fn :: ws u32 or loop Int Int Int Int` | `Int` |
-| `7` | `fn :: ws u32 or Int Int` | `Int` |
-| `8` | `fn :: ws u32 not Int` | `Int` |
-| `9` | `fn :: ws pow2 Int` | `Int` |
-| `10` | `fn :: ws rotl32 Int Int` | `Int` |
-| `11` | `fn :: ws byte xor Int Int` | `Int` |
-| `12` | `fn :: ws list len [Int]` | `Int` |
-| `13` | `fn :: ws nth [Int] Int` | `Int` |
-| `14` | `fn :: ws take [Int] Int` | `[Int]` |
-| `15` | `fn :: ws drop [Int] Int` | `[Int]` |
-| `16` | `fn :: ws str to bytes loop String Int Int [Int]` | `[Int]` |
-| `17` | `fn :: ws str to bytes String` | `[Int]` |
-| `18` | `fn :: ws bytes to str [Int]` | `String` |
-| `19` | `fn :: ws zeroes Int` | `[Int]` |
-| `20` | `fn :: ws u32 be4 Int` | `[Int]` |
-| `21` | `fn :: ws sha1 pad [Int]` | `[Int]` |
-| `22` | `fn :: ws be32 at [Int] Int` | `Int` |
-| `23` | `fn :: ws sha1 w16 loop [Int] Int [Int]` | `[Int]` |
-| `24` | `fn :: ws sha1 expand loop [Int] Int` | `[Int]` |
-| `25` | `fn :: ws sha1 expand step [Int] Int` | `[Int]` |
-| `26` | `fn :: ws sha1 f Int Int Int Int` | `Int` |
-| `27` | `fn :: ws sha1 k Int` | `Int` |
-| `28` | `fn :: ws sha1 rounds Sha1State [Int] Int` | `Sha1State` |
-| `29` | `fn :: ws sha1 round step Sha1State [Int] Int` | `Sha1State` |
-| `30` | `fn :: ws sha1 blocks Sha1State [Int]` | `Sha1State` |
-| `31` | `fn :: ws sha1 bytes String` | `[Int]` |
-| `32` | `fn :: ws b64 lut Int` | `String` |
-| `33` | `fn :: ws b64 c Int` | `String` |
-| `34` | `fn :: ws b64 enc [Int]` | `String` |
-| `35` | `fn :: ws accept key String` | `String` |
-| `36` | `fn :: ws build upgrade request String String String` | `String` |
-| `37` | `fn :: ws build upgrade response String` | `String` |
-| `38` | `fn :: ws mask loop [Int] [Int] Int` | `[Int]` |
-| `39` | `fn :: ws mask bytes [Int] [Int]` | `[Int]` |
-| `40` | `fn :: ws fin bit Bool` | `Int` |
-| `41` | `fn :: ws len header Int Int` | `[Int]` |
-| `42` | `fn :: ws encode frame Bool Int [Int] [Int]` | `[Int]` |
-| `43` | `fn :: ws encode frame with mask Int Bool [Int] [Int]` | `[Int]` |
-| `44` | `fn :: ws encode text String` | `[Int]` |
-| `45` | `fn :: ws encode masked text String [Int]` | `[Int]` |
-| `46` | `fn :: ws encode ping [Int]` | `[Int]` |
-| `47` | `fn :: ws encode pong [Int]` | `[Int]` |
-| `48` | `fn :: ws encode close Int` | `[Int]` |
-| `49` | `fn :: ws decode frame [Int]` | `WsRes` |
-| `50` | `fn :: ws decode check min [Int] Int` | `WsRes` |
-| `51` | `fn :: ws decode len [Int] Int Int Int` | `WsRes` |
-| `52` | `fn :: ws decode ext len [Int] Int Bool Int Bool Int` | `WsRes` |
-| `53` | `fn :: ws decode body [Int] Int Bool Int Bool Int Int` | `WsRes` |
-| `54` | `fn :: ws finish frame Bool Int Bool [Int] Int` | `WsRes` |
+| `2` | `fn :: ws byte bxor Int Int` | `Int` |
+| `3` | `fn :: ws blen Tensor[U8]` | `Int` |
+| `4` | `fn :: ws copy range Tensor[U8] Int Tensor[U8] Int Int` | `Tensor[U8]` |
+| `5` | `fn :: ws copy range step Tensor[U8] Int Tensor[U8] Int Int` | `Tensor[U8]` |
+| `6` | `fn :: ws mask range Tensor[U8] Int Tensor[U8] Int Int Tensor[U8] Int Int` | `Tensor[U8]` |
+| `7` | `fn :: ws mask range step Tensor[U8] Int Tensor[U8] Int Int Tensor[U8] Int Int` | `Tensor[U8]` |
+| `8` | `fn :: ws put be32 Tensor[U8] Int Int` | `Tensor[U8]` |
+| `9` | `fn :: ws be32 at Tensor[U8] Int` | `Int` |
+| `10` | `fn :: ws b64 lut Int` | `String` |
+| `11` | `fn :: ws b64 code String Int` | `Int` |
+| `12` | `fn :: ws b64 enc Tensor[U8]` | `String` |
+| `13` | `fn :: ws b64 enc loop Tensor[U8] Int Tensor[U8] String Int Int` | `Tensor[U8]` |
+| `14` | `fn :: ws b64 enc group Tensor[U8] Int Tensor[U8] String Int Int` | `Tensor[U8]` |
+| `15` | `fn :: ws b64 enc tail1 Tensor[U8] Tensor[U8] String Int Int` | `Tensor[U8]` |
+| `16` | `fn :: ws b64 enc tail2 Tensor[U8] Tensor[U8] String Int Int` | `Tensor[U8]` |
+| `17` | `fn :: ws accept key String` | `String` |
+| `18` | `fn :: ws build upgrade request String String String` | `String` |
+| `19` | `fn :: ws build upgrade response String` | `String` |
+| `20` | `fn :: ws mask bytes Tensor[U8] Tensor[U8]` | `Tensor[U8]` |
+| `21` | `fn :: ws mask bytes into Tensor[U8] Tensor[U8] Tensor[U8] Int` | `Tensor[U8]` |
+| `22` | `fn :: ws fin bit Bool` | `Int` |
+| `23` | `fn :: ws len ext size Int` | `Int` |
+| `24` | `fn :: ws put len Tensor[U8] Int Int Int` | `Tensor[U8]` |
+| `25` | `fn :: ws put len7 Tensor[U8] Int` | `Tensor[U8]` |
+| `26` | `fn :: ws put len16 Tensor[U8] Int Int` | `Tensor[U8]` |
+| `27` | `fn :: ws put len64 Tensor[U8] Int Int` | `Tensor[U8]` |
+| `28` | `fn :: ws encode frame Bool Int Tensor[U8] Tensor[U8]` | `Tensor[U8]` |
+| `29` | `fn :: ws encode frame with mask Int Bool Tensor[U8] Tensor[U8]` | `Tensor[U8]` |
+| `30` | `fn :: ws encode text String` | `Tensor[U8]` |
+| `31` | `fn :: ws encode masked text String Tensor[U8]` | `Tensor[U8]` |
+| `32` | `fn :: ws encode ping Tensor[U8]` | `Tensor[U8]` |
+| `33` | `fn :: ws encode pong Tensor[U8]` | `Tensor[U8]` |
+| `34` | `fn :: ws encode close Int` | `Tensor[U8]` |
+| `35` | `fn :: ws decode frame Tensor[U8]` | `WsRes` |
+| `36` | `fn :: ws decode check min Tensor[U8] Int` | `WsRes` |
+| `37` | `fn :: ws decode len Tensor[U8] Int Int Int` | `WsRes` |
+| `38` | `fn :: ws decode ext len Tensor[U8] Int Bool Int Bool Int` | `WsRes` |
+| `39` | `fn :: ws decode body Tensor[U8] Int Bool Int Bool Int Int` | `WsRes` |
+| `40` | `fn :: ws finish frame Bool Int Bool Tensor[U8] Int` | `WsRes` |
 
 ---
 
@@ -120,24 +105,28 @@ Observa cómo en Ridgun los signos `=` y los pasos de transformación con `ws` q
 ```ridgun
 import ws
 
-fn :: negociar y enviar String => String String
+fn :: negociar y enviar String => String Tensor[U8]
       negociar y enviar client_key =
-        ws build upgrade response client_key "chat" -> resp
-        ws encode text frame "hola-tiempo-real" -> trama
+        ws build upgrade response client_key -> resp
+        ws encode text "hola-tiempo-real" -> trama
         (resp, trama)
 ```
 
 ### 29.3.2. Ejemplo 2: Composición segura y manejo de casos de borde
 
-Toda función de la lib `ws` está diseñada para componerse con guardas booleanas `|` y con el resto de las 32 libs de `ridgun-libs`:
+Toda función de la lib `ws` está diseñada para componerse con guardas booleanas `|` y con el resto de las 38 libs de `ridgun-libs`:
 
 ```ridgun
 import ws
 
-fn :: decodificar trama cliente String String => String
+fn :: texto de WsRes      => String
+      texto de (WsOk f _) =  payload_text f
+      texto de (WsErr e)  =  "error: " + e
+
+fn :: decodificar trama cliente Tensor[U8] String => String
       decodificar trama cliente mask4 msg =
-        ws encode masked frame (ws op text) msg mask4 -> wire
-        wire ws frame payload
+        ws encode masked text msg mask4 -> wire
+        texto de (ws decode frame wire)
 ```
 
 ### 29.3.3. Ejemplo 3: Handshake WebSocket RFC 6455 (`Sec-WebSocket-Accept` mediante SHA-1 + Base64) y cabeceras HTTP `101 Switching Protocols`
@@ -149,17 +138,17 @@ fn :: test ws rfc6455 handshake => ()
       test ws rfc6455 handshake =
         rfc_key = "dGhlIHNhbXBsZSBub25jZQ=="
         accept = ws accept key rfc_key
-        assert str eq accept "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=" "AC1: RFC 6455 Sec-WebSocket-Accept test vector"
+        accept -> assert str eq "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=" "AC1: RFC 6455 Sec-WebSocket-Accept test vector"
 
         req = ws build upgrade request "chat.example.com" "/ws" rfc_key
-        assert true (str contains req "GET /ws HTTP/1.1") "AC1: upgrade request line"
-        assert true (str contains req "Host: chat.example.com") "AC1: upgrade request Host header"
-        assert true (str contains req "Upgrade: websocket") "AC1: upgrade request Upgrade header"
-        assert true (str contains req "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==") "AC1: upgrade request contains key"
+        str contains req "GET /ws HTTP/1.1" -> assert true "AC1: upgrade request line"
+        str contains req "Host: chat.example.com" -> assert true "AC1: upgrade request Host header"
+        str contains req "Upgrade: websocket" -> assert true "AC1: upgrade request Upgrade header"
+        str contains req "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" -> assert true "AC1: upgrade request contains key"
 
         resp = ws build upgrade response rfc_key
-        assert true (str contains resp "101 Switching Protocols") "AC1: upgrade response status 101"
-        assert true (str contains resp "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=") "AC1: upgrade response contains accept digest"
+        str contains resp "101 Switching Protocols" -> assert true "AC1: upgrade response status 101"
+        str contains resp "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=" -> assert true "AC1: upgrade response contains accept digest"
         ()
 ```
 
@@ -172,57 +161,57 @@ fn :: test ws framing and masking => ()
       test ws framing and masking =
         -- RFC 6455 Section 5.7 Example 1: single-frame unmasked text "Hello" -> [0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f]
         w_hello = ws encode text "Hello"
-        assert true (ws int list eq w_hello [129, 5, 72, 101, 108, 108, 111]) "AC2: RFC 6455 5.7 unmasked 'Hello' wire bytes"
+        ws bytes eq w_hello [129, 5, 72, 101, 108, 108, 111] -> assert true "AC2: RFC 6455 5.7 unmasked 'Hello' wire bytes"
         r_hello = ws decode frame w_hello
-        assert true (is ws ok r_hello) "AC2: decode RFC 6455 unmasked 'Hello'"
-        assert str eq (payload_text (unwrap ws frame r_hello)) "Hello" "AC2: decoded 'Hello' text"
-        assert int equals (unwrap ws len r_hello) 7 "AC2: consumed 7 bytes"
+        is ws ok r_hello -> assert true "AC2: decode RFC 6455 unmasked 'Hello'"
+        payload_text (unwrap ws frame r_hello) -> assert str eq "Hello" "AC2: decoded 'Hello' text"
+        unwrap ws len r_hello -> assert int equals 7 "AC2: consumed 7 bytes"
 
         -- RFC 6455 Section 5.7 Example 2: single-frame masked text "Hello" with mask [0x37, 0xfa, 0x21, 0x3d]
-        mask_rfc = [55, 250, 33, 61]
+        mask_rfc = ws bytes of [55, 250, 33, 61]
         w_mhello = ws encode masked text "Hello" mask_rfc
-        assert true (ws int list eq w_mhello [129, 133, 55, 250, 33, 61, 127, 159, 77, 81, 88]) "AC2: RFC 6455 5.7 masked 'Hello' wire bytes"
+        ws bytes eq w_mhello [129, 133, 55, 250, 33, 61, 127, 159, 77, 81, 88] -> assert true "AC2: RFC 6455 5.7 masked 'Hello' wire bytes"
         r_mhello = ws decode frame w_mhello
-        assert true (is ws ok r_mhello) "AC2: decode RFC 6455 masked 'Hello'"
+        is ws ok r_mhello -> assert true "AC2: decode RFC 6455 masked 'Hello'"
         f_mhello = unwrap ws frame r_mhello
-        assert true (is_masked f_mhello) "AC2: masked frame is_masked=true"
-        assert str eq (payload_text f_mhello) "Hello" "AC2: XOR unmasked text matches 'Hello'"
-        assert int equals (unwrap ws len r_mhello) 11 "AC2: consumed 11 bytes"
+        is_masked f_mhello -> assert true "AC2: masked frame is_masked=true"
+        payload_text f_mhello -> assert str eq "Hello" "AC2: XOR unmasked text matches 'Hello'"
+        unwrap ws len r_mhello -> assert int equals 11 "AC2: consumed 11 bytes"
 
         -- Empty payload frame (0 bytes)
         w_empty = ws encode text ""
         r_empty = ws decode frame w_empty
-        assert true (is ws ok r_empty) "AC2: decode empty text frame"
-        assert str eq (payload_text (unwrap ws frame r_empty)) "" "AC2: empty payload_text"
-        assert int equals (unwrap ws len r_empty) 2 "AC2: 2-byte header for empty unmasked frame"
+        is ws ok r_empty -> assert true "AC2: decode empty text frame"
+        payload_text (unwrap ws frame r_empty) -> assert str eq "" "AC2: empty payload_text"
+        unwrap ws len r_empty -> assert int equals 2 "AC2: 2-byte header for empty unmasked frame"
 
         -- Boundary length 125 (max 7-bit length) vs 126 (min 16-bit extended length)
         msg_125 = ws repeat str "A" 125
         w_125 = ws encode text msg_125
         r_125 = ws decode frame w_125
-        assert int equals (unwrap ws len r_125) 127 "AC2: 125B payload uses 2B header (127 total)"
-        assert str eq (payload_text (unwrap ws frame r_125)) msg_125 "AC2: 125B payload round-trips"
+        unwrap ws len r_125 -> assert int equals 127 "AC2: 125B payload uses 2B header (127 total)"
+        payload_text (unwrap ws frame r_125) -> assert str eq msg_125 "AC2: 125B payload round-trips"
 
         msg_126 = ws repeat str "B" 126
         w_126 = ws encode masked text msg_126 mask_rfc
         r_126 = ws decode frame w_126
-        assert int equals (unwrap ws len r_126) 134 "AC2: 126B masked payload uses 4B hdr + 4B mask + 126B (134 total)"
-        assert str eq (payload_text (unwrap ws frame r_126)) msg_126 "AC2: 126B payload round-trips"
+        unwrap ws len r_126 -> assert int equals 134 "AC2: 126B masked payload uses 4B hdr + 4B mask + 126B (134 total)"
+        payload_text (unwrap ws frame r_126) -> assert str eq msg_126 "AC2: 126B payload round-trips"
 
         -- Control frames: Ping (9), Pong (10), Close (8)
-        w_ping = ws encode ping [1, 2, 3]
+        w_ping = ws encode ping (ws bytes of [1, 2, 3])
         f_ping = unwrap ws frame (ws decode frame w_ping)
-        assert int equals (ws_opcode f_ping) 9 "AC2: ping opcode=9"
-        assert true (ws int list eq (payload_bytes f_ping) [1, 2, 3]) "AC2: ping payload bytes"
+        ws_opcode f_ping -> assert int equals 9 "AC2: ping opcode=9"
+        ws bytes eq (payload_bytes f_ping) [1, 2, 3] -> assert true "AC2: ping payload bytes"
 
-        w_pong = ws encode pong [4, 5]
+        w_pong = ws encode pong (ws bytes of [4, 5])
         f_pong = unwrap ws frame (ws decode frame w_pong)
-        assert int equals (ws_opcode f_pong) 10 "AC2: pong opcode=10"
+        ws_opcode f_pong -> assert int equals 10 "AC2: pong opcode=10"
 
         w_close = ws encode close 1000
         f_close = unwrap ws frame (ws decode frame w_close)
-        assert int equals (ws_opcode f_close) 8 "AC2: close opcode=8"
-        assert true (ws int list eq (payload_bytes f_close) [3, 232]) "AC2: close code 1000 big-endian [0x03, 0xE8]"
+        ws_opcode f_close -> assert int equals 8 "AC2: close opcode=8"
+        ws bytes eq (payload_bytes f_close) [3, 232] -> assert true "AC2: close code 1000 big-endian [0x03, 0xE8]"
         ()
 ```
 
@@ -233,12 +222,46 @@ En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `ws` 
 ```ridgun
 fn :: test ws truncated frames => ()
       test ws truncated frames =
-        assert false (is ws ok (ws decode frame [])) "AC3: reject 0-byte empty buffer"
-        assert false (is ws ok (ws decode frame [129])) "AC3: reject 1-byte truncated header"
-        assert false (is ws ok (ws decode frame [129, 10, 65, 66])) "AC3: reject truncated unmasked payload"
-        assert false (is ws ok (ws decode frame [129, 126, 0])) "AC3: reject truncated 16-bit extended header"
-        assert false (is ws ok (ws decode frame [129, 130, 1, 2])) "AC3: reject truncated 4-byte masking key"
-        assert false (is ws ok (ws decode frame [129, 133, 55, 250, 33, 61, 127, 159])) "AC3: reject truncated masked payload"
+        is ws ok (ws decode frame (ws bytes of [])) -> assert false "AC3: reject 0-byte empty buffer"
+        is ws ok (ws decode frame (ws bytes of [129])) -> assert false "AC3: reject 1-byte truncated header"
+        is ws ok (ws decode frame (ws bytes of [129, 10, 65, 66])) -> assert false "AC3: reject truncated unmasked payload"
+        is ws ok (ws decode frame (ws bytes of [129, 126, 0])) -> assert false "AC3: reject truncated 16-bit extended header"
+        is ws ok (ws decode frame (ws bytes of [129, 130, 1, 2])) -> assert false "AC3: reject truncated 4-byte masking key"
+        is ws ok (ws decode frame (ws bytes of [129, 133, 55, 250, 33, 61, 127, 159])) -> assert false "AC3: reject truncated masked payload"
+        is ws ok (ws decode frame (ws bytes of [130, 127, 0, 0, 0, 0, 0])) -> assert false "AC3: reject truncated 64-bit extended header"
+        is ws ok (ws decode frame (ws bytes of [130, 127, 128, 0, 0, 0, 0, 0, 0, 1, 65])) -> assert false "AC3: reject 64-bit length with the most significant bit set"
+        is ws ok (ws decode frame (ws bytes of [130, 127, 0, 0, 0, 0, 0, 1, 17, 112, 65])) -> assert false "AC3: reject truncated 64-bit length payload"
+        ()
+```
+
+### 29.3.6. Ejemplo 6: Tramas de 70 000 bytes: el código de longitud 127 de 64 bits, ida y vuelta con y sin enmascarado
+
+En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `ws` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
+
+```ridgun
+fn :: test ws large frame round trip => ()
+      test ws large frame round trip =
+        big = ws big payload 70000
+        big_(128) -> assert int equals 128 "AC2: large payload holds byte 128"
+        big_(255) -> assert int equals 255 "AC2: large payload holds byte 255"
+        w_big = ws encode frame True 2 (Tensor[U8 * 0]) big
+        w_big_(1) -> assert int equals 127 "AC2: 70000B unmasked payload uses the 64-bit length code 127"
+        ws int list eq [w_big_(2), w_big_(3), w_big_(4), w_big_(5), w_big_(6), w_big_(7), w_big_(8), w_big_(9)] [0, 0, 0, 0, 0, 1, 17, 112] -> assert true "AC2: 64-bit big-endian length 70000"
+        r_big = ws decode frame w_big
+        is ws ok r_big -> assert true "AC2: decode 70000B unmasked frame"
+        unwrap ws len r_big -> assert int equals 70010 "AC2: consumed 10B header + 70000B"
+        (payload_bytes (unwrap ws frame r_big)) == big -> assert true "AC2: 70000B unmasked payload round-trips byte for byte"
+
+        mask_k = ws bytes of [0, 128, 255, 61]
+        w_mbig = ws encode frame False 2 mask_k big
+        w_mbig_(1) -> assert int equals 255 "AC2: 70000B masked payload sets MASK and length code 127"
+        r_mbig = ws decode frame w_mbig
+        is ws ok r_mbig -> assert true "AC2: decode 70000B masked frame"
+        f_mbig = unwrap ws frame r_mbig
+        is_fin f_mbig -> assert false "AC2: large masked frame keeps FIN=0"
+        is_masked f_mbig -> assert true "AC2: large masked frame is_masked=true"
+        unwrap ws len r_mbig -> assert int equals 70014 "AC2: consumed 10B header + 4B mask + 70000B"
+        (payload_bytes f_mbig) == big -> assert true "AC2: 70000B masked payload round-trips byte for byte"
         ()
 ```
 
@@ -248,7 +271,7 @@ fn :: test ws truncated frames => ()
 
 Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**. Puedes abrir `src/main/ridgun/lib/ws.ridgun` y leer exactamente cómo está implementada cada operación usando *pattern matching*, árboles de guardas `|` / `|.` y recursión de cola (TCO). Veamos las piezas clave de su implementación real:
 
-### 29.4.1. Implementación interna: 32-Bit Unsigned Bitwise Helpers for RFC 3174 SHA-1
+### 29.4.1. Implementación interna: Byte Helpers
 
 Fíjate en cómo `ws.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
@@ -258,201 +281,108 @@ module :: ws
 fn :: ws u32 Int => Int
       ws u32 x = ((x % 4294967296) + 4294967296) % 4294967296
 
-fn :: ws u32 bxor loop Int Int Int Int => Int
-      ws u32 bxor loop _ _ 0 acc = acc
-      ws u32 bxor loop a b bit acc =
-        | (a % 2) != (b % 2) = ws u32 bxor loop (a / 2) (b / 2) (bit * 2) (acc + bit)
-        | otherwise = ws u32 bxor loop (a / 2) (b / 2) (bit * 2) acc
-
-fn :: ws u32 bxor Int Int => Int
-      ws u32 bxor a b = ws u32 bxor loop (ws u32 a) (ws u32 b) 1 0
-
-fn :: ws u32 band loop Int Int Int Int => Int
-      ws u32 band loop _ _ 0 acc = acc
-      ws u32 band loop a b bit acc =
-        | (a % 2) == 1 and (b % 2) == 1 = ws u32 band loop (a / 2) (b / 2) (bit * 2) (acc + bit)
-        | otherwise = ws u32 band loop (a / 2) (b / 2) (bit * 2) acc
-
-fn :: ws u32 band Int Int => Int
-      ws u32 band a b = ws u32 band loop (ws u32 a) (ws u32 b) 1 0
-
-fn :: ws u32 bor loop Int Int Int Int => Int
-      ws u32 bor loop _ _ 0 acc = acc
-      ws u32 bor loop a b bit acc =
-        | (a % 2) == 1 or (b % 2) == 1 = ws u32 bor loop (a / 2) (b / 2) (bit * 2) (acc + bit)
-        | otherwise = ws u32 bor loop (a / 2) (b / 2) (bit * 2) acc
-
-fn :: ws u32 bor Int Int => Int
-      ws u32 bor a b = ws u32 bor loop (ws u32 a) (ws u32 b) 1 0
-
-fn :: ws u32 bnot Int => Int
-      ws u32 bnot a = 4294967295 - (ws u32 a)
-
-fn :: ws pow2 Int => Int
-      ws pow2 0 = 1
-      ws pow2 n = 2 * (ws pow2 (n - 1))
-
-fn :: ws rotl32 Int Int => Int
-      ws rotl32 x n =
-        ux = ws u32 x
-        p_shl = ws pow2 n
-        p_shr = ws pow2 (32 - n)
-        ws u32 ((ux * p_shl) + (ux / p_shr))
-
 fn :: ws byte bxor Int Int => Int
-      ws byte bxor a b = (ws u32 bxor (a % 256) (b % 256)) % 256
+      ws byte bxor a b = (a xor b) and 255
 ```
 
-### 29.4.2. Implementación interna: List & String Byte Conversion Helpers
+### 29.4.2. Implementación interna: Tensor[U8] Byte Helpers
 
 Fíjate en cómo `ws.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
-fn :: ws list len [Int] => Int
-      ws list len [] = 0
-      ws list len (_:rest) = 1 + (ws list len rest)
+fn :: ws blen Tensor[U8] => Int
+      ws blen (Tensor[U8 * n] t) = n
 
-fn :: ws nth [Int] Int => Int
-      ws nth [] _ = 0
-      ws nth (x:_) 0 = x
-      ws nth (_:rest) idx = ws nth rest (idx - 1)
+-- Copies n bytes of src (from index from) into dst (from index at); returns dst.
+fn :: ws copy range Tensor[U8] Int Tensor[U8] Int Int => Tensor[U8]
+      ws copy range src from dst at n =
+        | n <= 0 = dst
+        | otherwise = ws copy range step src from dst at n
 
-fn :: ws take [Int] Int => [Int]
-      ws take [] _ = []
-      ws take (x:rest) n =
-        | n <= 0 = []
-        | otherwise = [x] :: (ws take rest (n - 1))
+fn :: ws copy range step Tensor[U8] Int Tensor[U8] Int Int => Tensor[U8]
+      ws copy range step src from dst at n =
+        dst_(at) = src_(from)
+        ws copy range src (from + 1) dst (at + 1) (n - 1)
 
-fn :: ws drop [Int] Int => [Int]
-      ws drop [] _ = []
-      ws drop (x:rest) n =
-        | n <= 0 = [x] :: rest
-        | otherwise = ws drop rest (n - 1)
+-- Writes n bytes of src (from index from) xor mask_t[moff + (i % 4)] into dst (from index at); returns dst.
+fn :: ws mask range Tensor[U8] Int Tensor[U8] Int Int Tensor[U8] Int Int => Tensor[U8]
+      ws mask range src from dst at n mask_t moff i =
+        | i >= n = dst
+        | otherwise = ws mask range step src from dst at n mask_t moff i
 
-fn :: ws str to bytes loop String Int Int [Int] => [Int]
-      ws str to bytes loop s pos len acc =
-        | pos >= len = acc
-        | otherwise = ws str to bytes loop s (pos + 1) len (acc :: [((str char at s pos) % 256 + 256) % 256])
+fn :: ws mask range step Tensor[U8] Int Tensor[U8] Int Int Tensor[U8] Int Int => Tensor[U8]
+      ws mask range step src from dst at n mask_t moff i =
+        dst_(at + i) = ws byte bxor src_(from + i) mask_t_(moff + (i % 4))
+        ws mask range src from dst at n mask_t moff (i + 1)
 
-fn :: ws str to bytes String => [Int]
-      ws str to bytes s = ws str to bytes loop s 0 (str len s) []
-
-fn :: ws bytes to str [Int] => String
-      ws bytes to str [] = ""
-      ws bytes to str (b:rest) = (char from code b) + (ws bytes to str rest)
-```
-
-### 29.4.3. Implementación interna: Pure-Ridgun SHA-1 & Base64 for RFC 6455 Handshake
-
-Fíjate en cómo `ws.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
-
-```ridgun
-fn :: ws zeroes Int => [Int]
-      ws zeroes n =
-        | n <= 0 = []
-        | otherwise = [0] :: (ws zeroes (n - 1))
-
-fn :: ws u32 be4 Int => [Int]
-      ws u32 be4 w =
+fn :: ws put be32 Tensor[U8] Int Int => Tensor[U8]
+      ws put be32 t off w =
         uw = ws u32 w
-        [(uw / 16777216) % 256, (uw / 65536) % 256, (uw / 256) % 256, uw % 256]
+        t_(off) = (uw / 16777216) % 256
+        t_(off + 1) = (uw / 65536) % 256
+        t_(off + 2) = (uw / 256) % 256
+        t_(off + 3) = uw % 256
+        t
 
-fn :: ws sha1 pad [Int] => [Int]
-      ws sha1 pad bs =
-        mlen = ws list len bs
-        bit_len = mlen * 8
-        rem = (mlen + 1) % 64
-        z_count = ((56 - rem) + 64) % 64
-        ((bs :: [128]) :: (ws zeroes z_count)) :: ((ws u32 be4 0) :: (ws u32 be4 bit_len))
+fn :: ws be32 at Tensor[U8] Int => Int
+      ws be32 at t off = (t_(off) * 16777216) + (t_(off + 1) * 65536) + (t_(off + 2) * 256) + t_(off + 3)
+```
 
-fn :: ws be32 at [Int] Int => Int
-      ws be32 at bs off = ((ws nth bs off) * 16777216) + ((ws nth bs (off + 1)) * 65536) + ((ws nth bs (off + 2)) * 256) + (ws nth bs (off + 3))
+### 29.4.3. Implementación interna: Base64 for the RFC 6455 Handshake (SHA-1 is crypto's `sha1 bytes`)
 
-fn :: ws sha1 w16 loop [Int] Int [Int] => [Int]
-      ws sha1 w16 loop blk idx acc =
-        | idx >= 16 = acc
-        | otherwise = ws sha1 w16 loop blk (idx + 1) (acc :: [ws be32 at blk (idx * 4)])
+Fíjate en cómo `ws.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
-fn :: ws sha1 expand loop [Int] Int => [Int]
-      ws sha1 expand loop w t =
-        | t >= 80 = w
-        | otherwise = ws sha1 expand step w t
-
-fn :: ws sha1 expand step [Int] Int => [Int]
-      ws sha1 expand step w t =
-        x = ws u32 bxor (ws u32 bxor (ws u32 bxor (ws nth w (t - 3)) (ws nth w (t - 8))) (ws nth w (t - 14))) (ws nth w (t - 16))
-        ws sha1 expand loop (w :: [ws rotl32 x 1]) (t + 1)
-
-fn :: ws sha1 f Int Int Int Int => Int
-      ws sha1 f t b c d =
-        | t < 20 = ws u32 bor (ws u32 band b c) (ws u32 band (ws u32 bnot b) d)
-        | t < 40 = ws u32 bxor (ws u32 bxor b c) d
-        | t < 60 = ws u32 bor (ws u32 bor (ws u32 band b c) (ws u32 band b d)) (ws u32 band c d)
-        | otherwise = ws u32 bxor (ws u32 bxor b c) d
-
-fn :: ws sha1 k Int => Int
-      ws sha1 k t =
-        | t < 20 = 1518500249
-        | t < 40 = 1859775393
-        | t < 60 = 2400959708
-        | otherwise = 3395469782
-
-fn :: ws sha1 rounds Sha1State [Int] Int => Sha1State
-      ws sha1 rounds st w t =
-        | t >= 80 = st
-        | otherwise = ws sha1 round step st w t
-
-fn :: ws sha1 round step Sha1State [Int] Int => Sha1State
-      ws sha1 round step st w t =
-        a = h0 st
-        b = h1 st
-        c = h2 st
-        d = h3 st
-        e = h4 st
-        f = ws sha1 f t b c d
-        k = ws sha1 k t
-        wt = ws nth w t
-        temp = ws u32 ((ws rotl32 a 5) + f + e + k + wt)
-        ws sha1 rounds (Sha1State temp a (ws rotl32 b 30) c d) w (t + 1)
-
-fn :: ws sha1 blocks Sha1State [Int] => Sha1State
-      ws sha1 blocks st [] = st
-      ws sha1 blocks st padded =
-        blk = ws take padded 64
-        rest = ws drop padded 64
-        w80 = ws sha1 expand loop (ws sha1 w16 loop blk 0 []) 16
-        r = ws sha1 rounds st w80 0
-        next_st = Sha1State (ws u32 ((h0 st) + (h0 r))) (ws u32 ((h1 st) + (h1 r))) (ws u32 ((h2 st) + (h2 r))) (ws u32 ((h3 st) + (h3 r))) (ws u32 ((h4 st) + (h4 r)))
-        ws sha1 blocks next_st rest
-
-fn :: ws sha1 bytes String => [Int]
-      ws sha1 bytes s =
-        init_st = Sha1State 1732584193 4023233417 2562383102 271733878 3285377520
-        fin = ws sha1 blocks init_st (ws sha1 pad (ws str to bytes s))
-        ((((ws u32 be4 (h0 fin)) :: (ws u32 be4 (h1 fin))) :: (ws u32 be4 (h2 fin))) :: (ws u32 be4 (h3 fin))) :: (ws u32 be4 (h4 fin))
-
+```ridgun
 fn :: ws b64 lut Int => String
       ws b64 lut _ = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
-fn :: ws b64 c Int => String
-      ws b64 c idx =
-        ws b64 lut 0 -> tbl
-        ((idx % 64) + 64) % 64 -> i
-        str slice tbl i (i + 1)
+fn :: ws b64 code String Int => Int
+      ws b64 code tbl idx = str char at tbl (((idx % 64) + 64) % 64)
 
-fn :: ws b64 enc [Int] => String
-      ws b64 enc [] = ""
-      ws b64 enc (b0:[]) = (ws b64 c (b0 / 4)) + (ws b64 c ((b0 % 4) * 16)) + "=="
-      ws b64 enc (b0:b1:[]) =
-        (b0 * 256) + b1 -> n
-        (ws b64 c (n / 1024)) + (ws b64 c ((n / 16) % 64)) + (ws b64 c ((n % 16) * 4)) + "="
-      ws b64 enc (b0:b1:b2:rs) =
-        (b0 * 65536) + (b1 * 256) + b2 -> n
-        (ws b64 c (n / 262144)) + (ws b64 c ((n / 4096) % 64)) + (ws b64 c ((n / 64) % 64)) + (ws b64 c (n % 64)) + (ws b64 enc rs)
+-- Standard Base64 (RFC 4648 §4) with '=' padding.
+fn :: ws b64 enc Tensor[U8] => String
+      ws b64 enc bs =
+        n = ws blen bs
+        out = Tensor[U8 * (((n + 2) / 3) * 4)]
+        ws b64 enc loop bs n out (ws b64 lut 0) 0 0 -> tensor to str
+
+fn :: ws b64 enc loop Tensor[U8] Int Tensor[U8] String Int Int => Tensor[U8]
+      ws b64 enc loop bs n out tbl i o =
+        | i >= n = out
+        | (n - i) == 1 = ws b64 enc tail1 bs out tbl i o
+        | (n - i) == 2 = ws b64 enc tail2 bs out tbl i o
+        | otherwise = ws b64 enc group bs n out tbl i o
+
+fn :: ws b64 enc group Tensor[U8] Int Tensor[U8] String Int Int => Tensor[U8]
+      ws b64 enc group bs n out tbl i o =
+        v = (bs_(i) * 65536) + (bs_(i + 1) * 256) + bs_(i + 2)
+        out_(o) = ws b64 code tbl (v / 262144)
+        out_(o + 1) = ws b64 code tbl ((v / 4096) % 64)
+        out_(o + 2) = ws b64 code tbl ((v / 64) % 64)
+        out_(o + 3) = ws b64 code tbl (v % 64)
+        ws b64 enc loop bs n out tbl (i + 3) (o + 4)
+
+fn :: ws b64 enc tail1 Tensor[U8] Tensor[U8] String Int Int => Tensor[U8]
+      ws b64 enc tail1 bs out tbl i o =
+        b0 = bs_(i)
+        out_(o) = ws b64 code tbl (b0 / 4)
+        out_(o + 1) = ws b64 code tbl ((b0 % 4) * 16)
+        out_(o + 2) = 61
+        out_(o + 3) = 61
+        out
+
+fn :: ws b64 enc tail2 Tensor[U8] Tensor[U8] String Int Int => Tensor[U8]
+      ws b64 enc tail2 bs out tbl i o =
+        v = (bs_(i) * 256) + bs_(i + 1)
+        out_(o) = ws b64 code tbl (v / 1024)
+        out_(o + 1) = ws b64 code tbl ((v / 16) % 64)
+        out_(o + 2) = ws b64 code tbl ((v % 16) * 4)
+        out_(o + 3) = 61
+        out
 
 fn :: ws accept key String => String
       ws accept key client_key =
-        (client_key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11") -> ws sha1 bytes -> ws b64 enc
+        (client_key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11") -> sha1 bytes -> tensor from str -> ws b64 enc
 
 fn :: ws build upgrade request String String String => String
       ws build upgrade request host path client_key =
@@ -471,63 +401,106 @@ fn :: ws build upgrade response String => String
 Fíjate en cómo `ws.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
-fn :: ws mask loop [Int] [Int] Int => [Int]
-      ws mask loop [] _ _ = []
-      ws mask loop (b:rest) mask_key idx = [ws byte bxor b (ws nth mask_key (idx % 4))] :: (ws mask loop rest mask_key (idx + 1))
-
-fn :: ws mask bytes [Int] [Int] => [Int]
+fn :: ws mask bytes Tensor[U8] Tensor[U8] => Tensor[U8]
       ws mask bytes payload mask_key =
-        | (ws list len mask_key) < 4 = payload
-        | otherwise = ws mask loop payload mask_key 0
+        n = ws blen payload
+        out = Tensor[U8 * n]
+        ws mask bytes into payload mask_key out n
+
+fn :: ws mask bytes into Tensor[U8] Tensor[U8] Tensor[U8] Int => Tensor[U8]
+      ws mask bytes into payload mask_key out n =
+        | (ws blen mask_key) < 4 = ws copy range payload 0 out 0 n
+        | otherwise = ws mask range payload 0 out 0 n mask_key 0 0
 
 fn :: ws fin bit Bool => Int
       ws fin bit True = 128
       ws fin bit False = 0
 
-fn :: ws len header Int Int => [Int]
-      ws len header plen mask_bit =
-        | plen < 126 = [mask_bit + plen]
-        | otherwise = [mask_bit + 126, (plen / 256) % 256, plen % 256]
+-- Bytes of the extended payload length field: 0 (7-bit), 2 (16-bit) or 8 (64-bit).
+fn :: ws len ext size Int => Int
+      ws len ext size plen =
+        | plen < 126 = 0
+        | plen < 65536 = 2
+        | otherwise = 8
 
-fn :: ws encode frame Bool Int [Int] [Int] => [Int]
+-- Writes byte 1 (mask bit + length code) and the extended length field.
+fn :: ws put len Tensor[U8] Int Int Int => Tensor[U8]
+      ws put len out plen mask_bit ext =
+        | ext == 0 = ws put len7 out (mask_bit + plen)
+        | ext == 2 = ws put len16 out plen mask_bit
+        | otherwise = ws put len64 out plen mask_bit
+
+fn :: ws put len7 Tensor[U8] Int => Tensor[U8]
+      ws put len7 out b1 =
+        out_(1) = b1
+        out
+
+fn :: ws put len16 Tensor[U8] Int Int => Tensor[U8]
+      ws put len16 out plen mask_bit =
+        out_(1) = mask_bit + 126
+        out_(2) = (plen / 256) % 256
+        out_(3) = plen % 256
+        out
+
+fn :: ws put len64 Tensor[U8] Int Int => Tensor[U8]
+      ws put len64 out plen mask_bit =
+        out_(1) = mask_bit + 127
+        out -> ws put be32 2 (plen / 4294967296) -> ws put be32 6 (plen % 4294967296)
+
+fn :: ws encode frame Bool Int Tensor[U8] Tensor[U8] => Tensor[U8]
       ws encode frame fin opcode mask_key payload =
-        b0 = (ws fin bit fin) + (opcode % 16)
-        has_mask = (ws list len mask_key) >= 4
+        b0 = (ws fin bit fin) + (((opcode % 16) + 16) % 16)
+        has_mask = (ws blen mask_key) >= 4
         ws encode frame with mask b0 has_mask mask_key payload
 
-fn :: ws encode frame with mask Int Bool [Int] [Int] => [Int]
-      ws encode frame with mask b0 False _ payload = ([b0] :: (ws len header (ws list len payload) 0)) :: payload
+fn :: ws encode frame with mask Int Bool Tensor[U8] Tensor[U8] => Tensor[U8]
+      ws encode frame with mask b0 False _ payload =
+        plen = ws blen payload
+        ext = ws len ext size plen
+        out = Tensor[U8 * (2 + ext + plen)]
+        out_(0) = b0
+        with_len = ws put len out plen 0 ext
+        ws copy range payload 0 with_len (2 + ext) plen
       ws encode frame with mask b0 True mask_key payload =
-        m4 = ws take mask_key 4
-        masked_pay = ws mask bytes payload m4
-        (([b0] :: (ws len header (ws list len payload) 128)) :: m4) :: masked_pay
+        plen = ws blen payload
+        ext = ws len ext size plen
+        hdr = 2 + ext
+        out = Tensor[U8 * (hdr + 4 + plen)]
+        out_(0) = b0
+        with_len = ws put len out plen 128 ext
+        with_mask = ws copy range mask_key 0 with_len hdr 4
+        ws mask range payload 0 with_mask (hdr + 4) plen mask_key 0 0
 
-fn :: ws encode text String => [Int]
-      ws encode text text = ws encode frame True 1 [] (ws str to bytes text)
+fn :: ws encode text String => Tensor[U8]
+      ws encode text text = ws encode frame True 1 (Tensor[U8 * 0]) (tensor from str text)
 
-fn :: ws encode masked text String [Int] => [Int]
-      ws encode masked text text mask_key = ws encode frame True 1 mask_key (ws str to bytes text)
+fn :: ws encode masked text String Tensor[U8] => Tensor[U8]
+      ws encode masked text text mask_key = ws encode frame True 1 mask_key (tensor from str text)
 
-fn :: ws encode ping [Int] => [Int]
-      ws encode ping payload = ws encode frame True 9 [] payload
+fn :: ws encode ping Tensor[U8] => Tensor[U8]
+      ws encode ping payload = ws encode frame True 9 (Tensor[U8 * 0]) payload
 
-fn :: ws encode pong [Int] => [Int]
-      ws encode pong payload = ws encode frame True 10 [] payload
+fn :: ws encode pong Tensor[U8] => Tensor[U8]
+      ws encode pong payload = ws encode frame True 10 (Tensor[U8 * 0]) payload
 
-fn :: ws encode close Int => [Int]
-      ws encode close code = ws encode frame True 8 [] [(code / 256) % 256, code % 256]
+fn :: ws encode close Int => Tensor[U8]
+      ws encode close code =
+        payload = Tensor[U8 * 2]
+        payload_(0) = (((code / 256) % 256) + 256) % 256
+        payload_(1) = ((code % 256) + 256) % 256
+        ws encode frame True 8 (Tensor[U8 * 0]) payload
 
-fn :: ws decode frame [Int] => WsRes
+fn :: ws decode frame Tensor[U8] => WsRes
       ws decode frame wire =
-        total = ws list len wire
+        total = ws blen wire
         ws decode check min wire total
 
-fn :: ws decode check min [Int] Int => WsRes
+fn :: ws decode check min Tensor[U8] Int => WsRes
       ws decode check min wire total =
         | total < 2 = WsErr "truncated WebSocket frame header (< 2 bytes)"
-        | otherwise = ws decode len wire total (ws nth wire 0) (ws nth wire 1)
+        | otherwise = ws decode len wire total wire_(0) wire_(1)
 
-fn :: ws decode len [Int] Int Int Int => WsRes
+fn :: ws decode len Tensor[U8] Int Int Int => WsRes
       ws decode len wire total b0 b1 =
         fin = (b0 / 128) == 1
         opcode = b0 % 16
@@ -535,24 +508,26 @@ fn :: ws decode len [Int] Int Int Int => WsRes
         len7 = b1 % 128
         ws decode ext len wire total fin opcode masked len7
 
-fn :: ws decode ext len [Int] Int Bool Int Bool Int => WsRes
+fn :: ws decode ext len Tensor[U8] Int Bool Int Bool Int => WsRes
       ws decode ext len wire total fin opcode masked len7 =
         | len7 < 126 = ws decode body wire total fin opcode masked len7 2
         | len7 == 126 and total < 4 = WsErr "truncated 16-bit extended payload length"
-        | len7 == 126 = ws decode body wire total fin opcode masked (((ws nth wire 2) * 256) + (ws nth wire 3)) 4
-        | otherwise = WsErr "unsupported 64-bit extended length"
+        | len7 == 126 = ws decode body wire total fin opcode masked ((wire_(2) * 256) + wire_(3)) 4
+        | total < 10 = WsErr "truncated 64-bit extended payload length"
+        | wire_(2) >= 128 = WsErr "invalid 64-bit extended payload length (most significant bit set)"
+        | otherwise = ws decode body wire total fin opcode masked (((ws be32 at wire 2) * 4294967296) + (ws be32 at wire 6)) 10
 
-fn :: ws decode body [Int] Int Bool Int Bool Int Int => WsRes
+fn :: ws decode body Tensor[U8] Int Bool Int Bool Int Int => WsRes
       ws decode body wire total fin opcode True plen hdr_off =
-        | total < (hdr_off + 4 + plen) = WsErr "truncated masked WebSocket frame payload"
-        | otherwise = ws finish frame fin opcode True (ws mask bytes (ws take (ws drop wire (hdr_off + 4)) plen) (ws take (ws drop wire hdr_off) 4)) (hdr_off + 4 + plen)
+        | (total - hdr_off - 4) < plen = WsErr "truncated masked WebSocket frame payload"
+        | otherwise = ws finish frame fin opcode True (ws mask range wire (hdr_off + 4) (Tensor[U8 * plen]) 0 plen wire hdr_off 0) (hdr_off + 4 + plen)
       ws decode body wire total fin opcode False plen hdr_off =
-        | total < (hdr_off + plen) = WsErr "truncated unmasked WebSocket frame payload"
-        | otherwise = ws finish frame fin opcode False (ws take (ws drop wire hdr_off) plen) (hdr_off + plen)
+        | (total - hdr_off) < plen = WsErr "truncated unmasked WebSocket frame payload"
+        | otherwise = ws finish frame fin opcode False (ws copy range wire hdr_off (Tensor[U8 * plen]) 0 plen) (hdr_off + plen)
 
-fn :: ws finish frame Bool Int Bool [Int] Int => WsRes
+fn :: ws finish frame Bool Int Bool Tensor[U8] Int => WsRes
       ws finish frame fin opcode masked unmasked consumed =
-        | opcode == 1 = WsOk (WsFrame fin opcode masked unmasked (ws bytes to str unmasked)) consumed
+        | opcode == 1 = WsOk (WsFrame fin opcode masked unmasked (tensor to str unmasked)) consumed
         | otherwise = WsOk (WsFrame fin opcode masked unmasked "") consumed
 ```
 
@@ -567,7 +542,7 @@ fn :: ws finish frame Bool Int Bool [Int] Int => WsRes
 
 ### Las 5 Reglas de Oro al programar con `ws`
 
-1. **Declara `import ws` al inicio del archivo** y aprovecha la equivalencia entre espacios y guiones bajos para que tu código se lea como prosa.
+1. **Declara `import ws` al inicio del archivo** y llama a sus funciones con espacios, tal como están declaradas, para que tu código se lea como prosa.
 2. **Alinea tus tuberías de datos con `=`**: encadena las llamadas a `ws` en pasos con nombre propio y deja que `stable format` alinee las columnas.
 3. **Aprovecha las funciones totales de `ws` en tus guardas `|`**: comprueba los valores de retorno o desenvuelve los ADTs con *pattern matching* en lugar de asumir que la entrada externa siempre es válida.
 4. **Evita copiar grandes estructuras si solo necesitas consultar un campo**: recuerda que en `RMM2` los argumentos de entrada no incrementan ni decrementan contadores (`+0` / `-0`).

@@ -21,7 +21,7 @@ En un ecosistema tradicional, resolver las tareas del dominio **`BTREE`** implic
 
 ## 04.2. Artefactos nativos, importación y catálogo completo de la API de `btree`
 
-En `ridgun-libs`, **`btree`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/btree.ridgun` (dominio `BTREE`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
+En `ridgun-libs`, **`btree`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/btree.ridgun` (dominio `BTREE`). Al compilar con `stable bundle`, se empaqueta en un artefacto nativo:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
@@ -33,10 +33,10 @@ En `ridgun-libs`, **`btree`** es una **lib** de primera clase ubicada en `src/ma
 
 | Firma / Función / Tipo | Qué hace y cuándo usarla |
 |---|---|
-| `btree empty / btree insert / btree get / btree remove` | Búsqueda, inserción y borrado persistente en diccionario AVL en $O(\log N)$ |
-| `btree min key / btree max key / btree range` | Extremos ordenados y consulta por rango `[lo, hi]` |
-| `bset from list / bset union / bset intersect / bset diff` | Álgebra de conjuntos ordenados (`BTreeSet`) y predicado de subconjunto |
-| `heap empty / heap push / heap peek / heap pop / heap sort` | Cola de prioridad `MinHeap` (*leftist heap*) con fusión en $O(\log N)$ |
+| `btree empty / btree put / btree get / btree get or / btree has / btree remove` | Diccionario AVL persistente: inserción, búsqueda y borrado en $O(\log N)$ |
+| `btree size / btree keys / btree values / btree to list / btree from list` | El tamaño, y las claves, los valores o los pares en orden de clave |
+| `bset empty / bset add / bset has / bset remove / bset union / bset intersect / bset diff` | Conjunto ordenado con unión, intersección y diferencia |
+| `heap empty / heap push / heap peek / heap pop / heap size` | Cola de prioridad `MinHeap` izquierdista con inserción y extracción en $O(\log N)$ |
 
 ### 04.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/btree.ridgun`
 
@@ -66,7 +66,7 @@ type MinHeap = HeapEmpty | HeapNode Int String Int MinHeap MinHeap
 | `12` | `fn :: btree get or BTreeMap String String` | `String` |
 | `13` | `fn :: btree get BTreeMap String` | `String` |
 | `14` | `fn :: btree has BTreeMap String` | `Bool` |
-| `15` | `fn :: bt min pair BTreeMap` | `(String String)` |
+| `15` | `fn :: bt min pair BTreeMap` | `String String` |
 | `16` | `fn :: bt pair k (String String)` | `String` |
 | `17` | `fn :: bt pair v (String String)` | `String` |
 | `18` | `fn :: bt delete root BTreeMap BTreeMap` | `BTreeMap` |
@@ -103,8 +103,8 @@ type MinHeap = HeapEmpty | HeapNode Int String Int MinHeap MinHeap
 | `49` | `fn :: hp mk Int String MinHeap MinHeap` | `MinHeap` |
 | `50` | `fn :: hp merge MinHeap MinHeap` | `MinHeap` |
 | `51` | `fn :: heap push MinHeap Int String` | `MinHeap` |
-| `52` | `fn :: heap peek MinHeap` | `(Int String)` |
-| `53` | `fn :: heap pop MinHeap` | `(Int String MinHeap)` |
+| `52` | `fn :: heap peek MinHeap` | `Int String` |
+| `53` | `fn :: heap pop MinHeap` | `Int String MinHeap` |
 | `54` | `fn :: heap size MinHeap` | `Int` |
 
 ---
@@ -120,18 +120,18 @@ Observa cómo en Ridgun los signos `=` y los pasos de transformación con `btree
 ```ridgun
 import btree
 
-fn :: consultar rango precios => [String String]
-      consultar rango precios =
+fn :: catalogo ordenado => [String String]
+      catalogo ordenado =
         btree empty -> t0
-        btree insert t0 "item:10" "Teclado" -> t1
-        btree insert t1 "item:20" "Monitor" -> t2
-        btree insert t2 "item:30" "Raton" -> t3
-        btree range t3 "item:10" "item:25"
+        btree put t0 "item:30" "Raton" -> t1
+        btree put t1 "item:10" "Teclado" -> t2
+        btree put t2 "item:20" "Monitor" -> t3
+        btree to list t3
 ```
 
 ### 04.3.2. Ejemplo 2: Composición segura y manejo de casos de borde
 
-Toda función de la lib `btree` está diseñada para componerse con guardas booleanas `|` y con el resto de las 32 libs de `ridgun-libs`:
+Toda función de la lib `btree` está diseñada para componerse con guardas booleanas `|` y con el resto de las 38 libs de `ridgun-libs`:
 
 ```ridgun
 import btree
@@ -145,7 +145,7 @@ fn :: despachar urgente => Int String
         h3 heap peek
 ```
 
-### 04.3.3. Ejemplo 3: Árboles AVL `BTreeMap`: inserción con auto-balanceo, búsqueda $O(\log N)$, borrado, recorrido en orden y extremos (`min key`, `max key`)
+### 04.3.3. Ejemplo 3: Árboles AVL `BTreeMap`: inserción con auto-balanceo, búsqueda $O(\log N)$, borrado, recorrido en orden y extremos (`btree keys`)
 
 En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `btree` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
 
@@ -153,8 +153,8 @@ En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `btre
 fn :: test btree map avl balance and crud => ()
       test btree map avl balance and crud =
         m0 = btree empty
-        assert int equals (btree size m0) 0 "AC1: empty map size 0"
-        assert int equals (btree height m0) 0 "AC1: empty map height 0"
+        btree size m0 -> assert int equals 0 "AC1: empty map size 0"
+        btree height m0 -> assert int equals 0 "AC1: empty map height 0"
         m1 = btree put m0 "k01" "v1"
         m2 = btree put m1 "k02" "v2"
         m3 = btree put m2 "k03" "v3"
@@ -170,42 +170,42 @@ fn :: test btree map avl balance and crud => ()
         m13 = btree put m12 "k13" "v13"
         m14 = btree put m13 "k14" "v14"
         m15 = btree put m14 "k15" "v15"
-        assert int equals (btree size m15) 15 "AC1: btree size after 15 ascending puts"
-        assert true ((btree height m15) <= 5) "AC1: AVL tree height <= 5 on 15 sequential ascending keys"
-        assert str eq (btree get m15 "k08") "v8" "AC1: btree get k08"
-        assert str eq (btree get or m15 "k99" "def") "def" "AC1: btree get or fallback"
-        assert true (btree has m15 "k15") "AC1: btree has k15"
-        assert false (btree has m15 "k00") "AC1: btree has k00 false"
+        btree size m15 -> assert int equals 15 "AC1: btree size after 15 ascending puts"
+        (btree height m15) <= 5 -> assert true "AC1: AVL tree height <= 5 on 15 sequential ascending keys"
+        btree get m15 "k08" -> assert str eq "v8" "AC1: btree get k08"
+        btree get or m15 "k99" "def" -> assert str eq "def" "AC1: btree get or fallback"
+        btree has m15 "k15" -> assert true "AC1: btree has k15"
+        btree has m15 "k00" -> assert false "AC1: btree has k00 false"
 
         -- Descending insertion order (triggers right-rotations) + RL/LR double rotations
         d0 = btree from list [("z", "26"), ("x", "24"), ("v", "22"), ("t", "20"), ("r", "18"), ("u", "21"), ("y", "25")]
-        assert int equals (btree size d0) 7 "AC1: descending + RL/LR size 7"
-        assert true ((btree height d0) <= 4) "AC1: descending + RL/LR height <= 4"
-        assert str eq (bt join strs (btree keys d0)) "r,t,u,v,x,y,z" "AC1: keys in-order after RL/LR rotations"
-        assert str eq (bt join strs (btree values d0)) "18,20,21,22,24,25,26" "AC1: values in key order"
+        btree size d0 -> assert int equals 7 "AC1: descending + RL/LR size 7"
+        (btree height d0) <= 4 -> assert true "AC1: descending + RL/LR height <= 4"
+        bt join strs (btree keys d0) -> assert str eq "r,t,u,v,x,y,z" "AC1: keys in-order after RL/LR rotations"
+        bt join strs (btree values d0) -> assert str eq "18,20,21,22,24,25,26" "AC1: values in key order"
 
         -- Overwrite existing key preserves size
         d_upd = btree put d0 "v" "22_new"
-        assert int equals (btree size d_upd) 7 "AC1: update existing key preserves size"
-        assert str eq (btree get d_upd "v") "22_new" "AC1: updated value retrieved"
+        btree size d_upd -> assert int equals 7 "AC1: update existing key preserves size"
+        btree get d_upd "v" -> assert str eq "22_new" "AC1: updated value retrieved"
 
         -- Remove root/two-child node, single-child node, leaf node, and non-existent key
         d_rem1 = btree remove d_upd "v"
         d_rem2 = btree remove d_rem1 "r"
         d_rem3 = btree remove d_rem2 "nonexistent"
-        assert int equals (btree size d_rem3) 5 "AC1: size after removing 2 existing keys and 1 missing key"
-        assert false (btree has d_rem3 "v") "AC1: removed two-child node 'v' absent"
-        assert false (btree has d_rem3 "r") "AC1: removed leaf node 'r' absent"
-        assert str eq (bt join strs (btree keys d_rem3)) "t,u,x,y,z" "AC1: keys remain strictly sorted after removals"
+        btree size d_rem3 -> assert int equals 5 "AC1: size after removing 2 existing keys and 1 missing key"
+        btree has d_rem3 "v" -> assert false "AC1: removed two-child node 'v' absent"
+        btree has d_rem3 "r" -> assert false "AC1: removed leaf node 'r' absent"
+        bt join strs (btree keys d_rem3) -> assert str eq "t,u,x,y,z" "AC1: keys remain strictly sorted after removals"
 
         pairs = btree to list d_rem3
         m_rt = btree from list pairs
-        assert int equals (btree size m_rt) 5 "AC1: btree to/from list round-trip size"
-        assert str eq (btree get m_rt "y") "25" "AC1: btree to/from list round-trip lookup"
+        btree size m_rt -> assert int equals 5 "AC1: btree to/from list round-trip size"
+        btree get m_rt "y" -> assert str eq "25" "AC1: btree to/from list round-trip lookup"
         ()
 ```
 
-### 04.3.4. Ejemplo 4: Conjuntos ordenados `BTreeSet`: álgebra de conjuntos (`union`, `intersect`, `diff`, `is subset`) y conversión ordenada a lista
+### 04.3.4. Ejemplo 4: Conjuntos ordenados `BTreeSet`: álgebra de conjuntos (`union`, `intersect`, `diff`) y conversión ordenada a lista
 
 En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `btree` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
 
@@ -215,27 +215,27 @@ fn :: test btree set operations => ()
         s1 = bset from list ["charlie", "alpha", "bravo", "alpha", "charlie"]
         s2 = bset from list ["bravo", "delta", "echo"]
         s_empty = bset empty
-        assert int equals (bset size s1) 3 "AC2: bset deduplicates items"
-        assert true (bset has s1 "bravo") "AC2: bset has bravo"
-        assert false (bset has s1 "delta") "AC2: bset has delta false"
-        assert str eq (bt join strs (bset to list s1)) "alpha,bravo,charlie" "AC2: bset sorted order"
+        bset size s1 -> assert int equals 3 "AC2: bset deduplicates items"
+        bset has s1 "bravo" -> assert true "AC2: bset has bravo"
+        bset has s1 "delta" -> assert false "AC2: bset has delta false"
+        bt join strs (bset to list s1) -> assert str eq "alpha,bravo,charlie" "AC2: bset sorted order"
 
         s1_rem = bset remove s1 "bravo"
-        assert int equals (bset size s1_rem) 2 "AC2: bset remove size"
-        assert false (bset has s1_rem "bravo") "AC2: bset remove membership"
+        bset size s1_rem -> assert int equals 2 "AC2: bset remove size"
+        bset has s1_rem "bravo" -> assert false "AC2: bset remove membership"
 
         u = bset union s1 s2
-        assert str eq (bt join strs (bset to list u)) "alpha,bravo,charlie,delta,echo" "AC2: bset union"
-        assert int equals (bset size (bset union s1 s1)) 3 "AC2: union idempotence A U A = A"
-        assert int equals (bset size (bset union s1 s_empty)) 3 "AC2: union identity A U empty = A"
+        bt join strs (bset to list u) -> assert str eq "alpha,bravo,charlie,delta,echo" "AC2: bset union"
+        bset size (bset union s1 s1) -> assert int equals 3 "AC2: union idempotence A U A = A"
+        bset size (bset union s1 s_empty) -> assert int equals 3 "AC2: union identity A U empty = A"
 
         inter = bset intersect s1 s2
-        assert str eq (bt join strs (bset to list inter)) "bravo" "AC2: bset intersect"
-        assert int equals (bset size (bset intersect s1 s_empty)) 0 "AC2: intersect with empty is empty"
+        bt join strs (bset to list inter) -> assert str eq "bravo" "AC2: bset intersect"
+        bset size (bset intersect s1 s_empty) -> assert int equals 0 "AC2: intersect with empty is empty"
 
         df = bset diff s1 s2
-        assert str eq (bt join strs (bset to list df)) "alpha,charlie" "AC2: bset diff A \\ B"
-        assert int equals (bset size (bset diff s1 s1)) 0 "AC2: self difference A \\ A is empty"
+        bt join strs (bset to list df) -> assert str eq "alpha,charlie" "AC2: bset diff A \\ B"
+        bset size (bset diff s1 s1) -> assert int equals 0 "AC2: self difference A \\ A is empty"
         ()
 ```
 
@@ -247,36 +247,36 @@ En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `btre
 fn :: test min heap priority queue => ()
       test min heap priority queue =
         h0 = heap empty
-        assert int equals (heap size h0) 0 "AC3: empty heap size 0"
+        heap size h0 -> assert int equals 0 "AC3: empty heap size 0"
         h1 = heap push h0 50 "low"
         h2 = heap push h1 10 "urgent-1"
         h3 = heap push h2 30 "normal"
         h4 = heap push h3 20 "high"
         h5 = heap push h4 10 "urgent-2"
         h6 = heap push h5 (-5) "critical"
-        assert int equals (heap size h6) 6 "AC3: heap size 6"
+        heap size h6 -> assert int equals 6 "AC3: heap size 6"
         pk = heap peek h6
-        assert int equals (hp peek prio pk) (-5) "AC3: heap peek negative priority (-5)"
-        assert str eq (hp peek val pk) "critical" "AC3: heap peek critical value"
+        hp peek prio pk -> assert int equals (-5) "AC3: heap peek negative priority (-5)"
+        hp peek val pk -> assert str eq "critical" "AC3: heap peek critical value"
 
         p0 = heap pop h6
-        assert int equals (hp pop prio p0) (-5) "AC3: pop 0 (-5)"
+        hp pop prio p0 -> assert int equals (-5) "AC3: pop 0 (-5)"
         p1 = heap pop (hp pop rest p0)
-        assert int equals (hp pop prio p1) 10 "AC3: pop 1 (10)"
+        hp pop prio p1 -> assert int equals 10 "AC3: pop 1 (10)"
         p2 = heap pop (hp pop rest p1)
-        assert int equals (hp pop prio p2) 10 "AC3: pop 2 duplicate priority (10)"
+        hp pop prio p2 -> assert int equals 10 "AC3: pop 2 duplicate priority (10)"
 
         -- Interleaved push after partial pop
         h_mid = heap push (hp pop rest p2) 15 "medium-high"
         p3 = heap pop h_mid
-        assert int equals (hp pop prio p3) 15 "AC3: interleaved push 15 popped before 20"
+        hp pop prio p3 -> assert int equals 15 "AC3: interleaved push 15 popped before 20"
         p4 = heap pop (hp pop rest p3)
-        assert int equals (hp pop prio p4) 20 "AC3: pop 20"
+        hp pop prio p4 -> assert int equals 20 "AC3: pop 20"
         p5 = heap pop (hp pop rest p4)
-        assert int equals (hp pop prio p5) 30 "AC3: pop 30"
+        hp pop prio p5 -> assert int equals 30 "AC3: pop 30"
         p6 = heap pop (hp pop rest p5)
-        assert int equals (hp pop prio p6) 50 "AC3: pop 50"
-        assert int equals (heap size (hp pop rest p6)) 0 "AC3: heap empty after popping all"
+        hp pop prio p6 -> assert int equals 50 "AC3: pop 50"
+        heap size (hp pop rest p6) -> assert int equals 0 "AC3: heap empty after popping all"
         ()
 ```
 
@@ -575,7 +575,7 @@ fn :: heap size MinHeap => Int
 
 ### Las 5 Reglas de Oro al programar con `btree`
 
-1. **Declara `import btree` al inicio del archivo** y aprovecha la equivalencia entre espacios y guiones bajos para que tu código se lea como prosa.
+1. **Declara `import btree` al inicio del archivo** y llama a sus funciones con espacios, tal como están declaradas, para que tu código se lea como prosa.
 2. **Alinea tus tuberías de datos con `=`**: encadena las llamadas a `btree` en pasos con nombre propio y deja que `stable format` alinee las columnas.
 3. **Aprovecha las funciones totales de `btree` en tus guardas `|`**: comprueba los valores de retorno o desenvuelve los ADTs con *pattern matching* en lugar de asumir que la entrada externa siempre es válida.
 4. **Evita copiar grandes estructuras si solo necesitas consultar un campo**: recuerda que en `RMM2` los argumentos de entrada no incrementan ni decrementan contadores (`+0` / `-0`).

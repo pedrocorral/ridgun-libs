@@ -1,4 +1,4 @@
-# Capítulo 31: A lib `pool` — Pool Limitado de Trabalhadores, Round-Robin e Work-Stealing
+# Capítulo 31: A lib `pool` — Pools de Agentes: Sharding por Chave, Broadcast e Drenagem Não Bloqueante
 
 ## 31.1. Por que existe a lib `pool`? (O problema real e a filosofia Ridgun)
 
@@ -8,7 +8,7 @@ Essa é a primeira pergunta que qualquer engenheiro de sistemas faz ao chegar à
 
 Sejamos sinceros: lançar uma nova thread ou ator por cada pedido sem limite superior (`unbounded spawning`) garante que um pico de tráfego esgota a memória do servidor em segundos.
 
-A lib **`pool`** fornece um despachante de tarefas com **contrapressão explícita** (`PoolAccept`, `PoolRejectFull`), partição equilibrada de lotes em $K$ vias (`pool partition`), reequilíbrio por **roubo de trabalho (*work-stealing*)** (`pool steal rebalance`) e execução paralela sobre atores nativos.
+A lib **`pool`** agrupa um número fixo de agentes num `AgentPool`: `pool ask shard` envia cada pedido ao agente escolhido pela sua chave, pelo que a mesma chave chega sempre ao mesmo agente; `pool broadcast` envia uma mensagem a todos os agentes; `pool drain all` recolhe, sem bloquear, as respostas que estão prontas; e `pool shutdown` faz parar todos eles.
 
 Num ecossistema tradicional, resolver as tarefas do domínio **`AGENT`** implica arrastar dependências externas em C, lidar com ponteiros brutos, conversões opacas de tipos, exceções não verificadas ou pausas imprevisíveis do coletor de lixo. Em Ridgun, a lib **`pool`** (`src/main/ridgun/lib/pool.ridgun`) aborda o problema com quatro princípios inegociáveis:
 
@@ -21,7 +21,7 @@ Num ecossistema tradicional, resolver as tarefas do domínio **`AGENT`** implica
 
 ## 31.2. Artefactos nativos, importação e catálogo completo da API de `pool`
 
-No `ridgun-libs`, **`pool`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/pool.ridgun` (domínio `AGENT`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
+No `ridgun-libs`, **`pool`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/pool.ridgun` (domínio `AGENT`). Ao compilar com `stable bundle`, é empacotada num formato nativo:
 
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
@@ -33,14 +33,15 @@ No `ridgun-libs`, **`pool`** é uma **lib** de primeira classe localizada em `sr
 
 | Assinatura / Função / Tipo | O que faz e quando usar |
 |---|---|
-| `pool new : Int -> Int -> PoolState` | Cria um pool limitado com `workers` vias e capacidade máxima `max_queue` |
-| `pool submit : PoolState -> PoolTask -> (PoolState, PoolDecision)` | Coloca uma tarefa na fila em round-robin ou devolve `PoolRejectFull` se saturado |
-| `pool partition / pool steal rebalance` | Divide lotes por $K$ trabalhadores e rouba metade de uma fila sobrecarregada para um trabalhador livre |
-| `pool map sum / pool parallel sum2` | Despacha cargas de trabalho em paralelo sobre trabalhadores `agent` nativos |
+| `Pool / pool size / pool agents` | Um `AgentPool` com um número fixo de agentes, o seu tamanho e os seus agentes |
+| `pool ask shard` | Pedido-resposta com o agente escolhido pela chave: a mesma chave chega sempre ao mesmo agente |
+| `pool broadcast` | Envia uma mensagem a todos os agentes do pool |
+| `pool drain all / pool drain ready` | Recolhe as respostas que estão prontas, sem bloquear |
+| `pool shutdown` | Faz parar todos os agentes do pool |
 
 ### 31.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/pool.ridgun`
 
-Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/pool.ridgun` (`1` tipos, `0` operadores e `14` funções):
+Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/pool.ridgun` (`1` tipos, `0` operadores e `15` funções):
 
 **Tipos algébricos e registos (`type`) da `pool`:**
 
@@ -56,14 +57,15 @@ type AgentPool = Pool Int [Agent]
 | `4` | `fn :: pool abs Int` | `Int` |
 | `5` | `fn :: pool ask shard AgentPool Int A` | `B` |
 | `6` | `fn :: pool broadcast AgentPool A` | `()` |
-| `7` | `fn :: pool broadcast list [Agent] A` | `()` |
-| `8` | `fn :: pool drain ready Agent` | `[B]` |
-| `9` | `fn :: pool drain ready loop Agent [B]` | `[B]` |
-| `10` | `fn :: pool drain step Agent Option [B]` | `[B]` |
-| `11` | `fn :: pool drain all AgentPool` | `[B]` |
-| `12` | `fn :: pool drain list [Agent] [B]` | `[B]` |
-| `13` | `fn :: pool stop list [Agent]` | `()` |
-| `14` | `fn :: pool shutdown AgentPool` | `()` |
+| `7` | `fn :: pool send one Agent A` | `()` |
+| `8` | `fn :: pool broadcast list [Agent] A` | `()` |
+| `9` | `fn :: pool drain ready Agent` | `[B]` |
+| `10` | `fn :: pool drain ready loop Agent [B]` | `[B]` |
+| `11` | `fn :: pool drain step Agent Option [B]` | `[B]` |
+| `12` | `fn :: pool drain all AgentPool` | `[B]` |
+| `13` | `fn :: pool drain list [Agent] [B]` | `[B]` |
+| `14` | `fn :: pool stop list [Agent]` | `()` |
+| `15` | `fn :: pool shutdown AgentPool` | `()` |
 
 ---
 
@@ -85,7 +87,7 @@ fn :: despachar a shard AgentPool Int String => String
 
 ### 31.3.2. Exemplo 2: Composição segura e tratamento de casos de fronteira
 
-Todas as funções da lib `pool` foram desenhadas para se comporem com guardas booleanas `|` e com as restantes 32 libs do `ridgun-libs`:
+Todas as funções da lib `pool` foram desenhadas para se comporem com guardas booleanas `|` e com as restantes 38 libs do `ridgun-libs`:
 
 ```ridgun
 import pool
@@ -96,7 +98,7 @@ fn :: difundir y cerrar AgentPool String => ()
         pool shutdown p
 ```
 
-### 31.3.3. Exemplo 3: Combinadores de atores (`agent ask`, `try ask`, `send batch`, `map batch`, `drain ready`), pools particionados e reator de conexões
+### 31.3.3. Exemplo 3: Combinadores de atores (`agent ask`, `agent try ask`, `agent send batch`, `agent map batch`, `agent drain ready`), pools particionados e reator de conexões
 
 Neste exemplo prático exploramos de forma exaustiva como a `pool` se comporta neste bloco funcional, incluindo entradas padrão, combinações de parâmetros e valores limite:
 
@@ -104,45 +106,45 @@ Neste exemplo prático exploramos de forma exaustiva como a `pool` se comporta n
 fn :: test spec combinators pool and net agent => ()
       test spec combinators pool and net agent =
         w1 = agent (ag double worker)
-        assert int equals (agent ask w1 21) 42 "agent ask 21 -> 42"
+        agent ask w1 21 -> assert int equals 42 "agent ask 21 -> 42"
         mb = agent map batch w1 [3, 5, 7]
-        assert int equals (ag sum ints mb) 30 "agent map batch [3,5,7] -> [6,10,14] sum 30"
-        agent send batch w1 [10, 20] -> ()
+        ag sum ints mb -> assert int equals 30 "agent map batch [3,5,7] -> [6,10,14] sum 30"
+        agent send batch w1 [10, 20]
         rc = agent receive count w1 2
-        assert int equals (ag sum ints rc) 60 "agent send batch + agent receive count -> 60"
+        ag sum ints rc -> assert int equals 60 "agent send batch + agent receive count -> 60"
         c_dr = new counter agent 100
         send 5 to c_dr
         send 10 to c_dr
         dr = agent drain ready c_dr
-        assert int equals (ag sum ints dr) 220 "agent drain ready [105, 115] -> 220"
-        agent stop all [w1, c_dr] -> ()
-        assert false (is agent alive w1) "w1 stopped by agent stop all"
-        assert false (is agent alive c_dr) "c_dr stopped by agent stop all"
+        ag sum ints dr -> assert int equals 220 "agent drain ready [105, 115] -> 220"
+        agent stop all [w1, c_dr]
+        is agent alive w1 -> assert false "w1 stopped by agent stop all"
+        is agent alive c_dr -> assert false "c_dr stopped by agent stop all"
 
         s0 = new counter agent 0
         s1 = new counter agent 1000
         pl = Pool 2 [s0, s1]
-        assert int equals (pool size pl) 2 "pool size 2"
-        assert int equals (pool ask shard pl 0 5) 5 "pool ask shard 0 -> 5"
-        assert int equals (pool ask shard pl 1 7) 1007 "pool ask shard 1 -> 1007"
-        assert int equals (pool ask shard pl (0 - 3) 3) 1010 "pool ask shard negative key -> shard 1"
-        pool broadcast pl 10 -> ()
+        pool size pl -> assert int equals 2 "pool size 2"
+        pool ask shard pl 0 5 -> assert int equals 5 "pool ask shard 0 -> 5"
+        pool ask shard pl 1 7 -> assert int equals 1007 "pool ask shard 1 -> 1007"
+        pool ask shard pl (0 - 3) 3 -> assert int equals 1010 "pool ask shard negative key -> shard 1"
+        pool broadcast pl 10
         all_dr = pool drain all pl
-        assert int equals (ag sum ints all_dr) 1035 "pool drain all [15, 1020] -> 1035"
-        pool shutdown pl -> ()
-        assert false (is agent alive s0) "pool s0 stopped"
-        assert false (is agent alive s1) "pool s1 stopped"
+        ag sum ints all_dr -> assert int equals 1035 "pool drain all [15, 1020] -> 1035"
+        pool shutdown pl
+        is agent alive s0 -> assert false "pool s0 stopped"
+        is agent alive s1 -> assert false "pool s1 stopped"
 
         ca = agent (ag echo conn step) (CounterState 0)
         cb = agent (ag echo conn step) (CounterState 0)
         s_eof = conn feed payload (0 - 1) ca ""
         s_err = conn handle event (0 - 1) cb 8
         kept  = reactor sweep next s_eof (reactor sweep next s_err [])
-        assert int equals (agent list len kept 0) 0 "reactor sweep next prunes closed slots"
-        assert false (is agent alive ca) "ca stopped on EOF"
-        assert false (is agent alive cb) "cb stopped on POLLERR"
+        agent list len kept 0 -> assert int equals 0 "reactor sweep next prunes closed slots"
+        is agent alive ca -> assert false "ca stopped on EOF"
+        is agent alive cb -> assert false "cb stopped on POLLERR"
         cc = agent (ag echo conn step) (CounterState 0)
-        reactor shutdown [ConnSlot (0 - 1) cc] -> ()
+        reactor shutdown [ConnSlot (0 - 1) cc]
         assert false (is agent alive cc) "cc stopped on reactor shutdown"
 ```
 
@@ -153,48 +155,48 @@ Neste exemplo prático exploramos de forma exaustiva como a `pool` se comporta n
 ```ridgun
 fn :: test agent lifecycle and counter => ()
       test agent lifecycle and counter =
-        assert str eq (format agent status AgentRunning) "running" "format AgentRunning"
-        assert str eq (format agent status AgentStopped) "stopped" "format AgentStopped"
-        assert str eq (format agent status (AgentTimedOut 250)) "timeout after 250 ms" "format AgentTimedOut"
-        assert str eq (format agent status (AgentFailed "boom")) "failed: boom" "format AgentFailed"
-        assert str eq (format agent reply (ReplyInt 42)) "42" "format ReplyInt"
-        assert str eq (format agent reply (ReplyStr "ok")) "ok" "format ReplyStr"
-        assert str eq (format agent reply (ReplyBool True)) "true" "format ReplyBool True"
-        assert str eq (format agent reply (ReplyBool False)) "false" "format ReplyBool False"
-        assert str eq (format agent reply ReplyEmpty) "agent outbox empty" "format ReplyEmpty"
-        assert str eq (format agent reply ReplyStopped) "agent stopped" "format ReplyStopped"
-        assert str eq (format agent reply (ReplyTimeout 50)) "agent timeout after 50 ms" "format ReplyTimeout"
-        assert str eq (format agent reply (ReplyError "bad")) "agent error: bad" "format ReplyError"
+        format agent status AgentRunning -> assert str eq "running" "format AgentRunning"
+        format agent status AgentStopped -> assert str eq "stopped" "format AgentStopped"
+        format agent status (AgentTimedOut 250) -> assert str eq "timeout after 250 ms" "format AgentTimedOut"
+        format agent status (AgentFailed "boom") -> assert str eq "failed: boom" "format AgentFailed"
+        format agent reply (ReplyInt 42) -> assert str eq "42" "format ReplyInt"
+        format agent reply (ReplyStr "ok") -> assert str eq "ok" "format ReplyStr"
+        format agent reply (ReplyBool True) -> assert str eq "true" "format ReplyBool True"
+        format agent reply (ReplyBool False) -> assert str eq "false" "format ReplyBool False"
+        format agent reply ReplyEmpty -> assert str eq "agent outbox empty" "format ReplyEmpty"
+        format agent reply ReplyStopped -> assert str eq "agent stopped" "format ReplyStopped"
+        format agent reply (ReplyTimeout 50) -> assert str eq "agent timeout after 50 ms" "format ReplyTimeout"
+        format agent reply (ReplyError "bad") -> assert str eq "agent error: bad" "format ReplyError"
 
         c   = new counter agent 10
-        assert ok (is agent alive c)
-        assert str eq (format agent status (agent status c)) "running" "counter running"
-        assert str eq (format agent reply (try poll int c)) "agent outbox empty" "empty outbox before send"
-        assert eq (counter get c) 10
-        assert eq (counter add c 5) 15
-        assert eq (counter add c 7) 22
-        assert str eq (format agent reply (ask int c 8)) "30" "ask int 8 -> 30"
-        assert str eq (format agent reply (ask int with timeout c 12 200)) "42" "ask int with timeout -> 42"
-        assert eq (counter reset c) 0
-        assert eq (counter get c) 0
+        is agent alive c -> assert ok
+        format agent status (agent status c) -> assert str eq "running" "counter running"
+        format agent reply (try poll int c) -> assert str eq "agent outbox empty" "empty outbox before send"
+        counter get c -> assert eq 10
+        counter add c 5 -> assert eq 15
+        counter add c 7 -> assert eq 22
+        format agent reply (ask int c 8) -> assert str eq "30" "ask int 8 -> 30"
+        format agent reply (ask int with timeout c 12 200) -> assert str eq "42" "ask int with timeout -> 42"
+        counter reset c -> assert eq 0
+        counter get c -> assert eq 0
         bs  = ask batch int c [1, 2, 3, 4]
-        assert eq (ag sum ints bs) 20
+        ag sum ints bs -> assert eq 20
 
         c2  = new counter agent 100
         rel = relay int c c2 5
-        assert str eq (format agent reply rel) "115" "relay int c (10+5=15) -> c2 (100+15=115)"
+        format agent reply rel -> assert str eq "115" "relay int c (10+5=15) -> c2 (100+15=115)"
 
         st1 = stop agent c
-        assert str eq (format agent status st1) "stopped" "stop agent returns AgentStopped"
-        assert eq (is agent alive c) False
-        assert str eq (format agent status (agent status c)) "stopped" "agent status after stop"
-        assert str eq (format agent reply (ask int c 1)) "agent stopped" "ask int after stop"
-        assert str eq (format agent reply (try poll int c)) "agent stopped" "try poll int after stop"
-        assert str eq (format agent reply (ask int with timeout c 1 50)) "agent stopped" "ask int with timeout after stop"
-        assert str eq (format agent reply (relay int c c2 1)) "agent stopped" "relay int after stop"
+        format agent status st1 -> assert str eq "stopped" "stop agent returns AgentStopped"
+        is agent alive c -> assert eq False
+        format agent status (agent status c) -> assert str eq "stopped" "agent status after stop"
+        format agent reply (ask int c 1) -> assert str eq "agent stopped" "ask int after stop"
+        format agent reply (try poll int c) -> assert str eq "agent stopped" "try poll int after stop"
+        format agent reply (ask int with timeout c 1 50) -> assert str eq "agent stopped" "ask int with timeout after stop"
+        format agent reply (relay int c c2 1) -> assert str eq "agent stopped" "relay int after stop"
         c0  = new counter agent 0
-        assert int equals (counter get c0) 0 "counter 0 initial"
-        assert int equals (counter add c0 3) 3 "counter 0 add 3"
+        counter get c0 -> assert int equals 0 "counter 0 initial"
+        counter add c0 3 -> assert int equals 3 "counter 0 add 3"
         stop agent c0
         stop agent c2
         assert eq (is agent alive c2) False
@@ -208,45 +210,50 @@ Neste exemplo prático exploramos de forma exaustiva como a `pool` se comporta n
 fn :: test log and kv agents => ()
       test log and kv agents =
         lg  = new log agent "\n"
-        assert ok (is agent alive lg)
-        assert str eq (format agent reply (try poll str lg)) "agent outbox empty" "log empty outbox"
-        assert str eq (log read lg) "" "initial log empty"
-        assert str eq (log append lg "alpha") "alpha" "log append alpha"
-        assert str eq (log append lg "beta") "alpha\nbeta" "log append beta"
-        assert str eq (format agent reply (ask str with timeout lg "gamma" 200)) "alpha\nbeta\ngamma" "ask str with timeout gamma"
-        assert str eq (log read lg) "alpha\nbeta\ngamma" "log read"
-        assert str eq (log clear lg) "" "log clear"
-        assert str eq (log read lg) "" "log read after clear"
+        is agent alive lg -> assert ok
+        format agent reply (try poll str lg) -> assert str eq "agent outbox empty" "log empty outbox"
+        log read lg -> assert str eq "" "initial log empty"
+        log append lg "alpha" -> assert str eq "alpha" "log append alpha"
+        log append lg "beta" -> assert str eq "alpha\nbeta" "log append beta"
+        format agent reply (ask str with timeout lg "gamma" 200) -> assert str eq "alpha\nbeta\ngamma" "ask str with timeout gamma"
+        log read lg -> assert str eq "alpha\nbeta\ngamma" "log read"
+        log clear lg -> assert str eq "" "log clear"
+        log read lg -> assert str eq "" "log read after clear"
         b   = ask batch str lg ["one", "two"]
-        assert str eq (ag join strs b) "one|one\ntwo" "ask batch str"
+        ag join strs b -> assert str eq "one|one\ntwo" "ask batch str"
         lg2 = new log agent ":"
-        assert str eq (format agent reply (relay str lg lg2 "three")) "one\ntwo\nthree" "relay str"
+        format agent reply (relay str lg lg2 "three") -> assert str eq "one\ntwo\nthree" "relay str"
         stop agent lg
         stop agent lg2
-        assert str eq (format agent reply (ask str lg "x")) "agent stopped" "ask str after stop"
+        format agent reply (ask str lg "x") -> assert str eq "agent stopped" "ask str after stop"
 
         kv  = new kv agent
-        assert ok (is agent alive kv)
-        assert int equals (kv count kv) 0 "kv count 0"
-        assert false (kv has kv "host") "kv has host false"
-        assert str eq (kv put kv "host" "127.0.0.1") "127.0.0.1" "kv put host"
-        assert str eq (kv put kv "port" "8080") "8080" "kv put port"
-        assert int equals (kv count kv) 2 "kv count 2"
-        assert ok (kv has kv "host")
-        assert ok (kv has kv "port")
-        assert str eq (kv get kv "host") "127.0.0.1" "kv get host"
-        assert str eq (kv get kv "port") "8080" "kv get port"
-        assert str eq (kv keys kv) "host,port" "kv keys"
-        assert str eq (kv put kv "port" "9090") "9090" "kv overwrite port"
-        assert str eq (kv get kv "port") "9090" "kv get updated port"
-        assert int equals (kv count kv) 2 "kv count after overwrite"
-        assert str eq (kv delete kv "host") "127.0.0.1" "kv delete host"
-        assert false (kv has kv "host") "kv has host after delete"
-        assert int equals (kv count kv) 1 "kv count 1"
-        assert str eq (kv clear kv) "" "kv clear"
-        assert int equals (kv count kv) 0 "kv count after clear"
+        is agent alive kv -> assert ok
+        agent kv count kv -> assert int equals 0 "agent kv count 0"
+        agent kv has kv "host" -> assert false "agent kv has host false"
+        agent kv put kv "host" "127.0.0.1" -> assert str eq "127.0.0.1" "agent kv put host"
+        agent kv put kv "port" "8080" -> assert str eq "8080" "agent kv put port"
+        agent kv count kv -> assert int equals 2 "agent kv count 2"
+        agent kv has kv "host" -> assert ok
+        agent kv has kv "port" -> assert ok
+        agent kv get kv "host" -> assert str eq "127.0.0.1" "agent kv get host"
+        agent kv get kv "port" -> assert str eq "8080" "agent kv get port"
+        agent kv keys kv -> assert str eq "host,port" "agent kv keys"
+        agent kv put kv "port" "9090" -> assert str eq "9090" "agent kv overwrite port"
+        agent kv get kv "port" -> assert str eq "9090" "agent kv get updated port"
+        agent kv count kv -> assert int equals 2 "agent kv count after overwrite"
+        agent kv delete kv "host" -> assert str eq "127.0.0.1" "agent kv delete host"
+        agent kv has kv "host" -> assert false "agent kv has host after delete"
+        agent kv count kv -> assert int equals 1 "agent kv count 1"
+        agent kv clear kv -> assert str eq "" "agent kv clear"
+        agent kv count kv -> assert int equals 0 "agent kv count after clear"
         stop agent kv
-        assert false (is agent alive kv) "kv stopped"
+        is agent alive kv -> assert false "kv stopped"
+
+        -- RG-066: verify `list kv *` works in the same file that imports `agent`
+        lm  = list kv put (list kv empty) "k" "v"
+        list kv get lm "k" -> assert str eq "v" "RG-066: list kv get in test agent.ridgun"
+        ()
 ```
 
 ### 31.3.6. Exemplo 6: Encaminhamento determinístico por chave (`pool ask shard`), difusão (`pool broadcast`), drenagem não bloqueante (`pool drain all`) e encerramento (`pool shutdown`)
@@ -257,12 +264,12 @@ Neste exemplo prático exploramos de forma exaustiva como a `pool` se comporta n
 import agent
 import pool
 
-fn :: shard worker (state : Int) (delta : Int) => (Int, Int)
+fn :: shard worker Int Int => Int Int
       shard worker state delta =
         next = state + delta
         (next, next)
 
-fn :: ejemplo pool completo => (Int, Int, [Int])
+fn :: ejemplo pool completo => Int Int [Int]
       ejemplo pool completo =
         w0   = agent shard worker 100
         w1   = agent shard worker 200
@@ -285,7 +292,7 @@ fn :: ejemplo pool completo => (Int, Int, [Int])
 
 Uma das maiores vantagens do `ridgun-libs` é que **não existem caixas-pretas em C**. Pode abrir `src/main/ridgun/lib/pool.ridgun` e ler exatamente como cada operação é implementada usando *pattern matching*, árvores de guardas `|` / `|.` e recursão de cauda (TCO). Vejamos as peças-chave da sua implementação real:
 
-### 31.4.1. Implementação interna: Core Implementation Part 1
+### 31.4.1. Implementação interna: Pool Size, Agent Selection, and Request-Reply by Key
 
 Observe como `pool.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
@@ -300,6 +307,7 @@ fn :: pool size AgentPool   => Int
 fn :: pool agents AgentPool    => [Agent]
       pool agents (Pool _ ags) =  ags
 
+-- Look up the i-th agent in a pool (0-indexed)
 fn :: pool get agent [Agent]  Int => Agent
       pool get agent (ag:_)   0   =  ag
       pool get agent (_:rest) idx =  pool get agent rest (idx - 1)
@@ -309,25 +317,31 @@ fn :: pool abs Int => Int
         | x < 0     = 0 - x
         | otherwise = x
 
+-- Route a message to a deterministic shard `key_hash % size` and return the reply via `ask`
 fn :: pool ask shard AgentPool Int A => B
       pool ask shard (Pool size agents) key_hash msg =
         (pool abs key_hash) % size -> shard_idx
         pool get agent agents shard_idx -> target_ag
         ask target_ag msg
-
-fn :: pool broadcast AgentPool       A   => ()
-      pool broadcast (Pool _ agents) msg =  pool broadcast list agents msg
 ```
 
-### 31.4.2. Implementação interna: Core Implementation Part 2
+### 31.4.2. Implementação interna: Broadcast, Non-Blocking Drain, and Shutdown
 
 Observe como `pool.ridgun` estrutura primeiro as assinaturas `fn :: ... => ...` e resolve cada caso através de equações alinhadas e chamadas de cauda:
 
 ```ridgun
+-- Broadcast a message to every agent in the pool (e.g. configuration reload or tick)
+fn :: pool broadcast AgentPool       A   => ()
+      pool broadcast (Pool _ agents) msg =  pool broadcast list agents msg
+
+fn :: pool send one Agent A => ()
+      pool send one ag    m =
+        send m to ag
+
 fn :: pool broadcast list [Agent]   A   => ()
       pool broadcast list []        _   =  ()
       pool broadcast list (ag:rest) msg =
-        send msg to ag
+        pool send one ag msg -> ()
         pool broadcast list rest msg
 
 fn :: pool drain ready Agent => [B]
@@ -341,6 +355,7 @@ fn :: pool drain step Agent Option [B] => [B]
       pool drain step _ None acc = acc
       pool drain step ag (Some r) acc = pool drain ready loop ag (acc :: [r])
 
+-- Drain all ready responses across all shards in the pool (non-blocking)
 fn :: pool drain all AgentPool       => [B]
       pool drain all (Pool _ agents) =  pool drain list agents []
 
@@ -356,6 +371,7 @@ fn :: pool stop list [Agent]   => ()
         stop ag
         pool stop list rest
 
+-- Stop all agents in the pool and reclaim their isolated state
 fn :: pool shutdown AgentPool       => ()
       pool shutdown (Pool _ agents) =  pool stop list agents
 ```
@@ -364,14 +380,14 @@ fn :: pool shutdown AgentPool       => ()
 
 ## 31.5. Garantias algorítmicas, memória `RMM1`/`RMM2` e as 5 Regras de Ouro da `pool`
 
-- **Garantia algorítmica e de segurança**: Capacidade de fila estritamente limitada (`queued <= max_queue`) para proteger a memória sob sobrecarga e distribuição determinística entre trabalhadores.
+- **Garantia algorítmica e de segurança**: O número de agentes é fixado quando o pool é construído, pelo que a memória do pool é limitada, e o encaminhamento por `abs(key) % size` é determinístico: a mesma chave chega sempre ao mesmo agente.
 - **Complexidade de pilha $O(1)$ com TCO**: Todos os ciclos recursivos em `src/main/ridgun/lib/pool.ridgun` estão em posição de cauda, pelo que o `ridgunc` os compila para saltos nativos sem crescimento de pilha.
 - **Memória determinística (`RMM1`/`RMM2`)**: Zero pausas de coletor de lixo; todas as estruturas intermédias são libertadas de forma determinística à saída do escopo.
 - **Verificação contínua**: Testada exaustivamente com `stable check` e pela suite automatizada `src/test/ridgun/test pool.ridgun`.
 
 ### As 5 Regras de Ouro ao programar com a `pool`
 
-1. **Declare `import pool` no início do ficheiro** e aproveite a equivalência entre espaços e underscores para que o seu código se leia como prosa.
+1. **Declare `import pool` no início do ficheiro** e chame as suas funções com espaços, tal como estão declaradas, para que o seu código se leia como prosa.
 2. **Alinhe os seus pipelines de dados com `=`**: encadeie as chamadas à `pool` em passos nomeados e deixe o `stable format` alinhar as colunas.
 3. **Aproveite as funções totais da `pool` nas suas guardas `|`**: verifique os valores de retorno ou desempacote os ADTs com *pattern matching* em vez de assumir que a entrada externa é sempre válida.
 4. **Evite copiar grandes estruturas se só precisa de consultar um campo**: lembre-se de que no `RMM2` os argumentos de entrada não incrementam nem decrementam contadores (`+0` / `-0`).

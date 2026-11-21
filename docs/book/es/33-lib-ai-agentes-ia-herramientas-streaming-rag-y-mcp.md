@@ -15,7 +15,7 @@ Porque en Ridgun `agent` es la primitiva de concurrencia del lenguaje (buzones, 
 
 ## 33.2. Artefactos nativos, importación y catálogo completo de la API de `ai`
 
-En `ridgun-libs`, **`ai`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/ai.ridgun` (dominio `AI`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
+En `ridgun-libs`, **`ai`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/ai.ridgun` (dominio `AI`). Al compilar con `stable bundle`, se empaqueta en un artefacto nativo:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
@@ -327,3 +327,7 @@ fn :: test ai react guardrails rag handoff and mcp => ()
         assert str eq (snd err mcp_err) "Method not found" "AC8: MCP error message extracted"
         ()
 ```
+
+---
+
+En el **Capítulo 34** pasaremos a explorar en profundidad la lib **`locale`** (La lib `locale` — Reglas de Plurales CLDR, Formato UTC de Fechas y Números y Autónimos).

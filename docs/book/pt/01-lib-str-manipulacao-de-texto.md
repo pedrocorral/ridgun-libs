@@ -21,7 +21,7 @@ Num ecossistema tradicional, resolver as tarefas do domínio **`STR`** implica a
 
 ## 01.2. Artefactos nativos, importação e catálogo completo da API de `str`
 
-No `ridgun-libs`, **`str`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/str.ridgun` (domínio `STR`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
+No `ridgun-libs`, **`str`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/str.ridgun` (domínio `STR`). Ao compilar com `stable bundle`, é empacotada num formato nativo:
 
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
@@ -36,13 +36,13 @@ No `ridgun-libs`, **`str`** é uma **lib** de primeira classe localizada em `src
 | `str index of : String -> String -> Int` | Primeiro índice da subcadeia (`-1` se ausente / `0` se vazia) |
 | `str contains / str starts with / str ends with` | Predicados `Bool` de subcadeia, prefixo e sufixo |
 | `str trim / str trim left / str trim right` | Remove espaços em branco ASCII (` `, `\t`, `\n`, `\r`) |
-| `str split / str lines / str words / str join` | Divide em `[String]` e junta listas com um separador |
+| `str split / str split chars / str join` | Divide em `[String]` e junta listas com um separador |
 | `str replace / str to upper / str to lower` | Substituição sem sobreposição e conversão ASCII de maiúsculas/minúsculas |
 | `str repeat / str pad left / str pad right` | Repetição em $O(\log N)$ e preenchimento de colunas com largura fixa |
 
 ### 01.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/str.ridgun`
 
-Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/str.ridgun` (`0` tipos, `0` operadores e `42` funções):
+Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/str.ridgun` (`0` tipos, `0` operadores e `39` funções):
 
 | # | Função / Assinatura (`fn ::`) | Tipo de Retorno |
 |---|---|---|
@@ -70,24 +70,21 @@ Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operado
 | `22` | `fn :: str split loop String String Int Int Int Int Int [String]` | `[String]` |
 | `23` | `fn :: str split step String String Int Int` | `[String]` |
 | `24` | `fn :: str split String String` | `[String]` |
-| `25` | `fn :: str join pair step [String] String [String]` | `[String]` |
-| `26` | `fn :: str join pairs [String] String` | `String` |
-| `27` | `fn :: str join [String] String` | `String` |
-| `28` | `fn :: upper char code String Int Int` | `String` |
-| `29` | `fn :: upper char slice String Int` | `String` |
-| `30` | `fn :: str to upper range String Int Int` | `String` |
-| `31` | `fn :: str to upper String` | `String` |
-| `32` | `fn :: lower char code String Int Int` | `String` |
-| `33` | `fn :: lower char slice String Int` | `String` |
-| `34` | `fn :: str to lower range String Int Int` | `String` |
-| `35` | `fn :: str to lower String` | `String` |
-| `36` | `fn :: str repeat loop String Int String` | `String` |
-| `37` | `fn :: str repeat String Int` | `String` |
-| `38` | `fn :: pad fill unit String` | `String` |
-| `39` | `fn :: str pad left step String Int String Int` | `String` |
-| `40` | `fn :: str pad left String Int String` | `String` |
-| `41` | `fn :: str pad right step String Int String Int` | `String` |
-| `42` | `fn :: str pad right String Int String` | `String` |
+| `25` | `fn :: upper char code String Int Int` | `String` |
+| `26` | `fn :: upper char slice String Int` | `String` |
+| `27` | `fn :: str to upper range String Int Int` | `String` |
+| `28` | `fn :: str to upper String` | `String` |
+| `29` | `fn :: lower char code String Int Int` | `String` |
+| `30` | `fn :: lower char slice String Int` | `String` |
+| `31` | `fn :: str to lower range String Int Int` | `String` |
+| `32` | `fn :: str to lower String` | `String` |
+| `33` | `fn :: str repeat loop String Int String` | `String` |
+| `34` | `fn :: str repeat String Int` | `String` |
+| `35` | `fn :: pad fill unit String` | `String` |
+| `36` | `fn :: str pad left step String Int String Int` | `String` |
+| `37` | `fn :: str pad left String Int String` | `String` |
+| `38` | `fn :: str pad right step String Int String Int` | `String` |
+| `39` | `fn :: str pad right String Int String` | `String` |
 
 ---
 
@@ -112,18 +109,19 @@ fn :: normalizar cabecera String => String
 
 ### 01.3.2. Exemplo 2: Composição segura e tratamento de casos de fronteira
 
-Todas as funções da lib `str` foram desenhadas para se comporem com guardas booleanas `|` e com as restantes 32 libs do `ridgun-libs`:
+Todas as funções da lib `str` foram desenhadas para se comporem com guardas booleanas `|` e com as restantes 38 libs do `ridgun-libs`:
 
 ```ridgun
 import str
 
+fn :: dominio desde String Int => String
+      dominio desde correo pos =
+        | pos < 0   = "sin-dominio"
+        | otherwise = str replace (str to lower correo) "@" " en "
+
 fn :: extraer dominio String => String
       extraer dominio correo =
-        str index of correo "@" -> pos
-        | pos < 0   = "sin-dominio"
-        | otherwise =
-          correo str to lower -> minusc
-          str replace minusc "@" " en "
+        dominio desde correo (str index of correo "@")
 ```
 
 ### 01.3.3. Exemplo 3: Pesquisa de subcadeias (`str index of`), sufixos (`str ends with`) e predicados de vazio/branco
@@ -133,95 +131,95 @@ Neste exemplo prático exploramos de forma exaustiva como a `str` se comporta ne
 ```ridgun
 fn :: test str search and predicates => ()
       test str search and predicates =
-        assert equals (str index of "hello world" "world") 6 "AC1: index_of world"
-        assert equals (str index of "hello world" "hello") 0 "AC1: index_of hello at 0"
-        assert equals (str index of "ababa" "aba") 0 "AC1: index_of returns first occurrence"
-        assert equals (str index of "hello" "xyz") (0 - 1) "AC1: index_of missing"
-        assert equals (str index of "short" "much_longer_needle") (0 - 1) "AC1: needle longer than haystack -> -1"
-        assert equals (str index of "" "a") (0 - 1) "AC1: non-empty needle in empty haystack -> -1"
-        assert equals (str index of "" "") 0 "AC1: empty needle in empty haystack -> 0"
-        assert equals (str index of "abc" "") 0 "AC1: empty needle -> 0"
+        str index of "hello world" "world" -> assert equals 6 "AC1: index_of world"
+        str index of "hello world" "hello" -> assert equals 0 "AC1: index_of hello at 0"
+        str index of "ababa" "aba" -> assert equals 0 "AC1: index_of returns first occurrence"
+        str index of "hello" "xyz" -> assert equals (0 - 1) "AC1: index_of missing"
+        str index of "short" "much_longer_needle" -> assert equals (0 - 1) "AC1: needle longer than haystack -> -1"
+        str index of "" "a" -> assert equals (0 - 1) "AC1: non-empty needle in empty haystack -> -1"
+        str index of "" "" -> assert equals 0 "AC1: empty needle in empty haystack -> 0"
+        str index of "abc" "" -> assert equals 0 "AC1: empty needle -> 0"
 
-        assert true (str ends with "archive.ridgunlib" ".ridgunlib") "AC1: ends_with true"
-        assert true (str ends with "exact" "exact") "AC1: ends_with full string"
-        assert true (str ends with "any" "") "AC1: ends_with empty suffix true"
-        assert false (str ends with "archive.ridgun" ".ridgunlib") "AC1: ends_with false"
-        assert false (str ends with "short" "longer_suffix") "AC1: ends_with suffix longer than string"
+        str ends with "archive.ridgunlib" ".ridgunlib" -> assert true "AC1: ends_with true"
+        str ends with "exact" "exact" -> assert true "AC1: ends_with full string"
+        str ends with "any" "" -> assert true "AC1: ends_with empty suffix true"
+        str ends with "archive.ridgun" ".ridgunlib" -> assert false "AC1: ends_with false"
+        str ends with "short" "longer_suffix" -> assert false "AC1: ends_with suffix longer than string"
 
-        assert true (str is empty "") "AC1: is_empty true"
-        assert false (str is empty " ") "AC1: space is not empty"
-        assert true (str is blank "") "AC1: empty is blank"
-        assert true (str is blank "   \t\n\r ") "AC1: whitespace-only is blank"
-        assert false (str is blank "  x ") "AC1: non-whitespace is not blank"
+        str is empty "" -> assert true "AC1: is_empty true"
+        str is empty " " -> assert false "AC1: space is not empty"
+        str is blank "" -> assert true "AC1: empty is blank"
+        str is blank "   \t\n\r " -> assert true "AC1: whitespace-only is blank"
+        str is blank "  x " -> assert false "AC1: non-whitespace is not blank"
         ()
 ```
 
-### 01.3.4. Exemplo 4: Corte de espaços (`trim`, `trim left`, `trim right`), substituição (`str replace`), divisão (`str split`) e junção (`str join`)
+### 01.3.4. Exemplo 4: Corte de espaços (`trim`, `str trim left`, `str trim right`), substituição (`str replace`), divisão (`str split`) e junção (`str join`)
 
 Neste exemplo prático exploramos de forma exaustiva como a `str` se comporta neste bloco funcional, incluindo entradas padrão, combinações de parâmetros e valores limite:
 
 ```ridgun
 fn :: test str trim replace and split => ()
       test str trim replace and split =
-        assert equals (str trim "  \thi\n\r ") "hi" "AC2: str_trim mixed ASCII whitespace"
-        assert equals (str trim "   \t\r\n") "" "AC2: str_trim all whitespace -> empty"
-        assert equals (str trim "") "" "AC2: str_trim empty -> empty"
-        assert equals (str trim "no_ws") "no_ws" "AC2: str_trim no whitespace"
-        assert equals (str trim left "  abc  ") "abc  " "AC2: str_trim_left"
-        assert equals (str trim right "  abc  ") "  abc" "AC2: str_trim_right"
+        str trim "  \thi\n\r " -> assert equals "hi" "AC2: str_trim mixed ASCII whitespace"
+        str trim "   \t\r\n" -> assert equals "" "AC2: str_trim all whitespace -> empty"
+        str trim "" -> assert equals "" "AC2: str_trim empty -> empty"
+        str trim "no_ws" -> assert equals "no_ws" "AC2: str_trim no whitespace"
+        str trim left "  abc  " -> assert equals "abc  " "AC2: str_trim_left"
+        str trim right "  abc  " -> assert equals "  abc" "AC2: str_trim_right"
 
-        assert equals (str replace "a-b-c" "-" "_") "a_b_c" "AC2: str_replace single char"
-        assert equals (str replace "aaaa" "aa" "b") "bb" "AC2: str_replace non-overlapping left-to-right"
-        assert equals (str replace "Hello,World" "World" "") "Hello," "AC2: str_replace deletion to empty"
-        assert equals (str replace "abc" "" "x") "abc" "AC2: str_replace empty old leaves string unchanged"
-        assert equals (str replace "abc" "z" "y") "abc" "AC2: str_replace absent needle"
+        str replace "a-b-c" "-" "_" -> assert equals "a_b_c" "AC2: str_replace single char"
+        str replace "aaaa" "aa" "b" -> assert equals "bb" "AC2: str_replace non-overlapping left-to-right"
+        str replace "Hello,World" "World" "" -> assert equals "Hello," "AC2: str_replace deletion to empty"
+        str replace "abc" "" "x" -> assert equals "abc" "AC2: str_replace empty old leaves string unchanged"
+        str replace "abc" "z" "y" -> assert equals "abc" "AC2: str_replace absent needle"
 
-        assert equals (str split "a,b,c" ",") ["a", "b", "c"] "AC2: str_split comma"
-        assert equals (str split "a,,b," ",") ["a", "", "b", ""] "AC2: str_split consecutive and trailing delim"
-        assert equals (str split ",a" ",") ["", "a"] "AC2: str_split leading delim"
-        assert equals (str split "a::b::c" "::") ["a", "b", "c"] "AC2: str_split multi-char delimiter"
-        assert equals (str split "ab" "") ["a", "b"] "AC2: str_split empty delim splits chars"
-        assert equals (str split "" "") [] "AC2: str_split empty string with empty delim -> []"
+        str split "a,b,c" "," -> assert equals ["a", "b", "c"] "AC2: str_split comma"
+        str split "a,,b," "," -> assert equals ["a", "", "b", ""] "AC2: str_split consecutive and trailing delim"
+        str split ",a" "," -> assert equals ["", "a"] "AC2: str_split leading delim"
+        str split "a::b::c" "::" -> assert equals ["a", "b", "c"] "AC2: str_split multi-char delimiter"
+        str split "ab" "" -> assert equals ["a", "b"] "AC2: str_split empty delim splits chars"
+        str split "" "" -> assert equals [] "AC2: str_split empty string with empty delim -> []"
 
-        assert equals (str join [] "::") "" "AC2: str_join empty list"
-        assert equals (str join ["only"] "::") "only" "AC2: str_join singleton"
-        assert equals (str join ["alpha", "beta", "gamma"] "::") "alpha::beta::gamma" "AC2: str_join 3 items"
+        str join [] "::" -> assert equals "" "AC2: str_join empty list"
+        str join ["only"] "::" -> assert equals "only" "AC2: str_join singleton"
+        str join ["alpha", "beta", "gamma"] "::" -> assert equals "alpha::beta::gamma" "AC2: str_join 3 items"
         ()
 ```
 
-### 01.3.5. Exemplo 5: Conversão de caixa ASCII (`to upper`, `to lower`), repetição binária $O(\log N)$ (`str repeat`) e preenchimento tabular (`pad left`, `pad right`)
+### 01.3.5. Exemplo 5: Conversão de caixa ASCII (`str to upper`, `str to lower`), repetição binária $O(\log N)$ (`str repeat`) e preenchimento tabular (`str pad left`, `str pad right`)
 
 Neste exemplo prático exploramos de forma exaustiva como a `str` se comporta neste bloco funcional, incluindo entradas padrão, combinações de parâmetros e valores limite:
 
 ```ridgun
 fn :: test str case repeat and padding => ()
       test str case repeat and padding =
-        assert equals (str to upper "Abc! 123 xyz") "ABC! 123 XYZ" "AC3: str_to_upper"
-        assert equals (str to lower "Abc! 123 XYZ") "abc! 123 xyz" "AC3: str_to_lower"
-        assert equals (str to upper "") "" "AC3: str_to_upper empty"
+        str to upper "Abc! 123 xyz" -> assert equals "ABC! 123 XYZ" "AC3: str_to_upper"
+        str to lower "Abc! 123 XYZ" -> assert equals "abc! 123 xyz" "AC3: str_to_lower"
+        str to upper "" -> assert equals "" "AC3: str_to_upper empty"
 
-        assert equals (str repeat "ab" 3) "ababab" "AC3: str_repeat 3"
-        assert equals (str repeat "ab" 1) "ab" "AC3: str_repeat 1"
-        assert equals (str repeat "ab" 0) "" "AC3: str_repeat 0"
-        assert equals (str repeat "ab" (0 - 5)) "" "AC3: str_repeat negative -> empty"
-        assert equals (str repeat "" 100) "" "AC3: str_repeat empty string -> empty"
+        str repeat "ab" 3 -> assert equals "ababab" "AC3: str_repeat 3"
+        str repeat "ab" 1 -> assert equals "ab" "AC3: str_repeat 1"
+        str repeat "ab" 0 -> assert equals "" "AC3: str_repeat 0"
+        str repeat "ab" (0 - 5) -> assert equals "" "AC3: str_repeat negative -> empty"
+        str repeat "" 100 -> assert equals "" "AC3: str_repeat empty string -> empty"
 
         t0 = sys monotonic ms
         r64k = str repeat "x" 65536
         r256k = str repeat "x" 262144
         t1 = sys monotonic ms
         r8m = str repeat "x" 8000000
-        assert equals (str len r64k) 65536 "AC3: str_repeat 65536 length"
-        assert equals (str len r256k) 262144 "AC3: str_repeat 262144 length"
-        assert equals (str len r8m) 8000000 "AC3: RG-052 str_repeat 8000000 exact length without 1 MiB cap"
-        assert true ((t1 - t0) < 200) "AC3: LIB-9 str_repeat 64k+256k in < 200 ms"
+        str len r64k -> assert equals 65536 "AC3: str_repeat 65536 length"
+        str len r256k -> assert equals 262144 "AC3: str_repeat 262144 length"
+        str len r8m -> assert equals 8000000 "AC3: RG-052 str_repeat 8000000 exact length without 1 MiB cap"
+        (t1 - t0) < 200 -> assert true "AC3: LIB-9 str_repeat 64k+256k in < 200 ms"
 
-        assert equals (str pad left "7" 3 "0") "007" "AC3: str_pad_left"
-        assert equals (str pad right "7" 3 "0") "700" "AC3: str_pad_right"
-        assert equals (str pad left "7" 4 "") "   7" "AC3: str_pad_left empty pad_ch defaults to space"
-        assert equals (str pad left "7" 4 "xyz") "xxx7" "AC3: str_pad_left uses first char of pad_ch"
-        assert equals (str pad left "1234" 3 "0") "1234" "AC3: str_pad_left already wider than width"
-        assert equals (str pad right "1234" 3 "0") "1234" "AC3: str_pad_right already wider than width"
+        str pad left "7" 3 "0" -> assert equals "007" "AC3: str_pad_left"
+        str pad right "7" 3 "0" -> assert equals "700" "AC3: str_pad_right"
+        str pad left "7" 4 "" -> assert equals "   7" "AC3: str_pad_left empty pad_ch defaults to space"
+        str pad left "7" 4 "xyz" -> assert equals "xxx7" "AC3: str_pad_left uses first char of pad_ch"
+        str pad left "1234" 3 "0" -> assert equals "1234" "AC3: str_pad_left already wider than width"
+        str pad right "1234" 3 "0" -> assert equals "1234" "AC3: str_pad_right already wider than width"
         ()
 ```
 
@@ -342,21 +340,7 @@ fn :: str split String String => [String]
       str split s      delim  =
         str split step s delim (str len s) (str len delim)
 
-fn :: str join pair step [String] String [String] => [String]
-      str join pair step []         _   acc =  acc
-      str join pair step (a:[])     _   acc =  acc :: [a]
-      str join pair step (a:b:rest) sep acc =
-        str join pair step rest sep (acc :: [a + sep + b])
-
-fn :: str join pairs [String] String => String
-      str join pairs []       _   =  ""
-      str join pairs (x:[])   _   =  x
-      str join pairs (x:y:[]) sep =  x + sep + y
-      str join pairs xs       sep =
-        str join pairs (str join pair step xs sep []) sep
-
-fn :: str join [String] String => String
-      str join xs       sep    =  str join pairs xs sep
+-- `str join [String] String => String` is the compiler prelude's (ridgunc 0.9.55).
 ```
 
 ### 01.4.4. Implementação interna: Repetition & Padding
@@ -410,7 +394,7 @@ fn :: str pad right String Int String => String
 
 ### As 5 Regras de Ouro ao programar com a `str`
 
-1. **Declare `import str` no início do ficheiro** e aproveite a equivalência entre espaços e underscores para que o seu código se leia como prosa.
+1. **Declare `import str` no início do ficheiro** e chame as suas funções com espaços, tal como estão declaradas, para que o seu código se leia como prosa.
 2. **Alinhe os seus pipelines de dados com `=`**: encadeie as chamadas à `str` em passos nomeados e deixe o `stable format` alinhar as colunas.
 3. **Aproveite as funções totais da `str` nas suas guardas `|`**: verifique os valores de retorno ou desempacote os ADTs com *pattern matching* em vez de assumir que a entrada externa é sempre válida.
 4. **Evite copiar grandes estruturas se só precisa de consultar um campo**: lembre-se de que no `RMM2` os argumentos de entrada não incrementam nem decrementam contadores (`+0` / `-0`).

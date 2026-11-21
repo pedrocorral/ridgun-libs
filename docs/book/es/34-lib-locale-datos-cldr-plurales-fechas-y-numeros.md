@@ -81,54 +81,55 @@ type LocaleSpec =
 | `42` | `fn :: plural categories String` | `[String]` |
 | `43` | `fn :: plural category cldr String Int` | `String` |
 | `44` | `fn :: plural categories cldr String` | `[String]` |
-| `45` | `fn :: loc cat to index String` | `Int` |
+| `45` | `fn :: loc index in cats [String] String Int` | `Int` |
 | `46` | `fn :: plural index String Int` | `Int` |
-| `47` | `fn :: loc floor div qr Int Int` | `Int` |
-| `48` | `fn :: loc floor div Int Int` | `Int` |
-| `49` | `fn :: loc floor mod r Int Int` | `Int` |
-| `50` | `fn :: loc floor mod Int Int` | `Int` |
-| `51` | `fn :: loc ymd month Int` | `Int` |
-| `52` | `fn :: loc ymd year Int Int` | `Int` |
-| `53` | `fn :: loc days to ymd Int` | `Int Int Int` |
-| `54` | `fn :: loc iso weekday norm Int` | `Int` |
-| `55` | `fn :: loc iso weekday from days Int` | `Int` |
-| `56` | `fn :: loc pad2 Int` | `String` |
-| `57` | `fn :: loc pad4 Int` | `String` |
-| `58` | `fn :: month name String Int` | `String` |
-| `59` | `fn :: month short name String Int` | `String` |
-| `60` | `fn :: loc norm weekday idx Int` | `Int` |
-| `61` | `fn :: loc weekday wide by nw String Int` | `String` |
-| `62` | `fn :: weekday name String Int` | `String` |
-| `63` | `fn :: loc weekday short by nw String Int` | `String` |
-| `64` | `fn :: weekday short name String Int` | `String` |
-| `65` | `fn :: loc ca prep char String Int` | `String` |
-| `66` | `fn :: loc ca prep month String` | `String` |
-| `67` | `fn :: loc eu genitive len String Int` | `String` |
-| `68` | `fn :: loc eu genitive month String` | `String` |
-| `69` | `fn :: loc select date pattern LocaleDatePatterns String` | `String` |
-| `70` | `fn :: loc select dt join LocaleDatePatterns` | `String` |
-| `71` | `fn :: loc render date pattern LocaleSpec String Int Int Int Int` | `String` |
-| `72` | `fn :: format date String String Int` | `String` |
-| `73` | `fn :: loc format time style String Int Int Int` | `String` |
-| `74` | `fn :: format datetime String String Int` | `String` |
-| `75` | `fn :: loc join grouped String String String` | `String` |
-| `76` | `fn :: loc group digits loop String Int String String` | `String` |
-| `77` | `fn :: loc format uint digits String String` | `String` |
-| `78` | `fn :: loc pos int digits Int String` | `String` |
-| `79` | `fn :: loc uint to digits Int` | `String` |
-| `80` | `fn :: loc prepend neg Int String` | `String` |
-| `81` | `fn :: format int String Int` | `String` |
-| `82` | `fn :: loc pow10 Int Int` | `Int` |
-| `83` | `fn :: loc pow10 real Int Real` | `Real` |
-| `84` | `fn :: loc real to int loop Real Int Real Int` | `Int` |
-| `85` | `fn :: loc real to uint Real` | `Int` |
-| `86` | `fn :: loc pad left zeros String Int` | `String` |
-| `87` | `fn :: loc abs float Real` | `Real` |
-| `88` | `fn :: loc sign str float Real` | `String` |
-| `89` | `fn :: loc clamp frac digits Int` | `Int` |
-| `90` | `fn :: loc format decimal scaled String String String Real Int` | `String` |
-| `91` | `fn :: loc format decimal impl String String String Real Int` | `String` |
-| `92` | `fn :: format decimal String Real Int` | `String` |
+| `47` | `fn :: plural index cldr String Int` | `Int` |
+| `48` | `fn :: loc floor div qr Int Int` | `Int` |
+| `49` | `fn :: loc floor div Int Int` | `Int` |
+| `50` | `fn :: loc floor mod r Int Int` | `Int` |
+| `51` | `fn :: loc floor mod Int Int` | `Int` |
+| `52` | `fn :: loc ymd month Int` | `Int` |
+| `53` | `fn :: loc ymd year Int Int` | `Int` |
+| `54` | `fn :: loc days to ymd Int` | `Int Int Int` |
+| `55` | `fn :: loc iso weekday norm Int` | `Int` |
+| `56` | `fn :: loc iso weekday from days Int` | `Int` |
+| `57` | `fn :: loc pad2 Int` | `String` |
+| `58` | `fn :: loc pad4 Int` | `String` |
+| `59` | `fn :: month name String Int` | `String` |
+| `60` | `fn :: month short name String Int` | `String` |
+| `61` | `fn :: loc norm weekday idx Int` | `Int` |
+| `62` | `fn :: loc weekday wide by nw String Int` | `String` |
+| `63` | `fn :: weekday name String Int` | `String` |
+| `64` | `fn :: loc weekday short by nw String Int` | `String` |
+| `65` | `fn :: weekday short name String Int` | `String` |
+| `66` | `fn :: loc ca prep char String Int` | `String` |
+| `67` | `fn :: loc ca prep month String` | `String` |
+| `68` | `fn :: loc eu genitive len String Int` | `String` |
+| `69` | `fn :: loc eu genitive month String` | `String` |
+| `70` | `fn :: loc select date pattern LocaleDatePatterns String` | `String` |
+| `71` | `fn :: loc select dt join LocaleDatePatterns` | `String` |
+| `72` | `fn :: loc render date pattern LocaleSpec String Int Int Int Int` | `String` |
+| `73` | `fn :: format date String String Int` | `String` |
+| `74` | `fn :: loc format time style String Int Int Int` | `String` |
+| `75` | `fn :: format datetime String String Int` | `String` |
+| `76` | `fn :: loc join grouped String String String` | `String` |
+| `77` | `fn :: loc group digits loop String Int String String` | `String` |
+| `78` | `fn :: loc format uint digits String String` | `String` |
+| `79` | `fn :: loc pos int digits Int String` | `String` |
+| `80` | `fn :: loc uint to digits Int` | `String` |
+| `81` | `fn :: loc prepend neg Int String` | `String` |
+| `82` | `fn :: format int String Int` | `String` |
+| `83` | `fn :: loc pow10 Int Int` | `Int` |
+| `84` | `fn :: loc pow10 real Int Real` | `Real` |
+| `85` | `fn :: loc real to int loop Real Int Real Int` | `Int` |
+| `86` | `fn :: loc real to uint Real` | `Int` |
+| `87` | `fn :: loc pad left zeros String Int` | `String` |
+| `88` | `fn :: loc abs float Real` | `Real` |
+| `89` | `fn :: loc sign str float Real` | `String` |
+| `90` | `fn :: loc clamp frac digits Int` | `Int` |
+| `91` | `fn :: loc format decimal scaled String String String Real Int` | `String` |
+| `92` | `fn :: loc format decimal impl String String String Real Int` | `String` |
+| `93` | `fn :: format decimal String Real Int` | `String` |
 
 ---
 
@@ -151,26 +152,34 @@ fn :: test locale plural rules => ()
         assert str eq (plural category "gl" 1) "one" "AC2: gl 1 -> one"
         assert str eq (plural category "pt" 1) "one" "AC2: pt 1 -> one"
         assert str eq (plural category "en" 1) "one" "AC2: en 1 -> one"
+        assert str eq (plural category "it" 1) "one" "AC2: it 1 -> one"
+        assert str eq (plural category "it" 5) "other" "AC2: it 5 -> other"
         assert str eq (plural category "zz" 1) "one" "AC2: unknown 1 -> one"
         assert str eq (plural category "zz" 3) "other" "AC2: unknown 3 -> other"
 
         assert str eq (loc join strs (plural categories "es")) "one,other" "AC2: default plural categories es"
         assert str eq (loc join strs (plural categories "eu")) "one,other" "AC2: default plural categories eu"
+        assert str eq (loc join strs (plural categories "it")) "one,other" "AC2: default plural categories it"
 
         assert int equals (plural index "es" 1) 0 "AC2: plural index 1 -> 0"
         assert int equals (plural index "es" 5) 1 "AC2: plural index 5 -> 1"
+        assert int equals (plural index "it" 1) 0 "AC2: plural index it 1 -> 0"
+        assert int equals (plural index "it" 5) 1 "AC2: plural index it 5 -> 1"
 
         assert str eq (plural category cldr "es" 1000000) "many" "AC2: strict CLDR es 1000000 -> many"
         assert str eq (plural category cldr "ca" 2000000) "many" "AC2: strict CLDR ca 2000000 -> many"
         assert str eq (plural category cldr "pt" 1000000) "many" "AC2: strict CLDR pt 1000000 -> many"
+        assert str eq (plural category cldr "it" 1) "one" "AC2: strict CLDR it 1 -> one"
         assert str eq (plural category cldr "it" 1000000) "many" "AC2: strict CLDR it 1000000 -> many"
-        assert int equals (plural index cldr "it" 1) 0 "AC2: plural index cldr it 1 -> 0 (one)"
-        assert int equals (plural index cldr "it" 1000000) 1 "AC2: plural index cldr it 1000000 -> 1 (many)"
-        assert int equals (plural index cldr "it" 5) 2 "AC2: plural index cldr it 5 -> 2 (other)"
+        assert str eq (plural category cldr "it" 5) "other" "AC2: strict CLDR it 5 -> other"
         assert str eq (plural category cldr "es" 0) "other" "AC2: strict CLDR es 0 -> other"
         assert str eq (plural category cldr "eu" 1000000) "other" "AC2: strict CLDR eu 1000000 -> other"
         assert str eq (loc join strs (plural categories cldr "es")) "one,many,other" "AC2: strict CLDR categories es"
+        assert str eq (loc join strs (plural categories cldr "it")) "one,many,other" "AC2: strict CLDR categories it"
         assert str eq (loc join strs (plural categories cldr "sv")) "one,other" "AC2: strict CLDR categories sv"
+        assert int equals (plural index cldr "it" 1) 0 "AC2: plural index cldr it 1 -> 0 (one)"
+        assert int equals (plural index cldr "it" 1000000) 1 "AC2: plural index cldr it 1000000 -> 1 (many)"
+        assert int equals (plural index cldr "it" 5) 2 "AC2: plural index cldr it 5 -> 2 (other)"
         ()
 ```
 
@@ -203,6 +212,9 @@ fn :: test locale dates and datetimes => ()
 
         assert str eq (format date "en" "long" ts_oct30) "October 30, 2026" "AC3: en long date"
         assert str eq (format date "en" "full" ts_oct30) "Friday, October 30, 2026" "AC3: en full date"
+        assert str eq (format date "it" "short" ts_oct30) "30/10/2026" "AC3: it short date"
+        assert str eq (format date "it" "long" ts_oct30) "30 ottobre 2026" "AC3: it long date"
+        assert str eq (format date "it" "full" ts_oct30) "venerdì 30 ottobre 2026" "AC3: it full date"
 
         assert str eq (format datetime "es" "long" (ts_oct30 + 52245)) "30 de octubre de 2026, 14:30:45" "AC3: es long datetime"
         assert str eq (format datetime "sv" "short" (ts_oct30 + 52245)) "2026-10-30 14:30" "AC3: sv short datetime"
@@ -228,6 +240,7 @@ fn :: test locale numbers => ()
         assert str eq (format int "pt" 1234567) "1.234.567" "AC4: format int pt 1234567"
         assert str eq (format int "sv" 1234567) ("1" + nbsp + "234" + nbsp + "567") "AC4: format int sv 1234567 with NBSP"
         assert str eq (format int "en" 1234567) "1,234,567" "AC4: format int en 1234567"
+        assert str eq (format int "it" 1234567) "1.234.567" "AC4: format int it 1234567"
         assert str eq (format int "es" (-1234567)) "-1.234.567" "AC4: format int es negative"
         assert str eq (format int "es" 42) "42" "AC4: format int es small"
         assert str eq (format int "es" 0) "0" "AC4: format int es zero"
@@ -235,6 +248,7 @@ fn :: test locale numbers => ()
         assert str eq (format decimal "es" 1234567.89 2) "1.234.567,89" "AC4: format decimal es"
         assert str eq (format decimal "sv" 1234.5 2) ("1" + nbsp + "234,50") "AC4: format decimal sv"
         assert str eq (format decimal "en" 1234.5 2) "1,234.50" "AC4: format decimal en"
+        assert str eq (format decimal "it" 1234.5 2) "1.234,50" "AC4: format decimal it"
         assert str eq (format decimal "es" (-19.99) 2) "-19,99" "AC4: format decimal negative"
         ()
 ```
@@ -245,7 +259,6 @@ fn :: test locale numbers => ()
 fn :: test locale autonyms normalization and registry => ()
       test locale autonyms normalization and registry =
         assert str eq (loc join strs (supported locales)) "es,ca,eu,gl,pt,sv,en,it" "AC1: supported locales order"
-        assert str eq (language name "it") "Italiano" "AC1: language name it"
         assert str eq (language name "es") "Español" "AC1: language name es"
         assert str eq (language name "ca") "Català" "AC1: language name ca"
         assert str eq (language name "eu") "Euskara" "AC1: language name eu"
@@ -253,11 +266,13 @@ fn :: test locale autonyms normalization and registry => ()
         assert str eq (language name "pt") "Português" "AC1: language name pt"
         assert str eq (language name "sv") "Svenska" "AC1: language name sv"
         assert str eq (language name "en") "English" "AC1: language name en"
+        assert str eq (language name "it") "Italiano" "AC1: language name it"
         assert str eq (language name "unknown") "English" "AC1: unknown locale falls back to English"
         assert str eq (language name "root") "English" "AC1: root locale falls back to English"
         assert str eq (normalize locale "es-ES") "es" "AC1: normalize locale es-ES"
         assert str eq (normalize locale "CA_ES.UTF-8") "ca" "AC1: normalize locale CA_ES.UTF-8"
         assert str eq (normalize locale "pt-BR") "pt" "AC1: normalize locale pt-BR"
+        assert str eq (normalize locale "it_IT.UTF-8") "it" "AC1: normalize locale it_IT.UTF-8"
         assert str eq (normalize locale "xx-YY") "en" "AC1: normalize unknown locale to en"
 
         fr_spec = LocaleSpec "fr" "Français" "one_zero_one" " " "," ["janvier"] ["janv."] ["lundi"] ["lun."] (LocaleDatePatterns "%DD/%MM/%YYYY" "%D %MMM %YYYY" "%D %MMMM %YYYY" "%EEEE %D %MMMM %YYYY" " ")
@@ -275,4 +290,8 @@ fn :: test locale autonyms normalization and registry => ()
 - **Complejidad de pila $O(1)$ con TCO**: Todos los recorridos de sustitución y agrupación en `src/main/ridgun/lib/locale.ridgun` son recursivos de cola.
 - **Verificación continua**: Probada exhaustivamente con `src/test/ridgun/test locale.ridgun`.
 
-¡Has completado el recorrido exhaustivo por las **34 libs estándar de `ridgun-libs`**!
+¡Has completado el recorrido exhaustivo por las **38 libs estándar de `ridgun-libs`**!
+
+---
+
+En el **Capítulo 35** pasaremos a explorar en profundidad la lib **`hash`** (La lib `hash` — Hashing con Clave SipHash-1-3 para Tablas Hash).

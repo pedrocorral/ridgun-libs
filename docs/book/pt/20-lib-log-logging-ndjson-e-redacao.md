@@ -21,7 +21,7 @@ Num ecossistema tradicional, resolver as tarefas do domínio **`LOG`** implica a
 
 ## 20.2. Artefactos nativos, importação e catálogo completo da API de `log`
 
-No `ridgun-libs`, **`log`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/log.ridgun` (domínio `LOG`). Ao compilar com `stable bundle`, é empacotada em três formatos nativos:
+No `ridgun-libs`, **`log`** é uma **lib** de primeira classe localizada em `src/main/ridgun/lib/log.ridgun` (domínio `LOG`). Ao compilar com `stable bundle`, é empacotada num formato nativo:
 
 | Artefacto | Caminho | Finalidade |
 |---|---|---|
@@ -86,7 +86,7 @@ fn :: auditar login String String => String
 
 ### 20.3.2. Exemplo 2: Composição segura e tratamento de casos de fronteira
 
-Todas as funções da lib `log` foram desenhadas para se comporem com guardas booleanas `|` e com as restantes 32 libs do `ridgun-libs`:
+Todas as funções da lib `log` foram desenhadas para se comporem com guardas booleanas `|` e com as restantes 38 libs do `ridgun-libs`:
 
 ```ridgun
 import log
@@ -97,35 +97,35 @@ fn :: emitir si procede String String String => String
         | otherwise                    = ""
 ```
 
-### 20.3.3. Exemplo 3: Hierarquia de níveis de severidade (`DEBUG`, `INFO`, `WARN`, `ERROR`) e filtragem por limiar (`log enabled`)
+### 20.3.3. Exemplo 3: Hierarquia de níveis de severidade (`DEBUG`, `INFO`, `WARN`, `ERROR`) e filtragem por limiar (`log should emit`)
 
 Neste exemplo prático exploramos de forma exaustiva como a `log` se comporta neste bloco funcional, incluindo entradas padrão, combinações de parâmetros e valores limite:
 
 ```ridgun
 fn :: test log levels and filtering => ()
       test log levels and filtering =
-        assert int equals (log level rank "debug") 10 "AC1: rank debug == 10"
-        assert int equals (log level rank "DEBUG") 10 "AC1: rank DEBUG == 10"
-        assert int equals (log level rank "info") 20 "AC1: rank info == 20"
-        assert int equals (log level rank "INFO") 20 "AC1: rank INFO == 20"
-        assert int equals (log level rank "warn") 30 "AC1: rank warn == 30"
-        assert int equals (log level rank "warning") 30 "AC1: rank warning alias == 30"
-        assert int equals (log level rank "error") 40 "AC1: rank error == 40"
-        assert int equals (log level rank "ERR") 40 "AC1: rank ERR alias == 40"
-        assert int equals (log level rank "unknown_level") 20 "AC1: unknown level defaults to INFO (20)"
+        log level rank "debug" -> assert int equals 10 "AC1: rank debug == 10"
+        log level rank "DEBUG" -> assert int equals 10 "AC1: rank DEBUG == 10"
+        log level rank "info" -> assert int equals 20 "AC1: rank info == 20"
+        log level rank "INFO" -> assert int equals 20 "AC1: rank INFO == 20"
+        log level rank "warn" -> assert int equals 30 "AC1: rank warn == 30"
+        log level rank "warning" -> assert int equals 30 "AC1: rank warning alias == 30"
+        log level rank "error" -> assert int equals 40 "AC1: rank error == 40"
+        log level rank "ERR" -> assert int equals 40 "AC1: rank ERR alias == 40"
+        log level rank "unknown_level" -> assert int equals 20 "AC1: unknown level defaults to INFO (20)"
 
-        assert str eq (log level name 10) "DEBUG" "AC1: level name 10 -> DEBUG"
-        assert str eq (log level name 20) "INFO" "AC1: level name 20 -> INFO"
-        assert str eq (log level name 30) "WARN" "AC1: level name 30 -> WARN"
-        assert str eq (log level name 40) "ERROR" "AC1: level name 40 -> ERROR"
+        log level name 10 -> assert str eq "DEBUG" "AC1: level name 10 -> DEBUG"
+        log level name 20 -> assert str eq "INFO" "AC1: level name 20 -> INFO"
+        log level name 30 -> assert str eq "WARN" "AC1: level name 30 -> WARN"
+        log level name 40 -> assert str eq "ERROR" "AC1: level name 40 -> ERROR"
 
-        assert true (log should emit "DEBUG" "DEBUG") "AC1: DEBUG emits DEBUG"
-        assert true (log should emit "DEBUG" "ERROR") "AC1: DEBUG emits ERROR"
-        assert true (log should emit "WARN" "ERROR") "AC1: WARN emits ERROR"
-        assert true (log should emit "WARN" "warning") "AC1: WARN emits warning"
-        assert false (log should emit "WARN" "INFO") "AC1: WARN suppresses INFO"
-        assert false (log should emit "ERROR" "WARN") "AC1: ERROR suppresses WARN"
-        assert false (log should emit "ERROR" "DEBUG") "AC1: ERROR suppresses DEBUG"
+        log should emit "DEBUG" "DEBUG" -> assert true "AC1: DEBUG emits DEBUG"
+        log should emit "DEBUG" "ERROR" -> assert true "AC1: DEBUG emits ERROR"
+        log should emit "WARN" "ERROR" -> assert true "AC1: WARN emits ERROR"
+        log should emit "WARN" "warning" -> assert true "AC1: WARN emits warning"
+        log should emit "WARN" "INFO" -> assert false "AC1: WARN suppresses INFO"
+        log should emit "ERROR" "WARN" -> assert false "AC1: ERROR suppresses WARN"
+        log should emit "ERROR" "DEBUG" -> assert false "AC1: ERROR suppresses DEBUG"
         ()
 ```
 
@@ -136,20 +136,20 @@ Neste exemplo prático exploramos de forma exaustiva como a `log` se comporta ne
 ```ridgun
 fn :: test log sensitive key redaction => ()
       test log sensitive key redaction =
-        assert true (log is sensitive key "password") "AC2: password"
-        assert true (log is sensitive key "user_passwd") "AC2: user_passwd"
-        assert true (log is sensitive key "CLIENT_SECRET") "AC2: CLIENT_SECRET"
-        assert true (log is sensitive key "access_token") "AC2: access_token"
-        assert true (log is sensitive key "X-Api-Key") "AC2: X-Api-Key"
-        assert true (log is sensitive key "api_key_id") "AC2: api_key_id"
-        assert true (log is sensitive key "apikey") "AC2: apikey"
-        assert true (log is sensitive key "Authorization") "AC2: Authorization"
-        assert true (log is sensitive key "session_cookie") "AC2: session_cookie"
-        assert true (log is sensitive key "ssh_private_key") "AC2: ssh_private_key"
-        assert true (log is sensitive key "private-key-pem") "AC2: private-key-pem"
-        assert false (log is sensitive key "username") "AC2: username safe"
-        assert false (log is sensitive key "request_id") "AC2: request_id safe"
-        assert false (log is sensitive key "status_code") "AC2: status_code safe"
+        log is sensitive key "password" -> assert true "AC2: password"
+        log is sensitive key "user_passwd" -> assert true "AC2: user_passwd"
+        log is sensitive key "CLIENT_SECRET" -> assert true "AC2: CLIENT_SECRET"
+        log is sensitive key "access_token" -> assert true "AC2: access_token"
+        log is sensitive key "X-Api-Key" -> assert true "AC2: X-Api-Key"
+        log is sensitive key "api_key_id" -> assert true "AC2: api_key_id"
+        log is sensitive key "apikey" -> assert true "AC2: apikey"
+        log is sensitive key "Authorization" -> assert true "AC2: Authorization"
+        log is sensitive key "session_cookie" -> assert true "AC2: session_cookie"
+        log is sensitive key "ssh_private_key" -> assert true "AC2: ssh_private_key"
+        log is sensitive key "private-key-pem" -> assert true "AC2: private-key-pem"
+        log is sensitive key "username" -> assert false "AC2: username safe"
+        log is sensitive key "request_id" -> assert false "AC2: request_id safe"
+        log is sensitive key "status_code" -> assert false "AC2: status_code safe"
         ()
 ```
 
@@ -162,18 +162,18 @@ fn :: test log text and ndjson formatting => ()
       test log text and ndjson formatting =
         fields = [("user", "alice"), ("password", "s3cr3t"), ("auth_token", "jwt-123"), ("cookie", "sid=99")]
         txt = log format text "info" "user login" fields
-        assert str eq txt "[INFO] user login user=alice password=[REDACTED] auth_token=[REDACTED] cookie=[REDACTED]" "AC3: log format text redacts all secret keys"
+        txt -> assert str eq "[INFO] user login user=alice password=[REDACTED] auth_token=[REDACTED] cookie=[REDACTED]" "AC3: log format text redacts all secret keys"
 
         txt_empty = log format text "error" "disk full" []
-        assert str eq txt_empty "[ERROR] disk full" "AC3: log format text with empty fields"
+        txt_empty -> assert str eq "[ERROR] disk full" "AC3: log format text with empty fields"
 
         -- Log injection defense: newlines, carriage returns, tabs, quotes, and backslashes in msg or values
         inj_fields = [("path", "C:\\app\\bin"), ("note", "line1\nline2\r\t\"quoted\"")]
         jsn = log format json "warn" "auth check\nforged_line" fields
-        assert str eq jsn "{\"level\":\"WARN\",\"msg\":\"auth check\\nforged_line\",\"user\":\"alice\",\"password\":\"[REDACTED]\",\"auth_token\":\"[REDACTED]\",\"cookie\":\"[REDACTED]\"}" "AC3: NDJSON escapes newline injection and redacts secrets"
+        jsn -> assert str eq "{\"level\":\"WARN\",\"msg\":\"auth check\\nforged_line\",\"user\":\"alice\",\"password\":\"[REDACTED]\",\"auth_token\":\"[REDACTED]\",\"cookie\":\"[REDACTED]\"}" "AC3: NDJSON escapes newline injection and redacts secrets"
 
         jsn_esc = log format json "debug" "trace" inj_fields
-        assert str eq jsn_esc "{\"level\":\"DEBUG\",\"msg\":\"trace\",\"path\":\"C:\\\\app\\\\bin\",\"note\":\"line1\\nline2\\r\\t\\\"quoted\\\"\"}" "AC3: NDJSON escapes \\, \\n, \\r, \\t, and \\\""
+        jsn_esc -> assert str eq "{\"level\":\"DEBUG\",\"msg\":\"trace\",\"path\":\"C:\\\\app\\\\bin\",\"note\":\"line1\\nline2\\r\\t\\\"quoted\\\"\"}" "AC3: NDJSON escapes \\, \\n, \\r, \\t, and \\\""
         ()
 ```
 
@@ -305,7 +305,7 @@ fn :: log format json String String [String String] => String
 
 ### As 5 Regras de Ouro ao programar com a `log`
 
-1. **Declare `import log` no início do ficheiro** e aproveite a equivalência entre espaços e underscores para que o seu código se leia como prosa.
+1. **Declare `import log` no início do ficheiro** e chame as suas funções com espaços, tal como estão declaradas, para que o seu código se leia como prosa.
 2. **Alinhe os seus pipelines de dados com `=`**: encadeie as chamadas à `log` em passos nomeados e deixe o `stable format` alinhar as colunas.
 3. **Aproveite as funções totais da `log` nas suas guardas `|`**: verifique os valores de retorno ou desempacote os ADTs com *pattern matching* em vez de assumir que a entrada externa é sempre válida.
 4. **Evite copiar grandes estruturas se só precisa de consultar um campo**: lembre-se de que no `RMM2` os argumentos de entrada não incrementam nem decrementam contadores (`+0` / `-0`).

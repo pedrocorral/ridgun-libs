@@ -8,7 +8,7 @@ That is the first question every systems engineer asks when meeting `template`. 
 
 Let's be honest: assembling HTML pages or LaTeX reports by manual string concatenation is a textbook recipe for XSS vulnerabilities (`<script>`) or broken PDF builds the moment a user types `%` or `_`.
 
-The **`template`** lib provides a logic-less **Mustache** engine with contextual auto-escaping (`TmplPlain`, `TmplHtml`, `TmplLatex`), explicit raw interpolation (`{{{raw}}}` / `{{&raw}}`), comments (`{{! ... }}`), truthy sections (`{{#sec}}...{{/sec}}`), and inverted sections (`{{^sec}}...{{/sec}}`).
+The **`template`** lib provides a logic-less **Mustache** engine with contextual auto-escaping (`TmplEscapeNone`, `TmplEscapeHtml`, `TmplEscapeLatex`), explicit raw interpolation (`{{{raw}}}` / `{{&raw}}`), comments (`{{! ... }}`), truthy sections (`{{#sec}}...{{/sec}}`), and inverted sections (`{{^sec}}...{{/sec}}`).
 
 In a traditional ecosystem, solving **`TMPL`** tasks means pulling in external C dependencies, wrestling with raw pointers, opaque type conversions, unchecked exceptions, or unpredictable garbage-collector pauses. In Ridgun, the **`template`** lib (`src/main/ridgun/lib/template.ridgun`) tackles the problem with four non-negotiable principles:
 
@@ -21,7 +21,7 @@ In a traditional ecosystem, solving **`TMPL`** tasks means pulling in external C
 
 ## 14.2. Native Artifacts, Imports, and Complete `template` API Catalog
 
-In `ridgun-libs`, **`template`** is a first-class **lib** located at `src/main/ridgun/lib/template.ridgun` (domain `TMPL`). When built with `stable bundle`, it compiles into three native artifacts:
+In `ridgun-libs`, **`template`** is a first-class **lib** located at `src/main/ridgun/lib/template.ridgun` (domain `TMPL`). When built with `stable bundle`, it compiles into one native artifact:
 
 | Artifact | Path | Purpose |
 |---|---|---|
@@ -34,8 +34,7 @@ In `ridgun-libs`, **`template`** is a first-class **lib** located at `src/main/r
 | Signature / Function / Type | Purpose & Usage |
 |---|---|
 | `tmpl render / tmpl render html / tmpl render latex` | Render Mustache templates with plain, HTML, or LaTeX auto-escaping |
-| `tmpl escape html / tmpl escape latex` | Escape `& < > " '` for HTML or `\ { } & % $ # _ ~ ^` for LaTeX |
-| `tmpl extract vars / tmpl has unclosed tags` | Inspect required variable names and validate tag balance before rendering |
+| `tmpl render html / tmpl render latex` | Escape `& < > " '` for HTML or `\ { } & % $ # _ ~ ^` for LaTeX |
 
 ### 14.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/template.ridgun`
 
@@ -56,9 +55,9 @@ type TmplEscape = TmplEscapeNone | TmplEscapeHtml | TmplEscapeLatex
 | `5` | `fn :: tm trim start String Int Int` | `Int` |
 | `6` | `fn :: tm trim end String Int Int` | `Int` |
 | `7` | `fn :: tm trim String` | `String` |
-| `8` | `fn :: tm lookup [(String, String)] String` | `String` |
+| `8` | `fn :: tm lookup [String String] String` | `String` |
 | `9` | `fn :: tm val truthy String` | `Bool` |
-| `10` | `fn :: tm is truthy [(String, String)] String` | `Bool` |
+| `10` | `fn :: tm is truthy [String String] String` | `Bool` |
 | `11` | `fn :: tm escape html char Int` | `String` |
 | `12` | `fn :: tm escape html loop String Int Int String` | `String` |
 | `13` | `fn :: tm escape latex char Int` | `String` |
@@ -66,24 +65,24 @@ type TmplEscape = TmplEscapeNone | TmplEscapeHtml | TmplEscapeLatex
 | `15` | `fn :: tm escape String TmplEscape` | `String` |
 | `16` | `fn :: tm find close2 String Int Int` | `Int` |
 | `17` | `fn :: tm find close3 String Int Int` | `Int` |
-| `18` | `fn :: tm find section close String Int Int String Int` | `(Int, Int)` |
-| `19` | `fn :: tm check section tag String Int Int String Int Int` | `(Int, Int)` |
-| `20` | `fn :: tm check close tag String Int Int String Int Int` | `(Int, Int)` |
-| `21` | `fn :: tm close tag match String Int Int String Int Int` | `(Int, Int)` |
-| `22` | `fn :: tm check open tag String Int Int String Int Int` | `(Int, Int)` |
-| `23` | `fn :: tm scan String Int Int [(String, String)] TmplEscape String` | `String` |
-| `24` | `fn :: tm dispatch tag String Int Int [(String, String)] TmplEscape String` | `String` |
-| `25` | `fn :: tm tag raw3 String Int Int [(String, String)] TmplEscape String Int` | `String` |
-| `26` | `fn :: tm tag raw amp String Int Int [(String, String)] TmplEscape String Int` | `String` |
-| `27` | `fn :: tm tag comment String Int Int [(String, String)] TmplEscape String Int` | `String` |
+| `18` | `fn :: tm find section close String Int Int String Int` | `Int Int` |
+| `19` | `fn :: tm check section tag String Int Int String Int Int` | `Int Int` |
+| `20` | `fn :: tm check close tag String Int Int String Int Int` | `Int Int` |
+| `21` | `fn :: tm close tag match String Int Int String Int Int` | `Int Int` |
+| `22` | `fn :: tm check open tag String Int Int String Int Int` | `Int Int` |
+| `23` | `fn :: tm scan String Int Int [String String] TmplEscape String` | `String` |
+| `24` | `fn :: tm dispatch tag String Int Int [String String] TmplEscape String` | `String` |
+| `25` | `fn :: tm tag raw3 String Int Int [String String] TmplEscape String Int` | `String` |
+| `26` | `fn :: tm tag raw amp String Int Int [String String] TmplEscape String Int` | `String` |
+| `27` | `fn :: tm tag comment String Int Int [String String] TmplEscape String Int` | `String` |
 | `28` | `fn :: tm section active Bool Bool` | `Bool` |
-| `29` | `fn :: tm render section body String Int (Int, Int) Int [(String, String)] TmplEscape String Bool` | `String` |
-| `30` | `fn :: tm tag section String Int Int [(String, String)] TmplEscape String Int Bool` | `String` |
-| `31` | `fn :: tm tag var String Int Int [(String, String)] TmplEscape String Int` | `String` |
-| `32` | `fn :: tmpl render with escape String [(String, String)] TmplEscape` | `String` |
-| `33` | `fn :: tmpl render String [(String, String)]` | `String` |
-| `34` | `fn :: tmpl render html String [(String, String)]` | `String` |
-| `35` | `fn :: tmpl render latex String [(String, String)]` | `String` |
+| `29` | `fn :: tm render section body String Int (Int Int) Int [String String] TmplEscape String Bool` | `String` |
+| `30` | `fn :: tm tag section String Int Int [String String] TmplEscape String Int Bool` | `String` |
+| `31` | `fn :: tm tag var String Int Int [String String] TmplEscape String Int` | `String` |
+| `32` | `fn :: tmpl render with escape String [String String] TmplEscape` | `String` |
+| `33` | `fn :: tmpl render String [String String]` | `String` |
+| `34` | `fn :: tmpl render html String [String String]` | `String` |
+| `35` | `fn :: tmpl render latex String [String String]` | `String` |
 
 ---
 
@@ -107,7 +106,7 @@ fn :: renderizar perfil html String String => String
 
 ### 14.3.2. Example 2: Safe Composition and Boundary Handling
 
-Every function in the `template` lib is designed to compose cleanly with boolean guards `|` and with the rest of the 32 libs in `ridgun-libs`:
+Every function in the `template` lib is designed to compose cleanly with boolean guards `|` and with the rest of the 38 libs in `ridgun-libs`:
 
 ```ridgun
 import template
@@ -129,13 +128,13 @@ fn :: test tmpl interpolation and comments => ()
         ctx = [("name", "Ada Lovelace"), ("role", "Mathematician"), ("empty", "")]
         t1 = "Hello, " + (tag2 "name") + " (" + (tag2 "  role  ") + ")!"
         out1 = tmpl render t1 ctx
-        assert str eq out1 "Hello, Ada Lovelace (Mathematician)!" "AC1: variable and whitespace-trimmed tag interpolation"
+        out1 -> assert str eq "Hello, Ada Lovelace (Mathematician)!" "AC1: variable and whitespace-trimmed tag interpolation"
         t_missing = "User: [" + (tag2 "unknown") + "] Empty: [" + (tag2 "empty") + "]"
         out_missing = tmpl render t_missing ctx
-        assert str eq out_missing "User: [] Empty: []" "AC1: missing and empty variables render empty string"
+        out_missing -> assert str eq "User: [] Empty: []" "AC1: missing and empty variables render empty string"
         t_comment = "Visible" + (tag2 "! secret comment ") + "Text" + (tag2 ("! multiline" + nl + "comment" + nl + "here ")) + "End"
         out_comment = tmpl render t_comment ctx
-        assert str eq out_comment "VisibleTextEnd" "AC1: single-line and multi-line comments omitted"
+        out_comment -> assert str eq "VisibleTextEnd" "AC1: single-line and multi-line comments omitted"
         ()
 ```
 
@@ -151,9 +150,9 @@ fn :: test tmpl html escaping and raw => ()
         tmpl = "Escaped: " + (tag2 "xss") + " | Raw3: " + (tag3 "trusted") + " | RawAmp: " + (tag2 "& trusted ")
         out_html = tmpl render html tmpl ctx
         expected = "Escaped: &lt;script&gt;alert(&quot;xss&quot; &amp; &#39;pwn&#39;)&lt;/script&gt; | Raw3: <b>Bold &amp; Safe</b> | RawAmp: <b>Bold &amp; Safe</b>"
-        assert str eq out_html expected "AC1: HTML escaping vs raw triple-brace and ampersand tags"
+        out_html -> assert str eq expected "AC1: HTML escaping vs raw triple-brace and ampersand tags"
         out_none = tmpl render ("Plain: " + (tag2 "xss")) ctx
-        assert str eq out_none ("Plain: <script>alert(" + q + "xss" + q + " & 'pwn')</script>") "AC1: TmplEscapeNone leaves HTML unescaped"
+        out_none -> assert str eq ("Plain: <script>alert(" + q + "xss" + q + " & 'pwn')</script>") "AC1: TmplEscapeNone leaves HTML unescaped"
         ()
 ```
 
@@ -166,17 +165,17 @@ fn :: test tmpl sections and inverted => ()
       test tmpl sections and inverted =
         tmpl = (tag2 "#auth") + "Welcome, " + (tag2 "user") + "!" + (tag2 "/auth") + (tag2 "^auth") + "Please log in." + (tag2 "/auth")
         out_in = tmpl render html tmpl [("auth", "true"), ("user", "Alice & Bob")]
-        assert str eq out_in "Welcome, Alice &amp; Bob!" "AC2: truthy section rendered with HTML escaping"
+        out_in -> assert str eq "Welcome, Alice &amp; Bob!" "AC2: truthy section rendered with HTML escaping"
         out_false = tmpl render html tmpl [("auth", "false"), ("user", "Alice")]
-        assert str eq out_false "Please log in." "AC2: 'false' triggers inverted section"
+        out_false -> assert str eq "Please log in." "AC2: 'false' triggers inverted section"
         out_false_cap = tmpl render html tmpl [("auth", "False"), ("user", "Alice")]
-        assert str eq out_false_cap "Please log in." "AC2: 'False' triggers inverted section"
+        out_false_cap -> assert str eq "Please log in." "AC2: 'False' triggers inverted section"
         out_zero = tmpl render html tmpl [("auth", "0"), ("user", "Alice")]
-        assert str eq out_zero "Please log in." "AC2: '0' triggers inverted section"
+        out_zero -> assert str eq "Please log in." "AC2: '0' triggers inverted section"
         out_empty = tmpl render html tmpl [("auth", ""), ("user", "Alice")]
-        assert str eq out_empty "Please log in." "AC2: empty string triggers inverted section"
+        out_empty -> assert str eq "Please log in." "AC2: empty string triggers inverted section"
         out_missing = tmpl render html tmpl [("user", "Alice")]
-        assert str eq out_missing "Please log in." "AC2: missing key triggers inverted section"
+        out_missing -> assert str eq "Please log in." "AC2: missing key triggers inverted section"
         ()
 ```
 
@@ -189,18 +188,18 @@ fn :: test tmpl nested sections => ()
       test tmpl nested sections =
         tmpl = (tag2 "#outer") + "A-" + (tag2 "#inner") + "B-" + (tag2 "val") + (tag2 "/inner") + (tag2 "^inner") + "NO_INNER" + (tag2 "/inner") + "-C" + (tag2 "/outer")
         out1 = tmpl render tmpl [("outer", "1"), ("inner", "yes"), ("val", "42")]
-        assert str eq out1 "A-B-42-C" "AC2: nested outer+inner truthy"
+        out1 -> assert str eq "A-B-42-C" "AC2: nested outer+inner truthy"
         out2 = tmpl render tmpl [("outer", "1"), ("inner", "0"), ("val", "42")]
-        assert str eq out2 "A-NO_INNER-C" "AC2: nested outer truthy, inner falsy"
+        out2 -> assert str eq "A-NO_INNER-C" "AC2: nested outer truthy, inner falsy"
         out3 = tmpl render tmpl [("outer", "0"), ("inner", "yes"), ("val", "42")]
-        assert str eq out3 "" "AC2: nested outer falsy skips inner"
+        out3 -> assert str eq "" "AC2: nested outer falsy skips inner"
         same_nested = (tag2 "#k") + "[" + (tag2 "#k") + "(" + (tag2 "v") + ")" + (tag2 "/k") + "]" + (tag2 "/k")
-        assert str eq (tmpl render same_nested [("k", "1"), ("v", "ok")]) "[(ok)]" "AC2: nested same-key truthy"
-        assert str eq (tmpl render same_nested [("k", ""), ("v", "ok")]) "" "AC2: nested same-key falsy"
+        tmpl render same_nested [("k", "1"), ("v", "ok")] -> assert str eq "[(ok)]" "AC2: nested same-key truthy"
+        tmpl render same_nested [("k", ""), ("v", "ok")] -> assert str eq "" "AC2: nested same-key falsy"
         ()
 ```
 
-### 14.3.7. Example 7: Specialized LaTeX Document Escaping (`tmpl escape latex`: `\`, `{`, `}`, `$`, `&`, `#`, `_`, `%`, `~`, `^`)
+### 14.3.7. Example 7: Specialized LaTeX Document Escaping (`tmpl render latex`: `\`, `{`, `}`, `$`, `&`, `#`, `_`, `%`, `~`, `^`)
 
 In this hands-on walkthrough we thoroughly exercise how `template` behaves across this functional area, covering standard inputs, parameter combinations, and corner cases:
 
@@ -215,11 +214,11 @@ fn :: test tmpl latex escaping => ()
         tmpl = "Text: " + (tag2 "formula") + " | Raw: " + (tag3 "raw_tex")
         out_tex = tmpl render latex tmpl ctx
         expected = "Text: 100" + bs + "% of " + bs + "$50 " + bs + "& " + bs + "#1" + bs + "_item " + bs + lb + "a" + bs + "textbackslash" + braces + "b" + bs + rb + " " + bs + "textasciitilde" + braces + " " + bs + "textasciicircum" + braces + " | Raw: " + bs + "textbf" + lb + "Title" + rb
-        assert str eq out_tex expected "AC3: LaTeX special characters escaped accurately while triple-brace stays raw"
+        out_tex -> assert str eq expected "AC3: LaTeX special characters escaped accurately while triple-brace stays raw"
         ()
 ```
 
-### 14.3.8. Example 8: Deterministic Detection of Unclosed Tags and Mismatched Sections (`TmplErr`)
+### 14.3.8. Example 8: Deterministic Detection of Unclosed Tags and Mismatched Sections (`tmpl render`)
 
 In this hands-on walkthrough we thoroughly exercise how `template` behaves across this functional area, covering standard inputs, parameter combinations, and corner cases:
 
@@ -228,10 +227,10 @@ fn :: test tmpl malformed tags => ()
       test tmpl malformed tags =
         lb = char from code 123
         ctx = [("x", "1")]
-        assert str eq (tmpl render ("trailing " + lb + lb) ctx) ("trailing " + lb + lb) "AC1: trailing double brace"
-        assert str eq (tmpl render ("unclosed " + lb + lb + "x") ctx) ("unclosed " + lb + lb + "x") "AC1: unclosed var tag"
-        assert str eq (tmpl render ("unclosed raw " + lb + lb + lb + "x") ctx) ("unclosed raw " + lb + lb + lb + "x") "AC1: unclosed raw3 tag"
-        assert str eq (tmpl render ("unclosed comment " + lb + lb + "! hidden") ctx) "unclosed comment " "AC1: unclosed comment tag"
+        tmpl render ("trailing " + lb + lb) ctx -> assert str eq ("trailing " + lb + lb) "AC1: trailing double brace"
+        tmpl render ("unclosed " + lb + lb + "x") ctx -> assert str eq ("unclosed " + lb + lb + "x") "AC1: unclosed var tag"
+        tmpl render ("unclosed raw " + lb + lb + lb + "x") ctx -> assert str eq ("unclosed raw " + lb + lb + lb + "x") "AC1: unclosed raw3 tag"
+        tmpl render ("unclosed comment " + lb + lb + "! hidden") ctx -> assert str eq "unclosed comment " "AC1: unclosed comment tag"
         ()
 ```
 
@@ -471,7 +470,7 @@ fn :: tmpl render latex String [String String] => String
 
 ### The 5 Golden Rules When Programming with `template`
 
-1. **Declare `import template` at the top of your file** and take advantage of space/underscore equivalence so your code reads like natural prose.
+1. **Declare `import template` at the top of your file** and call its functions with spaces, exactly as they are declared, so your code reads like natural prose.
 2. **Align your data pipelines with `=`**: chain `template` calls into named intermediate steps and let `stable format` align the columns.
 3. **Leverage `template`'s total functions inside `|` guards**: inspect return values or unwrap ADTs via pattern matching rather than assuming external input is valid.
 4. **Avoid cloning large structures when only reading**: remember that under `RMM2`, function input arguments incur zero reference-count overhead (`+0` / `-0`).

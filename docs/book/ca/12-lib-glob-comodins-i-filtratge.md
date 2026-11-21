@@ -21,7 +21,7 @@ En un ecosistema tradicional, resoldre les tasques del domini **`GLOB`** implica
 
 ## 12.2. Artefactes natius, importació i catàleg complet de l'API de `glob`
 
-A `ridgun-libs`, **`glob`** és una **lib** de primera classe situada a `src/main/ridgun/lib/glob.ridgun` (domini `GLOB`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`glob`** és una **lib** de primera classe situada a `src/main/ridgun/lib/glob.ridgun` (domini `GLOB`). En compilar amb `stable bundle`, s'empaqueta en un format natiu:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
@@ -35,7 +35,6 @@ A `ridgun-libs`, **`glob`** és una **lib** de primera classe situada a `src/mai
 |---|---|
 | `glob match / glob match ci` | Coincidència de patrons glob sensible i insensible a majúscules ASCII |
 | `glob filter / glob any match` | Filtra `[String]` segons un patró o comprova si coincideix algun patró d'una llista |
-| `glob has magic` | Detecta si una cadena conté metacaràcters de comodí (`*`, `?`, `[`) |
 
 ### 12.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/glob.ridgun`
 
@@ -82,7 +81,7 @@ fn :: seleccionar fuentes ridgun [String] => [String]
 
 ### 12.3.2. Exemple 2: Composició segura i gestió de casos de vora
 
-Tota funció de la lib `glob` està dissenyada per compondre's amb guardes booleanes `|` i amb la resta de les 32 libs de `ridgun-libs`:
+Tota funció de la lib `glob` està dissenyada per compondre's amb guardes booleanes `|` i amb la resta de les 38 libs de `ridgun-libs`:
 
 ```ridgun
 import glob
@@ -99,27 +98,27 @@ En aquest exemple pràctic explorem de manera exhaustiva com es comporta `glob` 
 ```ridgun
 fn :: test glob wildcards and boundaries => ()
       test glob wildcards and boundaries =
-        assert true (glob match "" "") "AC1: empty pattern matches empty string"
-        assert false (glob match "" "a") "AC1: empty pattern rejects non-empty"
-        assert true (glob match "*" "") "AC1: * matches empty string"
-        assert true (glob match "***" "") "AC1: *** matches empty string"
-        assert true (glob match "*" "anything.ridgun") "AC1: * matches full filename"
-        assert true (glob match "*.ridgun" "socket.ridgun") "AC1: *.ridgun matches socket.ridgun"
-        assert true (glob match "*.ridgun" ".ridgun") "AC1: *.ridgun matches leading dot .ridgun"
-        assert false (glob match "*.ridgun" "README.md") "AC1: *.ridgun rejects README.md"
-        assert false (glob match "*.ridgun" "socket.ridgun.bak") "AC1: *.ridgun rejects trailing suffix"
-        assert true (glob match "test_?.ridgun" "test_a.ridgun") "AC1: ? matches single char"
-        assert false (glob match "test_?.ridgun" "test_.ridgun") "AC1: ? rejects zero chars"
-        assert false (glob match "test_?.ridgun" "test_ab.ridgun") "AC1: ? rejects two chars"
-        assert true (glob match "???" "abc") "AC1: ??? matches 3 chars"
-        assert false (glob match "???" "ab") "AC1: ??? rejects 2 chars"
-        assert true (glob match "a*b*c" "abc") "AC1: multiple * matching zero chars"
-        assert true (glob match "a*b*c" "axxxbyyyc") "AC1: multiple * matching substrings"
-        assert true (glob match "a*b*c" "abbc") "AC1: backtracking * across repeated b"
-        assert false (glob match "a*b*c" "axxxbyyy") "AC1: missing trailing literal after *"
-        assert true (glob match "a***b" "axyzb") "AC1: collapsed *** matches"
-        -- Pathological backtracking immunity via gl skip stars
-        assert false (glob match "****************a" "bbbbbbbbbbbbbbbbbbbbbbbbbbbb") "AC1: collapsed stars avoid exponential backtracking"
+        glob match "" "" -> assert true "AC1: empty pattern matches empty string"
+        glob match "" "a" -> assert false "AC1: empty pattern rejects non-empty"
+        glob match "*" "" -> assert true "AC1: * matches empty string"
+        glob match "***" "" -> assert true "AC1: *** matches empty string"
+        glob match "*" "anything.ridgun" -> assert true "AC1: * matches full filename"
+        glob match "*.ridgun" "socket.ridgun" -> assert true "AC1: *.ridgun matches socket.ridgun"
+        glob match "*.ridgun" ".ridgun" -> assert true "AC1: *.ridgun matches leading dot .ridgun"
+        glob match "*.ridgun" "README.md" -> assert false "AC1: *.ridgun rejects README.md"
+        glob match "*.ridgun" "socket.ridgun.bak" -> assert false "AC1: *.ridgun rejects trailing suffix"
+        glob match "test_?.ridgun" "test_a.ridgun" -> assert true "AC1: ? matches single char"
+        glob match "test_?.ridgun" "test_.ridgun" -> assert false "AC1: ? rejects zero chars"
+        glob match "test_?.ridgun" "test_ab.ridgun" -> assert false "AC1: ? rejects two chars"
+        glob match "???" "abc" -> assert true "AC1: ??? matches 3 chars"
+        glob match "???" "ab" -> assert false "AC1: ??? rejects 2 chars"
+        glob match "a*b*c" "abc" -> assert true "AC1: multiple * matching zero chars"
+        glob match "a*b*c" "axxxbyyyc" -> assert true "AC1: multiple * matching substrings"
+        glob match "a*b*c" "abbc" -> assert true "AC1: backtracking * across repeated b"
+        glob match "a*b*c" "axxxbyyy" -> assert false "AC1: missing trailing literal after *"
+        glob match "a***b" "axyzb" -> assert true "AC1: collapsed *** matches"
+        -- Pathological backtracking immunity via gl_skip_stars
+        glob match "****************a" "bbbbbbbbbbbbbbbbbbbbbbbbbbbb" -> assert false "AC1: collapsed stars avoid exponential backtracking"
         ()
 ```
 
@@ -130,25 +129,25 @@ En aquest exemple pràctic explorem de manera exhaustiva com es comporta `glob` 
 ```ridgun
 fn :: test glob classes and case insensitivity => ()
       test glob classes and case insensitivity =
-        assert true (glob match "file_[0-9].txt" "file_0.txt") "AC2: [0-9] lower bound 0"
-        assert true (glob match "file_[0-9].txt" "file_9.txt") "AC2: [0-9] upper bound 9"
-        assert false (glob match "file_[0-9].txt" "file_a.txt") "AC2: [0-9] rejects alpha"
-        assert true (glob match "id_[a-zA-Z0-9].ridgun" "id_Z.ridgun") "AC2: multi-range [a-zA-Z0-9] matches Z"
-        assert true (glob match "id_[a-zA-Z0-9].ridgun" "id_5.ridgun") "AC2: multi-range [a-zA-Z0-9] matches 5"
-        assert false (glob match "id_[a-zA-Z0-9].ridgun" "id__.ridgun") "AC2: multi-range [a-zA-Z0-9] rejects _"
-        assert true (glob match "v[135].ridgun" "v3.ridgun") "AC2: discrete character set [135]"
-        assert false (glob match "v[135].ridgun" "v2.ridgun") "AC2: discrete character set rejects 2"
-        assert true (glob match "file_[!0-9].txt" "file_a.txt") "AC2: [!0-9] POSIX negated class"
-        assert false (glob match "file_[!0-9].txt" "file_7.txt") "AC2: [!0-9] rejects digit"
-        assert true (glob match "file_[^0-9].txt" "file_z.txt") "AC2: [^0-9] caret negated class"
-        assert false (glob match "file_[^0-9].txt" "file_0.txt") "AC2: [^0-9] rejects digit"
-        assert true (glob match "a[b" "a[b") "AC2: unclosed '[' matches literally"
-        assert false (glob match "a[b" "axb") "AC2: unclosed '[' rejects non-bracket"
+        glob match "file_[0-9].txt" "file_0.txt" -> assert true "AC2: [0-9] lower bound 0"
+        glob match "file_[0-9].txt" "file_9.txt" -> assert true "AC2: [0-9] upper bound 9"
+        glob match "file_[0-9].txt" "file_a.txt" -> assert false "AC2: [0-9] rejects alpha"
+        glob match "id_[a-zA-Z0-9].ridgun" "id_Z.ridgun" -> assert true "AC2: multi-range [a-zA-Z0-9] matches Z"
+        glob match "id_[a-zA-Z0-9].ridgun" "id_5.ridgun" -> assert true "AC2: multi-range [a-zA-Z0-9] matches 5"
+        glob match "id_[a-zA-Z0-9].ridgun" "id__.ridgun" -> assert false "AC2: multi-range [a-zA-Z0-9] rejects _"
+        glob match "v[135].ridgun" "v3.ridgun" -> assert true "AC2: discrete character set [135]"
+        glob match "v[135].ridgun" "v2.ridgun" -> assert false "AC2: discrete character set rejects 2"
+        glob match "file_[!0-9].txt" "file_a.txt" -> assert true "AC2: [!0-9] POSIX negated class"
+        glob match "file_[!0-9].txt" "file_7.txt" -> assert false "AC2: [!0-9] rejects digit"
+        glob match "file_[^0-9].txt" "file_z.txt" -> assert true "AC2: [^0-9] caret negated class"
+        glob match "file_[^0-9].txt" "file_0.txt" -> assert false "AC2: [^0-9] rejects digit"
+        glob match "a[b" "a[b" -> assert true "AC2: unclosed '[' matches literally"
+        glob match "a[b" "axb" -> assert false "AC2: unclosed '[' rejects non-bracket"
 
         -- Case-insensitive matching
-        assert true (glob match ci "*.RIDGUN" "socket.ridgun") "AC2: glob_match_ci *.RIDGUN on lowercase"
-        assert true (glob match ci "*.ridgun" "SOCKET.RIDGUN") "AC2: glob_match_ci *.ridgun on uppercase"
-        assert true (glob match ci "src/**/Test_[A-Z]*.ridgun" "SRC/main/test_crypto.RIDGUN") "AC2: glob_match_ci mixed case"
+        glob match ci "*.RIDGUN" "socket.ridgun" -> assert true "AC2: glob_match_ci *.RIDGUN on lowercase"
+        glob match ci "*.ridgun" "SOCKET.RIDGUN" -> assert true "AC2: glob_match_ci *.ridgun on uppercase"
+        glob match ci "src/**/Test_[A-Z]*.ridgun" "SRC/main/test_crypto.RIDGUN" -> assert true "AC2: glob_match_ci mixed case"
         ()
 ```
 
@@ -160,14 +159,14 @@ En aquest exemple pràctic explorem de manera exhaustiva com es comporta `glob` 
 fn :: test glob filter and any match => ()
       test glob filter and any match =
         files = ["socket.ridgun", "README.md", "test_socket.ridgun", "crypto.ridgun", "build.sh"]
-        assert eq (glob filter "*.ridgun" files) ["socket.ridgun", "test_socket.ridgun", "crypto.ridgun"]
-        assert eq (glob filter "test_*.ridgun" files) ["test_socket.ridgun"]
-        assert eq (glob filter "*.nomatch" files) []
-        assert eq (glob filter "*.ridgun" []) []
-        assert true (glob any match ["*.md", "*.txt", "*.sh"] "README.md") "AC3: glob_any_match first pattern"
-        assert true (glob any match ["*.md", "*.txt", "*.sh"] "build.sh") "AC3: glob_any_match last pattern"
-        assert false (glob any match ["*.md", "*.txt"] "socket.ridgun") "AC3: glob_any_match no match"
-        assert false (glob any match [] "socket.ridgun") "AC3: glob_any_match empty pattern list"
+        glob filter "*.ridgun" files -> assert eq ["socket.ridgun", "test_socket.ridgun", "crypto.ridgun"]
+        glob filter "test_*.ridgun" files -> assert eq ["test_socket.ridgun"]
+        glob filter "*.nomatch" files -> assert eq []
+        glob filter "*.ridgun" [] -> assert eq []
+        glob any match ["*.md", "*.txt", "*.sh"] "README.md" -> assert true "AC3: glob_any_match first pattern"
+        glob any match ["*.md", "*.txt", "*.sh"] "build.sh" -> assert true "AC3: glob_any_match last pattern"
+        glob any match ["*.md", "*.txt"] "socket.ridgun" -> assert false "AC3: glob_any_match no match"
+        glob any match [] "socket.ridgun" -> assert false "AC3: glob_any_match empty pattern list"
         ()
 ```
 
@@ -291,7 +290,7 @@ fn :: glob any match [String] String => Bool
 
 ### Les 5 Regles d'Or en programar amb `glob`
 
-1. **Declara `import glob` a l'inici del fitxer** i aprofita l'equivalència entre espais i guions baixos perquè el teu codi es llegeixi com a prosa.
+1. **Declara `import glob` a l'inici del fitxer** i crida les seves funcions amb espais, tal com estan declarades, perquè el teu codi es llegeixi com a prosa.
 2. **Alinea les teves canonades de dades amb `=`**: encadena les crides a `glob` en passos amb nom propi i deixa que `stable format` alineï les columnes.
 3. **Aprofita les funcions totals de `glob` a les teves guardes `|`**: comprova els valors de retorn o desembolica els ADTs amb *pattern matching* en lloc d'assumir que l'entrada externa sempre és vàlida.
 4. **Evita copiar grans estructures si només necessites consultar un camp**: recorda que en `RMM2` els arguments d'entrada no incrementen ni decrementen comptadors (`+0` / `-0`).

@@ -21,7 +21,7 @@ En un ecosistema tradicional, resolver las tareas del dominio **`CLI`** implica 
 
 ## 16.2. Artefactos nativos, importación y catálogo completo de la API de `cli`
 
-En `ridgun-libs`, **`cli`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/cli.ridgun` (dominio `CLI`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
+En `ridgun-libs`, **`cli`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/cli.ridgun` (dominio `CLI`). Al compilar con `stable bundle`, se empaqueta en un artefacto nativo:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
@@ -95,7 +95,7 @@ fn :: analizar comando [String] => String Bool Int [String]
 
 ### 16.3.2. Ejemplo 2: Composición segura y manejo de casos de borde
 
-Toda función de la lib `cli` está diseñada para componerse con guardas booleanas `|` y con el resto de las 32 libs de `ridgun-libs`:
+Toda función de la lib `cli` está diseñada para componerse con guardas booleanas `|` y con el resto de las 38 libs de `ridgun-libs`:
 
 ```ridgun
 import cli
@@ -107,7 +107,7 @@ fn :: leer config entorno => Int Bool
         (workers, debug)
 ```
 
-### 16.3.3. Ejemplo 3: Banderas booleanas (`cli has flag`) y opciones con valor (`--key=val` y `--key val`, `cli opt int`, `cli opt bool`)
+### 16.3.3. Ejemplo 3: Banderas booleanas (`cli has flag`) y opciones con valor (`--key=val` y `--key val`, `cli get int opt`, `cli get opt`)
 
 En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `cli` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
 
@@ -115,29 +115,29 @@ En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `cli`
 fn :: test cli flags and options => ()
       test cli flags and options =
         args = ["serve", "-la", "--verbose", "--port=9090", "-h", "127.0.0.1", "--workers", "-4", "--", "--ignored-flag", "-z", "file.ridgun"]
-        assert true (cli has flag args "--verbose" "-v") "AC1: long flag --verbose"
-        assert true (cli has flag args "--all" "-a") "AC1: bundled short flag -a in -la"
-        assert true (cli has flag args "--list" "-l") "AC1: bundled short flag -l in -la"
-        assert false (cli has flag args "--quiet" "-q") "AC1: missing flag returns False"
-        assert false (cli has flag args "--ignored-flag" "") "AC1: long flag after -- is ignored"
-        assert false (cli has flag args "" "-z") "AC1: short flag after -- is ignored"
-        assert false (cli has flag [] "--verbose" "-v") "AC1: empty args returns False"
+        cli has flag args "--verbose" "-v" -> assert true "AC1: long flag --verbose"
+        cli has flag args "--all" "-a" -> assert true "AC1: bundled short flag -a in -la"
+        cli has flag args "--list" "-l" -> assert true "AC1: bundled short flag -l in -la"
+        cli has flag args "--quiet" "-q" -> assert false "AC1: missing flag returns False"
+        cli has flag args "--ignored-flag" "" -> assert false "AC1: long flag after -- is ignored"
+        cli has flag args "" "-z" -> assert false "AC1: short flag after -- is ignored"
+        cli has flag [] "--verbose" "-v" -> assert false "AC1: empty args returns False"
 
         -- Option extraction: --key=val, --key val, -k=val, -k val, empty value --key=
-        assert str eq (cli get opt args "--port" "-p" "8080") "9090" "AC2: --port=9090 inline equals"
-        assert str eq (cli get opt args "--host" "-h" "0.0.0.0") "127.0.0.1" "AC2: -h 127.0.0.1 separate token"
-        assert str eq (cli get opt args "--mode" "-m" "prod") "prod" "AC2: missing option returns fallback"
-        assert int equals (cli get int opt args "--port" "-p" 8080) 9090 "AC2: cli_get_int_opt positive int"
-        assert int equals (cli get int opt args "--workers" "-w" 1) (0 - 4) "AC2: cli_get_int_opt negative int"
-        assert int equals (cli get int opt args "--host" "-h" 8080) 8080 "AC2: non-numeric option falls back to default int"
+        cli get opt args "--port" "-p" "8080" -> assert str eq "9090" "AC2: --port=9090 inline equals"
+        cli get opt args "--host" "-h" "0.0.0.0" -> assert str eq "127.0.0.1" "AC2: -h 127.0.0.1 separate token"
+        cli get opt args "--mode" "-m" "prod" -> assert str eq "prod" "AC2: missing option returns fallback"
+        cli get int opt args "--port" "-p" 8080 -> assert int equals 9090 "AC2: cli_get_int_opt positive int"
+        cli get int opt args "--workers" "-w" 1 -> assert int equals (0 - 4) "AC2: cli_get_int_opt negative int"
+        cli get int opt args "--host" "-h" 8080 -> assert int equals 8080 "AC2: non-numeric option falls back to default int"
 
         short_eq_args = ["-p=3000", "--empty="]
-        assert int equals (cli get int opt short_eq_args "--port" "-p" 80) 3000 "AC2: short option -p=3000"
-        assert str eq (cli get opt short_eq_args "--empty" "-e" "def") "" "AC2: explicit empty --empty= returns empty string"
+        cli get int opt short_eq_args "--port" "-p" 80 -> assert int equals 3000 "AC2: short option -p=3000"
+        cli get opt short_eq_args "--empty" "-e" "def" -> assert str eq "" "AC2: explicit empty --empty= returns empty string"
         ()
 ```
 
-### 16.3.4. Ejemplo 4: Extracción de posicionales respetando `--` (`cli positionals`), subcomandos (`cli subcommand`) y variables de entorno tipadas (`env str/int/bool or`)
+### 16.3.4. Ejemplo 4: Extracción de posicionales respetando `--` (`cli positionals`), subcomandos (`cli subcommand`) y variables de entorno tipadas (`env get or / env get int or / env get bool or`)
 
 En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `cli` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
 
@@ -145,24 +145,24 @@ En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `cli`
 fn :: test cli positionals subcommand and env => ()
       test cli positionals subcommand and env =
         args = ["build", "-v", "--output", "target/app", "-j", "8", "--", "-dashfile.ridgun", "--another-literal", "main.ridgun"]
-        assert str eq (cli subcommand args) "build" "AC3: cli_subcommand first positional"
-        assert str eq (cli subcommand ["-v", "--release", "test"]) "test" "AC3: cli_subcommand skips leading flags"
-        assert str eq (cli subcommand ["--help", "-v"]) "" "AC3: cli_subcommand empty when only flags"
-        assert str eq (cli subcommand []) "" "AC3: cli_subcommand empty on []"
+        cli subcommand args -> assert str eq "build" "AC3: cli_subcommand first positional"
+        cli subcommand ["-v", "--release", "test"] -> assert str eq "test" "AC3: cli_subcommand skips leading flags"
+        cli subcommand ["--help", "-v"] -> assert str eq "" "AC3: cli_subcommand empty when only flags"
+        cli subcommand [] -> assert str eq "" "AC3: cli_subcommand empty on []"
 
         pos = cli positionals with opts args ["--output", "-j"]
-        assert eq pos ["build", "-dashfile.ridgun", "--another-literal", "main.ridgun"]
+        pos -> assert eq ["build", "-dashfile.ridgun", "--another-literal", "main.ridgun"]
 
         -- Single "-" (stdin/stdout convention) is treated as a positional argument, not a flag!
         stdin_args = ["cat", "-n", "-"]
-        assert eq (cli positionals stdin_args) ["cat", "-"]
+        cli positionals stdin_args -> assert eq ["cat", "-"]
 
         -- Environment variable readers
-        assert true ((str len (env get or "PATH" "")) > 0) "AC4: env_get_or PATH non-empty"
-        assert str eq (env get or "RIDGUN_NONEXISTENT_ENV_999" "fallback_val") "fallback_val" "AC4: env_get_or fallback"
-        assert int equals (env get int or "RIDGUN_NONEXISTENT_ENV_999" 42) 42 "AC4: env_get_int_or fallback"
-        assert true (env get bool or "RIDGUN_NONEXISTENT_ENV_999" True) "AC4: env_get_bool_or True fallback"
-        assert false (env get bool or "RIDGUN_NONEXISTENT_ENV_999" False) "AC4: env_get_bool_or False fallback"
+        (str len (env get or "PATH" "")) > 0 -> assert true "AC4: env_get_or PATH non-empty"
+        env get or "RIDGUN_NONEXISTENT_ENV_999" "fallback_val" -> assert str eq "fallback_val" "AC4: env_get_or fallback"
+        env get int or "RIDGUN_NONEXISTENT_ENV_999" 42 -> assert int equals 42 "AC4: env_get_int_or fallback"
+        env get bool or "RIDGUN_NONEXISTENT_ENV_999" True -> assert true "AC4: env_get_bool_or True fallback"
+        env get bool or "RIDGUN_NONEXISTENT_ENV_999" False -> assert false "AC4: env_get_bool_or False fallback"
         ()
 ```
 
@@ -173,12 +173,12 @@ En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `cli`
 ```ridgun
 import cli
 
-fn :: despachar comando (argv : [String]) => (String, String, Int, Bool, [String])
+fn :: despachar comando [String] => String String Int Bool [String]
       despachar comando argv =
-        cmd     = cli subcommand argv
-        host    = cli opt or argv "--host" "-H" (env str or "RG_HOST" "127.0.0.1")
-        puerto  = cli opt int or argv "--port" "-p" (env int or "RG_PORT" 8080)
-        verbose = (cli has flag argv "--verbose" "-v") or (env bool or "RG_VERBOSE" False)
+        cmd      = cli subcommand argv
+        host     = cli get opt argv "--host" "-H" (env get or "RG_HOST" "127.0.0.1")
+        puerto   = cli get int opt argv "--port" "-p" (env get int or "RG_PORT" 8080)
+        verbose  = (cli has flag argv "--verbose" "-v") or (env get bool or "RG_VERBOSE" False)
         archivos = cli positionals argv
         (cmd, host, puerto, verbose, archivos)
 ```
@@ -323,7 +323,7 @@ fn :: env get bool or String Bool => Bool
 
 ### Las 5 Reglas de Oro al programar con `cli`
 
-1. **Declara `import cli` al inicio del archivo** y aprovecha la equivalencia entre espacios y guiones bajos para que tu código se lea como prosa.
+1. **Declara `import cli` al inicio del archivo** y llama a sus funciones con espacios, tal como están declaradas, para que tu código se lea como prosa.
 2. **Alinea tus tuberías de datos con `=`**: encadena las llamadas a `cli` en pasos con nombre propio y deja que `stable format` alinee las columnas.
 3. **Aprovecha las funciones totales de `cli` en tus guardas `|`**: comprueba los valores de retorno o desenvuelve los ADTs con *pattern matching* en lugar de asumir que la entrada externa siempre es válida.
 4. **Evita copiar grandes estructuras si solo necesitas consultar un campo**: recuerda que en `RMM2` los argumentos de entrada no incrementan ni decrementan contadores (`+0` / `-0`).

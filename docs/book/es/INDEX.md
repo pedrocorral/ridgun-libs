@@ -2,12 +2,12 @@
 
 | Path | What | Read when |
 |---|---|---|
-| `index.html` | Libro online interactivo en HTML/CSS/JS (Español) | Abrir en el navegador para leer el libro completo de las 34 libs |
+| `index.html` | Libro online interactivo en HTML/CSS/JS (Español) | Abrir en el navegador para leer el libro completo de las 38 libs |
 | `01-lib-str-manipulacion-de-texto.md` | Capítulo 01: La lib `str` — Manipulación de Texto, Búsqueda y Formato Tabular | Aprender y usar la lib `str` (`STR`) en proyectos Ridgun |
 | `02-lib-math-aritmetica-y-teoria-de-numeros.md` | Capítulo 02: La lib `math` — Aritmética Segura, Teoría de Números y Estadística | Aprender y usar la lib `math` (`MATH`) en proyectos Ridgun |
 | `03-lib-list-listas-mergesort-y-mapas-kv.md` | Capítulo 03: La lib `list` — Listas, Mergesort $O(N \log N)$ y Mapas Clave-Valor | Aprender y usar la lib `list` (`LIST`) en proyectos Ridgun |
 | `04-lib-btree-arboles-avl-conjuntos-y-monticulos.md` | Capítulo 04: La lib `btree` — Árboles AVL Persistentes $O(\log N)$, Conjuntos y Montículos | Aprender y usar la lib `btree` (`BTREE`) en proyectos Ridgun |
-| `05-lib-tensor-tensores-multidimensionales.md` | Capítulo 05: La lib `tensor` — Tensores Multidimensionales, Vistas y Contracción de Einstein | Aprender y usar la lib `tensor` (`TENSOR`) en proyectos Ridgun |
+| `05-lib-tensor-tensores-multidimensionales.md` | Capítulo 05: La lib `tensor` — Formas, Filas y Columnas, Producto Matricial y Operaciones por Bloques | Aprender y usar la lib `tensor` (`TENSOR`) en proyectos Ridgun |
 | `06-lib-linalg-algebra-lineal-y-tensores.md` | Capítulo 06: La lib `linalg` — Álgebra Lineal sobre `Tensor[Real]`, Bareiss y Activaciones | Aprender y usar la lib `linalg` (`LINALG`) en proyectos Ridgun |
 | `07-lib-codec-hex-base64-y-url.md` | Capítulo 07: La lib `codec` — Hex, Base64, Base64url, URL Percent-Encoding y JSON Ligero | Aprender y usar la lib `codec` (`CODEC`) en proyectos Ridgun |
 | `08-lib-json-parser-ast-y-consultas.md` | Capítulo 08: La lib `json` — Árbol AST Recursivo RFC 8259, Pretty-Printer y Consultas por Ruta | Aprender y usar la lib `json` (`JSON`) en proyectos Ridgun |
@@ -26,14 +26,18 @@
 | `21-lib-test-aserciones-unitarias-y-funcionales.md` | Capítulo 21: La lib `test` — Primitivas de Aserción Unitaria y Funcional (`RG-011`) | Aprender y usar la lib `test` (`TST`) en proyectos Ridgun |
 | `22-lib-posix-capa-pal-relojes-y-senales.md` | Capítulo 22: La lib `posix` — Capa de Abstracción de Plataforma (PAL), Relojes, Señales y CSPRNG | Aprender y usar la lib `posix` (`POSIX`) en proyectos Ridgun |
 | `23-lib-io-entrada-salida-con-timeout.md` | Capítulo 23: La lib `io` — Errores Tipados `IoResult`, E/S con `with timeout` y Procesos | Aprender y usar la lib `io` (`IO`) en proyectos Ridgun |
-| `24-lib-crypto-sha256-hmac-pbkdf2-y-aead.md` | Capítulo 24: La lib `crypto` — SHA-256, HMAC, PBKDF2, Argon2id y ChaCha20-Poly1305 AEAD | Aprender y usar la lib `crypto` (`CRYPTO`) en proyectos Ridgun |
-| `25-lib-argon2id-hashing-rfc9106-y-owasp.md` | Capítulo 25: La lib `argon2id` — RFC 9106 Argon2id sobre `Tensor[U64 * 8 * 16]`, Blake2b y Presets OWASP | Aprender y usar la lib `argon2id` (`CRYPTO`) en proyectos Ridgun |
+| `24-lib-crypto-sha256-hmac-pbkdf2-y-aead.md` | Capítulo 24: La lib `crypto` — Hashes, HMAC, HKDF, PBKDF2, Cifrados AEAD, X25519, Ed25519, ECDSA, RSA y X.509 | Aprender y usar la lib `crypto` (`CRYPTO`) en proyectos Ridgun |
+| `25-lib-argon2id-hashing-rfc9106-y-owasp.md` | Capítulo 25: La lib `argon2id` — RFC 9106 Argon2id sobre `Tensor[U64 * 128]`, Blake2b y Presets OWASP | Aprender y usar la lib `argon2id` (`CRYPTO`) en proyectos Ridgun |
 | `26-lib-jwt-tokens-rfc7519-y-aead.md` | Capítulo 26: La lib `jwt` — JSON Web Tokens RFC 7519 (`HS256`) y Tokens Cifrados ChaCha20-Poly1305 | Aprender y usar la lib `jwt` (`JWT`) en proyectos Ridgun |
 | `27-lib-socket-redes-dns-y-kernel-sockets.md` | Capítulo 27: La lib `socket` — TCP, UDP, AF_UNIX, Framing, DNS RFC 1035 y Kernel Sockets (`RGF-001`) | Aprender y usar la lib `socket` (`SOCK`) en proyectos Ridgun |
 | `28-lib-http-uris-http11-y-cliente-tcp.md` | Capítulo 28: La lib `http` — URIs RFC 3986, Codec HTTP/1.1 RFC 9112 y Cliente TCP en Vivo | Aprender y usar la lib `http` (`HTTP`) en proyectos Ridgun |
 | `29-lib-ws-protocolo-websocket-rfc6455.md` | Capítulo 29: La lib `ws` — Handshake WebSocket RFC 6455, Framing de 16/64 bits y Enmascarado XOR | Aprender y usar la lib `ws` (`WS`) en proyectos Ridgun |
-| `30-lib-agent-concurrencia-de-actores.md` | Capítulo 30: La lib `agent` — Modelo Nativo de Actores (`agent`, `send`, `receive`), KV Store y Rate Limiter | Aprender y usar la lib `agent` (`AGENT`) en proyectos Ridgun |
-| `31-lib-pool-trabajadores-y-work-stealing.md` | Capítulo 31: La lib `pool` — Pool Acotado de Trabajadores, Round-Robin y Robo de Trabajo | Aprender y usar la lib `pool` (`AGENT`) en proyectos Ridgun |
-| `32-lib-net-agent-supervisor-de-conexiones.md` | Capítulo 32: La lib `net_agent` — Supervisor de Conexiones de Red y Puente de Eventos No Bloqueante | Aprender y usar la lib `net_agent` (`AGENT`) en proyectos Ridgun |
+| `30-lib-agent-concurrencia-de-actores.md` | Capítulo 30: La lib `agent` — Concurrencia Nativa de Actores (`agent`, `send`, `receive`), Combinadores de Petición-Respuesta y Agentes Contador, Bitácora y Clave-Valor | Aprender y usar la lib `agent` (`AGENT`) en proyectos Ridgun |
+| `31-lib-pool-trabajadores-y-work-stealing.md` | Capítulo 31: La lib `pool` — Pools de Agentes: Reparto por Clave, Difusión y Drenaje No Bloqueante | Aprender y usar la lib `pool` (`AGENT`) en proyectos Ridgun |
+| `32-lib-net-agent-supervisor-de-conexiones.md` | Capítulo 32: La lib `net_agent` — Un Agente por Conexión: Sondeo No Bloqueante y Barrido del Reactor | Aprender y usar la lib `net_agent` (`AGENT`) en proyectos Ridgun |
 | `33-lib-ai-agentes-ia-herramientas-streaming-rag-y-mcp.md` | Capítulo 33: La lib `ai` — Agentes de IA, Tool Calling, Streaming SSE, ReAct Acotado, Guardarraíles, Mini-RAG y MCP (`AI`) | Aprender y usar la lib `ai` (`AI`) en proyectos Ridgun |
 | `34-lib-locale-datos-cldr-plurales-fechas-y-numeros.md` | Capítulo 34: La lib `locale` — Reglas de Plurales CLDR, Formato UTC de Fechas y Números y Autónimos | Aprender y usar la lib `locale` (`LOCALE`) en proyectos Ridgun |
+| `35-lib-hash-hashing-siphash-con-clave.md` | Capítulo 35: La lib `hash` — Hashing con Clave SipHash-1-3 para Tablas Hash | Aprender y usar la lib `hash` (`HASH`) en proyectos Ridgun |
+| `36-lib-hashmap-mapa-hash-de-claves-string-sobre-tensores.md` | Capítulo 36: La lib `hashmap` — Mapa Hash de Claves `String` a Cualquier Valor, sobre Tensores y con Semilla SipHash | Aprender y usar la lib `hashmap` (`HASHMAP`) en proyectos Ridgun |
+| `37-lib-tls-cliente-tls13-tls12-y-validacion-x509.md` | Capítulo 37: La lib `tls` — Cliente TLS 1.3 y TLS 1.2, Validación de Cadenas X.509 y Verificación del Nombre de Host | Aprender y usar la lib `tls` (`TLS`) en proyectos Ridgun |
+| `38-lib-mail-mensajes-rfc5322-y-smtp-sobre-tls.md` | Capítulo 38: La lib `mail` — Mensajes RFC 5322 y Envío SMTP sobre TLS | Aprender y usar la lib `mail` (`MAIL`) en proyectos Ridgun |

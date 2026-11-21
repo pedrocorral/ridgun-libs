@@ -8,7 +8,7 @@ Aquesta és la primera pregunta que es fa qualsevol enginyer de sistemes en arri
 
 Siguem sincers: quan un test falla o un fitxer de configuració canvia, un sec `"expected A, got B"` de 200 línies t'obliga a deixar-te les pestanyes buscant quina línia exacta ha canviat.
 
-La lib **`diff`** calcula la **Subseqüència Comuna Més Llarga (LCS)** sobre `Tensor[Int]` 2D per produir edicions mínimes (`DiffKeep`, `DiffAdd`, `DiffDel`), distància d'edició, estadístiques, format **Unified Diff** (`---`/`+++`/`@@`) i reconstrucció exacta amb `diff apply`.
+La lib **`diff`** calcula la **Subseqüència Comuna Més Llarga (LCS)** sobre `Tensor[Int]` 2D per produir edicions mínimes (`"equal"`, `"insert"`, `"delete"`), distància d'edició, estadístiques, format **Unified Diff** (`---`/`+++`/`@@`) i reconstrucció exacta amb `diff apply`.
 
 En un ecosistema tradicional, resoldre les tasques del domini **`DIFF`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`diff`** (`src/main/ridgun/lib/diff.ridgun`) aborda el problema amb quatre principis innegociables:
 
@@ -21,7 +21,7 @@ En un ecosistema tradicional, resoldre les tasques del domini **`DIFF`** implica
 
 ## 13.2. Artefactes natius, importació i catàleg complet de l'API de `diff`
 
-A `ridgun-libs`, **`diff`** és una **lib** de primera classe situada a `src/main/ridgun/lib/diff.ridgun` (domini `DIFF`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`diff`** és una **lib** de primera classe situada a `src/main/ridgun/lib/diff.ridgun` (domini `DIFF`). En compilar amb `stable bundle`, s'empaqueta en un format natiu:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
@@ -36,8 +36,8 @@ A `ridgun-libs`, **`diff`** és una **lib** de primera classe situada a `src/mai
 | `type DiffOp` | `DiffKeep String | DiffDel String | DiffAdd String` |
 | `diff lines / diff text` | Calcula el guió mínim d'edició LCS entre llistes `[String]` o textos multilínia |
 | `diff edit distance / diff stats` | Distància mínima d'inserció+esborrat i recompte `(kept, added, deleted)` |
-| `diff format / diff unified` | Formata línies compactes `+ / - /  ` o Unified Diff estàndard amb capçaleres |
-| `diff apply / diff apply text` | Reconstrueix el document destí sense pèrdues a partir del guió d'edició |
+| `diff unified` | Formata línies compactes `+ / - /  ` o Unified Diff estàndard amb capçaleres |
+| `diff apply` | Reconstrueix el document destí sense pèrdues a partir del guió d'edició |
 
 ### 13.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/diff.ridgun`
 
@@ -108,14 +108,15 @@ fn :: auditar cambio String String => Int String
 
 ### 13.3.2. Exemple 2: Composició segura i gestió de casos de vora
 
-Tota funció de la lib `diff` està dissenyada per compondre's amb guardes booleanes `|` i amb la resta de les 32 libs de `ridgun-libs`:
+Tota funció de la lib `diff` està dissenyada per compondre's amb guardes booleanes `|` i amb la resta de les 38 libs de `ridgun-libs`:
 
 ```ridgun
 import diff
 
-fn :: verificar parche String [DiffEdit] => String
-      verificar parche orig ops =
-        diff apply orig ops
+fn :: verificar parche String String => Bool
+      verificar parche original nuevo =
+        diff text original nuevo -> ops
+        (diff apply ops) == nuevo
 ```
 
 ### 13.3.3. Exemple 3: Comparació de textos buits i idèntics: distància d'edició zero i verificació d'invariants
@@ -127,24 +128,24 @@ fn :: test diff empty and identical => ()
       test diff empty and identical =
         nl = char from code 10
         e_empty = diff text "" ""
-        assert int equals (count edits e_empty) 0 "AC1: empty diff edit count"
-        assert false (diff has changes e_empty) "AC1: empty diff has no changes"
-        assert int equals (diff edit distance "" "") 0 "AC1: empty edit distance"
-        assert str eq (diff apply e_empty) "" "AC3: empty diff apply"
+        count edits e_empty -> assert int equals 0 "AC1: empty diff edit count"
+        diff has changes e_empty -> assert false "AC1: empty diff has no changes"
+        diff edit distance "" "" -> assert int equals 0 "AC1: empty edit distance"
+        diff apply e_empty -> assert str eq "" "AC3: empty diff apply"
         same_doc = "alpha" + nl + "beta" + nl + "gamma"
         e_same = diff text same_doc same_doc
-        assert int equals (count edits e_same) 3 "AC1: identical 3-line count"
-        assert false (diff has changes e_same) "AC1: identical has no changes"
+        count edits e_same -> assert int equals 3 "AC1: identical 3-line count"
+        diff has changes e_same -> assert false "AC1: identical has no changes"
         st_same = diff stats e_same
-        assert int equals (equal_count st_same) 3 "AC1: equal_count == 3"
-        assert int equals (insert_count st_same) 0 "AC1: insert_count == 0"
-        assert int equals (delete_count st_same) 0 "AC1: delete_count == 0"
-        assert int equals (diff edit distance same_doc same_doc) 0 "AC1: identical edit distance == 0"
-        assert str eq (diff apply e_same) same_doc "AC3: identical diff apply"
+        equal_count st_same -> assert int equals 3 "AC1: equal_count == 3"
+        insert_count st_same -> assert int equals 0 "AC1: insert_count == 0"
+        delete_count st_same -> assert int equals 0 "AC1: delete_count == 0"
+        diff edit distance same_doc same_doc -> assert int equals 0 "AC1: identical edit distance == 0"
+        diff apply e_same -> assert str eq same_doc "AC3: identical diff apply"
         ()
 ```
 
-### 13.3.4. Exemple 4: Insercions pures (`DiffInsert`), esborrats purs (`DiffDelete`) i aplicació cap endavant (`diff patch`)
+### 13.3.4. Exemple 4: Insercions pures (`"insert"`), esborrats purs (`"delete"`) i aplicació cap endavant (`diff apply`)
 
 En aquest exemple pràctic explorem de manera exhaustiva com es comporta `diff` en aquest bloc funcional, incloent-hi entrades estàndard, combinacions de paràmetres i valors frontera:
 
@@ -154,33 +155,33 @@ fn :: test diff pure insert and delete => ()
         nl = char from code 10
         target = "line1" + nl + "line2" + nl + "line3"
         e_ins = diff text "" target
-        assert true (diff has changes e_ins) "AC1: pure insert has changes"
+        diff has changes e_ins -> assert true "AC1: pure insert has changes"
         st_ins = diff stats e_ins
-        assert int equals (equal_count st_ins) 0 "AC1: pure insert equal_count"
-        assert int equals (insert_count st_ins) 3 "AC1: pure insert insert_count"
-        assert int equals (delete_count st_ins) 0 "AC1: pure insert delete_count"
-        assert int equals (diff edit distance "" target) 3 "AC1: pure insert edit distance"
-        assert str eq (diff apply e_ins) target "AC3: pure insert apply"
+        equal_count st_ins -> assert int equals 0 "AC1: pure insert equal_count"
+        insert_count st_ins -> assert int equals 3 "AC1: pure insert insert_count"
+        delete_count st_ins -> assert int equals 0 "AC1: pure insert delete_count"
+        diff edit distance "" target -> assert int equals 3 "AC1: pure insert edit distance"
+        diff apply e_ins -> assert str eq target "AC3: pure insert apply"
         ins0 = nth edit e_ins 0
         ins2 = nth edit e_ins 2
-        assert str eq (diff_op ins0) "insert" "AC1: ins0 op"
-        assert int equals (old_line_no ins0) 0 "AC1: ins0 old_line_no"
-        assert int equals (new_line_no ins0) 1 "AC1: ins0 new_line_no"
-        assert int equals (new_line_no ins2) 3 "AC1: ins2 new_line_no"
+        diff_op ins0 -> assert str eq "insert" "AC1: ins0 op"
+        old_line_no ins0 -> assert int equals 0 "AC1: ins0 old_line_no"
+        new_line_no ins0 -> assert int equals 1 "AC1: ins0 new_line_no"
+        new_line_no ins2 -> assert int equals 3 "AC1: ins2 new_line_no"
         e_del = diff text target ""
-        assert true (diff has changes e_del) "AC1: pure delete has changes"
+        diff has changes e_del -> assert true "AC1: pure delete has changes"
         st_del = diff stats e_del
-        assert int equals (equal_count st_del) 0 "AC1: pure delete equal_count"
-        assert int equals (insert_count st_del) 0 "AC1: pure delete insert_count"
-        assert int equals (delete_count st_del) 3 "AC1: pure delete delete_count"
-        assert int equals (diff edit distance target "") 3 "AC1: pure delete edit distance"
-        assert str eq (diff apply e_del) "" "AC3: pure delete apply"
+        equal_count st_del -> assert int equals 0 "AC1: pure delete equal_count"
+        insert_count st_del -> assert int equals 0 "AC1: pure delete insert_count"
+        delete_count st_del -> assert int equals 3 "AC1: pure delete delete_count"
+        diff edit distance target "" -> assert int equals 3 "AC1: pure delete edit distance"
+        diff apply e_del -> assert str eq "" "AC3: pure delete apply"
         del0 = nth edit e_del 0
         del2 = nth edit e_del 2
-        assert str eq (diff_op del0) "delete" "AC1: del0 op"
-        assert int equals (old_line_no del0) 1 "AC1: del0 old_line_no"
-        assert int equals (new_line_no del0) 0 "AC1: del0 new_line_no"
-        assert int equals (old_line_no del2) 3 "AC1: del2 old_line_no"
+        diff_op del0 -> assert str eq "delete" "AC1: del0 op"
+        old_line_no del0 -> assert int equals 1 "AC1: del0 old_line_no"
+        new_line_no del0 -> assert int equals 0 "AC1: del0 new_line_no"
+        old_line_no del2 -> assert int equals 3 "AC1: del2 old_line_no"
         ()
 ```
 
@@ -196,17 +197,17 @@ fn :: test diff myers classic vector => ()
         new_lines = ["C", "B", "A", "B", "A", "C"]
         edits = diff lines old_lines new_lines
         st = diff stats edits
-        assert int equals (equal_count st) 4 "AC1: Myers LCS length 4"
-        assert int equals (delete_count st) 3 "AC1: Myers delete count 3"
-        assert int equals (insert_count st) 2 "AC1: Myers insert count 2"
+        equal_count st -> assert int equals 4 "AC1: Myers LCS length 4"
+        delete_count st -> assert int equals 3 "AC1: Myers delete count 3"
+        insert_count st -> assert int equals 2 "AC1: Myers insert count 2"
         old_s = "A" + nl + "B" + nl + "C" + nl + "A" + nl + "B" + nl + "B" + nl + "A"
         new_s = "C" + nl + "B" + nl + "A" + nl + "B" + nl + "A" + nl + "C"
-        assert int equals (diff edit distance old_s new_s) 5 "AC1: Myers edit distance 5"
-        assert str eq (diff apply edits) new_s "AC3: Myers apply reproduces CBABAC"
+        diff edit distance old_s new_s -> assert int equals 5 "AC1: Myers edit distance 5"
+        diff apply edits -> assert str eq new_s "AC3: Myers apply reproduces CBABAC"
         ()
 ```
 
-### 13.3.6. Exemple 6: Inspecció de números de línia d'origen i destí (`diff old line`, `diff new line`) i reconstrucció exacta amb `diff patch`
+### 13.3.6. Exemple 6: Inspecció de números de línia d'origen i destí (`old_line_no`, `new_line_no`) i reconstrucció exacta amb `diff apply`
 
 En aquest exemple pràctic explorem de manera exhaustiva com es comporta `diff` en aquest bloc funcional, incloent-hi entrades estàndard, combinacions de paràmetres i valors frontera:
 
@@ -217,22 +218,22 @@ fn :: test diff code hunks and line numbers => ()
         old_code = "fn :: add Int Int => Int" + nl + "      add a b = a + b" + nl + "" + nl + "fn :: sub Int Int => Int" + nl + "      sub a b = a - b"
         new_code = "fn :: add Int Int => Int" + nl + "      add x y = x + y" + nl + "" + nl + "fn :: mul Int Int => Int" + nl + "      mul a b = a * b" + nl + "" + nl + "fn :: sub Int Int => Int" + nl + "      sub a b = a - b"
         edits = diff text old_code new_code
-        assert true (diff has changes edits) "AC1: code refactoring has changes"
-        assert str eq (diff apply edits) new_code "AC3: code refactoring lossless apply"
+        diff has changes edits -> assert true "AC1: code refactoring has changes"
+        diff apply edits -> assert str eq new_code "AC3: code refactoring lossless apply"
         e0 = nth edit edits 0
-        assert str eq (diff_op e0) "equal" "AC1: line 1 equal"
-        assert int equals (old_line_no e0) 1 "AC1: line 1 old_line_no"
-        assert int equals (new_line_no e0) 1 "AC1: line 1 new_line_no"
+        diff_op e0 -> assert str eq "equal" "AC1: line 1 equal"
+        old_line_no e0 -> assert int equals 1 "AC1: line 1 old_line_no"
+        new_line_no e0 -> assert int equals 1 "AC1: line 1 new_line_no"
         e1 = nth edit edits 1
-        assert str eq (diff_op e1) "delete" "AC1: line 2 deleted"
-        assert str eq (line_text e1) "      add a b = a + b" "AC1: deleted line text"
-        assert int equals (old_line_no e1) 2 "AC1: deleted old_line_no"
-        assert int equals (new_line_no e1) 0 "AC1: deleted new_line_no"
+        diff_op e1 -> assert str eq "delete" "AC1: line 2 deleted"
+        line_text e1 -> assert str eq "      add a b = a + b" "AC1: deleted line text"
+        old_line_no e1 -> assert int equals 2 "AC1: deleted old_line_no"
+        new_line_no e1 -> assert int equals 0 "AC1: deleted new_line_no"
         e2 = nth edit edits 2
-        assert str eq (diff_op e2) "insert" "AC1: line 2 inserted"
-        assert str eq (line_text e2) "      add x y = x + y" "AC1: inserted line text"
-        assert int equals (old_line_no e2) 0 "AC1: inserted old_line_no"
-        assert int equals (new_line_no e2) 2 "AC1: inserted new_line_no"
+        diff_op e2 -> assert str eq "insert" "AC1: line 2 inserted"
+        line_text e2 -> assert str eq "      add x y = x + y" "AC1: inserted line text"
+        old_line_no e2 -> assert int equals 0 "AC1: inserted old_line_no"
+        new_line_no e2 -> assert int equals 2 "AC1: inserted new_line_no"
         ()
 ```
 
@@ -248,9 +249,9 @@ fn :: test diff unified formatting => ()
         new_s = "one" + nl + "TWO" + nl + "three" + nl + "four"
         uni = diff unified "a/sample.txt" "b/sample.txt" old_s new_s
         expected = "--- a/sample.txt" + nl + "+++ b/sample.txt" + nl + "@@ -1,3 +1,4 @@" + nl + " one" + nl + "-two" + nl + "+TWO" + nl + " three" + nl + "+four" + nl
-        assert str eq uni expected "AC2: unified diff output matches standard header and hunk format"
+        uni -> assert str eq expected "AC2: unified diff output matches standard header and hunk format"
         uni_empty = diff unified "a/empty" "b/empty" "" ""
-        assert str eq uni_empty ("--- a/empty" + nl + "+++ b/empty" + nl + "@@ -0,0 +0,0 @@" + nl) "AC2: unified diff empty files"
+        uni_empty -> assert str eq ("--- a/empty" + nl + "+++ b/empty" + nl + "@@ -0,0 +0,0 @@" + nl) "AC2: unified diff empty files"
         ()
 ```
 
@@ -266,10 +267,10 @@ fn :: test diff repetitive lines => ()
         new_rep = "x" + nl + "y" + nl + "y" + nl + "x"
         edits = diff text old_rep new_rep
         st = diff stats edits
-        assert int equals (equal_count st) 3 "AC1: repetitive LCS equal_count"
-        assert int equals (delete_count st) 2 "AC1: repetitive LCS delete_count"
-        assert int equals (insert_count st) 1 "AC1: repetitive LCS insert_count"
-        assert str eq (diff apply edits) new_rep "AC3: repetitive lines apply"
+        equal_count st -> assert int equals 3 "AC1: repetitive LCS equal_count"
+        delete_count st -> assert int equals 2 "AC1: repetitive LCS delete_count"
+        insert_count st -> assert int equals 1 "AC1: repetitive LCS insert_count"
+        diff apply edits -> assert str eq new_rep "AC3: repetitive lines apply"
         ()
 ```
 
@@ -489,7 +490,7 @@ fn :: diff apply [DiffEdit] => String
 
 ### Les 5 Regles d'Or en programar amb `diff`
 
-1. **Declara `import diff` a l'inici del fitxer** i aprofita l'equivalència entre espais i guions baixos perquè el teu codi es llegeixi com a prosa.
+1. **Declara `import diff` a l'inici del fitxer** i crida les seves funcions amb espais, tal com estan declarades, perquè el teu codi es llegeixi com a prosa.
 2. **Alinea les teves canonades de dades amb `=`**: encadena les crides a `diff` en passos amb nom propi i deixa que `stable format` alineï les columnes.
 3. **Aprofita les funcions totals de `diff` a les teves guardes `|`**: comprova els valors de retorn o desembolica els ADTs amb *pattern matching* en lloc d'assumir que l'entrada externa sempre és vàlida.
 4. **Evita copiar grans estructures si només necessites consultar un camp**: recorda que en `RMM2` els arguments d'entrada no incrementen ni decrementen comptadors (`+0` / `-0`).

@@ -1,4 +1,4 @@
-# Capítulo 05: La lib `tensor` — Tensores Multidimensionales, Vistas y Contracción de Einstein
+# Capítulo 05: La lib `tensor` — Formas, Filas y Columnas, Producto Matricial y Operaciones por Bloques
 
 ## 05.1. ¿Por qué existe la lib `tensor`? (El problema real y la filosofía Ridgun)
 
@@ -8,7 +8,7 @@ Esa es la primera pregunta que se hace cualquier ingeniero de sistemas al llegar
 
 Seamos sinceros: en la mayoría de lenguajes tienes que elegir entre listas anidadas lentísimas llenas de punteros dispersos o enlazar una mole de C++/Fortran de 200 MB como NumPy/BLAS.
 
-La lib **`tensor`** envuelve la primitiva nativa `Tensor[...]` de Ridgun ofreciendo creación tipada (`Tensor[Int]`, `Tensor[Real]`, `Tensor[U64]`), vistas sin copia (`reshape`, `slice`), operaciones elemento a elemento (Hadamard), contracción de Einstein (`*` sobre ejes simbólicos) y aritmética `BlaMka` de 64 bits.
+La lib **`tensor`** añade, al tipo nativo `Tensor[...]` de Ridgun, las utilidades que el lenguaje no da directamente: consultas de forma (`tensor rows`, `tensor cols`, `tensor shape`), extracción de una fila o de una columna (`tensor row`, `tensor col`), una copia explícita (`tensor clone`), el producto matricial (`tensor matmul`) y operaciones elemento a elemento entre dos tensores completos: XOR, AND, OR, suma, resta y multiplicación.
 
 En un ecosistema tradicional, resolver las tareas del dominio **`TENSOR`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`tensor`** (`src/main/ridgun/lib/tensor.ridgun`) aborda el problema con cuatro principios innegociables:
 
@@ -21,7 +21,7 @@ En un ecosistema tradicional, resolver las tareas del dominio **`TENSOR`** impli
 
 ## 05.2. Artefactos nativos, importación y catálogo completo de la API de `tensor`
 
-En `ridgun-libs`, **`tensor`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/tensor.ridgun` (dominio `TENSOR`). Al compilar con `stable bundle`, se empaqueta en tres artefactos nativos:
+En `ridgun-libs`, **`tensor`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/tensor.ridgun` (dominio `TENSOR`). Al compilar con `stable bundle`, se empaqueta en un artefacto nativo:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
@@ -33,12 +33,11 @@ En `ridgun-libs`, **`tensor`** es una **lib** de primera clase ubicada en `src/m
 
 | Firma / Función / Tipo | Qué hace y cuándo usarla |
 |---|---|
-| `tensor zeros int / tensor fill int / tensor zeros real` | Reserva bloques contiguos 1D/2D de `Tensor[Int]` y `Tensor[Real]` |
-| `tensor get 1d / tensor set 1d / tensor get 2d / tensor set 2d` | Acceso y actualización funcional Copy-on-Write (`with [i] = v`) |
-| `tensor reshape 1d to 2d / tensor slice 1d` | Vistas de descriptor en $O(1)$ sin copiar el almacenamiento del tensor |
-| `tensor add int / tensor mul int / tensor scale int` | Suma, multiplicación elemento a elemento (Hadamard) y escalado |
-| `tensor dot int / tensor matmul int` | Contracción de índices de Einstein (`a[i] * b[i]`, `a[i, k] * b[k, j]`) |
-| `u64 blamka g / u64 rotr` | Mezcla rotacional `U64` sin signo de 64 bits para bloques criptográficos |
+| `tensor rows / tensor cols / tensor shape` | Número de filas y de columnas de un tensor 2D, y ambos como un par |
+| `tensor row / tensor col` | Copia una fila o una columna a un tensor 1D |
+| `tensor clone` | Una copia independiente de un tensor |
+| `tensor matmul` | Producto matricial de dos `Tensor[Real]` 2D |
+| `tensor bitxor blocks / tensor bitand blocks / tensor bitor blocks / tensor add blocks / tensor sub blocks / tensor mul blocks` | Operaciones bit a bit elemento a elemento sobre `Tensor[U64]` y aritmética sobre `Tensor[Int]`, entre dos tensores de la misma forma |
 
 ### 05.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/tensor.ridgun`
 
@@ -80,7 +79,7 @@ fn :: producto matricial tensor Tensor[Real * r * k] Tensor[Real * k * c] => Ten
 
 ### 05.3.2. Ejemplo 2: Composición segura y manejo de casos de borde
 
-Toda función de la lib `tensor` está diseñada para componerse con guardas booleanas `|` y con el resto de las 32 libs de `ridgun-libs`:
+Toda función de la lib `tensor` está diseñada para componerse con guardas booleanas `|` y con el resto de las 38 libs de `ridgun-libs`:
 
 ```ridgun
 import tensor
@@ -105,18 +104,18 @@ fn :: test tensor dimensions and views => ()
         m_(1, 0) = 40
         m_(1, 1) = 50
         m_(1, 2) = 60
-        assert int equals (tensor rows m) 2 "tensor rows == 2"
-        assert int equals (tensor cols m) 3 "tensor cols == 3"
+        tensor rows m -> assert int equals 2 "tensor rows == 2"
+        tensor cols m -> assert int equals 3 "tensor cols == 3"
         sh  = tensor shape m
-        assert int equals (shape fst sh) 2 "tensor shape rows == 2"
-        assert int equals (shape snd sh) 3 "tensor shape cols == 3"
+        shape fst sh -> assert int equals 2 "tensor shape rows == 2"
+        shape snd sh -> assert int equals 3 "tensor shape cols == 3"
         r1  = tensor row m 1
-        assert int equals r1_(0) 40 "row 1 col 0 == 40"
-        assert int equals r1_(1) 50 "row 1 col 1 == 50"
-        assert int equals r1_(2) 60 "row 1 col 2 == 60"
+        r1_(0) -> assert int equals 40 "row 1 col 0 == 40"
+        r1_(1) -> assert int equals 50 "row 1 col 1 == 50"
+        r1_(2) -> assert int equals 60 "row 1 col 2 == 60"
         c2  = tensor col m 2
-        assert int equals c2_(0) 30 "col 2 row 0 == 30"
-        assert int equals c2_(1) 60 "col 2 row 1 == 60"
+        c2_(0) -> assert int equals 30 "col 2 row 0 == 30"
+        c2_(1) -> assert int equals 60 "col 2 row 1 == 60"
         ()
 ```
 
@@ -138,14 +137,14 @@ fn :: test tensor hadamard and clone => ()
         b_(1, 0) = 3
         b_(1, 1) = 4
         s    = tensor add blocks a b
-        assert int equals s_(0, 0) 11 "add (0,0) == 11"
-        assert int equals s_(1, 1) 44 "add (1,1) == 44"
+        s_(0, 0) -> assert int equals 11 "add (0,0) == 11"
+        s_(1, 1) -> assert int equals 44 "add (1,1) == 44"
         d    = tensor sub blocks a b
-        assert int equals d_(0, 0) 9 "sub (0,0) == 9"
-        assert int equals d_(1, 1) 36 "sub (1,1) == 36"
+        d_(0, 0) -> assert int equals 9 "sub (0,0) == 9"
+        d_(1, 1) -> assert int equals 36 "sub (1,1) == 36"
         p    = tensor mul blocks a b
-        assert int equals p_(0, 0) 10 "mul (0,0) == 10"
-        assert int equals p_(1, 1) 160 "mul (1,1) == 160"
+        p_(0, 0) -> assert int equals 10 "mul (0,0) == 10"
+        p_(1, 1) -> assert int equals 160 "mul (1,1) == 160"
         ua   = Tensor[U64 * 2 * 2]
         ua_(0, 0) = 0xFF
         ua_(0, 1) = 0x0F
@@ -157,18 +156,18 @@ fn :: test tensor hadamard and clone => ()
         ub_(1, 0) = 0x0F
         ub_(1, 1) = 0x55
         ux   = tensor bitxor blocks ua ub
-        assert int equals ux_(0, 0) 0xF0 "xor (0,0) == 0xF0"
-        assert int equals ux_(1, 1) 0xFF "xor (1,1) == 0xFF"
+        ux_(0, 0) -> assert int equals 0xF0 "xor (0,0) == 0xF0"
+        ux_(1, 1) -> assert int equals 0xFF "xor (1,1) == 0xFF"
         uan  = tensor bitand blocks ua ub
-        assert int equals uan_(0, 0) 0x0F "and (0,0) == 0x0F"
-        assert int equals uan_(1, 1) 0x00 "and (1,1) == 0x00"
+        uan_(0, 0) -> assert int equals 0x0F "and (0,0) == 0x0F"
+        uan_(1, 1) -> assert int equals 0x00 "and (1,1) == 0x00"
         uor  = tensor bitor blocks ua ub
-        assert int equals uor_(0, 0) 0xFF "or (0,0) == 0xFF"
-        assert int equals uor_(1, 0) 0xFF "or (1,0) == 0xFF"
+        uor_(0, 0) -> assert int equals 0xFF "or (0,0) == 0xFF"
+        uor_(1, 0) -> assert int equals 0xFF "or (1,0) == 0xFF"
         uc   = tensor clone ua
         uc_(0, 0) = 999
-        assert int equals ua_(0, 0) 0xFF "clone preserves original ua_(0,0)"
-        assert int equals uc_(0, 0) 999 "clone updates uc_(0,0)"
+        ua_(0, 0) -> assert int equals 0xFF "clone preserves original ua_(0,0)"
+        uc_(0, 0) -> assert int equals 999 "clone updates uc_(0,0)"
         ()
 ```
 
@@ -180,24 +179,24 @@ En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `tens
 fn :: test tensor matmul => ()
       test tensor matmul =
         ma  = Tensor[Real * 2 * 3]
-        ma_(0, 0) = 1
-        ma_(0, 1) = 2
-        ma_(0, 2) = 3
-        ma_(1, 0) = 4
-        ma_(1, 1) = 5
-        ma_(1, 2) = 6
+        ma_(0, 0) = 1.0
+        ma_(0, 1) = 2.0
+        ma_(0, 2) = 3.0
+        ma_(1, 0) = 4.0
+        ma_(1, 1) = 5.0
+        ma_(1, 2) = 6.5
         mb  = Tensor[Real * 3 * 2]
-        mb_(0, 0) = 7
-        mb_(0, 1) = 8
-        mb_(1, 0) = 9
-        mb_(1, 1) = 10
-        mb_(2, 0) = 11
-        mb_(2, 1) = 12
+        mb_(0, 0) = 7.0
+        mb_(0, 1) = 8.0
+        mb_(1, 0) = 9.0
+        mb_(1, 1) = 10.0
+        mb_(2, 0) = 11.0
+        mb_(2, 1) = 0.5
         mc  = tensor matmul ma mb
-        assert int equals mc_(0, 0) 58 "matmul (0,0) == 58"
-        assert int equals mc_(0, 1) 64 "matmul (0,1) == 64"
-        assert int equals mc_(1, 0) 139 "matmul (1,0) == 139"
-        assert int equals mc_(1, 1) 154 "matmul (1,1) == 154"
+        assert true (mc_(0, 0) == 58.0) "matmul (0,0) == 7 + 18 + 33"
+        assert true (mc_(0, 1) == 29.5) "matmul (0,1) == 8 + 20 + 1.5"
+        assert true (mc_(1, 0) == 144.5) "matmul (1,0) == 28 + 45 + 71.5"
+        assert true (mc_(1, 1) == 85.25) "matmul (1,1) == 32 + 50 + 3.25"
         ()
 ```
 
@@ -209,17 +208,17 @@ En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `tens
 fn :: test blamka tensor compression => ()
       test blamka tensor compression =
         fb  = f blamka 1 2
-        assert int equals fb 7 "f blamka 1 2 == 7"
+        fb -> assert int equals 7 "f blamka 1 2 == 7"
         gr  = blamka g 1 2 3 4
-        assert true ((g fst gr) != 0) "blamka g non-zero output"
+        (g fst gr) != 0 -> assert true "blamka g non-zero output"
         bx  = Tensor[U64 * 8 * 16]
         by  = Tensor[U64 * 8 * 16]
         bx_(0, 0) = 1
         by_(0, 0) = 2
         bz  = compress block bx by
-        assert true (bz_(0, 0) != 0) "compress block non-zero (0,0)"
-        assert int equals bx_(0, 0) 1 "compress block preserves bx_(0,0)"
-        assert int equals by_(0, 0) 2 "compress block preserves by_(0,0)"
+        bz_(0, 0) != 0 -> assert true "compress block non-zero (0,0)"
+        bx_(0, 0) -> assert int equals 1 "compress block preserves bx_(0,0)"
+        by_(0, 0) -> assert int equals 2 "compress block preserves by_(0,0)"
         ()
 ```
 
@@ -295,7 +294,7 @@ fn :: tensor matmul Tensor[Real * r * k] Tensor[Real * k * c] => Tensor[Real * r
 
 ### Las 5 Reglas de Oro al programar con `tensor`
 
-1. **Declara `import tensor` al inicio del archivo** y aprovecha la equivalencia entre espacios y guiones bajos para que tu código se lea como prosa.
+1. **Declara `import tensor` al inicio del archivo** y llama a sus funciones con espacios, tal como están declaradas, para que tu código se lea como prosa.
 2. **Alinea tus tuberías de datos con `=`**: encadena las llamadas a `tensor` en pasos con nombre propio y deja que `stable format` alinee las columnas.
 3. **Aprovecha las funciones totales de `tensor` en tus guardas `|`**: comprueba los valores de retorno o desenvuelve los ADTs con *pattern matching* en lugar de asumir que la entrada externa siempre es válida.
 4. **Evita copiar grandes estructuras si solo necesitas consultar un campo**: recuerda que en `RMM2` los argumentos de entrada no incrementan ni decrementan contadores (`+0` / `-0`).

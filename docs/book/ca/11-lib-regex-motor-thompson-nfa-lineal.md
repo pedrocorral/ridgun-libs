@@ -21,7 +21,7 @@ En un ecosistema tradicional, resoldre les tasques del domini **`REGEX`** implic
 
 ## 11.2. Artefactes natius, importació i catàleg complet de l'API de `regex`
 
-A `ridgun-libs`, **`regex`** és una **lib** de primera classe situada a `src/main/ridgun/lib/regex.ridgun` (domini `REGEX`). En compilar amb `stable bundle`, s'empaqueta en tres formats natius:
+A `ridgun-libs`, **`regex`** és una **lib** de primera classe situada a `src/main/ridgun/lib/regex.ridgun` (domini `REGEX`). En compilar amb `stable bundle`, s'empaqueta en un format natiu:
 
 | Artefacte | Ruta | Propòsit |
 |---|---|---|
@@ -36,7 +36,7 @@ A `ridgun-libs`, **`regex`** és una **lib** de primera classe situada a `src/ma
 | `regex match / regex is match` | Coincidència de cadena completa i cerca de subcadena en temps lineal $O(N \cdot M)$ |
 | `regex find / regex find all` | Extreu la primera o totes les subcadenes coincidents sense solapament |
 | `regex replace / regex replace all` | Reemplaça la primera o totes les coincidències de l'expressió regular |
-| `regex split / regex escape` | Divideix text segons un delimitador regex i escapa metacaràcters |
+| `regex split` | Divideix text segons un delimitador regex i escapa metacaràcters |
 
 ### 11.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/regex.ridgun`
 
@@ -59,13 +59,13 @@ type NfaInst = InstChar Int Int | InstAny Int | InstClass Bool [Int] Int | InstS
 | `4` | `fn :: re match short Int Int` | `Bool` |
 | `5` | `fn :: re in ranges Int [Int]` | `Bool` |
 | `6` | `fn :: re escape char Int` | `ReNode` |
-| `7` | `fn :: re class char String Int Int` | `(Int Int)` |
+| `7` | `fn :: re class char String Int Int` | `Int Int` |
 | `8` | `fn :: re fst int (Int Int)` | `Int` |
 | `9` | `fn :: re snd int (Int Int)` | `Int` |
-| `10` | `fn :: re parse class items String Int Int [Int]` | `([Int] Int)` |
-| `11` | `fn :: re parse class item step String Int Int [Int]` | `([Int] Int)` |
-| `12` | `fn :: re parse class range check String Int Int Int [Int]` | `([Int] Int)` |
-| `13` | `fn :: re parse class range hi String Int Int Int [Int]` | `([Int] Int)` |
+| `10` | `fn :: re parse class items String Int Int [Int]` | `[Int] Int` |
+| `11` | `fn :: re parse class item step String Int Int [Int]` | `[Int] Int` |
+| `12` | `fn :: re parse class range check String Int Int Int [Int]` | `[Int] Int` |
+| `13` | `fn :: re parse class range hi String Int Int Int [Int]` | `[Int] Int` |
 | `14` | `fn :: re fst ranges ([Int] Int)` | `[Int]` |
 | `15` | `fn :: re snd pos ([Int] Int)` | `Int` |
 | `16` | `fn :: re parse class String Int Int` | `ReParseRes` |
@@ -137,14 +137,18 @@ Observa com en Ridgun els signes `=` i els passos de transformació amb `regex` 
 ```ridgun
 import regex
 
+fn :: textos de [RegexMatch]  => [String]
+      textos de []            =  []
+      textos de (m:resto)     =  [text m] :: (textos de resto)
+
 fn :: extraer codigos postales String => [String]
       extraer codigos postales texto =
-        regex find all "\d+" texto
+        textos de (regex find all "\d+" texto)
 ```
 
 ### 11.3.2. Exemple 2: Composició segura i gestió de casos de vora
 
-Tota funció de la lib `regex` està dissenyada per compondre's amb guardes booleanes `|` i amb la resta de les 32 libs de `ridgun-libs`:
+Tota funció de la lib `regex` està dissenyada per compondre's amb guardes booleanes `|` i amb la resta de les 38 libs de `ridgun-libs`:
 
 ```ridgun
 import regex
@@ -163,31 +167,31 @@ En aquest exemple pràctic explorem de manera exhaustiva com es comporta `regex`
 ```ridgun
 fn :: test regex operators and classes => ()
       test regex operators and classes =
-        assert true (regex match "" "") "AC1: empty pattern matches empty string"
-        assert false (regex match "" "nonempty") "AC1: empty pattern rejects non-empty on full match"
-        assert true (regex match 'a(b|c)+d?e*' "abcbdeee") "AC1: alternation group plus opt star"
-        assert true (regex match 'a(b|c)+d?e*' "ac") "AC1: opt and star match zero occurrences"
-        assert false (regex match 'a(b|c)+d?e*' "ade") "AC1: plus requires at least one"
-        assert true (regex match '(foo|bar|baz)+' "barfoobazbar") "AC1: multi-branch alternation with plus"
-        assert false (regex match '(foo|bar|baz)+' "barquxfoo") "AC1: multi-branch alternation rejects unknown"
-        assert true (regex match '[a-zA-Z_][a-zA-Z0-9_]*' "_valid_Identifier_99") "AC1: identifier character class"
-        assert false (regex match '[a-zA-Z_][a-zA-Z0-9_]*' "9invalid") "AC1: identifier rejects leading digit"
-        assert true (regex match '[^0-9]+' "hello_world") "AC1: negated char class"
-        assert false (regex match '[^0-9]+' "hello42") "AC1: negated char class rejects digits"
-        assert true (regex match '\w+\s+\d+' "agent   007") "AC1: shorthand escapes \\w \\s \\d"
-        assert true (regex match '\D+\S+' "abc_123") "AC1: negated shorthand escapes \\D \\S"
-        assert true (regex match 'v\d+\.\d+\.\d+' "v0.9.16") "AC1: escaped dot literal"
-        assert false (regex match 'v\d+\.\d+\.\d+' "v0X9Y16") "AC1: escaped dot rejects non-dot"
-        assert true (regex is match '^hello' "hello world") "AC1: bol anchor matches start"
-        assert false (regex is match '^world' "hello world") "AC1: bol anchor rejects middle"
-        assert true (regex is match 'world$' "hello world") "AC1: eol anchor matches end"
-        assert false (regex is match 'hello$' "hello world") "AC1: eol anchor rejects prefix"
-        assert true (regex is match '^exact$' "exact") "AC1: anchored ^exact$ matches full string"
-        assert false (regex is match '^exact$' "not exact") "AC1: anchored ^exact$ rejects extra chars"
+        regex match "" "" -> assert true "AC1: empty pattern matches empty string"
+        regex match "" "nonempty" -> assert false "AC1: empty pattern rejects non-empty on full match"
+        regex match 'a(b|c)+d?e*' "abcbdeee" -> assert true "AC1: alternation group plus opt star"
+        regex match 'a(b|c)+d?e*' "ac" -> assert true "AC1: opt and star match zero occurrences"
+        regex match 'a(b|c)+d?e*' "ade" -> assert false "AC1: plus requires at least one"
+        regex match '(foo|bar|baz)+' "barfoobazbar" -> assert true "AC1: multi-branch alternation with plus"
+        regex match '(foo|bar|baz)+' "barquxfoo" -> assert false "AC1: multi-branch alternation rejects unknown"
+        regex match '[a-zA-Z_][a-zA-Z0-9_]*' "_valid_Identifier_99" -> assert true "AC1: identifier character class"
+        regex match '[a-zA-Z_][a-zA-Z0-9_]*' "9invalid" -> assert false "AC1: identifier rejects leading digit"
+        regex match '[^0-9]+' "hello_world" -> assert true "AC1: negated char class"
+        regex match '[^0-9]+' "hello42" -> assert false "AC1: negated char class rejects digits"
+        regex match '\w+\s+\d+' "agent   007" -> assert true "AC1: shorthand escapes \\w \\s \\d"
+        regex match '\D+\S+' "abc_123" -> assert true "AC1: negated shorthand escapes \\D \\S"
+        regex match 'v\d+\.\d+\.\d+' "v0.9.16" -> assert true "AC1: escaped dot literal"
+        regex match 'v\d+\.\d+\.\d+' "v0X9Y16" -> assert false "AC1: escaped dot rejects non-dot"
+        regex is match '^hello' "hello world" -> assert true "AC1: bol anchor matches start"
+        regex is match '^world' "hello world" -> assert false "AC1: bol anchor rejects middle"
+        regex is match 'world$' "hello world" -> assert true "AC1: eol anchor matches end"
+        regex is match 'hello$' "hello world" -> assert false "AC1: eol anchor rejects prefix"
+        regex is match '^exact$' "exact" -> assert true "AC1: anchored ^exact$ matches full string"
+        regex is match '^exact$' "not exact" -> assert false "AC1: anchored ^exact$ rejects extra chars"
         -- Russ Cox pathological backtracking benchmarks (exponential in backtracking engines, O(N*M) in Thompson NFA)
-        assert false (regex match '(a+)+b' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac") "AC1: Thompson NFA immune to (a+)+b ReDoS"
-        assert false (regex match '(a|aa)+b' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac") "AC1: Thompson NFA immune to (a|aa)+b ReDoS"
-        assert true (regex match 'a?a?a?a?a?a?a?a?aaaaaaaa' "aaaaaaaa") "AC1: Russ Cox a?^n a^n vector"
+        regex match '(a+)+b' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac" -> assert false "AC1: Thompson NFA immune to (a+)+b ReDoS"
+        regex match '(a|aa)+b' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac" -> assert false "AC1: Thompson NFA immune to (a|aa)+b ReDoS"
+        regex match 'a?a?a?a?a?a?a?a?aaaaaaaa' "aaaaaaaa" -> assert true "AC1: Russ Cox a?^n a^n vector"
         ()
 ```
 
@@ -199,33 +203,33 @@ En aquest exemple pràctic explorem de manera exhaustiva com es comporta `regex`
 fn :: test regex find replace split => ()
       test regex find replace split =
         m1 = regex find '\d+' "item #42 and #99"
-        assert true (matched m1) "AC2: find matched"
-        assert int equals (match_start m1) 6 "AC2: find start"
-        assert int equals (match_end m1) 8 "AC2: find end"
-        assert str eq (text m1) "42" "AC2: find text"
+        matched m1 -> assert true "AC2: find matched"
+        match_start m1 -> assert int equals 6 "AC2: find start"
+        match_end m1 -> assert int equals 8 "AC2: find end"
+        text m1 -> assert str eq "42" "AC2: find text"
 
         m_none = regex find '\d+' "no digits here"
-        assert false (matched m_none) "AC2: find returns matched=False when absent"
+        matched m_none -> assert false "AC2: find returns matched=False when absent"
 
         all_m = regex find all '[a-z]+=\d+' "id=10, port=8080, ttl=60"
-        assert int equals (re match count all_m) 3 "AC2: find all key=val count"
-        assert str eq (text (re match at all_m 0)) "id=10" "AC2: find all first match"
-        assert str eq (text (re match at all_m 1)) "port=8080" "AC2: find all second match"
-        assert str eq (text (re match at all_m 2)) "ttl=60" "AC2: find all third match"
+        re match count all_m -> assert int equals 3 "AC2: find all key=val count"
+        text (re match at all_m 0) -> assert str eq "id=10" "AC2: find all first match"
+        text (re match at all_m 1) -> assert str eq "port=8080" "AC2: find all second match"
+        text (re match at all_m 2) -> assert str eq "ttl=60" "AC2: find all third match"
 
         r1 = regex replace '\d+' "X" "v1.2.3"
-        assert str eq r1 "vX.2.3" "AC3: replace first"
+        r1 -> assert str eq "vX.2.3" "AC3: replace first"
         r_no = regex replace '\d+' "X" "abc"
-        assert str eq r_no "abc" "AC3: replace with no match returns original"
+        r_no -> assert str eq "abc" "AC3: replace with no match returns original"
         r2 = regex replace all '\d+' "X" "v1.22.333"
-        assert str eq r2 "vX.X.X" "AC3: replace all"
+        r2 -> assert str eq "vX.X.X" "AC3: replace all"
 
         parts = regex split '\s*[,;]\s*' "alpha, beta ;  gamma,delta"
-        assert int equals (re str count parts) 4 "AC3: split count"
-        assert str eq (re str at parts 0) "alpha" "AC3: split[0]"
-        assert str eq (re str at parts 1) "beta" "AC3: split[1]"
-        assert str eq (re str at parts 2) "gamma" "AC3: split[2]"
-        assert str eq (re str at parts 3) "delta" "AC3: split[3]"
+        re str count parts -> assert int equals 4 "AC3: split count"
+        re str at parts 0 -> assert str eq "alpha" "AC3: split[0]"
+        re str at parts 1 -> assert str eq "beta" "AC3: split[1]"
+        re str at parts 2 -> assert str eq "gamma" "AC3: split[2]"
+        re str at parts 3 -> assert str eq "delta" "AC3: split[3]"
         ()
 ```
 
@@ -236,7 +240,7 @@ En aquest exemple pràctic explorem de manera exhaustiva com es comporta `regex`
 ```ridgun
 import regex
 
-fn :: limpiar traza y validar id (usuario_id : String) (linea_log : String) => (Bool, String, [String])
+fn :: limpiar traza y validar id String String => Bool String [String]
       limpiar traza y validar id usuario_id linea_log =
         id_valido = regex is match "^usr_[a-z0-9]+$" usuario_id
         sin_ips   = regex replace all "\d+\.\d+\.\d+\.\d+" linea_log "[IP-REDACTADA]"
@@ -543,7 +547,7 @@ fn :: regex split String String => [String]
 
 ### Les 5 Regles d'Or en programar amb `regex`
 
-1. **Declara `import regex` a l'inici del fitxer** i aprofita l'equivalència entre espais i guions baixos perquè el teu codi es llegeixi com a prosa.
+1. **Declara `import regex` a l'inici del fitxer** i crida les seves funcions amb espais, tal com estan declarades, perquè el teu codi es llegeixi com a prosa.
 2. **Alinea les teves canonades de dades amb `=`**: encadena les crides a `regex` en passos amb nom propi i deixa que `stable format` alineï les columnes.
 3. **Aprofita les funcions totals de `regex` a les teves guardes `|`**: comprova els valors de retorn o desembolica els ADTs amb *pattern matching* en lloc d'assumir que l'entrada externa sempre és vàlida.
 4. **Evita copiar grans estructures si només necessites consultar un camp**: recorda que en `RMM2` els arguments d'entrada no incrementen ni decrementen comptadors (`+0` / `-0`).

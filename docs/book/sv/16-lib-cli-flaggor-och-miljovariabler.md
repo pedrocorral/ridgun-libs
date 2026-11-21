@@ -21,7 +21,7 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`CLI`** ofta at
 
 ## 16.2. Inbyggda artefakter, import och komplett API-katalog för `cli`
 
-I `ridgun-libs` är **`cli`** en förstklassig **lib** placerad i `src/main/ridgun/lib/cli.ridgun` (domän `CLI`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`cli`** en förstklassig **lib** placerad i `src/main/ridgun/lib/cli.ridgun` (domän `CLI`). När du bygger med `stable bundle` paketeras den i ett inbyggt format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
@@ -95,7 +95,7 @@ fn :: analizar comando [String] => String Bool Int [String]
 
 ### 16.3.2. Exempel 2: Säker komposition och hantering av gränsfall
 
-Varje funktion i lib:en `cli` är utformad för att kombineras sömlöst med booleska vakter `|` och med övriga 32 libs i `ridgun-libs`:
+Varje funktion i lib:en `cli` är utformad för att kombineras sömlöst med booleska vakter `|` och med övriga 38 libs i `ridgun-libs`:
 
 ```ridgun
 import cli
@@ -107,7 +107,7 @@ fn :: leer config entorno => Int Bool
         (workers, debug)
 ```
 
-### 16.3.3. Exempel 3: Booleska flaggor (`cli has flag`) och nyckel-värde-flaggor (`--key=val` och `--key val`, `cli opt int`, `cli opt bool`)
+### 16.3.3. Exempel 3: Booleska flaggor (`cli has flag`) och nyckel-värde-flaggor (`--key=val` och `--key val`, `cli get int opt`, `cli get opt`)
 
 I detta praktiska exempel undersöker vi grundligt hur `cli` beter sig inom detta funktionsområde, inklusive standardindata, parameterkombinationer och gränsvärden:
 
@@ -115,29 +115,29 @@ I detta praktiska exempel undersöker vi grundligt hur `cli` beter sig inom dett
 fn :: test cli flags and options => ()
       test cli flags and options =
         args = ["serve", "-la", "--verbose", "--port=9090", "-h", "127.0.0.1", "--workers", "-4", "--", "--ignored-flag", "-z", "file.ridgun"]
-        assert true (cli has flag args "--verbose" "-v") "AC1: long flag --verbose"
-        assert true (cli has flag args "--all" "-a") "AC1: bundled short flag -a in -la"
-        assert true (cli has flag args "--list" "-l") "AC1: bundled short flag -l in -la"
-        assert false (cli has flag args "--quiet" "-q") "AC1: missing flag returns False"
-        assert false (cli has flag args "--ignored-flag" "") "AC1: long flag after -- is ignored"
-        assert false (cli has flag args "" "-z") "AC1: short flag after -- is ignored"
-        assert false (cli has flag [] "--verbose" "-v") "AC1: empty args returns False"
+        cli has flag args "--verbose" "-v" -> assert true "AC1: long flag --verbose"
+        cli has flag args "--all" "-a" -> assert true "AC1: bundled short flag -a in -la"
+        cli has flag args "--list" "-l" -> assert true "AC1: bundled short flag -l in -la"
+        cli has flag args "--quiet" "-q" -> assert false "AC1: missing flag returns False"
+        cli has flag args "--ignored-flag" "" -> assert false "AC1: long flag after -- is ignored"
+        cli has flag args "" "-z" -> assert false "AC1: short flag after -- is ignored"
+        cli has flag [] "--verbose" "-v" -> assert false "AC1: empty args returns False"
 
         -- Option extraction: --key=val, --key val, -k=val, -k val, empty value --key=
-        assert str eq (cli get opt args "--port" "-p" "8080") "9090" "AC2: --port=9090 inline equals"
-        assert str eq (cli get opt args "--host" "-h" "0.0.0.0") "127.0.0.1" "AC2: -h 127.0.0.1 separate token"
-        assert str eq (cli get opt args "--mode" "-m" "prod") "prod" "AC2: missing option returns fallback"
-        assert int equals (cli get int opt args "--port" "-p" 8080) 9090 "AC2: cli_get_int_opt positive int"
-        assert int equals (cli get int opt args "--workers" "-w" 1) (0 - 4) "AC2: cli_get_int_opt negative int"
-        assert int equals (cli get int opt args "--host" "-h" 8080) 8080 "AC2: non-numeric option falls back to default int"
+        cli get opt args "--port" "-p" "8080" -> assert str eq "9090" "AC2: --port=9090 inline equals"
+        cli get opt args "--host" "-h" "0.0.0.0" -> assert str eq "127.0.0.1" "AC2: -h 127.0.0.1 separate token"
+        cli get opt args "--mode" "-m" "prod" -> assert str eq "prod" "AC2: missing option returns fallback"
+        cli get int opt args "--port" "-p" 8080 -> assert int equals 9090 "AC2: cli_get_int_opt positive int"
+        cli get int opt args "--workers" "-w" 1 -> assert int equals (0 - 4) "AC2: cli_get_int_opt negative int"
+        cli get int opt args "--host" "-h" 8080 -> assert int equals 8080 "AC2: non-numeric option falls back to default int"
 
         short_eq_args = ["-p=3000", "--empty="]
-        assert int equals (cli get int opt short_eq_args "--port" "-p" 80) 3000 "AC2: short option -p=3000"
-        assert str eq (cli get opt short_eq_args "--empty" "-e" "def") "" "AC2: explicit empty --empty= returns empty string"
+        cli get int opt short_eq_args "--port" "-p" 80 -> assert int equals 3000 "AC2: short option -p=3000"
+        cli get opt short_eq_args "--empty" "-e" "def" -> assert str eq "" "AC2: explicit empty --empty= returns empty string"
         ()
 ```
 
-### 16.3.4. Exempel 4: Positionsargument med stöd för `--` (`cli positionals`), underkommandon (`cli subcommand`) och typade miljövariabler (`env str/int/bool or`)
+### 16.3.4. Exempel 4: Positionsargument med stöd för `--` (`cli positionals`), underkommandon (`cli subcommand`) och typade miljövariabler (`env get or / env get int or / env get bool or`)
 
 I detta praktiska exempel undersöker vi grundligt hur `cli` beter sig inom detta funktionsområde, inklusive standardindata, parameterkombinationer och gränsvärden:
 
@@ -145,24 +145,24 @@ I detta praktiska exempel undersöker vi grundligt hur `cli` beter sig inom dett
 fn :: test cli positionals subcommand and env => ()
       test cli positionals subcommand and env =
         args = ["build", "-v", "--output", "target/app", "-j", "8", "--", "-dashfile.ridgun", "--another-literal", "main.ridgun"]
-        assert str eq (cli subcommand args) "build" "AC3: cli_subcommand first positional"
-        assert str eq (cli subcommand ["-v", "--release", "test"]) "test" "AC3: cli_subcommand skips leading flags"
-        assert str eq (cli subcommand ["--help", "-v"]) "" "AC3: cli_subcommand empty when only flags"
-        assert str eq (cli subcommand []) "" "AC3: cli_subcommand empty on []"
+        cli subcommand args -> assert str eq "build" "AC3: cli_subcommand first positional"
+        cli subcommand ["-v", "--release", "test"] -> assert str eq "test" "AC3: cli_subcommand skips leading flags"
+        cli subcommand ["--help", "-v"] -> assert str eq "" "AC3: cli_subcommand empty when only flags"
+        cli subcommand [] -> assert str eq "" "AC3: cli_subcommand empty on []"
 
         pos = cli positionals with opts args ["--output", "-j"]
-        assert eq pos ["build", "-dashfile.ridgun", "--another-literal", "main.ridgun"]
+        pos -> assert eq ["build", "-dashfile.ridgun", "--another-literal", "main.ridgun"]
 
         -- Single "-" (stdin/stdout convention) is treated as a positional argument, not a flag!
         stdin_args = ["cat", "-n", "-"]
-        assert eq (cli positionals stdin_args) ["cat", "-"]
+        cli positionals stdin_args -> assert eq ["cat", "-"]
 
         -- Environment variable readers
-        assert true ((str len (env get or "PATH" "")) > 0) "AC4: env_get_or PATH non-empty"
-        assert str eq (env get or "RIDGUN_NONEXISTENT_ENV_999" "fallback_val") "fallback_val" "AC4: env_get_or fallback"
-        assert int equals (env get int or "RIDGUN_NONEXISTENT_ENV_999" 42) 42 "AC4: env_get_int_or fallback"
-        assert true (env get bool or "RIDGUN_NONEXISTENT_ENV_999" True) "AC4: env_get_bool_or True fallback"
-        assert false (env get bool or "RIDGUN_NONEXISTENT_ENV_999" False) "AC4: env_get_bool_or False fallback"
+        (str len (env get or "PATH" "")) > 0 -> assert true "AC4: env_get_or PATH non-empty"
+        env get or "RIDGUN_NONEXISTENT_ENV_999" "fallback_val" -> assert str eq "fallback_val" "AC4: env_get_or fallback"
+        env get int or "RIDGUN_NONEXISTENT_ENV_999" 42 -> assert int equals 42 "AC4: env_get_int_or fallback"
+        env get bool or "RIDGUN_NONEXISTENT_ENV_999" True -> assert true "AC4: env_get_bool_or True fallback"
+        env get bool or "RIDGUN_NONEXISTENT_ENV_999" False -> assert false "AC4: env_get_bool_or False fallback"
         ()
 ```
 
@@ -173,12 +173,12 @@ I detta praktiska exempel undersöker vi grundligt hur `cli` beter sig inom dett
 ```ridgun
 import cli
 
-fn :: despachar comando (argv : [String]) => (String, String, Int, Bool, [String])
+fn :: despachar comando [String] => String String Int Bool [String]
       despachar comando argv =
-        cmd     = cli subcommand argv
-        host    = cli opt or argv "--host" "-H" (env str or "RG_HOST" "127.0.0.1")
-        puerto  = cli opt int or argv "--port" "-p" (env int or "RG_PORT" 8080)
-        verbose = (cli has flag argv "--verbose" "-v") or (env bool or "RG_VERBOSE" False)
+        cmd      = cli subcommand argv
+        host     = cli get opt argv "--host" "-H" (env get or "RG_HOST" "127.0.0.1")
+        puerto   = cli get int opt argv "--port" "-p" (env get int or "RG_PORT" 8080)
+        verbose  = (cli has flag argv "--verbose" "-v") or (env get bool or "RG_VERBOSE" False)
         archivos = cli positionals argv
         (cmd, host, puerto, verbose, archivos)
 ```
@@ -323,7 +323,7 @@ fn :: env get bool or String Bool => Bool
 
 ### De 5 Gyllene Reglerna när du programmerar med `cli`
 
-1. **Deklarera `import cli` överst i filen** och utnyttja att mellanslag och understreck är utbytbara så att koden läses som naturlig prosa.
+1. **Deklarera `import cli` överst i filen** och anropa dess funktioner med mellanslag, precis som de är deklarerade, så att koden läses som naturlig prosa.
 2. **Linjera dina datapipelines med `=`**: kedja samman `cli`-anrop i namngivna mellansteg och låt `stable format` linjera kolumnerna.
 3. **Utnyttja `cli`:s totala funktioner i dina `|`-vakter**: kontrollera returvärden eller packa upp ADT:er med mönstermatchning i stället för att anta att extern indata alltid är giltig.
 4. **Undvik att kopiera stora strukturer när du bara läser ett fält**: kom ihåg att i `RMM2` medför inargument noll referensräkningskostnad (`+0` / `-0`).

@@ -21,7 +21,7 @@ I ett traditionellt ekosystem innebär uppgifter inom domänen **`HTTP`** ofta a
 
 ## 28.2. Inbyggda artefakter, import och komplett API-katalog för `http`
 
-I `ridgun-libs` är **`http`** en förstklassig **lib** placerad i `src/main/ridgun/lib/http.ridgun` (domän `HTTP`). När du bygger med `stable bundle` paketeras den i tre inbyggda format:
+I `ridgun-libs` är **`http`** en förstklassig **lib** placerad i `src/main/ridgun/lib/http.ridgun` (domän `HTTP`). När du bygger med `stable bundle` paketeras den i ett inbyggt format:
 
 | Artefakt | Sökväg | Syfte |
 |---|---|---|
@@ -146,16 +146,15 @@ fn :: inspeccionar endpoint String => String Int String String
 
 ### 28.3.2. Exempel 2: Säker komposition och hantering av gränsfall
 
-Varje funktion i lib:en `http` är utformad för att kombineras sömlöst med booleska vakter `|` och med övriga 32 libs i `ridgun-libs`:
+Varje funktion i lib:en `http` är utformad för att kombineras sömlöst med booleska vakter `|` och med övriga 38 libs i `ridgun-libs`:
 
 ```ridgun
 import http
 
 fn :: extraer cabeceras peticion String => String String
       extraer cabeceras peticion raw_req =
-        raw_req http req method -> metodo
-        raw_req http req path -> ruta
-        http req header raw_req "Authorization" -> auth
+        metodo, ruta, cuerpo = http parse request raw_req
+        http header get (http parse headers raw_req) "Authorization" -> auth
         (metodo + " " + ruta, auth)
 ```
 
@@ -167,21 +166,21 @@ I detta praktiska exempel undersöker vi grundligt hur `http` beter sig inom det
 fn :: test uri parsing => ()
       test uri parsing =
         u1 = "https://api.example.com:8443/v1/users?active=1&role=admin"
-        assert str eq (uri scheme u1) "https" "uri_scheme https"
-        assert str eq (uri host u1) "api.example.com" "uri_host"
-        assert int equals (uri port u1) 8443 "uri_port 8443"
-        assert str eq (uri path u1) "/v1/users" "uri_path"
-        assert str eq (uri query u1) "active=1&role=admin" "uri_query"
+        uri scheme u1 -> assert str eq "https" "uri_scheme https"
+        uri host u1 -> assert str eq "api.example.com" "uri_host"
+        uri port u1 -> assert int equals 8443 "uri_port 8443"
+        uri path u1 -> assert str eq "/v1/users" "uri_path"
+        uri query u1 -> assert str eq "active=1&role=admin" "uri_query"
         u2 = "http://localhost/health"
-        assert str eq (uri scheme u2) "http" "uri_scheme http"
-        assert str eq (uri host u2) "localhost" "uri_host localhost"
-        assert int equals (uri port u2) 80 "default http port 80"
-        assert str eq (uri path u2) "/health" "uri_path /health"
-        assert str eq (uri query u2) "" "uri_query empty"
+        uri scheme u2 -> assert str eq "http" "uri_scheme http"
+        uri host u2 -> assert str eq "localhost" "uri_host localhost"
+        uri port u2 -> assert int equals 80 "default http port 80"
+        uri path u2 -> assert str eq "/health" "uri_path /health"
+        uri query u2 -> assert str eq "" "uri_query empty"
         ()
 ```
 
-### 28.3.4. Exempel 4: Formatering, tolkning och skiftlägesokänslig rubriksökning för HTTP/1.1-anrop och svar (`http format request/response`, `http parse request/response`, `http get header`)
+### 28.3.4. Exempel 4: Formatering, tolkning och skiftlägesokänslig rubriksökning för HTTP/1.1-anrop och svar (`http build request/response`, `http parse request/response`, `http header get`)
 
 I detta praktiska exempel undersöker vi grundligt hur `http` beter sig inom detta funktionsområde, inklusive standardindata, parameterkombinationer och gränsvärden:
 
@@ -191,24 +190,24 @@ fn :: test http11 request and response => ()
         hdrs    = [("Host", "api.example.com"), ("Authorization", "Bearer tok_xyz_987"), ("X-Injected", "safe\r\nEvil: 1")]
         raw_req = http build request "POST" "/v1/login" hdrs "{\"user\":\"alice\"}"
         parsed  = http parse request raw_req
-        assert str eq (req method parsed) "POST" "req method POST"
-        assert str eq (req path parsed) "/v1/login" "req path /v1/login"
-        assert str eq (req body parsed) "{\"user\":\"alice\"}" "req body"
+        req method parsed -> assert str eq "POST" "req method POST"
+        req path parsed -> assert str eq "/v1/login" "req path /v1/login"
+        req body parsed -> assert str eq "{\"user\":\"alice\"}" "req body"
         phdrs   = http parse headers raw_req
-        assert str eq (http header get phdrs "host") "api.example.com" "case-insensitive host header"
-        assert str eq (http header get phdrs "content-length") "16" "auto Content-Length 16"
-        assert str eq (http bearer token phdrs) "tok_xyz_987" "http_bearer_token"
-        assert str eq (http header get phdrs "Evil") "" "CRLF injection prevented"
+        http header get phdrs "host" -> assert str eq "api.example.com" "case-insensitive host header"
+        http header get phdrs "content-length" -> assert str eq "16" "auto Content-Length 16"
+        http bearer token phdrs -> assert str eq "tok_xyz_987" "http_bearer_token"
+        http header get phdrs "Evil" -> assert str eq "" "CRLF injection prevented"
 
-        assert str eq (http status text 200) "OK" "status 200 OK"
-        assert str eq (http status text 404) "Not Found" "status 404 Not Found"
+        http status text 200 -> assert str eq "OK" "status 200 OK"
+        http status text 404 -> assert str eq "Not Found" "status 404 Not Found"
         raw_resp = http build response 201 [("Content-Type", "application/json")] "{\"id\":42}"
         presp    = http parse response raw_resp
         rhdrs    = http parse headers raw_resp
-        assert int equals (resp code presp) 201 "resp code 201"
-        assert str eq (resp reason presp) "Created" "resp reason Created"
-        assert str eq (http header get rhdrs "content-type") "application/json" "resp Content-Type"
-        assert str eq (resp body presp) "{\"id\":42}" "resp body"
+        resp code presp -> assert int equals 201 "resp code 201"
+        resp reason presp -> assert str eq "Created" "resp reason Created"
+        http header get rhdrs "content-type" -> assert str eq "application/json" "resp Content-Type"
+        resp body presp -> assert str eq "{\"id\":42}" "resp body"
         ()
 ```
 
@@ -221,50 +220,50 @@ fn :: test http11 live tcp client and server => ()
       test http11 live tcp client and server =
         -- Spin up a real kernel TCP listener on port 0, connect a client, send HTTP request, respond, and read back
         l_res  = sys tcp listen "127.0.0.1" 0 8
-        assert int equals (sock rc l_res) 0 "http server listen ok"
+        sock rc l_res -> assert int equals 0 "http server listen ok"
         lfd    = sock fd l_res
         port   = sys local port lfd
-        assert true (port > 0) "http server ephemeral port > 0"
+        port > 0 -> assert true "http server ephemeral port > 0"
         c_res  = sys tcp connect "localhost" port 500
-        assert int equals (sock rc c_res) 0 "http client connect ok"
+        sock rc c_res -> assert int equals 0 "http client connect ok"
         cfd    = sock fd c_res
         a_res  = sys accept lfd 500
-        assert int equals (sock accept rc a_res) 0 "http server accept ok"
+        sock accept rc a_res -> assert int equals 0 "http server accept ok"
         sfd    = sock accept fd a_res
         req_w  = http build request "GET" "/v1/ping?echo=1" [("Host", "localhost"), ("Connection", "close")] ""
-        assert int equals (sock rc (sys send cfd req_w 500)) 0 "http client send request"
+        sock rc (sys send cfd req_w 500) -> assert int equals 0 "http client send request"
         srv_rx = sock recv data (sys recv sfd 4096 500)
         s_req  = http parse request srv_rx
-        assert str eq (req method s_req) "GET" "server parsed GET"
-        assert str eq (req path s_req) "/v1/ping?echo=1" "server parsed path"
+        req method s_req -> assert str eq "GET" "server parsed GET"
+        req path s_req -> assert str eq "/v1/ping?echo=1" "server parsed path"
         resp_w = http build response 200 [("Content-Type", "application/json"), ("Connection", "close")] "{\"pong\":true}"
-        assert int equals (sock rc (sys send sfd resp_w 500)) 0 "http server send response"
-        assert int equals (sys close sfd) 0 "http server close sfd"
+        sock rc (sys send sfd resp_w 500) -> assert int equals 0 "http server send response"
+        sys close sfd -> assert int equals 0 "http server close sfd"
         cli_rx = sock recv data (sys recv cfd 4096 500)
         c_resp = http parse response cli_rx
         c_hdrs = http parse headers cli_rx
-        assert int equals (resp code c_resp) 200 "client parsed 200"
-        assert str eq (http header get c_hdrs "content-type") "application/json" "client parsed header"
-        assert str eq (resp body c_resp) "{\"pong\":true}" "client parsed body"
-        assert int equals (sys close cfd) 0 "http client close cfd"
-        assert int equals (sys close lfd) 0 "http server close lfd"
-        -- Verify http get / http post error handling on invalid scheme or refused port
+        resp code c_resp -> assert int equals 200 "client parsed 200"
+        http header get c_hdrs "content-type" -> assert str eq "application/json" "client parsed header"
+        resp body c_resp -> assert str eq "{\"pong\":true}" "client parsed body"
+        sys close cfd -> assert int equals 0 "http client close cfd"
+        sys close lfd -> assert int equals 0 "http server close lfd"
+        -- Verify http_get / http_post error handling on invalid scheme or refused port
         bad_g  = http get "ftp://localhost/file" 100
-        assert int equals (http resp rc bad_g) (0 - 7) "http_get non-http scheme -> -7"
+        http resp rc bad_g -> assert int equals (0 - 7) "http_get non-http scheme -> -7"
         ref_p  = http post "http://127.0.0.1:39998/api" "application/json" "{}" 100
-        assert int equals (http resp rc ref_p) (0 - 3) "http_post refused port -> -3"
-        -- Verify http get against a real external background TCP responder over kernel loopback
+        http resp rc ref_p -> assert int equals (0 - 3) "http_post refused port -> -3"
+        -- Verify http_get against a real external background TCP responder over kernel loopback
         l_bg   = sys tcp listen "127.0.0.1" 0 8
         lfd_bg = sock fd l_bg
         p_bg   = sys local port lfd_bg
-        sys close lfd_bg -> ()
-        shell exec "python3 -c \"import socket; s=socket.socket(); s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1); s.bind(('127.0.0.1',{p_bg})); s.listen(1); c,_=s.accept(); c.recv(1024); c.sendall(b'HTTP/1.1 200 OK\\r\\nContent-Type: text/plain\\r\\nContent-Length: 7\\r\\nConnection: close\\r\\n\\r\\nlive-ok'); c.close(); s.close()\" >/dev/null 2>&1 &" -> ()
-        sys sleep ms 80 -> ()
+        sys close lfd_bg
+        shell exec "python3 -c \"import socket; s=socket.socket(); s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1); s.bind(('127.0.0.1',{p_bg})); s.listen(1); c,_=s.accept(); c.recv(1024); c.sendall(b'HTTP/1.1 200 OK\\r\\nContent-Type: text/plain\\r\\nContent-Length: 7\\r\\nConnection: close\\r\\n\\r\\nlive-ok'); c.close(); s.close()\" >/dev/null 2>&1 &"
+        sys sleep ms 80
         g_live = http get "http://localhost:{p_bg}/status?check=1" 500
-        assert int equals (http resp rc g_live) 0 "http_get live external TCP server rc == 0"
-        assert int equals (http resp status g_live) 200 "http_get live status == 200"
-        assert str eq (http header get (http resp headers g_live) "content-type") "text/plain" "http_get live header"
-        assert str eq (http resp body g_live) "live-ok" "http_get live body == live-ok"
+        http resp rc g_live -> assert int equals 0 "http_get live external TCP server rc == 0"
+        http resp status g_live -> assert int equals 200 "http_get live status == 200"
+        http header get (http resp headers g_live) "content-type" -> assert str eq "text/plain" "http_get live header"
+        http resp body g_live -> assert str eq "live-ok" "http_get live body == live-ok"
         ()
 ```
 
@@ -566,7 +565,7 @@ fn :: http parse response String => Int String String
         ht parse resp parts lines body
 ```
 
-### 28.4.4. Intern implementation: Live Kernel TCP HTTP/1.1 Client (`http request tcp`, `http get`, `http post`)
+### 28.4.4. Intern implementation: Live Kernel TCP HTTP/1.1 Client (`http_request_tcp`, `http_get`, `http_post`)
 
 Se hur `http.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
 
@@ -602,11 +601,11 @@ fn :: ht finish tcp resp String => Int Int String
 fn :: ht send read step Int Int (Int Int) => Int Int String
       ht send read step cfd timeout_ms (s_rc, _) =
         | s_rc != 0 =
-          _ = sys close cfd
+          sys close cfd
           (s_rc, 0, "")
         | otherwise =
           raw = ht read tcp loop cfd timeout_ms ""
-          _   = sys close cfd
+          sys close cfd
           ht finish tcp resp raw
 
 fn :: ht connect send tcp Int Int String Int => Int Int String
@@ -662,14 +661,14 @@ fn :: http resp body (Int Int String) => String
 
 ## 28.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `http`
 
-- **Algoritmisk garanti och säkerhet**: Automatisk borttagning av `\r` och `\n` i alla headers (`http sanitize header`) för att förhindra HTTP response-splitting.
+- **Algoritmisk garanti och säkerhet**: Automatisk borttagning av `\r` och `\n` i alla headers (`http build request`) för att förhindra HTTP response-splitting.
 - **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/http.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
 - **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
 - **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test http.ridgun`.
 
 ### De 5 Gyllene Reglerna när du programmerar med `http`
 
-1. **Deklarera `import http` överst i filen** och utnyttja att mellanslag och understreck är utbytbara så att koden läses som naturlig prosa.
+1. **Deklarera `import http` överst i filen** och anropa dess funktioner med mellanslag, precis som de är deklarerade, så att koden läses som naturlig prosa.
 2. **Linjera dina datapipelines med `=`**: kedja samman `http`-anrop i namngivna mellansteg och låt `stable format` linjera kolumnerna.
 3. **Utnyttja `http`:s totala funktioner i dina `|`-vakter**: kontrollera returvärden eller packa upp ADT:er med mönstermatchning i stället för att anta att extern indata alltid är giltig.
 4. **Undvik att kopiera stora strukturer när du bara läser ett fält**: kom ihåg att i `RMM2` medför inargument noll referensräkningskostnad (`+0` / `-0`).

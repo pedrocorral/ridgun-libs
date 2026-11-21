@@ -15,7 +15,7 @@ Perché in Ridgun `agent` è la primitiva di concorrenza del linguaggio (mailbox
 
 ## 33.2. Artefatti nativi, importazione e catalogo completo dell'API di `ai`
 
-In `ridgun-libs`, **`ai`** è una **lib** di prima classe situata in `src/main/ridgun/lib/ai.ridgun` (dominio `AI`). Compilando con `stable bundle`, viene impacchettata in tre artefatti nativi:
+In `ridgun-libs`, **`ai`** è una **lib** di prima classe situata in `src/main/ridgun/lib/ai.ridgun` (dominio `AI`). Compilando con `stable bundle`, viene impacchettata in un artefatto nativo:
 
 | Artefatto | Percorso | Scopo |
 |---|---|---|
