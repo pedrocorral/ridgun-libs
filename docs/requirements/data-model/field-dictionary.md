@@ -140,3 +140,24 @@ Conventions: `snake_case`; ids end in `_id`; timestamps end in `_at` (UTC ISO-86
 | room | Int | Positions available in the dense key and value tensors | HASHMAP | `hashmap.ridgun` |
 | count | Tensor[Int * 1] | Number of keys of a hash map | HASHMAP | `hashmap.ridgun` |
 | seed | String | Per-map random seed for the key hash | HASHMAP | `hashmap.ridgun` |
+| worker_count | Int | Number of workers of a worker pool (`1..64`) | POOL | `pool.ridgun` |
+| busy_count | Int | Workers of a pool that are running a job | POOL | `pool.ridgun` |
+| slot_index | Int | Position of a worker in its pool (`0 .. worker_count - 1`) | POOL | `pool.ridgun` |
+| job_tag | String | Label the caller gives a job (for example a client address); `""` for none | POOL | `pool.ridgun` |
+| done_fd | Int | Descriptor of a pool that is readable when a job has ended | POOL | `pool.ridgun`, `net_agent.ridgun` |
+| refused_count | Int | Jobs or connections refused because the limit was reached | POOL | `pool.ridgun`, `net_agent.ridgun` |
+| conn_id | Int | Identifier of a connection in a reactor (from `1`, never reused) | NETAGENT | `net_agent.ridgun` |
+| peer_ip | String | Address of the peer of a connection | NETAGENT | `net_agent.ridgun` |
+| input_buf | String | Bytes read from a connection that the application has not taken yet | NETAGENT | `net_agent.ridgun` |
+| output_buf | String | Bytes queued for a connection that its peer has not taken yet | NETAGENT | `net_agent.ridgun` |
+| is_closing | Bool | The connection closes when its `output_buf` is empty; nothing more is read from it | NETAGENT | `net_agent.ridgun` |
+| last_active_ms | Int | Monotonic time in milliseconds of the last byte read from or sent to a connection | NETAGENT | `net_agent.ridgun` |
+| max_conn_count | Int | Most connections a reactor holds at once | NETAGENT | `net_agent.ridgun` |
+| max_accept_count | Int | Most connections a reactor accepts in one turn | NETAGENT | `net_agent.ridgun` |
+| input_limit_bytes | Int | Most bytes of `input_buf` before the connection is closed | NETAGENT | `net_agent.ridgun` |
+| output_limit_bytes | Int | Most bytes of `output_buf` before the connection is closed | NETAGENT | `net_agent.ridgun` |
+| first_message_limit_ms | Int | Time a new connection has to send its first complete message (`0`: no limit) | NETAGENT | `net_agent.ridgun` |
+| idle_limit_ms | Int | Time a connection may stay without a byte in either direction (`0`: no limit) | NETAGENT | `net_agent.ridgun` |
+| open_count | Int | Connections in the table of a reactor | NETAGENT | `net_agent.ridgun` |
+| accepted_count | Int | Connections accepted by a reactor since its start | NETAGENT | `net_agent.ridgun` |
+| dropped_count | Int | Connections closed by a reactor for passing a limit | NETAGENT | `net_agent.ridgun` |
