@@ -40,7 +40,7 @@ In `ridgun-libs`, **`json`** is a first-class **lib** located at `src/main/ridgu
 
 ### 08.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/json.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/json.ridgun` (`7` types, `0` operators, and `140` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/json.ridgun` (`7` types, `0` operators, and `141` functions):
 
 **Algebraic Data Types & Records (`type`) in `json`:**
 
@@ -62,140 +62,141 @@ type JsonStrStep = JStrOk String Int | JStrErr String
 | `4` | `fn :: j spaces loop Int String` | `String` |
 | `5` | `fn :: j spaces Int` | `String` |
 | `6` | `fn :: j raw byte ub Int` | `String` |
-| `7` | `fn :: j raw byte Int` | `String` |
-| `8` | `fn :: j sb append3 String String` | `String String String String` |
-| `9` | `fn :: j sb append2 String String String` | `String String String String` |
-| `10` | `fn :: j sb append1 String String String String` | `String String String String` |
-| `11` | `fn :: j sb append String String String String String` | `String String String String` |
-| `12` | `fn :: j sb finish String String String String` | `String` |
-| `13` | `fn :: j rev vals loop [JsonVal] [JsonVal]` | `[JsonVal]` |
-| `14` | `fn :: j rev vals [JsonVal]` | `[JsonVal]` |
-| `15` | `fn :: j rev fields loop [JsonField] [JsonField]` | `[JsonField]` |
-| `16` | `fn :: j rev fields [JsonField]` | `[JsonField]` |
-| `17` | `fn :: j hex digit Int` | `Int` |
-| `18` | `fn :: j combine hex4 Int Int Int Int` | `Int` |
-| `19` | `fn :: j parse hex4 String Int Int` | `Int` |
-| `20` | `fn :: j utf8 from cp Int` | `String` |
-| `21` | `fn :: j hex2 lower Int` | `String` |
-| `22` | `fn :: j esc special Int` | `String` |
-| `23` | `fn :: j scan esc plain2 String Int Int Int` | `Int` |
-| `24` | `fn :: j scan esc plain String Int Int` | `Int` |
-| `25` | `fn :: j escape run String Int Int Int String String String String` | `String` |
-| `26` | `fn :: j escape loop String Int Int String String String String` | `String` |
-| `27` | `fn :: j escape str String` | `String` |
-| `28` | `fn :: j unescape simple Int` | `String` |
-| `29` | `fn :: j finish surrogate String Int Int Int Int String String String String` | `JsonStrStep` |
-| `30` | `fn :: j parse u surrogate String Int Int Int String String String String` | `JsonStrStep` |
-| `31` | `fn :: j dispatch u escape String Int Int Int String String String String` | `JsonStrStep` |
-| `32` | `fn :: j parse u escape String Int Int String String String String` | `JsonStrStep` |
-| `33` | `fn :: j finish simple escape String Int Int String String String String String` | `JsonStrStep` |
-| `34` | `fn :: j parse escape char String Int Int Int String String String String` | `JsonStrStep` |
-| `35` | `fn :: j parse escape String Int Int String String String String` | `JsonStrStep` |
-| `36` | `fn :: j byte at String Int` | `Int` |
-| `37` | `fn :: j is cont byte Int` | `Bool` |
-| `38` | `fn :: j utf8 len2 Int Int` | `Int` |
-| `39` | `fn :: j utf8 len3 Int Int Int` | `Int` |
-| `40` | `fn :: j utf8 len4 Int Int Int Int` | `Int` |
-| `41` | `fn :: j valid utf8 step String Int Int Int` | `Int` |
-| `42` | `fn :: j parse utf8 seq String Int Int Int String String String String` | `JsonStrStep` |
-| `43` | `fn :: j scan str plain2 String Int Int Int` | `Int` |
-| `44` | `fn :: j scan str plain String Int Int` | `Int` |
-| `45` | `fn :: j parse str char String Int Int Int String String String String` | `JsonStrStep` |
-| `46` | `fn :: j parse str run String Int Int Int String String String String` | `JsonStrStep` |
-| `47` | `fn :: j parse str loop String Int Int String String String String` | `JsonStrStep` |
-| `48` | `fn :: j parse string fast String Int Int Int` | `JsonStrStep` |
-| `49` | `fn :: j parse string String Int Int` | `JsonStrStep` |
-| `50` | `fn :: j scan digits String Int Int` | `Int` |
-| `51` | `fn :: j str cmp2 Int Int String String Int Int` | `Int` |
-| `52` | `fn :: j str cmp loop String String Int Int` | `Int` |
-| `53` | `fn :: j digits fit i64 len String Bool Int` | `Bool` |
-| `54` | `fn :: j digits fit i64 String Bool` | `Bool` |
-| `55` | `fn :: j parse pos digits loop String Int Int Int` | `Int` |
-| `56` | `fn :: j parse neg digits loop String Int Int Int` | `Int` |
-| `57` | `fn :: j parse i64 exact String Bool` | `Int` |
-| `58` | `fn :: j scan exp after sign2 Int Int` | `Int` |
-| `59` | `fn :: j scan exp after sign String Int Int` | `Int` |
-| `60` | `fn :: j scan opt exp sign String Int Int Int` | `Int` |
-| `61` | `fn :: j scan opt exp char String Int Int Int` | `Int` |
-| `62` | `fn :: j scan opt exp String Int Int` | `Int` |
-| `63` | `fn :: j scan opt frac2 String Int Int Int` | `Int` |
-| `64` | `fn :: j scan opt frac String Int Int` | `Int` |
-| `65` | `fn :: j parse pos range String Int Int Int` | `Int` |
-| `66` | `fn :: j parse neg range String Int Int Int` | `Int` |
-| `67` | `fn :: j parse i64 range String Int Int Bool` | `Int` |
-| `68` | `fn :: j finish int digs String Bool Int` | `JsonStep` |
-| `69` | `fn :: j finish int range String Int Int Bool Int` | `JsonStep` |
-| `70` | `fn :: j finish num after frac String Int Int Bool Int Int` | `JsonStep` |
-| `71` | `fn :: j finish num after int String Int Int Bool Int Int` | `JsonStep` |
-| `72` | `fn :: j parse num int part2 String Int Int Bool Int Int Int` | `JsonStep` |
-| `73` | `fn :: j parse num int part String Int Int Bool Int` | `JsonStep` |
-| `74` | `fn :: j parse number String Int Int` | `JsonStep` |
-| `75` | `fn :: j has field [JsonField] String` | `Bool` |
-| `76` | `fn :: j parse val String Int Int Int` | `JsonStep` |
-| `77` | `fn :: j parse val char String Int Int Int Int` | `JsonStep` |
-| `78` | `fn :: j parse val at String Int Int Int` | `JsonStep` |
-| `79` | `fn :: j wrap str step JsonStrStep` | `JsonStep` |
-| `80` | `fn :: j parse arr open String Int Int Int` | `JsonStep` |
-| `81` | `fn :: j parse arr first String Int Int Int` | `JsonStep` |
-| `82` | `fn :: j finish arr step JsonArrStep` | `JsonStep` |
-| `83` | `fn :: j parse arr items String Int Int Int [JsonVal]` | `JsonArrStep` |
-| `84` | `fn :: j parse arr after item String Int Int [JsonVal] JsonStep` | `JsonArrStep` |
-| `85` | `fn :: j parse arr delim String Int Int Int [JsonVal]` | `JsonArrStep` |
-| `86` | `fn :: j parse obj open String Int Int Int` | `JsonStep` |
-| `87` | `fn :: j parse obj first String Int Int Int` | `JsonStep` |
-| `88` | `fn :: j finish obj step JsonObjStep` | `JsonStep` |
-| `89` | `fn :: j parse obj fields String Int Int Int [JsonField]` | `JsonObjStep` |
-| `90` | `fn :: j parse obj after key String Int Int [JsonField] JsonStrStep` | `JsonObjStep` |
-| `91` | `fn :: j parse obj colon String Int Int Int String [JsonField]` | `JsonObjStep` |
-| `92` | `fn :: j parse obj after val String Int Int String [JsonField] JsonStep` | `JsonObjStep` |
-| `93` | `fn :: j parse obj delim String Int Int Int [JsonField]` | `JsonObjStep` |
-| `94` | `fn :: j check eof String Int JsonStep` | `JsonRes` |
-| `95` | `fn :: j check eof pos Int Int JsonVal` | `JsonRes` |
-| `96` | `fn :: json parse with limits String Int Int` | `JsonRes` |
-| `97` | `fn :: json parse String` | `JsonRes` |
-| `98` | `fn :: j join arr loop [JsonVal] String String String String` | `String` |
-| `99` | `fn :: j join arr [JsonVal]` | `String` |
-| `100` | `fn :: j join obj loop [JsonField] String String String String` | `String` |
-| `101` | `fn :: j join obj [JsonField]` | `String` |
-| `102` | `fn :: j pos int to str Int String` | `String` |
-| `103` | `fn :: j int to str Int` | `String` |
-| `104` | `fn :: json stringify JsonVal` | `String` |
-| `105` | `fn :: j pretty arr loop [JsonVal] Int Int String String String String` | `String` |
-| `106` | `fn :: j pretty arr [JsonVal] Int Int` | `String` |
-| `107` | `fn :: j pretty obj loop [JsonField] Int Int String String String String` | `String` |
-| `108` | `fn :: j pretty obj [JsonField] Int Int` | `String` |
-| `109` | `fn :: j pretty val JsonVal Int Int` | `String` |
-| `110` | `fn :: json pretty JsonVal Int` | `String` |
-| `111` | `fn :: j lookup field opt [JsonField] String` | `Option JsonVal` |
-| `112` | `fn :: json find field JsonVal String` | `Option JsonVal` |
-| `113` | `fn :: json has field JsonVal String` | `Bool` |
-| `114` | `fn :: j find field [JsonField] String` | `JsonVal` |
-| `115` | `fn :: json get field JsonVal String` | `JsonVal` |
-| `116` | `fn :: j nth val [JsonVal] Int` | `JsonVal` |
-| `117` | `fn :: json get index JsonVal Int` | `JsonVal` |
-| `118` | `fn :: j split dots loop String Int Int Int [String]` | `[String]` |
-| `119` | `fn :: j step path JsonVal String` | `JsonVal` |
-| `120` | `fn :: j walk path JsonVal [String]` | `JsonVal` |
-| `121` | `fn :: json get path JsonVal String` | `JsonVal` |
-| `122` | `fn :: json num text JsonVal` | `String` |
-| `123` | `fn :: j digit real Int` | `Real` |
-| `124` | `fn :: j pow10 loop Int Real` | `Real` |
-| `125` | `fn :: j apply exp Real Bool Int` | `Real` |
-| `126` | `fn :: j parse real exp String Int Int Real Bool` | `Real` |
-| `127` | `fn :: j parse real exp sign String Int Int Real` | `Real` |
-| `128` | `fn :: j parse real frac loop String Int Int Real Real Real` | `Real` |
-| `129` | `fn :: j parse real int loop String Int Int Real` | `Real` |
-| `130` | `fn :: j parse real str String` | `Real` |
-| `131` | `fn :: j unwrap float JsonVal Real` | `Real` |
-| `132` | `fn :: json get float JsonVal String Real` | `Real` |
-| `133` | `fn :: json get str JsonVal String String` | `String` |
-| `134` | `fn :: j unwrap str JsonVal String` | `String` |
-| `135` | `fn :: json get int JsonVal String Int` | `Int` |
-| `136` | `fn :: j unwrap int JsonVal Int` | `Int` |
-| `137` | `fn :: json get bool JsonVal String Bool` | `Bool` |
-| `138` | `fn :: j unwrap bool JsonVal Bool` | `Bool` |
-| `139` | `fn :: j put field [JsonField] String JsonVal` | `[JsonField]` |
-| `140` | `fn :: json set field JsonVal String JsonVal` | `JsonVal` |
+| `7` | `fn :: j raw byte of Int` | `String` |
+| `8` | `fn :: j raw byte Int` | `String` |
+| `9` | `fn :: j sb append3 String String` | `String String String String` |
+| `10` | `fn :: j sb append2 String String String` | `String String String String` |
+| `11` | `fn :: j sb append1 String String String String` | `String String String String` |
+| `12` | `fn :: j sb append String String String String String` | `String String String String` |
+| `13` | `fn :: j sb finish String String String String` | `String` |
+| `14` | `fn :: j rev vals loop [JsonVal] [JsonVal]` | `[JsonVal]` |
+| `15` | `fn :: j rev vals [JsonVal]` | `[JsonVal]` |
+| `16` | `fn :: j rev fields loop [JsonField] [JsonField]` | `[JsonField]` |
+| `17` | `fn :: j rev fields [JsonField]` | `[JsonField]` |
+| `18` | `fn :: j hex digit Int` | `Int` |
+| `19` | `fn :: j combine hex4 Int Int Int Int` | `Int` |
+| `20` | `fn :: j parse hex4 String Int Int` | `Int` |
+| `21` | `fn :: j utf8 from cp Int` | `String` |
+| `22` | `fn :: j hex2 lower Int` | `String` |
+| `23` | `fn :: j esc special Int` | `String` |
+| `24` | `fn :: j scan esc plain2 String Int Int Int` | `Int` |
+| `25` | `fn :: j scan esc plain String Int Int` | `Int` |
+| `26` | `fn :: j escape run String Int Int Int String String String String` | `String` |
+| `27` | `fn :: j escape loop String Int Int String String String String` | `String` |
+| `28` | `fn :: j escape str String` | `String` |
+| `29` | `fn :: j unescape simple Int` | `String` |
+| `30` | `fn :: j finish surrogate String Int Int Int Int String String String String` | `JsonStrStep` |
+| `31` | `fn :: j parse u surrogate String Int Int Int String String String String` | `JsonStrStep` |
+| `32` | `fn :: j dispatch u escape String Int Int Int String String String String` | `JsonStrStep` |
+| `33` | `fn :: j parse u escape String Int Int String String String String` | `JsonStrStep` |
+| `34` | `fn :: j finish simple escape String Int Int String String String String String` | `JsonStrStep` |
+| `35` | `fn :: j parse escape char String Int Int Int String String String String` | `JsonStrStep` |
+| `36` | `fn :: j parse escape String Int Int String String String String` | `JsonStrStep` |
+| `37` | `fn :: j byte at String Int` | `Int` |
+| `38` | `fn :: j is cont byte Int` | `Bool` |
+| `39` | `fn :: j utf8 len2 Int Int` | `Int` |
+| `40` | `fn :: j utf8 len3 Int Int Int` | `Int` |
+| `41` | `fn :: j utf8 len4 Int Int Int Int` | `Int` |
+| `42` | `fn :: j valid utf8 step String Int Int Int` | `Int` |
+| `43` | `fn :: j parse utf8 seq String Int Int Int String String String String` | `JsonStrStep` |
+| `44` | `fn :: j scan str plain2 String Int Int Int` | `Int` |
+| `45` | `fn :: j scan str plain String Int Int` | `Int` |
+| `46` | `fn :: j parse str char String Int Int Int String String String String` | `JsonStrStep` |
+| `47` | `fn :: j parse str run String Int Int Int String String String String` | `JsonStrStep` |
+| `48` | `fn :: j parse str loop String Int Int String String String String` | `JsonStrStep` |
+| `49` | `fn :: j parse string fast String Int Int Int` | `JsonStrStep` |
+| `50` | `fn :: j parse string String Int Int` | `JsonStrStep` |
+| `51` | `fn :: j scan digits String Int Int` | `Int` |
+| `52` | `fn :: j str cmp2 Int Int String String Int Int` | `Int` |
+| `53` | `fn :: j str cmp loop String String Int Int` | `Int` |
+| `54` | `fn :: j digits fit i64 len String Bool Int` | `Bool` |
+| `55` | `fn :: j digits fit i64 String Bool` | `Bool` |
+| `56` | `fn :: j parse pos digits loop String Int Int Int` | `Int` |
+| `57` | `fn :: j parse neg digits loop String Int Int Int` | `Int` |
+| `58` | `fn :: j parse i64 exact String Bool` | `Int` |
+| `59` | `fn :: j scan exp after sign2 Int Int` | `Int` |
+| `60` | `fn :: j scan exp after sign String Int Int` | `Int` |
+| `61` | `fn :: j scan opt exp sign String Int Int Int` | `Int` |
+| `62` | `fn :: j scan opt exp char String Int Int Int` | `Int` |
+| `63` | `fn :: j scan opt exp String Int Int` | `Int` |
+| `64` | `fn :: j scan opt frac2 String Int Int Int` | `Int` |
+| `65` | `fn :: j scan opt frac String Int Int` | `Int` |
+| `66` | `fn :: j parse pos range String Int Int Int` | `Int` |
+| `67` | `fn :: j parse neg range String Int Int Int` | `Int` |
+| `68` | `fn :: j parse i64 range String Int Int Bool` | `Int` |
+| `69` | `fn :: j finish int digs String Bool Int` | `JsonStep` |
+| `70` | `fn :: j finish int range String Int Int Bool Int` | `JsonStep` |
+| `71` | `fn :: j finish num after frac String Int Int Bool Int Int` | `JsonStep` |
+| `72` | `fn :: j finish num after int String Int Int Bool Int Int` | `JsonStep` |
+| `73` | `fn :: j parse num int part2 String Int Int Bool Int Int Int` | `JsonStep` |
+| `74` | `fn :: j parse num int part String Int Int Bool Int` | `JsonStep` |
+| `75` | `fn :: j parse number String Int Int` | `JsonStep` |
+| `76` | `fn :: j has field [JsonField] String` | `Bool` |
+| `77` | `fn :: j parse val String Int Int Int` | `JsonStep` |
+| `78` | `fn :: j parse val char String Int Int Int Int` | `JsonStep` |
+| `79` | `fn :: j parse val at String Int Int Int` | `JsonStep` |
+| `80` | `fn :: j wrap str step JsonStrStep` | `JsonStep` |
+| `81` | `fn :: j parse arr open String Int Int Int` | `JsonStep` |
+| `82` | `fn :: j parse arr first String Int Int Int` | `JsonStep` |
+| `83` | `fn :: j finish arr step JsonArrStep` | `JsonStep` |
+| `84` | `fn :: j parse arr items String Int Int Int [JsonVal]` | `JsonArrStep` |
+| `85` | `fn :: j parse arr after item String Int Int [JsonVal] JsonStep` | `JsonArrStep` |
+| `86` | `fn :: j parse arr delim String Int Int Int [JsonVal]` | `JsonArrStep` |
+| `87` | `fn :: j parse obj open String Int Int Int` | `JsonStep` |
+| `88` | `fn :: j parse obj first String Int Int Int` | `JsonStep` |
+| `89` | `fn :: j finish obj step JsonObjStep` | `JsonStep` |
+| `90` | `fn :: j parse obj fields String Int Int Int [JsonField]` | `JsonObjStep` |
+| `91` | `fn :: j parse obj after key String Int Int [JsonField] JsonStrStep` | `JsonObjStep` |
+| `92` | `fn :: j parse obj colon String Int Int Int String [JsonField]` | `JsonObjStep` |
+| `93` | `fn :: j parse obj after val String Int Int String [JsonField] JsonStep` | `JsonObjStep` |
+| `94` | `fn :: j parse obj delim String Int Int Int [JsonField]` | `JsonObjStep` |
+| `95` | `fn :: j check eof String Int JsonStep` | `JsonRes` |
+| `96` | `fn :: j check eof pos Int Int JsonVal` | `JsonRes` |
+| `97` | `fn :: json parse with limits String Int Int` | `JsonRes` |
+| `98` | `fn :: json parse String` | `JsonRes` |
+| `99` | `fn :: j join arr loop [JsonVal] String String String String` | `String` |
+| `100` | `fn :: j join arr [JsonVal]` | `String` |
+| `101` | `fn :: j join obj loop [JsonField] String String String String` | `String` |
+| `102` | `fn :: j join obj [JsonField]` | `String` |
+| `103` | `fn :: j pos int to str Int String` | `String` |
+| `104` | `fn :: j int to str Int` | `String` |
+| `105` | `fn :: json stringify JsonVal` | `String` |
+| `106` | `fn :: j pretty arr loop [JsonVal] Int Int String String String String` | `String` |
+| `107` | `fn :: j pretty arr [JsonVal] Int Int` | `String` |
+| `108` | `fn :: j pretty obj loop [JsonField] Int Int String String String String` | `String` |
+| `109` | `fn :: j pretty obj [JsonField] Int Int` | `String` |
+| `110` | `fn :: j pretty val JsonVal Int Int` | `String` |
+| `111` | `fn :: json pretty JsonVal Int` | `String` |
+| `112` | `fn :: j lookup field opt [JsonField] String` | `Option JsonVal` |
+| `113` | `fn :: json find field JsonVal String` | `Option JsonVal` |
+| `114` | `fn :: json has field JsonVal String` | `Bool` |
+| `115` | `fn :: j find field [JsonField] String` | `JsonVal` |
+| `116` | `fn :: json get field JsonVal String` | `JsonVal` |
+| `117` | `fn :: j nth val [JsonVal] Int` | `JsonVal` |
+| `118` | `fn :: json get index JsonVal Int` | `JsonVal` |
+| `119` | `fn :: j split dots loop String Int Int Int [String]` | `[String]` |
+| `120` | `fn :: j step path JsonVal String` | `JsonVal` |
+| `121` | `fn :: j walk path JsonVal [String]` | `JsonVal` |
+| `122` | `fn :: json get path JsonVal String` | `JsonVal` |
+| `123` | `fn :: json num text JsonVal` | `String` |
+| `124` | `fn :: j digit real Int` | `Real` |
+| `125` | `fn :: j pow10 loop Int Real` | `Real` |
+| `126` | `fn :: j apply exp Real Bool Int` | `Real` |
+| `127` | `fn :: j parse real exp String Int Int Real Bool` | `Real` |
+| `128` | `fn :: j parse real exp sign String Int Int Real` | `Real` |
+| `129` | `fn :: j parse real frac loop String Int Int Real Real Real` | `Real` |
+| `130` | `fn :: j parse real int loop String Int Int Real` | `Real` |
+| `131` | `fn :: j parse real str String` | `Real` |
+| `132` | `fn :: j unwrap float JsonVal Real` | `Real` |
+| `133` | `fn :: json get float JsonVal String Real` | `Real` |
+| `134` | `fn :: json get str JsonVal String String` | `String` |
+| `135` | `fn :: j unwrap str JsonVal String` | `String` |
+| `136` | `fn :: json get int JsonVal String Int` | `Int` |
+| `137` | `fn :: j unwrap int JsonVal Int` | `Int` |
+| `138` | `fn :: json get bool JsonVal String Bool` | `Bool` |
+| `139` | `fn :: j unwrap bool JsonVal Bool` | `Bool` |
+| `140` | `fn :: j put field [JsonField] String JsonVal` | `[JsonField]` |
+| `141` | `fn :: json set field JsonVal String JsonVal` | `JsonVal` |
 
 ---
 
@@ -527,11 +528,14 @@ fn :: j spaces Int => String
 fn :: j raw byte ub Int => String
       j raw byte ub ub  =
         | ub >= 1 and ub <= 127 = char from code ub
-        | ub == 0 = str slice (sha256 raw "00679") 0 1
-        | otherwise =
-          idx = (ub - 128) * 5
-          lut = "0056400101002080010000179000010024100109003430040100361007870009100353001870030400471000870020200071002360012501171004140236900275001810016001398004440080400017005250027000314001400024700004006350015700183005940027600207007720028400601003400038000839006850084900617003060113500277000320006900483000580019200151008700008500193000100057000070002880002600326006460038800018009190028900103006000043900073011700038900628007210077300074004740006000041001410019900066003680001900383001730005700558000670024500065002030031900000008250001100128001360034900030003750039600228002380008400618005900031800062001770087900076002570009600034002200001600161"
-          str slice (sha256 raw (str slice lut idx (idx + 5))) 0 1
+        | otherwise             = j raw byte of ub
+
+-- One byte of any value as a String, through a one-byte tensor.
+fn :: j raw byte of Int => String
+      j raw byte of ub  =
+        t     = Tensor[U8 * 1]
+        t_(0) = ub
+        tensor to str t
 
 fn :: j raw byte Int => String
       j raw byte b   =  j raw byte ub (((b % 256) + 256) % 256)

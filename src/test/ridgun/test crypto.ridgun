@@ -303,6 +303,90 @@ fn :: all bytes loop Tensor[U8] Int => Tensor[U8]
 fn :: all bytes => String
       all bytes =  tensor to str (all bytes loop (Tensor[U8 * 256]) 0)
 
+-- A message of `n` bytes that uses every byte value.
+fn :: sha msg fill Tensor[U8] Int Int => Tensor[U8]
+      sha msg fill t i n
+        | i >= n = t
+        | otherwise =
+          t_(i) = ((i * 131) + 7) % 256
+          sha msg fill t (i + 1) n
+
+fn :: sha msg Int => String
+      sha msg n =  tensor to str (sha msg fill (Tensor[U8 * n]) 0 n)
+
+-- How many lengths from `n` to `to` give a digest on the operations that is not the runtime's.
+fn :: sha cpu differs Int Int Int => Int
+      sha cpu differs n to bad
+        | n > to                                                  = bad
+        | (sha256 cpu bytes (sha msg n)) == (sha256 raw (sha msg n)) = sha cpu differs (n + 1) to bad
+        | otherwise                                               = sha cpu differs (n + 1) to (bad + 1)
+
+-- SHA-256 and PBKDF2 on processor operations (`sha256 round`, `sha256 rounds`, `sha256 schedule`,
+-- `sha256 compress`, `sha256 block`, `sha256 hmac outer`, `sha256 hmac step`). `stable test` runs this
+-- suite twice: on the instructions of the processor and, with RIDGUN_CPU=2, on the portable definitions.
+-- @tests TS-CRYPTO-007
+fn :: test sha256 and pbkdf2 on processor operations => ()
+      test sha256 and pbkdf2 on processor operations =
+        sha cpu differs 0 300 0 -> assert int equals 0 "sha256 cpu bytes equals the runtime for every length from 0 to 300"
+        sha cpu differs 500 580 0 -> assert int equals 0 "and from 500 to 580, around the length where sha256 bytes changes path"
+        sha cpu differs 4095 4097 0 -> assert int equals 0 "and around 4 KB"
+        sha cpu differs 70000 70000 0 -> assert int equals 0 "and for 70 000 bytes"
+        sha256 cpu from -> assert int equals 512 "sha256 bytes uses the operations from 512 bytes on"
+        sha256 bytes (sha msg 511) -> assert str eq (sha256 raw (sha msg 511)) "511 bytes: the runtime path"
+        sha256 bytes (sha msg 512) -> assert str eq (sha256 raw (sha msg 512)) "512 bytes: the operations"
+        sha256 hex (sha msg 4096) -> assert str eq (sha256 str (sha msg 4096)) "sha256 hex of 4 KB equals the runtime"
+        sha256 hex make a1m -> assert str eq "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0" "FIPS 180-4: one million 'a'"
+        sha256 cpu bytes "abc" -> bytes to hex str -> assert str eq "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" "FIPS 180-4: abc on the operations"
+
+        -- PBKDF2-HMAC-SHA-256: RFC 7914 §11 and cases computed with Python's hashlib
+        bytes to hex str (pbkdf2 hmac sha256 "passwd" "salt" 1 64) -> assert str eq "55ac046e56e3089fec1691c22544b605f94185216dde0465e68b9d57c20dacbc49ca9cccf179b645991664b39d77ef317c71b845b1e30bd509112041d3a19783" "RFC 7914: passwd / salt / 1"
+        bytes to hex str (pbkdf2 hmac sha256 "Password" "NaCl" 80000 64) -> assert str eq "4ddcd8f60b98be21830cee5ef22701f9641a4418d04c0414aeff08876b34ab56a1d425a1225833549adb841b51c9b3176a272bdebba1d078478f62b397f33c8d" "RFC 7914: Password / NaCl / 80000"
+        bytes to hex str (pbkdf2 hmac sha256 "password" "salt" 4096 32) -> assert str eq "c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a" "password / salt / 4096"
+        bytes to hex str (pbkdf2 hmac sha256 (c repeat byte 112 65) (c repeat byte 115 55) 3 33) -> assert str eq "14a897bd94325458daa278746e49a58c45abfa72517fe315691b8d30180a11c55c" "a password longer than a block, a salt that fills one, 33 bytes"
+        bytes to hex str (pbkdf2 hmac sha256 (c repeat byte 107 200) (c repeat byte 115 120) 2 100) -> assert str eq "5a9fd66ecadf76a485f3c2af00600288398f2a3e913373fcaeb838b0f8ad01006ea62244cae14ae6720b95bdd580bd66297d293303428382165a29a699bf3dbcbdee184a4a3fdb4b76cd65f78e585644a4805d650da41b0c4d6482d84a80a160024282d7" "200-byte password, 120-byte salt, four blocks of output"
+        bytes to hex str (pbkdf2 hmac sha256 "" "" 1 32) -> assert str eq "f7ce0b653d2d72a4108cf5abe912ffdd777616dbbb27a70e8204f3ae2d0f6fad" "empty password and salt"
+        ()
+
+-- AES-128 and AES-256 on processor operations (`aes round`, `aes last round`, `aes128 encrypt block`,
+-- `aes256 encrypt block`, `aes128 ctr block`, `aes256 ctr block`): FIPS 197, the GCM test cases of
+-- McGrew and Viega, and 70 000 bytes checked against Python's `cryptography`. Runs in both modes.
+-- @tests TS-CRYPTO-007
+fn :: test aes on processor operations => ()
+      test aes on processor operations =
+        k0  = c repeat byte 0 32
+        n0  = c repeat byte 0 12
+        k16 = hex to byte str "feffe9928665731c6d6a8f9467308308"
+        k32 = k16 + k16
+        n16 = hex to byte str "cafebabefacedbaddecaf888"
+        bytes to hex str (aes128 block (hex to byte str "000102030405060708090a0b0c0d0e0f") (hex to byte str "00112233445566778899aabbccddeeff")) -> assert str eq "69c4e0d86a7b0430d8cdb78070b4c55a" "FIPS 197 C.1: AES-128 block"
+        bytes to hex str (aes256 block (hex to byte str "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f") (hex to byte str "00112233445566778899aabbccddeeff")) -> assert str eq "8ea2b7ca516745bfeafc49904b496089" "FIPS 197 C.3: AES-256 block"
+        bytes to hex str (aes256 block k0 (c repeat byte 0 16)) -> assert str eq "dc95c078a2408989ad48a21492842087" "AES-256 block of zeros under the zero key"
+        aes256 block (c repeat byte 0 31) (c repeat byte 0 16) -> assert str eq "" "AES-256 rejects a 31-byte key"
+        aes256 block k0 (c repeat byte 0 15) -> assert str eq "" "AES-256 rejects a 15-byte block"
+
+        bytes to hex str (aes256 gcm seal k0 n0 "" "") -> assert str eq "530f8afbc74536b9a963b4f1c4cb738b" "GCM test case 13: AES-256, nothing to encrypt"
+        bytes to hex str (aes256 gcm seal k0 n0 "" (c repeat byte 0 16)) -> assert str eq "cea7403d4d606b6e074ec5d3baf39d18d0d1c8a799996bf0265b98b5d48ab919" "GCM test case 14: AES-256, one block"
+        p16 = hex to byte str "d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39"
+        a16 = hex to byte str "feedfacedeadbeeffeedfacedeadbeefabaddad2"
+        s16 = aes256 gcm seal k32 n16 a16 p16
+        bytes to hex str s16 -> assert str eq "522dc1f099567d07f47f37a32a84427d643a8cdcbfe5c0c97598a2bd2555d1aa8cb08e48590dbb3da7b08b1056828838c5f61e6393ba7a0abcc9f66276fc6ece0f4e1768cddf8853bb2d551b" "GCM test case 16: AES-256 with associated data"
+        aead rc (aes256 gcm open k32 n16 a16 s16) -> assert int equals 0 "AES-256-GCM opens what it sealed"
+        aead pt (aes256 gcm open k32 n16 a16 s16) -> assert str eq p16 "and gives the plaintext back"
+        aead rc (aes256 gcm open k32 n16 "other" s16) -> assert int equals (0 - 12) "other associated data: rejected"
+        aead rc (aes256 gcm open k32 n16 a16 ((byte slice s16 0 59) + (byte str 0) + (byte slice s16 60 76))) -> assert int equals (0 - 12) "one byte of the ciphertext changed: rejected"
+        aead rc (aes256 gcm open (byte slice k32 0 31) n16 a16 s16) -> assert int equals (0 - 7) "a 31-byte key: rejected"
+        aes256 gcm seal k32 (byte slice n16 0 11) a16 p16 -> assert str eq "" "an 11-byte nonce: rejected"
+
+        big  = sha msg 70000
+        b256 = aes256 gcm seal k32 n16 "hdr" big
+        b128 = aes128 gcm seal k16 n16 "hdr" big
+        str len b256 -> assert int equals 70016 "70 000 bytes sealed with AES-256-GCM plus the tag"
+        bytes to hex str (byte slice b256 69984 70016) -> assert str eq "435561789b43a952599bf34be11ac40c27dde7737090ef450f2d8adac8a0da91" "AES-256-GCM of 70 000 bytes ends as Python's cryptography says"
+        bytes to hex str (byte slice b128 69984 70016) -> assert str eq "aa923b409f3b783bc924341c9f61d9ed2a234901df0a73dafcfda27601fba9fc" "AES-128-GCM of 70 000 bytes ends as Python's cryptography says"
+        aead pt (aes256 gcm open k32 n16 "hdr" b256) -> assert str eq big "AES-256-GCM opens the 70 000 bytes"
+        aead pt (aes128 gcm open k16 n16 "hdr" b128) -> assert str eq big "AES-128-GCM opens the 70 000 bytes"
+        ()
+
 -- @tests TS-CRYPTO-003
 fn :: test sha1 fips vectors => ()
       test sha1 fips vectors =
@@ -703,6 +787,8 @@ fn :: main => ()
       main =
         test rgf019 bytes and bitops -> ()
         test sha256 hmac and pbkdf2 -> ()
+        test sha256 and pbkdf2 on processor operations -> ()
+        test aes on processor operations -> ()
         test sha1 fips vectors -> ()
         test md5 rfc1321 vectors -> ()
         test argon2id five arg and perf -> ()

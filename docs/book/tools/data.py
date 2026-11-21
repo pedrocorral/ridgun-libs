@@ -6,7 +6,8 @@ NEW_CHAPTERS=[('35','hash'),('36','hashmap'),('37','tls'),('38','mail')]
 # Internals: ('sec', banner title prefix) or ('rng', title, first line prefix, last definition prefix)
 INTERNALS={
  'crypto':[('sec','RGF-019 Raw Byte Manipulation'),('sec','RFC 8439 ChaCha20 Stream Cipher'),('sec','RFC 8439 Poly1305 One-Time Authenticator'),
-           ('sec','AES-128-CTR on n blocks at once'),
+           ('rng','SHA-256 on Processor Operations: a Block, the HMAC Step of PBKDF2 and the Loops','cpu op :: sha256 block','fn :: sha256 absorb'),
+           ('sec','AES on processor operations'),
            ('rng','Montgomery Multiplication for Odd Moduli (`bn mont mul`, `bn mont pow`, `bn mod exp`)','fn :: bn mont loop','fn :: bn mod exp ')],
  'argon2id':[('sec','Byte (Tensor[U8], ADR-0010)'),('sec','Pure-Ridgun RFC 7693 BLAKE2b-512'),
            ('rng','The Blamka Permutation on Whole Tensors and the Compression Function G (RFC 9106 §3.5-3.6)','fn :: a2 lane ids','fn :: a2 compress blk8 bxor'),
@@ -33,7 +34,8 @@ NEW_EXAMPLES={
  'posix':[('fork','fn :: test posix fork pipe dup2 execve waitpid '),('durable','fn :: test posix durable file ops '),('bridge','fn :: test posix kernel bridge ')],
  'crypto':[('sha1','fn :: test sha1 fips vectors '),('sha512','fn :: test sha512 fips vectors '),('ed25519','fn :: test ed25519 rfc8032 vectors and negatives '),
            ('minisign','fn :: test minisign roundtrip and tamper '),('tls13','fn :: test sha384 hkdf x25519 aes128gcm '),('p256','fn :: test p256 p384 rsa and x509 '),
-           ('edge','fn :: test crypto006 edge cases and certs '),('md5','fn :: test md5 rfc1321 vectors ')],
+           ('edge','fn :: test crypto006 edge cases and certs '),('md5','fn :: test md5 rfc1321 vectors '),
+           ('cpusha','fn :: test sha256 and pbkdf2 on processor operations '),('cpuaes','fn :: test aes on processor operations ')],
  'linalg':[('sqrt','fn :: test sqrt and exp ')],
  'jwt':[('bytes','fn :: test jwt bytes and utf8 round trip '),('vectors','fn :: test jwt standard vectors ')],
  'ws':[('large','fn :: test ws large frame round trip ')],
@@ -57,7 +59,7 @@ FAMILIES={
 # Rows appended to the families table of chapters that already exist
 FAMILIES_ADD={
  'crypto':[('sha1md5','`sha1 bytes / sha1 hex / md5 bytes / md5 hex`'),('hkdf','`sha384 bytes / hmac sha384 / hkdf extract / hkdf expand / hkdf expand label`'),('x25519','`x25519 / x25519 public key`'),
-           ('aesgcm','`aes128 gcm seal / aes128 gcm open`'),('ecrsa','`p256 public key / p256 ecdh / ecdsa p256 verify / ecdsa p384 verify / rsa verify pkcs1 / rsa verify pss`'),
+           ('aesgcm','`aes128 gcm seal / aes128 gcm open / aes256 gcm seal / aes256 gcm open`'),('ecrsa','`p256 public key / p256 ecdh / ecdsa p256 verify / ecdsa p384 verify / rsa verify pkcs1 / rsa verify pss`'),
            ('x509','`x509 parse cert / x509 match hostname / x509 verify cert sig`')],
  'posix':[('mkdirall','`posix mkdir all`'),('durable','`posix fsync / posix fdatasync / posix ftruncate / posix lock exclusive / posix pread`'),('process','`posix fork / posix pipe / posix dup2 / posix execve / posix waitpid`')],
  'list':[('sortgroup','`list sort by int / list sort by text / list count by / list group by`')],

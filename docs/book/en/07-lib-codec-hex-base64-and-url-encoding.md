@@ -41,131 +41,132 @@ In `ridgun-libs`, **`codec`** is a first-class **lib** located at `src/main/ridg
 
 ### 07.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/codec.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/codec.ridgun` (`0` types, `0` operators, and `121` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/codec.ridgun` (`0` types, `0` operators, and `122` functions):
 
 | # | Function / Signature (`fn ::`) | Return Type |
 |---|---|---|
 | `1` | `fn :: cd raw byte ub Int` | `String` |
-| `2` | `fn :: cd raw byte Int` | `String` |
-| `3` | `fn :: cd sb append3 String String` | `String String String String` |
-| `4` | `fn :: cd sb append2 String String String` | `String String String String` |
-| `5` | `fn :: cd sb append1 String String String String` | `String String String String` |
-| `6` | `fn :: cd sb append String String String String String` | `String String String String` |
-| `7` | `fn :: cd sb finish String String String String` | `String` |
-| `8` | `fn :: cd lb append2 [String] [String] Int` | `[String] [String] [String] Int` |
-| `9` | `fn :: cd lb append1 [String] [String] [String] Int` | `[String] [String] [String] Int` |
-| `10` | `fn :: cd lb append String [String] [String] [String] Int` | `[String] [String] [String] Int` |
-| `11` | `fn :: cd lb finish [String] [String] [String]` | `[String]` |
-| `12` | `fn :: cd hex lut Int` | `String` |
-| `13` | `fn :: cd hex up lut Int` | `String` |
-| `14` | `fn :: cd b64 lut Int` | `String` |
-| `15` | `fn :: cd b64url lut Int` | `String` |
-| `16` | `fn :: cd match sub at String String Int Int Int` | `Bool` |
-| `17` | `fn :: cd index of loop String String Int Int Int Int` | `Int` |
-| `18` | `fn :: cd index of String String` | `Int` |
-| `19` | `fn :: cd scan b end String Int` | `Int` |
-| `20` | `fn :: cd scan b prev String Int` | `Int` |
-| `21` | `fn :: cd scan ascii end String Int Int` | `Int` |
-| `22` | `fn :: cd byte slice step String Int Int Int String String String String` | `String` |
-| `23` | `fn :: cd byte slice loop String Int Int String String String String` | `String` |
-| `24` | `fn :: cd byte slice check String Int Int Int Int` | `String` |
-| `25` | `fn :: cd byte slice String Int Int` | `String` |
-| `26` | `fn :: cd split char loop String String Int Int Int Int [String] [String] [String] Int` | `[String]` |
-| `27` | `fn :: cd hex val Int` | `Int` |
-| `28` | `fn :: cd valid hex loop String Int Int` | `Bool` |
-| `29` | `fn :: cd is valid hex len String Int` | `Bool` |
-| `30` | `fn :: is valid hex String` | `Bool` |
-| `31` | `fn :: cd hex enc byte Int` | `String` |
-| `32` | `fn :: cd hex enc loop String Int Int String String String String` | `String` |
-| `33` | `fn :: hex encode String` | `String` |
-| `34` | `fn :: cd hex dec loop String Int Int String String String String` | `String` |
-| `35` | `fn :: hex decode String` | `String` |
-| `36` | `fn :: cd b64 char String Int` | `String` |
-| `37` | `fn :: cd b64 pad suffix String Bool` | `String` |
-| `38` | `fn :: cd b64 enc step String Int String Bool Int String String String String` | `String` |
-| `39` | `fn :: cd b64 enc rem String Int String Bool` | `String` |
-| `40` | `fn :: base64 encode String` | `String` |
-| `41` | `fn :: base64url encode String` | `String` |
-| `42` | `fn :: cd b64 val Int` | `Int` |
-| `43` | `fn :: cd strip one b64 pad String Int` | `String` |
-| `44` | `fn :: cd strip b64 pad String Int` | `String` |
-| `45` | `fn :: cd valid b64 body String Int Int` | `Bool` |
-| `46` | `fn :: cd valid b64 raw String Int` | `Bool` |
-| `47` | `fn :: is valid base64 String` | `Bool` |
-| `48` | `fn :: cd b64 dec step String Int Int Int String String String String` | `String` |
-| `49` | `fn :: cd b64 dec loop String Int Int` | `String` |
-| `50` | `fn :: base64 decode String` | `String` |
-| `51` | `fn :: base64url decode String` | `String` |
-| `52` | `fn :: cd is unreserved Int` | `Bool` |
-| `53` | `fn :: cd scan unres String String Int Int` | `Int` |
-| `54` | `fn :: cd pct byte lut String Int` | `String` |
-| `55` | `fn :: cd url enc step String String String Int Int Int String String String String` | `String` |
-| `56` | `fn :: cd url enc loop String String String Int Int String String String String` | `String` |
-| `57` | `fn :: url encode String` | `String` |
-| `58` | `fn :: cd scan url plain String Int Int` | `Int` |
-| `59` | `fn :: cd url dec pct String Int Int Int Int String String String String String` | `String` |
-| `60` | `fn :: cd url dec step String Int Int Int String String String String` | `String` |
-| `61` | `fn :: cd url dec loop String Int Int String String String String` | `String` |
-| `62` | `fn :: url decode String` | `String` |
-| `63` | `fn :: cd pair key (String String)` | `String` |
-| `64` | `fn :: cd pair val (String String)` | `String` |
-| `65` | `fn :: cd qs enc loop [String String] String String String String` | `String` |
-| `66` | `fn :: query string encode [String String]` | `String` |
-| `67` | `fn :: cd parse kv at String Int` | `String String` |
-| `68` | `fn :: cd parse kv item String` | `String String` |
-| `69` | `fn :: cd kv lb append2 [String String] [String String] Int` | `[String String] [String String] [String String] Int` |
-| `70` | `fn :: cd kv lb append1 [String String] [String String] [String String] Int` | `[String String] [String String] [String String] Int` |
-| `71` | `fn :: cd kv lb append (String String) [String String] [String String] [String String] Int` | `[String String] [String String] [String String] Int` |
-| `72` | `fn :: cd parse qs list [String] [String String] [String String] [String String] Int` | `[String String]` |
-| `73` | `fn :: cd strip leading q String` | `String` |
-| `74` | `fn :: cd decode clean qs String` | `[String String]` |
-| `75` | `fn :: query string decode String` | `[String String]` |
-| `76` | `fn :: cd is json esc Int` | `Bool` |
-| `77` | `fn :: cd scan json plain String Int Int` | `Int` |
-| `78` | `fn :: cd json esc hex2 Int` | `String` |
-| `79` | `fn :: cd json esc code ub Int` | `String` |
-| `80` | `fn :: cd json esc code Int` | `String` |
-| `81` | `fn :: cd json esc step String Int Int Int String String String String` | `String` |
-| `82` | `fn :: cd json esc loop String Int Int String String String String` | `String` |
-| `83` | `fn :: json escape String` | `String` |
-| `84` | `fn :: cd json unesc char String Int Int` | `String` |
-| `85` | `fn :: cd scan no backslash String Int Int` | `Int` |
-| `86` | `fn :: cd json unesc cp Int Int` | `String Int` |
-| `87` | `fn :: cd json unesc u4 Int Int Int Int Int` | `String Int` |
-| `88` | `fn :: cd json unesc step String Int Int Int String String String String` | `String` |
-| `89` | `fn :: cd json unesc loop String Int Int String String String String` | `String` |
-| `90` | `fn :: json unescape String` | `String` |
-| `91` | `fn :: json quote String` | `String` |
-| `92` | `fn :: json int Int` | `String` |
-| `93` | `fn :: json bool Bool` | `String` |
-| `94` | `fn :: json null` | `String` |
-| `95` | `fn :: cd join json loop [String] String String String String` | `String` |
-| `96` | `fn :: cd join json items [String]` | `String` |
-| `97` | `fn :: json array [String]` | `String` |
-| `98` | `fn :: cd join json pairs loop [String String] String String String String` | `String` |
-| `99` | `fn :: cd join json pairs [String String]` | `String` |
-| `100` | `fn :: json object [String String]` | `String` |
-| `101` | `fn :: cd quote pair vals [String String] [String String] [String String] [String String] Int` | `[String String]` |
-| `102` | `fn :: json str object [String String]` | `String` |
-| `103` | `fn :: cd is json ws Int` | `Bool` |
-| `104` | `fn :: cd skip key sep String Int Int` | `Int` |
-| `105` | `fn :: cd scan json str end String Int Int` | `Int` |
-| `106` | `fn :: cd is tok delim Int` | `Bool` |
-| `107` | `fn :: cd scan json tok end String Int Int` | `Int` |
-| `108` | `fn :: cd extract json str vend String Int Int` | `String` |
-| `109` | `fn :: cd extract json str vstart String Int` | `String` |
-| `110` | `fn :: cd extract json str kpos String String Int` | `String` |
-| `111` | `fn :: codec json get str String String` | `String` |
-| `112` | `fn :: cd is signed int loop String Int Int` | `Bool` |
-| `113` | `fn :: cd is valid int len String Int` | `Bool` |
-| `114` | `fn :: cd is valid int str String` | `Bool` |
-| `115` | `fn :: cd raw tok vstart String Int` | `String` |
-| `116` | `fn :: cd raw tok kpos String String Int` | `String` |
-| `117` | `fn :: cd raw json token String String` | `String` |
-| `118` | `fn :: cd parse tok int String Int` | `Int` |
-| `119` | `fn :: codec json get int String String Int` | `Int` |
-| `120` | `fn :: cd parse tok bool String Bool` | `Bool` |
-| `121` | `fn :: codec json get bool String String Bool` | `Bool` |
+| `2` | `fn :: cd raw byte of Int` | `String` |
+| `3` | `fn :: cd raw byte Int` | `String` |
+| `4` | `fn :: cd sb append3 String String` | `String String String String` |
+| `5` | `fn :: cd sb append2 String String String` | `String String String String` |
+| `6` | `fn :: cd sb append1 String String String String` | `String String String String` |
+| `7` | `fn :: cd sb append String String String String String` | `String String String String` |
+| `8` | `fn :: cd sb finish String String String String` | `String` |
+| `9` | `fn :: cd lb append2 [String] [String] Int` | `[String] [String] [String] Int` |
+| `10` | `fn :: cd lb append1 [String] [String] [String] Int` | `[String] [String] [String] Int` |
+| `11` | `fn :: cd lb append String [String] [String] [String] Int` | `[String] [String] [String] Int` |
+| `12` | `fn :: cd lb finish [String] [String] [String]` | `[String]` |
+| `13` | `fn :: cd hex lut Int` | `String` |
+| `14` | `fn :: cd hex up lut Int` | `String` |
+| `15` | `fn :: cd b64 lut Int` | `String` |
+| `16` | `fn :: cd b64url lut Int` | `String` |
+| `17` | `fn :: cd match sub at String String Int Int Int` | `Bool` |
+| `18` | `fn :: cd index of loop String String Int Int Int Int` | `Int` |
+| `19` | `fn :: cd index of String String` | `Int` |
+| `20` | `fn :: cd scan b end String Int` | `Int` |
+| `21` | `fn :: cd scan b prev String Int` | `Int` |
+| `22` | `fn :: cd scan ascii end String Int Int` | `Int` |
+| `23` | `fn :: cd byte slice step String Int Int Int String String String String` | `String` |
+| `24` | `fn :: cd byte slice loop String Int Int String String String String` | `String` |
+| `25` | `fn :: cd byte slice check String Int Int Int Int` | `String` |
+| `26` | `fn :: cd byte slice String Int Int` | `String` |
+| `27` | `fn :: cd split char loop String String Int Int Int Int [String] [String] [String] Int` | `[String]` |
+| `28` | `fn :: cd hex val Int` | `Int` |
+| `29` | `fn :: cd valid hex loop String Int Int` | `Bool` |
+| `30` | `fn :: cd is valid hex len String Int` | `Bool` |
+| `31` | `fn :: is valid hex String` | `Bool` |
+| `32` | `fn :: cd hex enc byte Int` | `String` |
+| `33` | `fn :: cd hex enc loop String Int Int String String String String` | `String` |
+| `34` | `fn :: hex encode String` | `String` |
+| `35` | `fn :: cd hex dec loop String Int Int String String String String` | `String` |
+| `36` | `fn :: hex decode String` | `String` |
+| `37` | `fn :: cd b64 char String Int` | `String` |
+| `38` | `fn :: cd b64 pad suffix String Bool` | `String` |
+| `39` | `fn :: cd b64 enc step String Int String Bool Int String String String String` | `String` |
+| `40` | `fn :: cd b64 enc rem String Int String Bool` | `String` |
+| `41` | `fn :: base64 encode String` | `String` |
+| `42` | `fn :: base64url encode String` | `String` |
+| `43` | `fn :: cd b64 val Int` | `Int` |
+| `44` | `fn :: cd strip one b64 pad String Int` | `String` |
+| `45` | `fn :: cd strip b64 pad String Int` | `String` |
+| `46` | `fn :: cd valid b64 body String Int Int` | `Bool` |
+| `47` | `fn :: cd valid b64 raw String Int` | `Bool` |
+| `48` | `fn :: is valid base64 String` | `Bool` |
+| `49` | `fn :: cd b64 dec step String Int Int Int String String String String` | `String` |
+| `50` | `fn :: cd b64 dec loop String Int Int` | `String` |
+| `51` | `fn :: base64 decode String` | `String` |
+| `52` | `fn :: base64url decode String` | `String` |
+| `53` | `fn :: cd is unreserved Int` | `Bool` |
+| `54` | `fn :: cd scan unres String String Int Int` | `Int` |
+| `55` | `fn :: cd pct byte lut String Int` | `String` |
+| `56` | `fn :: cd url enc step String String String Int Int Int String String String String` | `String` |
+| `57` | `fn :: cd url enc loop String String String Int Int String String String String` | `String` |
+| `58` | `fn :: url encode String` | `String` |
+| `59` | `fn :: cd scan url plain String Int Int` | `Int` |
+| `60` | `fn :: cd url dec pct String Int Int Int Int String String String String String` | `String` |
+| `61` | `fn :: cd url dec step String Int Int Int String String String String` | `String` |
+| `62` | `fn :: cd url dec loop String Int Int String String String String` | `String` |
+| `63` | `fn :: url decode String` | `String` |
+| `64` | `fn :: cd pair key (String String)` | `String` |
+| `65` | `fn :: cd pair val (String String)` | `String` |
+| `66` | `fn :: cd qs enc loop [String String] String String String String` | `String` |
+| `67` | `fn :: query string encode [String String]` | `String` |
+| `68` | `fn :: cd parse kv at String Int` | `String String` |
+| `69` | `fn :: cd parse kv item String` | `String String` |
+| `70` | `fn :: cd kv lb append2 [String String] [String String] Int` | `[String String] [String String] [String String] Int` |
+| `71` | `fn :: cd kv lb append1 [String String] [String String] [String String] Int` | `[String String] [String String] [String String] Int` |
+| `72` | `fn :: cd kv lb append (String String) [String String] [String String] [String String] Int` | `[String String] [String String] [String String] Int` |
+| `73` | `fn :: cd parse qs list [String] [String String] [String String] [String String] Int` | `[String String]` |
+| `74` | `fn :: cd strip leading q String` | `String` |
+| `75` | `fn :: cd decode clean qs String` | `[String String]` |
+| `76` | `fn :: query string decode String` | `[String String]` |
+| `77` | `fn :: cd is json esc Int` | `Bool` |
+| `78` | `fn :: cd scan json plain String Int Int` | `Int` |
+| `79` | `fn :: cd json esc hex2 Int` | `String` |
+| `80` | `fn :: cd json esc code ub Int` | `String` |
+| `81` | `fn :: cd json esc code Int` | `String` |
+| `82` | `fn :: cd json esc step String Int Int Int String String String String` | `String` |
+| `83` | `fn :: cd json esc loop String Int Int String String String String` | `String` |
+| `84` | `fn :: json escape String` | `String` |
+| `85` | `fn :: cd json unesc char String Int Int` | `String` |
+| `86` | `fn :: cd scan no backslash String Int Int` | `Int` |
+| `87` | `fn :: cd json unesc cp Int Int` | `String Int` |
+| `88` | `fn :: cd json unesc u4 Int Int Int Int Int` | `String Int` |
+| `89` | `fn :: cd json unesc step String Int Int Int String String String String` | `String` |
+| `90` | `fn :: cd json unesc loop String Int Int String String String String` | `String` |
+| `91` | `fn :: json unescape String` | `String` |
+| `92` | `fn :: json quote String` | `String` |
+| `93` | `fn :: json int Int` | `String` |
+| `94` | `fn :: json bool Bool` | `String` |
+| `95` | `fn :: json null` | `String` |
+| `96` | `fn :: cd join json loop [String] String String String String` | `String` |
+| `97` | `fn :: cd join json items [String]` | `String` |
+| `98` | `fn :: json array [String]` | `String` |
+| `99` | `fn :: cd join json pairs loop [String String] String String String String` | `String` |
+| `100` | `fn :: cd join json pairs [String String]` | `String` |
+| `101` | `fn :: json object [String String]` | `String` |
+| `102` | `fn :: cd quote pair vals [String String] [String String] [String String] [String String] Int` | `[String String]` |
+| `103` | `fn :: json str object [String String]` | `String` |
+| `104` | `fn :: cd is json ws Int` | `Bool` |
+| `105` | `fn :: cd skip key sep String Int Int` | `Int` |
+| `106` | `fn :: cd scan json str end String Int Int` | `Int` |
+| `107` | `fn :: cd is tok delim Int` | `Bool` |
+| `108` | `fn :: cd scan json tok end String Int Int` | `Int` |
+| `109` | `fn :: cd extract json str vend String Int Int` | `String` |
+| `110` | `fn :: cd extract json str vstart String Int` | `String` |
+| `111` | `fn :: cd extract json str kpos String String Int` | `String` |
+| `112` | `fn :: codec json get str String String` | `String` |
+| `113` | `fn :: cd is signed int loop String Int Int` | `Bool` |
+| `114` | `fn :: cd is valid int len String Int` | `Bool` |
+| `115` | `fn :: cd is valid int str String` | `Bool` |
+| `116` | `fn :: cd raw tok vstart String Int` | `String` |
+| `117` | `fn :: cd raw tok kpos String String Int` | `String` |
+| `118` | `fn :: cd raw json token String String` | `String` |
+| `119` | `fn :: cd parse tok int String Int` | `Int` |
+| `120` | `fn :: codec json get int String String Int` | `Int` |
+| `121` | `fn :: cd parse tok bool String Bool` | `Bool` |
+| `122` | `fn :: codec json get bool String String Bool` | `Bool` |
 
 ---
 

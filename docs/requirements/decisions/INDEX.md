@@ -18,3 +18,4 @@ Accepted ADRs are settled: do not re-open a decision ("should we switch to Mongo
 | `ADR-0013-x86-64-uses-the-runtime-net-and-file-operations.md` | On x86-64, socket and posix use the runtime's net and file operations | accepted |
 | `ADR-0014-crypto-runs-on-whole-tensor-operations.md` | The hot loops of crypto and argon2id run on element-wise tensor operations | accepted |
 | `ADR-0015-pool-and-net-agent-are-rebuilt-from-their-real-uses.md` | pool and net_agent are rebuilt from Solstice, Eterval and Vonkeep | accepted |
+| `ADR-0016-sha256-pbkdf2-and-aes-run-on-processor-operations.md` | SHA-256, PBKDF2 and AES run on processor operations; short SHA-256 stays on the runtime for now | accepted |

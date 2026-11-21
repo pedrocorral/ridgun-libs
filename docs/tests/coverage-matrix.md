@@ -47,6 +47,7 @@
 | FR-CRYPTO-004 | TS-CRYPTO-004 | src/main/ridgun/lib/argon2id.ridgun, src/main/ridgun/lib/crypto.ridgun | src/test/ridgun/test crypto.ridgun | ok |
 | FR-CRYPTO-005 | TS-CRYPTO-005 | src/main/ridgun/lib/crypto.ridgun | src/test/ridgun/test crypto.ridgun | ok |
 | FR-CRYPTO-006 | TS-CRYPTO-006 | src/main/ridgun/lib/crypto.ridgun | src/test/ridgun/test crypto.ridgun | ok |
+| FR-CRYPTO-007 | TS-CRYPTO-007 | src/main/ridgun/lib/crypto.ridgun | src/test/ridgun/test crypto.ridgun | ok |
 | FR-CSV-001 | TS-CSV-001 | src/main/ridgun/lib/csv.ridgun | src/test/ridgun/test csv.ridgun | ok |
 | FR-DIFF-001 | TS-DIFF-001 | src/main/ridgun/lib/diff.ridgun | src/test/ridgun/test diff.ridgun | ok |
 | FR-FMT-001 | TS-FMT-001 | src/main/ridgun/lib/fmt.ridgun, src/test/ridgun/test fmt.ridgun | src/test/ridgun/test fmt.ridgun | ok |

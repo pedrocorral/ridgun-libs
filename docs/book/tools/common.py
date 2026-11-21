@@ -70,7 +70,7 @@ def catalog(src):
     for l in src.split('\n'):
         if re.match(r'^(expand )?type ',l): types.append(l.rstrip())
         elif l.startswith('op :: '): ops.append(re.sub(r'\s+',' ',l).strip())
-        elif l.startswith('fn :: ') and '=>' in l:
+        elif (l.startswith('fn :: ') or l.startswith('cpu op :: ')) and '=>' in l:   # a processor operation is listed with the functions
             left,ret=l.split('=>',1)
             fns.append((re.sub(r'\s+',' ',left).strip(),re.sub(r'\s+',' ',ret).strip()))
     return types,ops,fns

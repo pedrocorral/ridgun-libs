@@ -8,7 +8,7 @@ import subprocess,hashlib,sys,tempfile,shutil
 defs=set()
 def addnames(text):
     for l in text.split('\n'):
-        m=re.match(r'^\s*(?:fn|op) :: (.*?)\s*=>',l)
+        m=re.match(r'^\s*(?:fn|op|cpu op) :: (.*?)\s*=>',l)
         if m:
             n=[]
             for x in m.group(1).split():
@@ -19,7 +19,7 @@ for f in glob.glob(SRC+'*.ridgun'): addnames(open(f).read())
 addnames(subprocess.run('ulimit -v 4000000; ridgunc prelude',shell=True,capture_output=True,text=True).stdout)
 BUILTIN={'str len','str slice','str contains','str starts with','str join','str char at','int to str','str to int','char from code','read file','write file','sys pipe','sys poll','sys close','sys read fd','sys write fd',
  'sys os','sys arch','sys time ms','sys wall time ms','send ... to','receive from','try receive from','sys open mode','shell exec','cli args','sys mkdir','sys exit','with region','with timeout','sys deadline ms','sys remaining ms',
- 'siphash13 range','siphash13 range low','clamp x between lo and hi','export argon2id','new channel','send through','sys lstat','sys getenv','sys exec','sys fork','sys read','sys write'}
+ 'siphash13 range','siphash13 range low','clamp x between lo and hi','export argon2id','cpu op','new channel','send through','sys lstat','sys getenv','sys exec','sys fork','sys read','sys write'}
 def names_report(lang='en'):
     tot=0
     for f in chapters(lang):

@@ -22,7 +22,6 @@ import argon2id
 export argon2id
 
 type CT16     = ct0: A, ct1: A, ct2: A, ct3: A, ct4: A, ct5: A, ct6: A, ct7: A, ct8: A, ct9: A, ct10: A, ct11: A, ct12: A, ct13: A, ct14: A, ct15: A
-type CPbkCtx  = cptbl: CT16, cpipad: String, cpopad: String
 type EcPoint  = ecx: Tensor[U64 * 260], ecy: Tensor[U64 * 260], ecz: Tensor[U64 * 260], ec_inf: Bool
 -- Montgomery multiplication on 16-bit limbs as one repeated element-wise loop (ridgunc 1.0.39).
 -- R = 2^(16 lim). The context holds what depends only on the modulus:
@@ -456,19 +455,385 @@ fn :: md5 bytes String => String
 fn :: md5 hex String => String
       md5 hex msg    =  bytes to hex str (md5 bytes msg)
 
+-- ── SHA-256 on processor operations (FIPS 180-4; `cpu op`, ridgunc 1.0.51) ──
+-- A round, four rounds, the message schedule and a whole block are operations: each has a portable definition
+-- and a variant on the SHA instructions of x86-64, and the program picks one when it starts (RIDGUN_CPU=2
+-- forces the portable one). The 64 constants are written inside `sha256 compress`, so no table is built per call.
+
+-- One round of SHA-256 on single words (groups of one element): the new `a` and the new `e`.
+cpu op :: sha256 round Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] => Tensor[U32 * 1] Tensor[U32 * 1]
+          sha256 round a b c d e f g h wk =
+            s1 = ((e_i rotr 6) xor (e_i rotr 11)) xor (e_i rotr 25)
+            ch = (e_i and f_i) xor ((e_i xor 0xFFFFFFFF) and g_i)
+            t1 = ((h_i + s1_i) + ch_i) + wk_i
+            s0 = ((a_i rotr 2) xor (a_i rotr 13)) xor (a_i rotr 22)
+            mj = ((a_i and b_i) xor (a_i and c_i)) xor (b_i and c_i)
+            (t1_i + (s0_i + mj_i), d_i + t1_i)
+
+-- Four rounds: the state is two groups, a b c d and e f g h; `wk` is four message words plus their constants.
+cpu op :: sha256 rounds Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
+          sha256 rounds abcd efgh wk =
+            a = group pick abcd [0]
+            b = group pick abcd [1]
+            c = group pick abcd [2]
+            d = group pick abcd [3]
+            e = group pick efgh [0]
+            f = group pick efgh [1]
+            g = group pick efgh [2]
+            h = group pick efgh [3]
+            a1, e1 = sha256 round a b c d e f g h (group pick wk [0])
+            a2, e2 = sha256 round a1 a b c e1 e f g (group pick wk [1])
+            a3, e3 = sha256 round a2 a1 a b e2 e1 e f (group pick wk [2])
+            a4, e4 = sha256 round a3 a2 a1 a e3 e2 e1 e (group pick wk [3])
+            (group pick two (group pick two a4 a3 [0, 1]) (group pick two a2 a1 [0, 1]) [0, 1, 2, 3], group pick two (group pick two e4 e3 [0, 1]) (group pick two e2 e1 [0, 1]) [0, 1, 2, 3])
+          sha256 rounds abcd efgh wk on x86-64 "sha" =
+            s0 = group pick two abcd efgh [5, 4, 1, 0]
+            s1 = group pick two abcd efgh [7, 6, 3, 2]
+            t1 = cpu "sha256rnds2" s1 s0 wk
+            t0 = cpu "sha256rnds2" s0 t1 (group pick wk [2, 3, 2, 3])
+            (group pick two t0 t1 [3, 2, 7, 6], group pick two t0 t1 [1, 0, 5, 4])
+
+-- The next four words of the message schedule from the last sixteen.
+cpu op :: sha256 schedule Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4]
+          sha256 schedule w0 w1 w2 w3 =
+            x = group pick two w0 w1 [1, 2, 3, 4]
+            y = group pick two w2 w3 [1, 2, 3, 4]
+            p = (w0_i + (((x_i rotr 7) xor (x_i rotr 18)) xor (x_i shr 3))) + y_i
+            u = group pick w3 [2, 3]
+            pl = group pick p [0, 1]
+            lo = pl_i + (((u_i rotr 17) xor (u_i rotr 19)) xor (u_i shr 10))
+            ph = group pick p [2, 3]
+            hi = ph_i + (((lo_i rotr 17) xor (lo_i rotr 19)) xor (lo_i shr 10))
+            group pick two lo hi [0, 1, 2, 3]
+          sha256 schedule w0 w1 w2 w3 on x86-64 "sha" =
+            m1 = cpu "sha256msg1" w0 w1
+            y = group pick two w2 w3 [1, 2, 3, 4]
+            cpu "sha256msg2" (m1_i + y_i) w3
+
+-- The 64 rounds on a block given as its 16 words (four groups), with the 64 constants written here, and the
+-- state added at the end (FIPS 180-4 §6.2.2).
+cpu op :: sha256 compress Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
+          sha256 compress abcd efgh w0 w1 w2 w3 =
+            w4 = sha256 schedule w0 w1 w2 w3
+            w5 = sha256 schedule w1 w2 w3 w4
+            w6 = sha256 schedule w2 w3 w4 w5
+            w7 = sha256 schedule w3 w4 w5 w6
+            w8 = sha256 schedule w4 w5 w6 w7
+            w9 = sha256 schedule w5 w6 w7 w8
+            w10 = sha256 schedule w6 w7 w8 w9
+            w11 = sha256 schedule w7 w8 w9 w10
+            w12 = sha256 schedule w8 w9 w10 w11
+            w13 = sha256 schedule w9 w10 w11 w12
+            w14 = sha256 schedule w10 w11 w12 w13
+            w15 = sha256 schedule w11 w12 w13 w14
+            p0a = group pick w0 [0]
+            q0a = p0a_i + 0x428a2f98
+            p0b = group pick w0 [1]
+            q0b = p0b_i + 0x71374491
+            p0c = group pick w0 [2]
+            q0c = p0c_i + 0xb5c0fbcf
+            p0d = group pick w0 [3]
+            q0d = p0d_i + 0xe9b5dba5
+            x0 = group pick two (group pick two q0a q0b [0, 1]) (group pick two q0c q0d [0, 1]) [0, 1, 2, 3]
+            a0, e0 = sha256 rounds abcd efgh x0
+            p1a = group pick w1 [0]
+            q1a = p1a_i + 0x3956c25b
+            p1b = group pick w1 [1]
+            q1b = p1b_i + 0x59f111f1
+            p1c = group pick w1 [2]
+            q1c = p1c_i + 0x923f82a4
+            p1d = group pick w1 [3]
+            q1d = p1d_i + 0xab1c5ed5
+            x1 = group pick two (group pick two q1a q1b [0, 1]) (group pick two q1c q1d [0, 1]) [0, 1, 2, 3]
+            a1, e1 = sha256 rounds a0 e0 x1
+            p2a = group pick w2 [0]
+            q2a = p2a_i + 0xd807aa98
+            p2b = group pick w2 [1]
+            q2b = p2b_i + 0x12835b01
+            p2c = group pick w2 [2]
+            q2c = p2c_i + 0x243185be
+            p2d = group pick w2 [3]
+            q2d = p2d_i + 0x550c7dc3
+            x2 = group pick two (group pick two q2a q2b [0, 1]) (group pick two q2c q2d [0, 1]) [0, 1, 2, 3]
+            a2, e2 = sha256 rounds a1 e1 x2
+            p3a = group pick w3 [0]
+            q3a = p3a_i + 0x72be5d74
+            p3b = group pick w3 [1]
+            q3b = p3b_i + 0x80deb1fe
+            p3c = group pick w3 [2]
+            q3c = p3c_i + 0x9bdc06a7
+            p3d = group pick w3 [3]
+            q3d = p3d_i + 0xc19bf174
+            x3 = group pick two (group pick two q3a q3b [0, 1]) (group pick two q3c q3d [0, 1]) [0, 1, 2, 3]
+            a3, e3 = sha256 rounds a2 e2 x3
+            p4a = group pick w4 [0]
+            q4a = p4a_i + 0xe49b69c1
+            p4b = group pick w4 [1]
+            q4b = p4b_i + 0xefbe4786
+            p4c = group pick w4 [2]
+            q4c = p4c_i + 0x0fc19dc6
+            p4d = group pick w4 [3]
+            q4d = p4d_i + 0x240ca1cc
+            x4 = group pick two (group pick two q4a q4b [0, 1]) (group pick two q4c q4d [0, 1]) [0, 1, 2, 3]
+            a4, e4 = sha256 rounds a3 e3 x4
+            p5a = group pick w5 [0]
+            q5a = p5a_i + 0x2de92c6f
+            p5b = group pick w5 [1]
+            q5b = p5b_i + 0x4a7484aa
+            p5c = group pick w5 [2]
+            q5c = p5c_i + 0x5cb0a9dc
+            p5d = group pick w5 [3]
+            q5d = p5d_i + 0x76f988da
+            x5 = group pick two (group pick two q5a q5b [0, 1]) (group pick two q5c q5d [0, 1]) [0, 1, 2, 3]
+            a5, e5 = sha256 rounds a4 e4 x5
+            p6a = group pick w6 [0]
+            q6a = p6a_i + 0x983e5152
+            p6b = group pick w6 [1]
+            q6b = p6b_i + 0xa831c66d
+            p6c = group pick w6 [2]
+            q6c = p6c_i + 0xb00327c8
+            p6d = group pick w6 [3]
+            q6d = p6d_i + 0xbf597fc7
+            x6 = group pick two (group pick two q6a q6b [0, 1]) (group pick two q6c q6d [0, 1]) [0, 1, 2, 3]
+            a6, e6 = sha256 rounds a5 e5 x6
+            p7a = group pick w7 [0]
+            q7a = p7a_i + 0xc6e00bf3
+            p7b = group pick w7 [1]
+            q7b = p7b_i + 0xd5a79147
+            p7c = group pick w7 [2]
+            q7c = p7c_i + 0x06ca6351
+            p7d = group pick w7 [3]
+            q7d = p7d_i + 0x14292967
+            x7 = group pick two (group pick two q7a q7b [0, 1]) (group pick two q7c q7d [0, 1]) [0, 1, 2, 3]
+            a7, e7 = sha256 rounds a6 e6 x7
+            p8a = group pick w8 [0]
+            q8a = p8a_i + 0x27b70a85
+            p8b = group pick w8 [1]
+            q8b = p8b_i + 0x2e1b2138
+            p8c = group pick w8 [2]
+            q8c = p8c_i + 0x4d2c6dfc
+            p8d = group pick w8 [3]
+            q8d = p8d_i + 0x53380d13
+            x8 = group pick two (group pick two q8a q8b [0, 1]) (group pick two q8c q8d [0, 1]) [0, 1, 2, 3]
+            a8, e8 = sha256 rounds a7 e7 x8
+            p9a = group pick w9 [0]
+            q9a = p9a_i + 0x650a7354
+            p9b = group pick w9 [1]
+            q9b = p9b_i + 0x766a0abb
+            p9c = group pick w9 [2]
+            q9c = p9c_i + 0x81c2c92e
+            p9d = group pick w9 [3]
+            q9d = p9d_i + 0x92722c85
+            x9 = group pick two (group pick two q9a q9b [0, 1]) (group pick two q9c q9d [0, 1]) [0, 1, 2, 3]
+            a9, e9 = sha256 rounds a8 e8 x9
+            p10a = group pick w10 [0]
+            q10a = p10a_i + 0xa2bfe8a1
+            p10b = group pick w10 [1]
+            q10b = p10b_i + 0xa81a664b
+            p10c = group pick w10 [2]
+            q10c = p10c_i + 0xc24b8b70
+            p10d = group pick w10 [3]
+            q10d = p10d_i + 0xc76c51a3
+            x10 = group pick two (group pick two q10a q10b [0, 1]) (group pick two q10c q10d [0, 1]) [0, 1, 2, 3]
+            a10, e10 = sha256 rounds a9 e9 x10
+            p11a = group pick w11 [0]
+            q11a = p11a_i + 0xd192e819
+            p11b = group pick w11 [1]
+            q11b = p11b_i + 0xd6990624
+            p11c = group pick w11 [2]
+            q11c = p11c_i + 0xf40e3585
+            p11d = group pick w11 [3]
+            q11d = p11d_i + 0x106aa070
+            x11 = group pick two (group pick two q11a q11b [0, 1]) (group pick two q11c q11d [0, 1]) [0, 1, 2, 3]
+            a11, e11 = sha256 rounds a10 e10 x11
+            p12a = group pick w12 [0]
+            q12a = p12a_i + 0x19a4c116
+            p12b = group pick w12 [1]
+            q12b = p12b_i + 0x1e376c08
+            p12c = group pick w12 [2]
+            q12c = p12c_i + 0x2748774c
+            p12d = group pick w12 [3]
+            q12d = p12d_i + 0x34b0bcb5
+            x12 = group pick two (group pick two q12a q12b [0, 1]) (group pick two q12c q12d [0, 1]) [0, 1, 2, 3]
+            a12, e12 = sha256 rounds a11 e11 x12
+            p13a = group pick w13 [0]
+            q13a = p13a_i + 0x391c0cb3
+            p13b = group pick w13 [1]
+            q13b = p13b_i + 0x4ed8aa4a
+            p13c = group pick w13 [2]
+            q13c = p13c_i + 0x5b9cca4f
+            p13d = group pick w13 [3]
+            q13d = p13d_i + 0x682e6ff3
+            x13 = group pick two (group pick two q13a q13b [0, 1]) (group pick two q13c q13d [0, 1]) [0, 1, 2, 3]
+            a13, e13 = sha256 rounds a12 e12 x13
+            p14a = group pick w14 [0]
+            q14a = p14a_i + 0x748f82ee
+            p14b = group pick w14 [1]
+            q14b = p14b_i + 0x78a5636f
+            p14c = group pick w14 [2]
+            q14c = p14c_i + 0x84c87814
+            p14d = group pick w14 [3]
+            q14d = p14d_i + 0x8cc70208
+            x14 = group pick two (group pick two q14a q14b [0, 1]) (group pick two q14c q14d [0, 1]) [0, 1, 2, 3]
+            a14, e14 = sha256 rounds a13 e13 x14
+            p15a = group pick w15 [0]
+            q15a = p15a_i + 0x90befffa
+            p15b = group pick w15 [1]
+            q15b = p15b_i + 0xa4506ceb
+            p15c = group pick w15 [2]
+            q15c = p15c_i + 0xbef9a3f7
+            p15d = group pick w15 [3]
+            q15d = p15d_i + 0xc67178f2
+            x15 = group pick two (group pick two q15a q15b [0, 1]) (group pick two q15c q15d [0, 1]) [0, 1, 2, 3]
+            a15, e15 = sha256 rounds a14 e14 x15
+            (abcd_i + a15_i, efgh_i + e15_i)
+
+-- One block of 64 bytes: its words are read big-endian.
+cpu op :: sha256 block Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U8 * 64] => Tensor[U32 * 4] Tensor[U32 * 4]
+          sha256 block abcd efgh m =
+            w0 = group as u32 (group pick m [3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12])
+            w1 = group as u32 (group pick m [19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28])
+            w2 = group as u32 (group pick m [35, 34, 33, 32, 39, 38, 37, 36, 43, 42, 41, 40, 47, 46, 45, 44])
+            w3 = group as u32 (group pick m [51, 50, 49, 48, 55, 54, 53, 52, 59, 58, 57, 56, 63, 62, 61, 60])
+            a1, e1 = sha256 compress abcd efgh w0 w1 w2 w3
+            (a1, e1)
+
+-- The outer hash of HMAC-SHA-256 from the outer key state and the inner digest (two word groups):
+-- the block is digest || 0x80 || zeros || 768 bits.
+cpu op :: sha256 hmac outer Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
+          sha256 hmac outer oa oe na ne =
+            z  = na_i xor na_i
+            hi = z_i + 0x80000000
+            lo = z_i + 768
+            w2 = group pick two hi z [0, 4, 5, 6]
+            w3 = group pick two z lo [0, 1, 2, 4]
+            a2, e2 = sha256 compress oa oe na ne w2 w3
+            (a2, e2)
+
+-- HMAC-SHA-256 of a 32-byte message (a digest, as its two word groups) from the two key states.
+-- The inner block has the same shape as the outer one.
+cpu op :: sha256 hmac step Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
+          sha256 hmac step ia ie oa oe ua ue =
+            z  = ua_i xor ua_i
+            hi = z_i + 0x80000000
+            lo = z_i + 768
+            w2 = group pick two hi z [0, 4, 5, 6]
+            w3 = group pick two z lo [0, 1, 2, 4]
+            a1, e1 = sha256 compress ia ie ua ue w2 w3
+            a2, e2 = sha256 compress oa oe a1 e1 w2 w3
+            (a2, e2)
+
+-- The iterations of PBKDF2 after the first: U = HMAC(U), acc = acc xor U. One loop, everything in registers.
+fn :: sha256 pbkdf2 loop Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Int => Tensor[U32 * 4] Tensor[U32 * 4]
+      sha256 pbkdf2 loop ia ie oa oe ua ue xa xe n
+        | n <= 0 = (xa, xe)
+        | otherwise =
+          a1, e1 = sha256 hmac step ia ie oa oe ua ue
+          x1 = xa_i xor a1_i
+          x2 = xe_i xor e1_i
+          sha256 pbkdf2 loop ia ie oa oe a1 e1 x1 x2 (n - 1)
+
+-- The blocks of a message, one after another: one loop, the state in registers.
+fn :: sha256 absorb Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U8 * n * 64] Int Int => Tensor[U32 * 4] Tensor[U32 * 4]
+      sha256 absorb abcd efgh msg at n
+        | n <= 0 = (abcd, efgh)
+        | otherwise =
+          a1, e1 = sha256 block abcd efgh msg_(at,)
+          sha256 absorb a1 e1 msg (at + 1) (n - 1)
+-- The last rows of a message: the bytes left over, 0x80, zeros and the length in bits (big-endian).
+fn :: sha256 tail Tensor[U8] String Int Int Int => Tensor[U8]
+      sha256 tail t s from n i
+        | (from + i) >= n = t
+        | otherwise =
+          t_(i) = str char at s (from + i)
+          sha256 tail t s from n (i + 1)
+
+fn :: sha256 length Tensor[U8] Int Int Int => Tensor[U8]
+      sha256 length t last bits i
+        | i >= 8 = t
+        | otherwise =
+          t_(last - i) = (bits shr (8 * i)) and 255
+          sha256 length t last bits (i + 1)
+
+-- Full blocks come straight from the text, one row write each; the tail is built apart.
+fn :: sha256 rows Tensor[U8] String Int Int => Tensor[U8]
+      sha256 rows t s r full
+        | r >= full = t
+        | otherwise =
+          t_(r,) = tensor from str (str slice s (r * 64) ((r * 64) + 64))
+          sha256 rows t s (r + 1) full
+
+fn :: sha256 put tail Tensor[U8] Tensor[U8] Int Int => Tensor[U8]
+      sha256 put tail t tail full extra
+        | extra == 1 =
+          t_(full,) = tail
+          t
+        | otherwise =
+          t_(full,) = tensor from str (str slice (tensor to str tail) 0 64)
+          t_(full + 1,) = tensor from str (str slice (tensor to str tail) 64 128)
+          t
+
+fn :: sha256 padded String Int => Tensor[U8]
+      sha256 padded s before =
+        n     = str len s
+        full  = n / 64
+        rest  = n - (full * 64)
+        extra = (rest + 9 + 63) / 64
+        tail0 = sha256 tail (Tensor[U8 * (extra * 64)]) s (full * 64) n 0
+        tail0_(rest) = 128
+        tail  = sha256 length tail0 ((extra * 64) - 1) ((before + n) * 8) 0
+        sha256 put tail (sha256 rows (Tensor[U8 * (full + extra) * 64]) s 0 full) tail full extra
+
+fn :: sha256 out (Tensor[U32], Tensor[U32]) => String
+      sha256 out (a, e) =
+        o = Tensor[U8 * 32]
+        tensor put be32 o 0 4 a
+        tensor put be32 o 16 4 e
+        tensor to str o
+
+fn :: sha256 group4 Int Int Int Int => Tensor[U32]
+      sha256 group4 a b c d =
+        g = Tensor[U32 * 4]
+        g_(0) = a
+        g_(1) = b
+        g_(2) = c
+        g_(3) = d
+        g
+
+
+fn :: sha256 iv a => Tensor[U32]
+      sha256 iv a =  sha256 group4 0x6a09e667 0xbb67ae85 0x3c6ef372 0xa54ff53a
+
+fn :: sha256 iv e => Tensor[U32]
+      sha256 iv e =  sha256 group4 0x510e527f 0x9b05688c 0x1f83d9ab 0x5be0cd19
+
+fn :: sha256 blocks of Int => Int
+      sha256 blocks of n =  (n + 9 + 63) / 64
+
+-- SHA-256 of a message of any length, on the operations above.
+fn :: sha256 cpu bytes String => String
+      sha256 cpu bytes data =  sha256 out (sha256 absorb (sha256 iv a) (sha256 iv e) (sha256 padded data 0) 0 (sha256 blocks of (str len data)))
+
+-- From this length on `sha256 bytes` and `sha256 hex` use the operations. Below it the fixed cost of preparing
+-- the message is larger than what the instructions save (measured on ridgunc 1.0.51), and the runtime's SHA-256 is used.
+fn :: sha256 cpu from => Int
+      sha256 cpu from =  512
+
 -- ── RGF-015 SHA-256, HMAC-SHA-256, `ct_equal`, PBKDF2-HMAC-SHA-256 ──
 
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
 fn :: sha256 hex String => String
       sha256 hex data   =
-        sha256 str data
+        | (str len data) >= (sha256 cpu from) = bytes to hex str (sha256 cpu bytes data)
+        | otherwise                           = sha256 str data
 
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
 fn :: sha256 bytes String => String
       sha256 bytes data   =
-        sha256 raw data
+        | (str len data) >= (sha256 cpu from) = sha256 cpu bytes data
+        | otherwise                           = sha256 raw data
 
 fn :: bitxor key pad loop Tensor[U8] Tensor[U8] Int Int Int => Tensor[U8]
       bitxor key pad loop kb         out        pad i   n   =
@@ -712,177 +1077,6 @@ fn :: c acc8 to raw CT16 Tensor[U64 * 8] => String
         q7 = c word32 to raw4 tbl acc_(7)
         ((q0 + q1) + (q2 + q3)) + ((q4 + q5) + (q6 + q7))
 
-fn :: c init acc32 String => Tensor[U64 * 32]
-      c init acc32 s      =
-        acc = Tensor[U64 * 32]
-        acc_(0)  = str char at s 0
-        acc_(1)  = str char at s 1
-        acc_(2)  = str char at s 2
-        acc_(3)  = str char at s 3
-        acc_(4)  = str char at s 4
-        acc_(5)  = str char at s 5
-        acc_(6)  = str char at s 6
-        acc_(7)  = str char at s 7
-        acc_(8)  = str char at s 8
-        acc_(9)  = str char at s 9
-        acc_(10) = str char at s 10
-        acc_(11) = str char at s 11
-        acc_(12) = str char at s 12
-        acc_(13) = str char at s 13
-        acc_(14) = str char at s 14
-        acc_(15) = str char at s 15
-        acc_(16) = str char at s 16
-        acc_(17) = str char at s 17
-        acc_(18) = str char at s 18
-        acc_(19) = str char at s 19
-        acc_(20) = str char at s 20
-        acc_(21) = str char at s 21
-        acc_(22) = str char at s 22
-        acc_(23) = str char at s 23
-        acc_(24) = str char at s 24
-        acc_(25) = str char at s 25
-        acc_(26) = str char at s 26
-        acc_(27) = str char at s 27
-        acc_(28) = str char at s 28
-        acc_(29) = str char at s 29
-        acc_(30) = str char at s 30
-        acc_(31) = str char at s 31
-        acc
-
-fn :: c bxor1 acc32 Tensor[U64 * 32] String => Tensor[U64 * 32]
-      c bxor1 acc32 acc              s      =
-        acc_(0)  = acc_(0) xor (str char at s 0)
-        acc_(1)  = acc_(1) xor (str char at s 1)
-        acc_(2)  = acc_(2) xor (str char at s 2)
-        acc_(3)  = acc_(3) xor (str char at s 3)
-        acc_(4)  = acc_(4) xor (str char at s 4)
-        acc_(5)  = acc_(5) xor (str char at s 5)
-        acc_(6)  = acc_(6) xor (str char at s 6)
-        acc_(7)  = acc_(7) xor (str char at s 7)
-        acc_(8)  = acc_(8) xor (str char at s 8)
-        acc_(9)  = acc_(9) xor (str char at s 9)
-        acc_(10) = acc_(10) xor (str char at s 10)
-        acc_(11) = acc_(11) xor (str char at s 11)
-        acc_(12) = acc_(12) xor (str char at s 12)
-        acc_(13) = acc_(13) xor (str char at s 13)
-        acc_(14) = acc_(14) xor (str char at s 14)
-        acc_(15) = acc_(15) xor (str char at s 15)
-        acc_(16) = acc_(16) xor (str char at s 16)
-        acc_(17) = acc_(17) xor (str char at s 17)
-        acc_(18) = acc_(18) xor (str char at s 18)
-        acc_(19) = acc_(19) xor (str char at s 19)
-        acc_(20) = acc_(20) xor (str char at s 20)
-        acc_(21) = acc_(21) xor (str char at s 21)
-        acc_(22) = acc_(22) xor (str char at s 22)
-        acc_(23) = acc_(23) xor (str char at s 23)
-        acc_(24) = acc_(24) xor (str char at s 24)
-        acc_(25) = acc_(25) xor (str char at s 25)
-        acc_(26) = acc_(26) xor (str char at s 26)
-        acc_(27) = acc_(27) xor (str char at s 27)
-        acc_(28) = acc_(28) xor (str char at s 28)
-        acc_(29) = acc_(29) xor (str char at s 29)
-        acc_(30) = acc_(30) xor (str char at s 30)
-        acc_(31) = acc_(31) xor (str char at s 31)
-        acc
-
-fn :: c bxor8 lo Tensor[U64 * 32] String String String String String String String String => Tensor[U64 * 32]
-      c bxor8 lo acc s1 s2 s3 s4 s5 s6 s7 s8 =
-        acc_(0)  = acc_(0) xor (str char at s1 0) xor (str char at s2 0) xor (str char at s3 0) xor (str char at s4 0) xor (str char at s5 0) xor (str char at s6 0) xor (str char at s7 0) xor (str char at s8 0)
-        acc_(1)  = acc_(1) xor (str char at s1 1) xor (str char at s2 1) xor (str char at s3 1) xor (str char at s4 1) xor (str char at s5 1) xor (str char at s6 1) xor (str char at s7 1) xor (str char at s8 1)
-        acc_(2)  = acc_(2) xor (str char at s1 2) xor (str char at s2 2) xor (str char at s3 2) xor (str char at s4 2) xor (str char at s5 2) xor (str char at s6 2) xor (str char at s7 2) xor (str char at s8 2)
-        acc_(3)  = acc_(3) xor (str char at s1 3) xor (str char at s2 3) xor (str char at s3 3) xor (str char at s4 3) xor (str char at s5 3) xor (str char at s6 3) xor (str char at s7 3) xor (str char at s8 3)
-        acc_(4)  = acc_(4) xor (str char at s1 4) xor (str char at s2 4) xor (str char at s3 4) xor (str char at s4 4) xor (str char at s5 4) xor (str char at s6 4) xor (str char at s7 4) xor (str char at s8 4)
-        acc_(5)  = acc_(5) xor (str char at s1 5) xor (str char at s2 5) xor (str char at s3 5) xor (str char at s4 5) xor (str char at s5 5) xor (str char at s6 5) xor (str char at s7 5) xor (str char at s8 5)
-        acc_(6)  = acc_(6) xor (str char at s1 6) xor (str char at s2 6) xor (str char at s3 6) xor (str char at s4 6) xor (str char at s5 6) xor (str char at s6 6) xor (str char at s7 6) xor (str char at s8 6)
-        acc_(7)  = acc_(7) xor (str char at s1 7) xor (str char at s2 7) xor (str char at s3 7) xor (str char at s4 7) xor (str char at s5 7) xor (str char at s6 7) xor (str char at s7 7) xor (str char at s8 7)
-        acc_(8)  = acc_(8) xor (str char at s1 8) xor (str char at s2 8) xor (str char at s3 8) xor (str char at s4 8) xor (str char at s5 8) xor (str char at s6 8) xor (str char at s7 8) xor (str char at s8 8)
-        acc_(9)  = acc_(9) xor (str char at s1 9) xor (str char at s2 9) xor (str char at s3 9) xor (str char at s4 9) xor (str char at s5 9) xor (str char at s6 9) xor (str char at s7 9) xor (str char at s8 9)
-        acc_(10) = acc_(10) xor (str char at s1 10) xor (str char at s2 10) xor (str char at s3 10) xor (str char at s4 10) xor (str char at s5 10) xor (str char at s6 10) xor (str char at s7 10) xor (str char at s8 10)
-        acc_(11) = acc_(11) xor (str char at s1 11) xor (str char at s2 11) xor (str char at s3 11) xor (str char at s4 11) xor (str char at s5 11) xor (str char at s6 11) xor (str char at s7 11) xor (str char at s8 11)
-        acc_(12) = acc_(12) xor (str char at s1 12) xor (str char at s2 12) xor (str char at s3 12) xor (str char at s4 12) xor (str char at s5 12) xor (str char at s6 12) xor (str char at s7 12) xor (str char at s8 12)
-        acc_(13) = acc_(13) xor (str char at s1 13) xor (str char at s2 13) xor (str char at s3 13) xor (str char at s4 13) xor (str char at s5 13) xor (str char at s6 13) xor (str char at s7 13) xor (str char at s8 13)
-        acc_(14) = acc_(14) xor (str char at s1 14) xor (str char at s2 14) xor (str char at s3 14) xor (str char at s4 14) xor (str char at s5 14) xor (str char at s6 14) xor (str char at s7 14) xor (str char at s8 14)
-        acc_(15) = acc_(15) xor (str char at s1 15) xor (str char at s2 15) xor (str char at s3 15) xor (str char at s4 15) xor (str char at s5 15) xor (str char at s6 15) xor (str char at s7 15) xor (str char at s8 15)
-        acc
-
-fn :: c bxor8 hi Tensor[U64 * 32] String String String String String String String String => Tensor[U64 * 32]
-      c bxor8 hi acc s1 s2 s3 s4 s5 s6 s7 s8 =
-        acc_(16) = acc_(16) xor (str char at s1 16) xor (str char at s2 16) xor (str char at s3 16) xor (str char at s4 16) xor (str char at s5 16) xor (str char at s6 16) xor (str char at s7 16) xor (str char at s8 16)
-        acc_(17) = acc_(17) xor (str char at s1 17) xor (str char at s2 17) xor (str char at s3 17) xor (str char at s4 17) xor (str char at s5 17) xor (str char at s6 17) xor (str char at s7 17) xor (str char at s8 17)
-        acc_(18) = acc_(18) xor (str char at s1 18) xor (str char at s2 18) xor (str char at s3 18) xor (str char at s4 18) xor (str char at s5 18) xor (str char at s6 18) xor (str char at s7 18) xor (str char at s8 18)
-        acc_(19) = acc_(19) xor (str char at s1 19) xor (str char at s2 19) xor (str char at s3 19) xor (str char at s4 19) xor (str char at s5 19) xor (str char at s6 19) xor (str char at s7 19) xor (str char at s8 19)
-        acc_(20) = acc_(20) xor (str char at s1 20) xor (str char at s2 20) xor (str char at s3 20) xor (str char at s4 20) xor (str char at s5 20) xor (str char at s6 20) xor (str char at s7 20) xor (str char at s8 20)
-        acc_(21) = acc_(21) xor (str char at s1 21) xor (str char at s2 21) xor (str char at s3 21) xor (str char at s4 21) xor (str char at s5 21) xor (str char at s6 21) xor (str char at s7 21) xor (str char at s8 21)
-        acc_(22) = acc_(22) xor (str char at s1 22) xor (str char at s2 22) xor (str char at s3 22) xor (str char at s4 22) xor (str char at s5 22) xor (str char at s6 22) xor (str char at s7 22) xor (str char at s8 22)
-        acc_(23) = acc_(23) xor (str char at s1 23) xor (str char at s2 23) xor (str char at s3 23) xor (str char at s4 23) xor (str char at s5 23) xor (str char at s6 23) xor (str char at s7 23) xor (str char at s8 23)
-        acc_(24) = acc_(24) xor (str char at s1 24) xor (str char at s2 24) xor (str char at s3 24) xor (str char at s4 24) xor (str char at s5 24) xor (str char at s6 24) xor (str char at s7 24) xor (str char at s8 24)
-        acc_(25) = acc_(25) xor (str char at s1 25) xor (str char at s2 25) xor (str char at s3 25) xor (str char at s4 25) xor (str char at s5 25) xor (str char at s6 25) xor (str char at s7 25) xor (str char at s8 25)
-        acc_(26) = acc_(26) xor (str char at s1 26) xor (str char at s2 26) xor (str char at s3 26) xor (str char at s4 26) xor (str char at s5 26) xor (str char at s6 26) xor (str char at s7 26) xor (str char at s8 26)
-        acc_(27) = acc_(27) xor (str char at s1 27) xor (str char at s2 27) xor (str char at s3 27) xor (str char at s4 27) xor (str char at s5 27) xor (str char at s6 27) xor (str char at s7 27) xor (str char at s8 27)
-        acc_(28) = acc_(28) xor (str char at s1 28) xor (str char at s2 28) xor (str char at s3 28) xor (str char at s4 28) xor (str char at s5 28) xor (str char at s6 28) xor (str char at s7 28) xor (str char at s8 28)
-        acc_(29) = acc_(29) xor (str char at s1 29) xor (str char at s2 29) xor (str char at s3 29) xor (str char at s4 29) xor (str char at s5 29) xor (str char at s6 29) xor (str char at s7 29) xor (str char at s8 29)
-        acc_(30) = acc_(30) xor (str char at s1 30) xor (str char at s2 30) xor (str char at s3 30) xor (str char at s4 30) xor (str char at s5 30) xor (str char at s6 30) xor (str char at s7 30) xor (str char at s8 30)
-        acc_(31) = acc_(31) xor (str char at s1 31) xor (str char at s2 31) xor (str char at s3 31) xor (str char at s4 31) xor (str char at s5 31) xor (str char at s6 31) xor (str char at s7 31) xor (str char at s8 31)
-        acc
-
-fn :: c acc32 quad CT16 Tensor[U64 * 32] Int => String
-      c acc32 quad _ acc off =
-        b0 = byte str norm acc_(off)
-        b1 = byte str norm acc_(off + 1)
-        b2 = byte str norm acc_(off + 2)
-        b3 = byte str norm acc_(off + 3)
-        (b0 + b1) + (b2 + b3)
-
-fn :: c acc32 to raw CT16 Tensor[U64 * 32] => String
-      c acc32 to raw tbl acc =
-        q0 = c acc32 quad tbl acc 0
-        q1 = c acc32 quad tbl acc 4
-        q2 = c acc32 quad tbl acc 8
-        q3 = c acc32 quad tbl acc 12
-        q4 = c acc32 quad tbl acc 16
-        q5 = c acc32 quad tbl acc 20
-        q6 = c acc32 quad tbl acc 24
-        q7 = c acc32 quad tbl acc 28
-        ((q0 + q1) + (q2 + q3)) + ((q4 + q5) + (q6 + q7))
-
-fn :: pbkdf2 iter loop Int String String String Tensor[U64 * 32] => Tensor[U64 * 32]
-      pbkdf2 iter loop rem ipad opad u acc =
-        | rem <= 0 = acc
-        | rem >= 8 =
-          u1   = sha256 raw (opad + (sha256 raw (ipad + u)))
-          u2   = sha256 raw (opad + (sha256 raw (ipad + u1)))
-          u3   = sha256 raw (opad + (sha256 raw (ipad + u2)))
-          u4   = sha256 raw (opad + (sha256 raw (ipad + u3)))
-          u5   = sha256 raw (opad + (sha256 raw (ipad + u4)))
-          u6   = sha256 raw (opad + (sha256 raw (ipad + u5)))
-          u7   = sha256 raw (opad + (sha256 raw (ipad + u6)))
-          u8   = sha256 raw (opad + (sha256 raw (ipad + u7)))
-          acc1 = c bxor8 lo acc u1 u2 u3 u4 u5 u6 u7 u8
-          acc2 = c bxor8 hi acc1 u1 u2 u3 u4 u5 u6 u7 u8
-      pbkdf2 iter loop (rem - 8) ipad opad u8 acc2
-        | otherwise =
-          u1   = sha256 raw (opad + (sha256 raw (ipad + u)))
-          acc1 = c bxor1 acc32 acc u1
-          pbkdf2 iter loop (rem - 1) ipad opad u1 acc1
-
-fn :: pbkdf2 block CPbkCtx String Int Int => String
-      pbkdf2 block ctx salt iterations block_idx =
-        tbl  = cptbl ctx
-        ipad = cpipad ctx
-        opad = cpopad ctx
-        u1   = sha256 raw (opad + (sha256 raw (ipad + salt + (be32 bytes block_idx))))
-        acc0 = c init acc32 u1
-        accf = pbkdf2 iter loop (iterations - 1) ipad opad u1 acc0
-        c acc32 to raw tbl accf
-
-fn :: pbkdf2 blocks loop CPbkCtx String Int Int Int String => String
-      pbkdf2 blocks loop ctx salt iterations block_idx dk_len acc =
-        | (str len acc) == dk_len = acc
-        | (str len acc) > dk_len  = byte slice acc 0 dk_len
-        | otherwise               =
-          blk = pbkdf2 block ctx salt iterations block_idx
-          pbkdf2 blocks loop ctx salt iterations (block_idx + 1) dk_len (acc + blk)
-
 -- @implements FR-CRYPTO-003
 -- @implements API-CRYPTO-001
 -- @mitigates VUL-AUTHN-001
@@ -891,12 +1085,21 @@ fn :: pbkdf2 hmac sha256 String String Int Int => String
       pbkdf2 hmac sha256 pwd salt iterations dk_len =
         | iterations < 1 or dk_len < 1 = ""
         | otherwise                    =
-          tbl     = CT16 "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""
-          k_block = normalize hmac key pwd
-          ipad_s  = tensor to str (bitxor key pad k_block 54)
-          opad_s  = tensor to str (bitxor key pad k_block 92)
-          ctx     = CPbkCtx tbl ipad_s opad_s
-          pbkdf2 blocks loop ctx salt iterations 1 dk_len ""
+          kb = normalize hmac key pwd
+          pbkdf2 blocks (sha256 block (sha256 iv a) (sha256 iv e) (bitxor key pad kb 54)) (sha256 block (sha256 iv a) (sha256 iv e) (bitxor key pad kb 92)) salt iterations 1 dk_len ""
+
+-- Block `i` of the derived key (RFC 8018 §5.2): U1 = HMAC(P, salt || INT(i)) from the two key states, then the loop.
+fn :: pbkdf2 block (Tensor[U32], Tensor[U32]) (Tensor[U32], Tensor[U32]) String Int Int => String
+      pbkdf2 block (ia, ie) (oa, oe) salt iterations i =
+        msg    = salt + (be32 bytes i)
+        na, ne = sha256 absorb ia ie (sha256 padded msg 64) 0 (sha256 blocks of (str len msg))
+        ua, ue = sha256 hmac outer oa oe na ne
+        sha256 out (sha256 pbkdf2 loop ia ie oa oe ua ue ua ue (iterations - 1))
+
+fn :: pbkdf2 blocks (Tensor[U32], Tensor[U32]) (Tensor[U32], Tensor[U32]) String Int Int Int String => String
+      pbkdf2 blocks inner outer salt iterations i dk_len acc =
+        | (str len acc) >= dk_len = byte slice acc 0 dk_len
+        | otherwise               = pbkdf2 blocks inner outer salt iterations (i + 1) dk_len (acc + (pbkdf2 block inner outer salt iterations i))
 
 -- ── Ridgun v0.9.15 BlaMka Tensor Block Compression (`f blamka`, `blamka g`, `blamka p16`, `compress block`) ──
 
@@ -2845,174 +3048,172 @@ fn :: x25519 public key String => String
 -- FR-CRYPTO-006: FIPS 197 AES-128 & NIST SP 800-38D AES-128-GCM
 -- ============================================================
 
-fn :: aes sbox hex => String
-      aes sbox hex =
-        "637c777bf26b6fc53001672bfed7ab76ca82c97dfa5947f0add4a2af9ca472c0b7fd9326363ff7cc34a5e5f171d8311504c723c31896059a071280e2eb27b27509832c1a1b6e5aa0523bd6b329e32f8453d100ed20fcb15b6acbbe394a4c58cfd0efaafb434d338545f9027f503c9fa851a3408f929d38f5bcb6da2110fff3d2cd0c13ec5f974417c4a77e3d645d197360814fdc222a908846eeb814de5e0bdbe0323a0a4906245cc2d3ac629195e479e7c8376d8dd54ea96c56f4ea657aae08ba78252e1ca6b4c6e8dd741f4bbd8b8a703eb5664803f60e613557b986c11d9ee1f8981169d98e949b1e87e9ce5528df8ca1890dbfe6426841992d0fb054bb16"
+-- ── AES on processor operations (FIPS 197; `cpu op`, ridgunc 1.0.51) ──
+-- A round, the last round, a whole block and the counter block of CTR mode are operations: each has a portable
+-- definition and a variant on the AES instructions of x86-64 (RIDGUN_CPU=2 forces the portable one).
+-- A variant on four blocks per instruction (`"vaes,avx512f" by 4`) was measured slower here for the counter loop
+-- (1 320 ns against 850 ns per 4 096 bytes), so the rounds have the one-block variant only.
 
-fn :: aes init sbox loop Tensor[U64 * 256] String Int => Tensor[U64 * 256]
-      aes init sbox loop sb h idx =
-        | idx >= 256 = sb
-        | otherwise  =
-          hi = c hex nib (str char at h (idx * 2))
-          lo = c hex nib (str char at h ((idx * 2) + 1))
-          sb_(idx) = (hi shl 4) or lo
-          aes init sbox loop sb h (idx + 1)
+cpu op :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
+          aes round s k box =
+            t = box_(s_i)
+            r = group pick t [0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11]
+            a1 = group pick r [1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12]
+            a2 = group pick r [2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13]
+            a3 = group pick r [3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14]
+            x0 = (r_i shl 1) xor ((r_i shr 7) * 27)
+            x1 = (a1_i shl 1) xor ((a1_i shr 7) * 27)
+            m = ((x0_i xor x1_i) xor a1_i) xor (a2_i xor a3_i)
+            m_i xor k_i
+          aes round s k box on x86-64 "aes" =
+            group as u8 (cpu "aesni.aesenc" (group as u64 s) (group as u64 k))
 
-fn :: aes init sbox => Tensor[U64 * 256]
-      aes init sbox =
-        sb = Tensor[U64 * 256]
-        aes init sbox loop sb (aes sbox hex) 0
+cpu op :: aes last round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
+          aes last round s k box =
+            t = box_(s_i)
+            r = group pick t [0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11]
+            r_i xor k_i
+          aes last round s k box on x86-64 "aes" =
+            group as u8 (cpu "aesni.aesenclast" (group as u64 s) (group as u64 k))
 
-fn :: aes rcon Int => U64
-      aes rcon r   =
-        | r == 1    = 1
-        | r == 2    = 2
-        | r == 3    = 4
-        | r == 4    = 8
-        | r == 5    = 16
-        | r == 6    = 32
-        | r == 7    = 64
-        | r == 8    = 128
-        | r == 9    = 27
-        | otherwise = 54
+cpu op :: aes128 encrypt block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
+          aes128 encrypt block p keys box =
+            k0 = keys_(0,)
+            s0 = p_i xor k0_i
+            s1 = aes round s0 keys_(1,) box
+            s2 = aes round s1 keys_(2,) box
+            s3 = aes round s2 keys_(3,) box
+            s4 = aes round s3 keys_(4,) box
+            s5 = aes round s4 keys_(5,) box
+            s6 = aes round s5 keys_(6,) box
+            s7 = aes round s6 keys_(7,) box
+            s8 = aes round s7 keys_(8,) box
+            s9 = aes round s8 keys_(9,) box
+            aes last round s9 keys_(10,) box
 
-fn :: aes copy key init Tensor[U64 * 176] String Int => Tensor[U64 * 176]
-      aes copy key init rk key idx =
-        | idx >= 16 = rk
+cpu op :: aes256 encrypt block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
+          aes256 encrypt block p keys box =
+            k0 = keys_(0,)
+            s0 = p_i xor k0_i
+            s1 = aes round s0 keys_(1,) box
+            s2 = aes round s1 keys_(2,) box
+            s3 = aes round s2 keys_(3,) box
+            s4 = aes round s3 keys_(4,) box
+            s5 = aes round s4 keys_(5,) box
+            s6 = aes round s5 keys_(6,) box
+            s7 = aes round s6 keys_(7,) box
+            s8 = aes round s7 keys_(8,) box
+            s9 = aes round s8 keys_(9,) box
+            s10 = aes round s9 keys_(10,) box
+            s11 = aes round s10 keys_(11,) box
+            s12 = aes round s11 keys_(12,) box
+            s13 = aes round s12 keys_(13,) box
+            aes last round s13 keys_(14,) box
+
+-- The counter block of CTR mode: the first 12 bytes of `iv` and the 32-bit counter `n`, big-endian (the last 4 bytes of `iv` are 0).
+cpu op :: aes128 ctr block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int => Tensor[U8 * 16]
+          aes128 ctr block iv keys box n =
+            z = group as u32 iv
+            c = z_i + n
+            b = group as u8 c
+            aes128 encrypt block (group pick two iv b [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 31, 30, 29, 28]) keys box
+
+cpu op :: aes256 ctr block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int => Tensor[U8 * 16]
+          aes256 ctr block iv keys box n =
+            z = group as u32 iv
+            c = z_i + n
+            b = group as u8 c
+            aes256 encrypt block (group pick two iv b [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 31, 30, 29, 28]) keys box
+
+-- E(K, nonce || ctr + at) for the rows `at` on: one loop, the block in registers.
+fn :: aes128 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int Int Int => Tensor[U8 * n * 16]
+      aes128 ctr rows out iv keys box ctr at k
+        | k <= 0 = out
         | otherwise =
-          rk_(idx) = norm byte (str char at key idx)
-          aes copy key init rk key (idx + 1)
+          out_(at,) = aes128 ctr block iv keys box (ctr + at)
+          aes128 ctr rows out iv keys box ctr (at + 1) (k - 1)
 
-fn :: aes expand key loop Tensor[U64 * 256] Tensor[U64 * 176] Int => Tensor[U64 * 176]
-      aes expand key loop sb rk word_idx =
-        | word_idx >= 44 = rk
-        | otherwise      =
-          off  = word_idx * 4
-          prev = off - 4
-          src  = off - 16
-          t0   = rk_(prev)
-          t1   = rk_(prev + 1)
-          t2   = rk_(prev + 2)
-          t3   = rk_(prev + 3)
-          u0   =
-            | (word_idx % 4) == 0 = sb_(t1) xor (aes rcon (word_idx / 4))
-            | otherwise           = t0
-          u1   =
-            | (word_idx % 4) == 0 = sb_(t2)
-            | otherwise           = t1
-          u2   =
-            | (word_idx % 4) == 0 = sb_(t3)
-            | otherwise           = t2
-          u3   =
-            | (word_idx % 4) == 0 = sb_(t0)
-            | otherwise           = t3
-          rk_(off)     = rk_(src) xor u0
-          rk_(off + 1) = rk_(src + 1) xor u1
-          rk_(off + 2) = rk_(src + 2) xor u2
-          rk_(off + 3) = rk_(src + 3) xor u3
-          aes expand key loop sb rk (word_idx + 1)
-
-fn :: aes expand key Tensor[U64 * 256] String => Tensor[U64 * 176]
-      aes expand key sb key =
-        rk0 = Tensor[U64 * 176]
-        rk1 = aes copy key init rk0 key 0
-        aes expand key loop sb rk1 4
-
-fn :: aes xtime U64 => U64
-      aes xtime x   =
-        ((x shl 1) xor (((x shr 7) and 1) * 27)) and 255
-
-fn :: aes mix col Tensor[U64 * 16] Int => Tensor[U64 * 16]
-      aes mix col st col =
-        off = col * 4
-        a0  = st_(off)
-        a1  = st_(off + 1)
-        a2  = st_(off + 2)
-        a3  = st_(off + 3)
-        t   = a0 xor a1 xor a2 xor a3
-        st_(off)     = a0 xor t xor (aes xtime (a0 xor a1))
-        st_(off + 1) = a1 xor t xor (aes xtime (a1 xor a2))
-        st_(off + 2) = a2 xor t xor (aes xtime (a2 xor a3))
-        st_(off + 3) = a3 xor t xor (aes xtime (a3 xor a0))
-        st
-
-fn :: aes sub shift Tensor[U64 * 256] Tensor[U64 * 16] => Tensor[U64 * 16]
-      aes sub shift sb st =
-        s0  = sb_(st_(0))
-        s1  = sb_(st_(5))
-        s2  = sb_(st_(10))
-        s3  = sb_(st_(15))
-        s4  = sb_(st_(4))
-        s5  = sb_(st_(9))
-        s6  = sb_(st_(14))
-        s7  = sb_(st_(3))
-        s8  = sb_(st_(8))
-        s9  = sb_(st_(13))
-        s10 = sb_(st_(2))
-        s11 = sb_(st_(7))
-        s12 = sb_(st_(12))
-        s13 = sb_(st_(1))
-        s14 = sb_(st_(6))
-        s15 = sb_(st_(11))
-        st_(0)  = s0
-        st_(1)  = s1
-        st_(2)  = s2
-        st_(3)  = s3
-        st_(4)  = s4
-        st_(5)  = s5
-        st_(6)  = s6
-        st_(7)  = s7
-        st_(8)  = s8
-        st_(9)  = s9
-        st_(10) = s10
-        st_(11) = s11
-        st_(12) = s12
-        st_(13) = s13
-        st_(14) = s14
-        st_(15) = s15
-        st
-
-fn :: aes add rk loop Tensor[U64 * 16] Tensor[U64 * 176] Int Int => Tensor[U64 * 16]
-      aes add rk loop st rk base idx =
-        | idx >= 16 = st
+fn :: aes256 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int Int Int => Tensor[U8 * n * 16]
+      aes256 ctr rows out iv keys box ctr at k
+        | k <= 0 = out
         | otherwise =
-          st_(idx) = st_(idx) xor rk_(base + idx)
-          aes add rk loop st rk base (idx + 1)
+          out_(at,) = aes256 ctr block iv keys box (ctr + at)
+          aes256 ctr rows out iv keys box ctr (at + 1) (k - 1)
 
-fn :: aes rounds loop Tensor[U64 * 256] Tensor[U64 * 176] Tensor[U64 * 16] Int => Tensor[U64 * 16]
-      aes rounds loop sb rk st r =
-        | r >= 10   =
-          st1 = aes sub shift sb st
-          aes add rk loop st1 rk 160 0
+-- The S-box of AES, computed (FIPS 197 §5.1.1): no table of 256 numbers to type.
+fn :: aes rotl8 Int Int => Int
+      aes rotl8 x n =  ((x shl n) or (x shr (8 - n))) and 255
+
+fn :: aes box fill Tensor[U8] Int Int Bool => Tensor[U8]
+      aes box fill box p q first
+        | p == 1 and not first = box
         | otherwise =
-          st1 = aes sub shift sb st
-          st2 = aes mix col st1 0
-          st3 = aes mix col st2 1
-          st4 = aes mix col st3 2
-          st5 = aes mix col st4 3
-          st6 = aes add rk loop st5 rk (r * 16) 0
-          aes rounds loop sb rk st6 (r + 1)
+          p1 = (p xor (p shl 1) xor ((p shr 7) * 27)) and 255
+          q1 = (q xor (q shl 1)) and 255
+          q2 = (q1 xor (q1 shl 2)) and 255
+          q3 = (q2 xor (q2 shl 4)) and 255
+          q4 = (q3 xor ((q3 shr 7) * 9)) and 255
+          box_(p1) = (q4 xor (aes rotl8 q4 1) xor (aes rotl8 q4 2) xor (aes rotl8 q4 3) xor (aes rotl8 q4 4)) xor 99
+          aes box fill box p1 q4 False
 
-fn :: aes load st Tensor[U64 * 16] Tensor[U64 * 176] String Int => Tensor[U64 * 16]
-      aes load st st rk blk idx =
-        | idx >= 16 = st
+fn :: aes make box => Tensor[U8]
+      aes make box =
+        box = Tensor[U8 * 256]
+        box_(0) = 99
+        aes box fill box 1 1 True
+
+
+-- The key schedule (FIPS 197 §5.2) for a key of `nk` words (4 or 8): byte i of word w at keys_(w / 4, (w % 4) * 4 + i).
+fn :: aes key byte Tensor[U8] Int Int => Int
+      aes key byte keys w i =  keys_(w / 4, ((w % 4) * 4) + i)
+
+fn :: aes put word Tensor[U8] Int Int Int Int Int => Tensor[U8]
+      aes put word keys w b0 b1 b2 b3 =
+        keys_(w / 4, (w % 4) * 4)       = b0
+        keys_(w / 4, ((w % 4) * 4) + 1) = b1
+        keys_(w / 4, ((w % 4) * 4) + 2) = b2
+        keys_(w / 4, ((w % 4) * 4) + 3) = b3
+        keys
+
+fn :: aes expand Tensor[U8] Tensor[U8] Int Int Int Int => Tensor[U8]
+      aes expand keys box nk total w rcon
+        | w >= total = keys
+        | (w % nk) == 0 =
+          k2 = aes put word keys w ((aes key byte keys (w - nk) 0) xor box_(aes key byte keys (w - 1) 1) xor rcon) ((aes key byte keys (w - nk) 1) xor box_(aes key byte keys (w - 1) 2)) ((aes key byte keys (w - nk) 2) xor box_(aes key byte keys (w - 1) 3)) ((aes key byte keys (w - nk) 3) xor box_(aes key byte keys (w - 1) 0))
+          aes expand k2 box nk total (w + 1) (((rcon shl 1) xor ((rcon shr 7) * 283)) and 255)
+        | nk > 6 and (w % nk) == 4 =
+          k2 = aes put word keys w ((aes key byte keys (w - nk) 0) xor box_(aes key byte keys (w - 1) 0)) ((aes key byte keys (w - nk) 1) xor box_(aes key byte keys (w - 1) 1)) ((aes key byte keys (w - nk) 2) xor box_(aes key byte keys (w - 1) 2)) ((aes key byte keys (w - nk) 3) xor box_(aes key byte keys (w - 1) 3))
+          aes expand k2 box nk total (w + 1) rcon
         | otherwise =
-          st_(idx) = (norm byte (str char at blk idx)) xor rk_(idx)
-          aes load st st rk blk (idx + 1)
+          k2 = aes put word keys w ((aes key byte keys (w - nk) 0) xor (aes key byte keys (w - 1) 0)) ((aes key byte keys (w - nk) 1) xor (aes key byte keys (w - 1) 1)) ((aes key byte keys (w - nk) 2) xor (aes key byte keys (w - 1) 2)) ((aes key byte keys (w - nk) 3) xor (aes key byte keys (w - 1) 3))
+          aes expand k2 box nk total (w + 1) rcon
 
-fn :: aes st to str CT16 Tensor[U64 * 16] Int => String
-      aes st to str tbl st idx =
-        | idx >= 16 = ""
+fn :: aes set key Tensor[U8] String Int Int => Tensor[U8]
+      aes set key keys key i n
+        | i >= n = keys
         | otherwise =
-          v = st_(idx) and 255
-          (c get b256 tbl (v shr 4) (v and 15)) + (aes st to str tbl st (idx + 1))
+          keys_(i / 16, i % 16) = str char at key i
+          aes set key keys key (i + 1) n
 
-fn :: aes encrypt with rk CT16 Tensor[U64 * 256] Tensor[U64 * 176] String => String
-      aes encrypt with rk tbl sb rk blk16 =
-        st0 = Tensor[U64 * 16]
-        st1 = aes load st st0 rk blk16 0
-        stf = aes rounds loop sb rk st1 1
-        aes st to str tbl stf 0
+fn :: aes128 keys Tensor[U8] String => Tensor[U8]
+      aes128 keys box key =  aes expand (aes set key (Tensor[U8 * 11 * 16]) key 0 16) box 4 44 4 1
+
+fn :: aes256 keys Tensor[U8] String => Tensor[U8]
+      aes256 keys box key =  aes expand (aes set key (Tensor[U8 * 15 * 16]) key 0 32) box 8 60 8 1
+
+-- The first `n` bytes of the CTR key stream from counter `ctr` on (NIST SP 800-38D §6.5).
+fn :: aes iv16 String => Tensor[U8]
+      aes iv16 nonce =  tensor from str (nonce + (c repeat byte 0 4))
+
+fn :: aes128 key stream Tensor[U8] Tensor[U8] String Int Int => Tensor[U8]
+      aes128 key stream box keys nonce ctr n =
+        | n <= 0    = Tensor[U8 * 0]
+        | otherwise = c first bytes (tensor bytes (aes128 ctr rows (Tensor[U8 * ((n + 15) / 16) * 16]) (aes iv16 nonce) keys box ctr 0 ((n + 15) / 16))) (16 * ((n + 15) / 16)) n
+
+fn :: aes256 key stream Tensor[U8] Tensor[U8] String Int Int => Tensor[U8]
+      aes256 key stream box keys nonce ctr n =
+        | n <= 0    = Tensor[U8 * 0]
+        | otherwise = c first bytes (tensor bytes (aes256 ctr rows (Tensor[U8 * ((n + 15) / 16) * 16]) (aes iv16 nonce) keys box ctr 0 ((n + 15) / 16))) (16 * ((n + 15) / 16)) n
 
 -- @implements FR-CRYPTO-006
 -- @implements API-CRYPTO-001
@@ -3020,140 +3221,17 @@ fn :: aes encrypt with rk CT16 Tensor[U64 * 256] Tensor[U64 * 176] String => Str
 fn :: aes128 block String String => String
       aes128 block key    blk    =
         | (str len key) != 16 or (str len blk) != 16 = ""
-        | otherwise =
-          sb = aes init sbox
-          rk = aes expand key sb key
-          aes encrypt with rk (c build b256) sb rk blk
+        | otherwise = tensor to str (aes128 encrypt block (tensor from str blk) (aes128 keys (aes make box) key) (aes make box))
 
--- ── AES-128-CTR on n blocks at once and GHASH with carry-less products (NIST SP 800-38D) ──
+-- @implements FR-CRYPTO-007
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: aes256 block String String => String
+      aes256 block key    blk    =
+        | (str len key) != 32 or (str len blk) != 16 = ""
+        | otherwise = tensor to str (aes256 encrypt block (tensor from str blk) (aes256 keys (aes make box) key) (aes make box))
 
--- The S-box as bytes, to index it element-wise.
-fn :: aes sbox u8 loop Tensor[U64 * 256] Tensor[U8 * 256] Int => Tensor[U8 * 256]
-      aes sbox u8 loop sb t i =
-        | i >= 256  = t
-        | otherwise =
-          t_(i) = sb_(i)
-          aes sbox u8 loop sb t (i + 1)
-
--- One AES round (FIPS 197 §5.1) on n blocks at once: s<4 c + r> is the byte of column c, row r of every block.
--- SubBytes and ShiftRows are one indexed read of the S-box; MixColumns and AddRoundKey are element-wise.
-fn :: aes ctr round Tensor[U8 * 256] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int => Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n]
-      aes ctr round sb s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 k0 k1 k2 k3 k4 k5 k6 k7 k8 k9 k10 k11 k12 k13 k14 k15 =
-        a0 = sb_(s0_i)
-        a1 = sb_(s5_i)
-        a2 = sb_(s10_i)
-        a3 = sb_(s15_i)
-        a4 = sb_(s4_i)
-        a5 = sb_(s9_i)
-        a6 = sb_(s14_i)
-        a7 = sb_(s3_i)
-        a8 = sb_(s8_i)
-        a9 = sb_(s13_i)
-        a10 = sb_(s2_i)
-        a11 = sb_(s7_i)
-        a12 = sb_(s12_i)
-        a13 = sb_(s1_i)
-        a14 = sb_(s6_i)
-        a15 = sb_(s11_i)
-        t0 = ((a0_i xor a1_i) xor a2_i) xor a3_i
-        n0 = ((a0_i xor t0_i) xor (((a0_i xor a1_i) shl 1) xor (((a0_i xor a1_i) shr 7) * 27))) xor k0
-        n1 = ((a1_i xor t0_i) xor (((a1_i xor a2_i) shl 1) xor (((a1_i xor a2_i) shr 7) * 27))) xor k1
-        n2 = ((a2_i xor t0_i) xor (((a2_i xor a3_i) shl 1) xor (((a2_i xor a3_i) shr 7) * 27))) xor k2
-        n3 = ((a3_i xor t0_i) xor (((a3_i xor a0_i) shl 1) xor (((a3_i xor a0_i) shr 7) * 27))) xor k3
-        t1 = ((a4_i xor a5_i) xor a6_i) xor a7_i
-        n4 = ((a4_i xor t1_i) xor (((a4_i xor a5_i) shl 1) xor (((a4_i xor a5_i) shr 7) * 27))) xor k4
-        n5 = ((a5_i xor t1_i) xor (((a5_i xor a6_i) shl 1) xor (((a5_i xor a6_i) shr 7) * 27))) xor k5
-        n6 = ((a6_i xor t1_i) xor (((a6_i xor a7_i) shl 1) xor (((a6_i xor a7_i) shr 7) * 27))) xor k6
-        n7 = ((a7_i xor t1_i) xor (((a7_i xor a4_i) shl 1) xor (((a7_i xor a4_i) shr 7) * 27))) xor k7
-        t2 = ((a8_i xor a9_i) xor a10_i) xor a11_i
-        n8 = ((a8_i xor t2_i) xor (((a8_i xor a9_i) shl 1) xor (((a8_i xor a9_i) shr 7) * 27))) xor k8
-        n9 = ((a9_i xor t2_i) xor (((a9_i xor a10_i) shl 1) xor (((a9_i xor a10_i) shr 7) * 27))) xor k9
-        n10 = ((a10_i xor t2_i) xor (((a10_i xor a11_i) shl 1) xor (((a10_i xor a11_i) shr 7) * 27))) xor k10
-        n11 = ((a11_i xor t2_i) xor (((a11_i xor a8_i) shl 1) xor (((a11_i xor a8_i) shr 7) * 27))) xor k11
-        t3 = ((a12_i xor a13_i) xor a14_i) xor a15_i
-        n12 = ((a12_i xor t3_i) xor (((a12_i xor a13_i) shl 1) xor (((a12_i xor a13_i) shr 7) * 27))) xor k12
-        n13 = ((a13_i xor t3_i) xor (((a13_i xor a14_i) shl 1) xor (((a13_i xor a14_i) shr 7) * 27))) xor k13
-        n14 = ((a14_i xor t3_i) xor (((a14_i xor a15_i) shl 1) xor (((a14_i xor a15_i) shr 7) * 27))) xor k14
-        n15 = ((a15_i xor t3_i) xor (((a15_i xor a12_i) shl 1) xor (((a15_i xor a12_i) shr 7) * 27))) xor k15
-        (n0, n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13, n14, n15)
-
--- The last round has no MixColumns.
-fn :: aes ctr last round Tensor[U8 * 256] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int Int => Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n]
-      aes ctr last round sb s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 k0 k1 k2 k3 k4 k5 k6 k7 k8 k9 k10 k11 k12 k13 k14 k15 =
-        n0 = sb_(s0_i) xor k0
-        n1 = sb_(s5_i) xor k1
-        n2 = sb_(s10_i) xor k2
-        n3 = sb_(s15_i) xor k3
-        n4 = sb_(s4_i) xor k4
-        n5 = sb_(s9_i) xor k5
-        n6 = sb_(s14_i) xor k6
-        n7 = sb_(s3_i) xor k7
-        n8 = sb_(s8_i) xor k8
-        n9 = sb_(s13_i) xor k9
-        n10 = sb_(s2_i) xor k10
-        n11 = sb_(s7_i) xor k11
-        n12 = sb_(s12_i) xor k12
-        n13 = sb_(s1_i) xor k13
-        n14 = sb_(s6_i) xor k14
-        n15 = sb_(s11_i) xor k15
-        (n0, n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13, n14, n15)
-
--- Byte `sh / 8` (from the low end) of the big-endian counter of every block, XORed with the round-0 key byte.
-fn :: aes ctr fill Tensor[U8 * n] Int Int Int Int Int => Tensor[U8 * n]
-      aes ctr fill t ctr sh kb i n =
-        | i >= n    = t
-        | otherwise =
-          t_(i) = ((((ctr + i) and 0xFFFFFFFF) shr sh) and 255) xor kb
-          aes ctr fill t ctr sh kb (i + 1) n
-
--- E(K, nonce || ctr + b) for b in 0..nb-1 (NIST SP 800-38D §6.5): 16 tensors of `nb` bytes.
-fn :: aes ctr page Tensor[U8 * 256] Tensor[U64 * 176] Tensor[U8] Int Int => Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n] Tensor[U8 * n]
-      aes ctr page sb rk nonce_bs ctr nb =
-        i0 = Tensor[U8 * nb] with (nonce_bs_(0) xor rk_(0))
-        i1 = Tensor[U8 * nb] with (nonce_bs_(1) xor rk_(1))
-        i2 = Tensor[U8 * nb] with (nonce_bs_(2) xor rk_(2))
-        i3 = Tensor[U8 * nb] with (nonce_bs_(3) xor rk_(3))
-        i4 = Tensor[U8 * nb] with (nonce_bs_(4) xor rk_(4))
-        i5 = Tensor[U8 * nb] with (nonce_bs_(5) xor rk_(5))
-        i6 = Tensor[U8 * nb] with (nonce_bs_(6) xor rk_(6))
-        i7 = Tensor[U8 * nb] with (nonce_bs_(7) xor rk_(7))
-        i8 = Tensor[U8 * nb] with (nonce_bs_(8) xor rk_(8))
-        i9 = Tensor[U8 * nb] with (nonce_bs_(9) xor rk_(9))
-        i10 = Tensor[U8 * nb] with (nonce_bs_(10) xor rk_(10))
-        i11 = Tensor[U8 * nb] with (nonce_bs_(11) xor rk_(11))
-        i12 = aes ctr fill (Tensor[U8 * nb]) ctr 24 rk_(12) 0 nb
-        i13 = aes ctr fill (Tensor[U8 * nb]) ctr 16 rk_(13) 0 nb
-        i14 = aes ctr fill (Tensor[U8 * nb]) ctr 8 rk_(14) 0 nb
-        i15 = aes ctr fill (Tensor[U8 * nb]) ctr 0 rk_(15) 0 nb
-        r1x0, r1x1, r1x2, r1x3, r1x4, r1x5, r1x6, r1x7, r1x8, r1x9, r1x10, r1x11, r1x12, r1x13, r1x14, r1x15 = aes ctr round sb i0 i1 i2 i3 i4 i5 i6 i7 i8 i9 i10 i11 i12 i13 i14 i15 rk_(16) rk_(17) rk_(18) rk_(19) rk_(20) rk_(21) rk_(22) rk_(23) rk_(24) rk_(25) rk_(26) rk_(27) rk_(28) rk_(29) rk_(30) rk_(31)
-        r2x0, r2x1, r2x2, r2x3, r2x4, r2x5, r2x6, r2x7, r2x8, r2x9, r2x10, r2x11, r2x12, r2x13, r2x14, r2x15 = aes ctr round sb r1x0 r1x1 r1x2 r1x3 r1x4 r1x5 r1x6 r1x7 r1x8 r1x9 r1x10 r1x11 r1x12 r1x13 r1x14 r1x15 rk_(32) rk_(33) rk_(34) rk_(35) rk_(36) rk_(37) rk_(38) rk_(39) rk_(40) rk_(41) rk_(42) rk_(43) rk_(44) rk_(45) rk_(46) rk_(47)
-        r3x0, r3x1, r3x2, r3x3, r3x4, r3x5, r3x6, r3x7, r3x8, r3x9, r3x10, r3x11, r3x12, r3x13, r3x14, r3x15 = aes ctr round sb r2x0 r2x1 r2x2 r2x3 r2x4 r2x5 r2x6 r2x7 r2x8 r2x9 r2x10 r2x11 r2x12 r2x13 r2x14 r2x15 rk_(48) rk_(49) rk_(50) rk_(51) rk_(52) rk_(53) rk_(54) rk_(55) rk_(56) rk_(57) rk_(58) rk_(59) rk_(60) rk_(61) rk_(62) rk_(63)
-        r4x0, r4x1, r4x2, r4x3, r4x4, r4x5, r4x6, r4x7, r4x8, r4x9, r4x10, r4x11, r4x12, r4x13, r4x14, r4x15 = aes ctr round sb r3x0 r3x1 r3x2 r3x3 r3x4 r3x5 r3x6 r3x7 r3x8 r3x9 r3x10 r3x11 r3x12 r3x13 r3x14 r3x15 rk_(64) rk_(65) rk_(66) rk_(67) rk_(68) rk_(69) rk_(70) rk_(71) rk_(72) rk_(73) rk_(74) rk_(75) rk_(76) rk_(77) rk_(78) rk_(79)
-        r5x0, r5x1, r5x2, r5x3, r5x4, r5x5, r5x6, r5x7, r5x8, r5x9, r5x10, r5x11, r5x12, r5x13, r5x14, r5x15 = aes ctr round sb r4x0 r4x1 r4x2 r4x3 r4x4 r4x5 r4x6 r4x7 r4x8 r4x9 r4x10 r4x11 r4x12 r4x13 r4x14 r4x15 rk_(80) rk_(81) rk_(82) rk_(83) rk_(84) rk_(85) rk_(86) rk_(87) rk_(88) rk_(89) rk_(90) rk_(91) rk_(92) rk_(93) rk_(94) rk_(95)
-        r6x0, r6x1, r6x2, r6x3, r6x4, r6x5, r6x6, r6x7, r6x8, r6x9, r6x10, r6x11, r6x12, r6x13, r6x14, r6x15 = aes ctr round sb r5x0 r5x1 r5x2 r5x3 r5x4 r5x5 r5x6 r5x7 r5x8 r5x9 r5x10 r5x11 r5x12 r5x13 r5x14 r5x15 rk_(96) rk_(97) rk_(98) rk_(99) rk_(100) rk_(101) rk_(102) rk_(103) rk_(104) rk_(105) rk_(106) rk_(107) rk_(108) rk_(109) rk_(110) rk_(111)
-        r7x0, r7x1, r7x2, r7x3, r7x4, r7x5, r7x6, r7x7, r7x8, r7x9, r7x10, r7x11, r7x12, r7x13, r7x14, r7x15 = aes ctr round sb r6x0 r6x1 r6x2 r6x3 r6x4 r6x5 r6x6 r6x7 r6x8 r6x9 r6x10 r6x11 r6x12 r6x13 r6x14 r6x15 rk_(112) rk_(113) rk_(114) rk_(115) rk_(116) rk_(117) rk_(118) rk_(119) rk_(120) rk_(121) rk_(122) rk_(123) rk_(124) rk_(125) rk_(126) rk_(127)
-        r8x0, r8x1, r8x2, r8x3, r8x4, r8x5, r8x6, r8x7, r8x8, r8x9, r8x10, r8x11, r8x12, r8x13, r8x14, r8x15 = aes ctr round sb r7x0 r7x1 r7x2 r7x3 r7x4 r7x5 r7x6 r7x7 r7x8 r7x9 r7x10 r7x11 r7x12 r7x13 r7x14 r7x15 rk_(128) rk_(129) rk_(130) rk_(131) rk_(132) rk_(133) rk_(134) rk_(135) rk_(136) rk_(137) rk_(138) rk_(139) rk_(140) rk_(141) rk_(142) rk_(143)
-        r9x0, r9x1, r9x2, r9x3, r9x4, r9x5, r9x6, r9x7, r9x8, r9x9, r9x10, r9x11, r9x12, r9x13, r9x14, r9x15 = aes ctr round sb r8x0 r8x1 r8x2 r8x3 r8x4 r8x5 r8x6 r8x7 r8x8 r8x9 r8x10 r8x11 r8x12 r8x13 r8x14 r8x15 rk_(144) rk_(145) rk_(146) rk_(147) rk_(148) rk_(149) rk_(150) rk_(151) rk_(152) rk_(153) rk_(154) rk_(155) rk_(156) rk_(157) rk_(158) rk_(159)
-        aes ctr last round sb r9x0 r9x1 r9x2 r9x3 r9x4 r9x5 r9x6 r9x7 r9x8 r9x9 r9x10 r9x11 r9x12 r9x13 r9x14 r9x15 rk_(160) rk_(161) rk_(162) rk_(163) rk_(164) rk_(165) rk_(166) rk_(167) rk_(168) rk_(169) rk_(170) rk_(171) rk_(172) rk_(173) rk_(174) rk_(175)
-
--- The first `n` bytes (at most 1 MiB) of the CTR key stream from counter `ctr` on: all the blocks at once,
--- then the 16 byte tensors side by side (ridgunc 1.0.40).
-fn :: aes ctr key stream chunk Tensor[U8 * 256] Tensor[U64 * 176] Tensor[U8] Int Int => Tensor[U8]
-      aes ctr key stream chunk sb8 rk nonce_bs ctr n =
-        nb = (n + 15) / 16
-        o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15 = aes ctr page sb8 rk nonce_bs ctr nb
-        c first bytes (tensor interleave [o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15]) (16 * nb) n
-
-fn :: aes ctr key stream loop Tensor[U8 * 256] Tensor[U64 * 176] Tensor[U8] Int Int => Tensor[U8]
-      aes ctr key stream loop sb8 rk nonce_bs ctr n =
-        | n <= 0       = Tensor[U8 * 0]
-        | n <= 1048576 = aes ctr key stream chunk sb8 rk nonce_bs ctr n
-        | otherwise    = tensor from str ((tensor to str (aes ctr key stream chunk sb8 rk nonce_bs ctr 1048576)) + (tensor to str (aes ctr key stream loop sb8 rk nonce_bs (ctr + 65536) (n - 1048576))))
-
--- The first `n` bytes of the CTR key stream from counter `ctr` on.
-fn :: aes ctr key stream Tensor[U64 * 256] Tensor[U64 * 176] Tensor[U8] Int Int => Tensor[U8]
-      aes ctr key stream sb rk nonce_bs ctr n =
-        aes ctr key stream loop (aes sbox u8 loop sb (Tensor[U8 * 256]) 0) rk nonce_bs ctr n
+-- ── GHASH with carry-less products and AES-GCM (NIST SP 800-38D) ──
 
 -- GHASH product (NIST SP 800-38D §6.3) of two blocks, each as two big-endian 64-bit integers (high, low).
 -- Read that way the bits of the field element are reversed, so the carry-less product comes out one place
@@ -3228,30 +3306,34 @@ fn :: ghash compute Tensor[U8] Tensor[U8] Tensor[U8] => Tensor[U8]
         out
 
 
+-- The tag of GCM: GHASH of the associated data and the ciphertext, XORed with E(K, J0).
+fn :: aes gcm tag String String String Tensor[U8] => String
+      aes gcm tag h_s ej0 aad ct =
+        tensor to str (c bitxor bytes (ghash compute (tensor from str h_s) (tensor from str aad) ct) (tensor from str ej0))
+
+fn :: aes gcm seal parts String String Tensor[U8] String String => String
+      aes gcm seal parts h_s ej0 ks aad plaintext =
+        ct = c bitxor bytes (tensor from str plaintext) ks
+        (tensor to str ct) + (aes gcm tag h_s ej0 aad ct)
+
 -- @implements FR-CRYPTO-006
 -- @implements API-CRYPTO-001
--- @mitigates VUL-AUTHN-001
 -- @mitigates VUL-INPUT-001
 fn :: aes128 gcm seal String String String String => String
       aes128 gcm seal key    nonce  aad    plaintext =
         | (str len key) != 16 or (str len nonce) != 12 = ""
         | otherwise =
-          tbl = c build b256
-          sb  = aes init sbox
-          rk  = aes expand key sb key
-          h_s = aes encrypt with rk tbl sb rk (c repeat byte 0 16)
-          ej0 = aes encrypt with rk tbl sb rk (nonce + (be32 bytes 1))
-          pt  = tensor from str plaintext
-          ct  = c bitxor bytes pt (aes ctr key stream sb rk (tensor from str nonce) 2 (c u8 len pt))
-          s   = ghash compute (tensor from str h_s) (tensor from str aad) ct
-          tag = c bitxor bytes s (tensor from str ej0)
-          (tensor to str ct) + (tensor to str tag)
+          box  = aes make box
+          keys = aes128 keys box key
+          h_s  = tensor to str (aes128 encrypt block (Tensor[U8 * 16]) keys box)
+          ej0  = tensor to str (aes128 encrypt block (tensor from str (nonce + (be32 bytes 1))) keys box)
+          aes gcm seal parts h_s ej0 (aes128 key stream box keys nonce 2 (str len plaintext)) aad plaintext
 
-fn :: aes128 gcm open verified Bool Tensor[U64 * 256] Tensor[U64 * 176] String Tensor[U8] => Int String
+-- The plaintext is produced only after the tag has been checked.
+fn :: aes128 gcm open verified Bool Tensor[U8] Tensor[U8] String Tensor[U8] => Int String
       aes128 gcm open verified False _ _ _ _ = (0 - 12, "")
-      aes128 gcm open verified True sb rk nonce ct =
-        pt = c bitxor bytes ct (aes ctr key stream sb rk (tensor from str nonce) 2 (c u8 len ct))
-        (0, tensor to str pt)
+      aes128 gcm open verified True box keys nonce ct =
+        (0, tensor to str (c bitxor bytes ct (aes128 key stream box keys nonce 2 (c u8 len ct))))
 
 -- @implements FR-CRYPTO-006
 -- @implements API-CRYPTO-001
@@ -3261,18 +3343,47 @@ fn :: aes128 gcm open String String String String => Int String
       aes128 gcm open key    nonce  aad    ciphertext_and_tag =
         | (str len key) != 16 or (str len nonce) != 12 or (str len ciphertext_and_tag) < 16 = (0 - 7, "")
         | otherwise =
-          tlen    = str len ciphertext_and_tag
-          clen    = tlen - 16
-          ct      = tensor from str (byte slice ciphertext_and_tag 0 clen)
-          tag     = byte slice ciphertext_and_tag clen tlen
-          tbl     = c build b256
-          sb      = aes init sbox
-          rk      = aes expand key sb key
-          h_s     = aes encrypt with rk tbl sb rk (c repeat byte 0 16)
-          ej0     = aes encrypt with rk tbl sb rk (nonce + (be32 bytes 1))
-          s       = ghash compute (tensor from str h_s) (tensor from str aad) ct
-          exp_tag = tensor to str (c bitxor bytes s (tensor from str ej0))
-          aes128 gcm open verified (ct equal tag exp_tag) sb rk nonce ct
+          clen = (str len ciphertext_and_tag) - 16
+          ct   = tensor from str (byte slice ciphertext_and_tag 0 clen)
+          box  = aes make box
+          keys = aes128 keys box key
+          h_s  = tensor to str (aes128 encrypt block (Tensor[U8 * 16]) keys box)
+          ej0  = tensor to str (aes128 encrypt block (tensor from str (nonce + (be32 bytes 1))) keys box)
+          aes128 gcm open verified (ct equal (byte slice ciphertext_and_tag clen (clen + 16)) (aes gcm tag h_s ej0 aad ct)) box keys nonce ct
+
+-- @implements FR-CRYPTO-007
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-INPUT-001
+fn :: aes256 gcm seal String String String String => String
+      aes256 gcm seal key    nonce  aad    plaintext =
+        | (str len key) != 32 or (str len nonce) != 12 = ""
+        | otherwise =
+          box  = aes make box
+          keys = aes256 keys box key
+          h_s  = tensor to str (aes256 encrypt block (Tensor[U8 * 16]) keys box)
+          ej0  = tensor to str (aes256 encrypt block (tensor from str (nonce + (be32 bytes 1))) keys box)
+          aes gcm seal parts h_s ej0 (aes256 key stream box keys nonce 2 (str len plaintext)) aad plaintext
+
+fn :: aes256 gcm open verified Bool Tensor[U8] Tensor[U8] String Tensor[U8] => Int String
+      aes256 gcm open verified False _ _ _ _ = (0 - 12, "")
+      aes256 gcm open verified True box keys nonce ct =
+        (0, tensor to str (c bitxor bytes ct (aes256 key stream box keys nonce 2 (c u8 len ct))))
+
+-- @implements FR-CRYPTO-007
+-- @implements API-CRYPTO-001
+-- @mitigates VUL-AUTHN-001
+-- @mitigates VUL-INPUT-001
+fn :: aes256 gcm open String String String String => Int String
+      aes256 gcm open key    nonce  aad    ciphertext_and_tag =
+        | (str len key) != 32 or (str len nonce) != 12 or (str len ciphertext_and_tag) < 16 = (0 - 7, "")
+        | otherwise =
+          clen = (str len ciphertext_and_tag) - 16
+          ct   = tensor from str (byte slice ciphertext_and_tag 0 clen)
+          box  = aes make box
+          keys = aes256 keys box key
+          h_s  = tensor to str (aes256 encrypt block (Tensor[U8 * 16]) keys box)
+          ej0  = tensor to str (aes256 encrypt block (tensor from str (nonce + (be32 bytes 1))) keys box)
+          aes256 gcm open verified (ct equal (byte slice ciphertext_and_tag clen (clen + 16)) (aes gcm tag h_s ej0 aad ct)) box keys nonce ct
 
 -- ============================================================
 -- FR-CRYPTO-006: 16-Bit-Limb BigInt Modular Arithmetic Engine
