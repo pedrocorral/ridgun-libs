@@ -550,4 +550,4 @@ fn :: ws finish frame Bool Int Bool Tensor[U8] Int => WsRes
 
 ---
 
-No **Capítulo 30** passaremos a explorar em profundidade a lib **`agent`** (A lib `agent` — Modelo Nativo de Atores (`agent`, `send`, `receive`), KV Store e Rate Limiter).
+No **Capítulo 30** passaremos a explorar em profundidade a lib **`agent`** (A lib `agent` — Modelo Nativo de Atores (`agent`, `send`, `receive`), Combinadores Pedido-Resposta e Agentes de Contador, de Log e Chave-Valor).

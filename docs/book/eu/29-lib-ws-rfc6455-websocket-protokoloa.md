@@ -550,4 +550,4 @@ fn :: ws finish frame Bool Int Bool Tensor[U8] Int => WsRes
 
 ---
 
-**30. kapituluan** **`agent`** lib-a sakonki esploratuko dugu (`agent` lib-a — Aktoreen Eredu Natiboa (`agent`, `send`, `receive`), KV Biltegia eta Rate Limiter-a).
+**30. kapituluan** **`agent`** lib-a sakonki esploratuko dugu (`agent` lib-a — Aktoreen Konkurrentzia Natiboa (`agent`, `send`, `receive`), Eskaera-erantzun Konbinatzaileak eta Kontagailu, Erregistro eta Gako-balio Agenteak).

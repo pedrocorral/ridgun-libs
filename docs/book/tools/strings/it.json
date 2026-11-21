@@ -51,6 +51,8 @@
  "ex.mail.local": "Un server SMTP locale: STARTTLS prima di AUTH, TLS implicito, destinatari rifiutati ed errori di autenticazione",
  "ex.mail.parse": "Analisi di risposte SMTP su più righe (`smtp parse response`)",
  "ex.mail.rejects": "Iniezione di intestazioni e indirizzi non validi rifiutati durante la serializzazione",
+ "ex.net_agent.datapath": "Il percorso dei dati su una connessione TCP reale: `conn poll step`, la risposta dell'agente e `reactor sweep` alla chiusura",
+ "ex.pool.routing": "Instradamento per chiave (`pool ask shard`): stessa chiave, stesso agente; chiavi a turno, agenti a turno; broadcast e arresto",
  "ex.posix.bridge": "Il ponte verso il kernel: decodifica dello stato di uscita (`ProcExited`, `ProcSignal`), `AT_FDCWD` e nessuna chiamata di sistema letterale nelle lib",
  "ex.posix.durable": "Operazioni durevoli su file: `posix fsync`, `posix fdatasync`, `posix ftruncate`, lock esclusivi e `posix pread`",
  "ex.posix.fork": "Controllo dei processi sul kernel: `posix pipe`, `posix fork`, `posix dup2`, `posix execve` e `posix waitpid`",
@@ -138,10 +140,14 @@
  "fix.crypto.subtitle": "Hash, HMAC, HKDF, PBKDF2, Cifrari AEAD, X25519, Ed25519, ECDSA, RSA e X.509",
  "fix.net_agent.desc": "La lib **`net_agent`** chiude il cerchio di `ridgun-libs` unendo **`posix`**, **`socket`** e **`agent`**: un `ConnSlot` abbina un descrittore di connessione all'agente che ne detiene lo stato; `conn poll step` esegue il polling del descrittore senza bloccarsi, passa all'agente ciò che arriva e scrive indietro la sua risposta; `reactor sweep` fa lo stesso per un'intera tabella di connessioni ed elimina quelle chiuse; e `reactor shutdown` chiude ogni descrittore e arresta ogni agente.",
  "fix.net_agent.guarantee": "Una connessione che viene chiusa o che fallisce esce dalla tabella nella passata che la rileva, con il suo descrittore chiuso e il suo agente arrestato, e `reactor shutdown` fa lo stesso per tutte le altre, così non ci sono perdite di descrittori né di agenti.",
+ "fix.net_agent.honest": "Siamo sinceri: in un server, accettare connessioni TCP è la parte facile; il difficile è tenere separato lo stato di ogni connessione, leggere e scrivere senza bloccare le altre, e chiudere ogni descrittore e fermare ogni agente quando una connessione termina.",
  "fix.net_agent.subtitle": "Un Agente per Connessione: Polling Non Bloccante e Passata del Reactor",
  "fix.pool.desc": "La lib **`pool`** raggruppa un numero fisso di agenti in un `AgentPool`: `pool ask shard` invia ogni richiesta all'agente scelto in base alla sua chiave, così la stessa chiave raggiunge sempre lo stesso agente; `pool broadcast` invia un messaggio a ogni agente; `pool drain all` raccoglie, senza bloccarsi, le risposte che sono pronte; e `pool shutdown` li arresta tutti.",
  "fix.pool.guarantee": "Il numero di agenti è fissato quando il pool viene costruito, quindi la memoria del pool è limitata, e l'instradamento tramite `abs(key) % size` è deterministico: la stessa chiave raggiunge sempre lo stesso agente.",
+ "fix.pool.honest": "Siamo sinceri: quando tutte le richieste dello stesso utente o della stessa chiave devono arrivare allo stesso worker, e ogni tanto un messaggio deve arrivare a tutti, scrivere a mano quell'instradamento e l'arresto ordinato in ogni programma è ripetitivo e facile da sbagliare.",
  "fix.pool.subtitle": "Pool di Agenti: Sharding per Chiave, Broadcast e Svuotamento Non Bloccante",
  "fix.tensor.desc": "La lib **`tensor`** aggiunge, al tipo nativo `Tensor[...]` di Ridgun, le funzioni ausiliarie che il linguaggio non offre direttamente: interrogazioni sulla forma (`tensor rows`, `tensor cols`, `tensor shape`), estrazione di una riga o di una colonna (`tensor row`, `tensor col`), una copia esplicita (`tensor clone`), il prodotto di matrici (`tensor matmul`) e operazioni elemento per elemento tra due tensori presi per intero: XOR, AND, OR, addizione, sottrazione e moltiplicazione.",
- "fix.tensor.subtitle": "Forme, Righe e Colonne, Prodotto di Matrici e Operazioni a Blocchi"
+ "fix.tensor.subtitle": "Forme, Righe e Colonne, Prodotto di Matrici e Operazioni a Blocchi",
+ "slug.net_agent": "un-agente-per-connessione-e-reactor",
+ "slug.pool": "pool-di-agenti-e-sharding-per-chiave"
 }

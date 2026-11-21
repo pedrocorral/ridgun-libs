@@ -51,6 +51,8 @@
  "ex.mail.local": "SMTP zerbitzari lokal bat: STARTTLS AUTH baino lehen, TLS inplizitua, ukatutako hartzaileak eta autentifikazio-erroreak",
  "ex.mail.parse": "Lerro anitzeko SMTP erantzunen analisia (`smtp parse response`)",
  "ex.mail.rejects": "Errendatzean ukatutako goiburu-injekzioa eta helbide baliogabeak",
+ "ex.net_agent.datapath": "Datuen bidea benetako TCP konexio baten gainean: `conn poll step`, agentearen erantzuna eta `reactor sweep` ixtean",
+ "ex.pool.routing": "Gako bidezko bideratzea (`pool ask shard`): gako bera, agente bera; gakoak txandaka, agenteak txandaka; hedapena eta geldialdia",
  "ex.posix.bridge": "Kernelerako zubia: irteera-egoeraren deskodetzea (`ProcExited`, `ProcSignal`), `AT_FDCWD` eta sistema-dei literalik ez lib-etan",
  "ex.posix.durable": "Fitxategi-eragiketa iraunkorrak: `posix fsync`, `posix fdatasync`, `posix ftruncate`, blokeo esklusiboak eta `posix pread`",
  "ex.posix.fork": "Prozesu-kontrola kernelaren gainean: `posix pipe`, `posix fork`, `posix dup2`, `posix execve` eta `posix waitpid`",
@@ -138,10 +140,14 @@
  "fix.crypto.subtitle": "Hash Funtzioak, HMAC, HKDF, PBKDF2, AEAD Zifraketak, X25519, Ed25519, ECDSA, RSA eta X.509",
  "fix.net_agent.desc": "**`net_agent`** lib-ak `ridgun-libs`-en zirkulua ixten du **`posix`**, **`socket`** eta **`agent`** batuz: `ConnSlot` batek konexio-deskribatzaile bat eta haren egoera gordetzen duen agentea parekatzen ditu; `conn poll step`-ek deskribatzailea blokeatu gabe zundatzen du, iristen dena agenteari pasatzen dio eta haren erantzuna idazten du bueltan; `reactor sweep`-ek gauza bera egiten du konexio-taula oso baterako eta itxitakoak kentzen ditu; eta `reactor shutdown`-ek deskribatzaile guztiak ixten ditu eta agente guztiak gelditzen ditu.",
  "fix.net_agent.guarantee": "Ixten den edo huts egiten duen konexio bat taulatik irteten da hura ikusten duen ekorketan, deskribatzailea itxita eta agentea geldituta, eta `reactor shutdown`-ek gauza bera egiten du gainerako guztiekin; beraz, ez dago deskribatzaile-ihesik, ezta agente-ihesik ere.",
+ "fix.net_agent.honest": "Izan gaitezen zintzoak: zerbitzari batean, TCP konexioak onartzea zati erraza da; zailena konexio bakoitzaren egoera bereizita gordetzea, besteak blokeatu gabe irakurtzea eta idaztea, eta konexio bat amaitzean deskribatzaile bakoitza ixtea eta agente bakoitza gelditzea da.",
  "fix.net_agent.subtitle": "Agente bat Konexio bakoitzeko: Zundaketa Ez-blokeatzailea eta Erreaktorearen Ekorketa",
  "fix.pool.desc": "**`pool`** lib-ak agente kopuru finko bat `AgentPool` batean biltzen du: `pool ask shard`-ek eskaera bakoitza bere gakoak aukeratutako agenteari bidaltzen dio, eta, hala, gako bera beti agente berera iristen da; `pool broadcast`-ek mezu bat agente guztiei bidaltzen die; `pool drain all`-ek prest dauden erantzunak biltzen ditu, blokeatu gabe; eta `pool shutdown`-ek guztiak gelditzen ditu.",
  "fix.pool.guarantee": "Agente kopurua poola eraikitzean finkatzen da; beraz, poolaren memoria mugatua da, eta `abs(key) % size` bidezko bideratzea determinista da: gako bera beti agente berera iristen da.",
+ "fix.pool.honest": "Izan gaitezen zintzoak: erabiltzaile beraren edo gako beraren eskaera guztiek langile berera iritsi behar dutenean, eta noizean behin mezu batek guztiengana iritsi behar duenean, bideratze hori eta geldialdi ordenatua programa bakoitzean eskuz idaztea errepikakorra da eta erraz egiten da gaizki.",
  "fix.pool.subtitle": "Agente-poolak: Gako bidezko Zatikatzea, Hedapena eta Hustuketa Ez-blokeatzailea",
  "fix.tensor.desc": "**`tensor`** lib-ak Ridgunen `Tensor[...]` mota natiboari lengoaiak zuzenean ematen ez dituen laguntzaileak gehitzen dizkio: forma-kontsultak (`tensor rows`, `tensor cols`, `tensor shape`), errenkada baten edo zutabe baten erauzketa (`tensor row`, `tensor col`), kopia esplizitu bat (`tensor clone`), matrize-biderketa (`tensor matmul`) eta bi tentsore osoren arteko elementuz elementuko eragiketak: XOR, AND, OR, batuketa, kenketa eta biderketa.",
- "fix.tensor.subtitle": "Formak, Errenkadak eta Zutabeak, Matrize-biderketa eta Blokekako Eragiketak"
+ "fix.tensor.subtitle": "Formak, Errenkadak eta Zutabeak, Matrize-biderketa eta Blokekako Eragiketak",
+ "slug.net_agent": "agente-bat-konexio-bakoitzeko-eta-erreaktorea",
+ "slug.pool": "agente-poolak-eta-gako-bidezko-zatikatzea"
 }

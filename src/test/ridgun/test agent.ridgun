@@ -10,6 +10,7 @@ import agent
 import list
 import pool
 import net_agent
+import socket
 
 fn :: ag sum ints [Int]    => Int
       ag sum ints []       =  0
@@ -31,6 +32,90 @@ fn :: ag echo conn step CounterState String => CounterState String
       ag echo conn step st msg =
         nxt = (cnt_val st) + 1
         (CounterState nxt, "echo:{nxt}:{msg}")
+
+-- Pool routing by key: agent `abs(key) % size`; keys in turn visit the agents in turn.
+-- @tests TS-AGENT-001
+fn :: test pool routing by key => ()
+      test pool routing by key =
+        a0 = new counter agent 0
+        a1 = new counter agent 1000
+        a2 = new counter agent 2000
+        pl = Pool 3 [a0, a1, a2]
+        pool size pl -> assert int equals 3 "pool size 3"
+        agent list len (pool agents pl) 0 -> assert int equals 3 "pool agents holds the 3 agents"
+        pool ask shard pl 0 1 -> assert int equals 1 "key 0 -> agent 0"
+        pool ask shard pl 1 1 -> assert int equals 1001 "key 1 -> agent 1"
+        pool ask shard pl 2 1 -> assert int equals 2001 "key 2 -> agent 2"
+        pool ask shard pl 3 1 -> assert int equals 2 "key 3 -> agent 0 again: keys in turn visit the agents in turn"
+        pool ask shard pl 7 1 -> assert int equals 1002 "key 7 -> agent 1"
+        pool ask shard pl 7 1 -> assert int equals 1003 "the same key always reaches the same agent"
+        pool ask shard pl (0 - 2) 1 -> assert int equals 2002 "negative key -> agent abs(key) % size"
+        agent list len (pool drain all pl) 0 -> assert int equals 0 "pool drain all with nothing ready -> []"
+        pool broadcast pl 100
+        counter get a0 -> assert int equals 102 "broadcast reached agent 0"
+        counter get a1 -> assert int equals 1103 "broadcast reached agent 1"
+        counter get a2 -> assert int equals 2102 "broadcast reached agent 2"
+        one = Pool 1 [new counter agent 5]
+        pool ask shard one 12345 1 -> assert int equals 6 "a pool of one agent takes every key"
+        pool shutdown one
+        pool shutdown pl
+        is agent alive a0 -> assert false "pool shutdown stops agent 0"
+        is agent alive a2 -> assert false "pool shutdown stops agent 2"
+
+fn :: outcome text StepOutcome       => String
+      outcome text ConnClosed        =  "closed"
+      outcome text (ConnKeep _ out)  =  "keep:" + out
+
+-- Steps a connection until its agent's reply has been written (the reply may be ready one step later).
+-- Between steps it waits up to 10 ms on the client descriptor.
+fn :: step until reply ConnSlot Int Int => String
+      step until reply slot cfd tries =
+        | tries <= 0 = "no reply"
+        | otherwise  = step again slot cfd tries (outcome text (conn poll step slot))
+
+fn :: step again ConnSlot Int Int String => String
+      step again slot cfd tries out =
+        | out == "keep:" = step until reply slot cfd (tries - (sys poll cfd 1 10) * 0 - 1)
+        | otherwise      = out
+
+-- The data path of a connection over a real loopback TCP socket.
+-- @tests TS-AGENT-001
+fn :: test net agent data path => ()
+      test net agent data path =
+        l_res = sys tcp listen "127.0.0.1" 0 16
+        sock rc l_res -> assert int equals 0 "listen on an ephemeral port"
+        lfd   = sock fd l_res
+        c_res = sys tcp connect "127.0.0.1" (sys local port lfd) 500
+        sock rc c_res -> assert int equals 0 "client connects"
+        cfd   = sock fd c_res
+        a_res = sys accept lfd 500
+        sock accept rc a_res -> assert int equals 0 "server accepts"
+        sfd   = sock accept fd a_res
+        ag    = agent (ag echo conn step) (CounterState 0)
+        slot  = ConnSlot sfd ag
+
+        outcome text (conn poll step slot) -> assert str eq "keep:" "no data: the slot is kept and nothing is written"
+        sock recv rc (sys recv cfd 16 20) -> assert int equals (0 - 2) "no data: the client receives nothing"
+
+        s1 = sys send cfd "ping" 500
+        sock rc s1 -> assert int equals 0 "client sends ping"
+        step until reply slot cfd 50 -> assert str eq "keep:echo:1:ping" "the data reaches the agent and its reply is written"
+        sock recv data (sys recv cfd 64 500) -> assert str eq "echo:1:ping" "the client reads the reply"
+
+        s2 = sys send cfd "pong" 500
+        sock rc s2 -> assert int equals 0 "client sends pong"
+        step until reply slot cfd 50 -> assert str eq "keep:echo:2:pong" "the agent keeps the state of its connection"
+        sock recv data (sys recv cfd 64 500) -> assert str eq "echo:2:pong" "the client reads the second reply"
+
+        agent list len (reactor sweep [slot]) 0 -> assert int equals 1 "reactor sweep keeps a live connection"
+        is agent alive ag -> assert true "the agent of a live connection is running"
+
+        sys close cfd
+        sys poll sfd 1 500 -> closed_ev
+        agent list len (reactor sweep [slot]) 0 -> assert int equals 0 "reactor sweep drops a connection closed by the peer"
+        is agent alive ag -> assert false "the agent stops when its connection closes"
+        sys close lfd
+        ()
 
 -- @tests TS-AGENT-001
 fn :: test spec combinators pool and net agent => ()
@@ -178,6 +263,8 @@ fn :: test log and kv agents => ()
 fn :: main => ()
       main =
         test spec combinators pool and net agent
+        test pool routing by key
+        test net agent data path
         test agent lifecycle and counter
         test log and kv agents
         echo "=== All agent tests (including RG-066) passed ==="

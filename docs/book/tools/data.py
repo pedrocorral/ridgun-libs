@@ -37,6 +37,8 @@ NEW_EXAMPLES={
  'linalg':[('sqrt','fn :: test sqrt and exp ')],
  'jwt':[('bytes','fn :: test jwt bytes and utf8 round trip '),('vectors','fn :: test jwt standard vectors ')],
  'ws':[('large','fn :: test ws large frame round trip ')],
+ 'pool':[('routing','fn :: test pool routing by key ')],
+ 'net_agent':[('datapath','fn :: test net agent data path ')],
  'hash':[('vectors','fn :: test siphash13 vectors '),('native','fn :: test native matches reference ')],
  'hashmap':[('basics','fn :: test hashmap basics '),('add','fn :: test hashmap add '),('keys','fn :: test hashmap unusual keys '),('records','fn :: test hashmap record values '),('growth','fn :: test hashmap growth ')],
  'tls':[('rfc8448','fn :: test rfc8448 vectors '),('prf','fn :: test tls12 prf and hello '),('chain','fn :: test chain verification '),('local','fn :: test local handshakes '),('failures','fn :: test local failures '),('live','fn :: test live servers ')],

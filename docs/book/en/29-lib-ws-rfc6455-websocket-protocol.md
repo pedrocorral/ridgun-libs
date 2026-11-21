@@ -550,4 +550,4 @@ fn :: ws finish frame Bool Int Bool Tensor[U8] Int => WsRes
 
 ---
 
-In **Chapter 30**, we will explore the **`agent`** lib in full depth (The `agent` Lib — Native Actor Concurrency (`agent`, `send`, `receive`), KV Store, and Rate Limiter).
+In **Chapter 30**, we will explore the **`agent`** lib in full depth (The `agent` Lib — Native Actor Concurrency (`agent`, `send`, `receive`), Request-Reply Combinators, and Counter, Log and Key-Value Agents).

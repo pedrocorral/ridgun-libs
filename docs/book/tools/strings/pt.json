@@ -51,6 +51,8 @@
  "ex.mail.local": "Um servidor SMTP local: STARTTLS antes de AUTH, TLS implícito, destinatários rejeitados e erros de autenticação",
  "ex.mail.parse": "Parsing de respostas SMTP de várias linhas (`smtp parse response`)",
  "ex.mail.rejects": "Injeção de cabeçalhos e endereços inválidos rejeitados na renderização",
+ "ex.net_agent.datapath": "O caminho dos dados sobre uma ligação TCP real: `conn poll step`, a resposta do agente e `reactor sweep` ao fechar",
+ "ex.pool.routing": "Encaminhamento por chave (`pool ask shard`): mesma chave, mesmo agente; chaves à vez, agentes à vez; broadcast e paragem",
  "ex.posix.bridge": "A ponte para o kernel: descodificação do estado de saída (`ProcExited`, `ProcSignal`), `AT_FDCWD` e nenhuma chamada de sistema literal nas libs",
  "ex.posix.durable": "Operações duráveis sobre ficheiros: `posix fsync`, `posix fdatasync`, `posix ftruncate`, bloqueios exclusivos e `posix pread`",
  "ex.posix.fork": "Controlo de processos sobre o kernel: `posix pipe`, `posix fork`, `posix dup2`, `posix execve` e `posix waitpid`",
@@ -138,10 +140,14 @@
  "fix.crypto.subtitle": "Hashes, HMAC, HKDF, PBKDF2, Cifras AEAD, X25519, Ed25519, ECDSA, RSA e X.509",
  "fix.net_agent.desc": "A lib **`net_agent`** fecha o círculo do `ridgun-libs` unindo **`posix`**, **`socket`** e **`agent`**: um `ConnSlot` emparelha um descritor de ligação com o agente que guarda o seu estado; `conn poll step` sonda o descritor sem bloquear, passa o que chega ao agente e escreve de volta a sua resposta; `reactor sweep` faz isso para uma tabela inteira de ligações e descarta as fechadas; e `reactor shutdown` fecha todos os descritores e faz parar todos os agentes.",
  "fix.net_agent.guarantee": "Uma ligação que é fechada ou que falha sai da tabela no varrimento que a deteta, com o seu descritor fechado e o seu agente parado, e `reactor shutdown` faz o mesmo a todas as restantes, pelo que não há fuga de nenhum descritor nem de nenhum agente.",
+ "fix.net_agent.honest": "Sejamos sinceros: num servidor, aceitar ligações TCP é a parte fácil; o difícil é manter separado o estado de cada ligação, ler e escrever sem bloquear as outras, e fechar cada descritor e fazer parar cada agente quando uma ligação termina.",
  "fix.net_agent.subtitle": "Um Agente por Ligação: Sondagem Não Bloqueante e Varrimento do Reator",
  "fix.pool.desc": "A lib **`pool`** agrupa um número fixo de agentes num `AgentPool`: `pool ask shard` envia cada pedido ao agente escolhido pela sua chave, pelo que a mesma chave chega sempre ao mesmo agente; `pool broadcast` envia uma mensagem a todos os agentes; `pool drain all` recolhe, sem bloquear, as respostas que estão prontas; e `pool shutdown` faz parar todos eles.",
  "fix.pool.guarantee": "O número de agentes é fixado quando o pool é construído, pelo que a memória do pool é limitada, e o encaminhamento por `abs(key) % size` é determinístico: a mesma chave chega sempre ao mesmo agente.",
+ "fix.pool.honest": "Sejamos sinceros: quando todos os pedidos do mesmo utilizador ou da mesma chave têm de chegar ao mesmo trabalhador, e de vez em quando uma mensagem tem de chegar a todos, escrever à mão esse encaminhamento e a paragem ordenada em cada programa é repetitivo e fácil de fazer mal.",
  "fix.pool.subtitle": "Pools de Agentes: Sharding por Chave, Broadcast e Drenagem Não Bloqueante",
  "fix.tensor.desc": "A lib **`tensor`** acrescenta, ao tipo nativo `Tensor[...]` do Ridgun, os auxiliares que a linguagem não dá diretamente: consultas de forma (`tensor rows`, `tensor cols`, `tensor shape`), extração de uma linha ou de uma coluna (`tensor row`, `tensor col`), uma cópia explícita (`tensor clone`), o produto matricial (`tensor matmul`) e operações elemento a elemento entre dois tensores completos: XOR, AND, OR, adição, subtração e multiplicação.",
- "fix.tensor.subtitle": "Formas, Linhas e Colunas, Produto Matricial e Operações Bloco a Bloco"
+ "fix.tensor.subtitle": "Formas, Linhas e Colunas, Produto Matricial e Operações Bloco a Bloco",
+ "slug.net_agent": "um-agente-por-ligacao-e-reator",
+ "slug.pool": "pools-de-agentes-e-sharding-por-chave"
 }

@@ -1,55 +1,55 @@
-# Capítulo 31: La lib `pool` — Pools de Agentes: Reparto por Clave, Difusión y Drenaje No Bloqueante
+# Capítulo 31: A lib `pool` — Pools de Axentes: Reparto por Chave, Difusión e Baleirado Non Bloqueante
 
-## 31.1. ¿Por qué existe la lib `pool`? (El problema real y la filosofía Ridgun)
+## 31.1. Por que existe a lib `pool`? (O problema real e a filosofía Ridgun)
 
-> *«¿Por qué necesito una lib `pool` escrita desde cero en Ridgun puro en lugar de enlazar una librería de C de toda la vida?»*
+> *«Por que necesito unha lib `pool` escrita dende cero en Ridgun puro en vez de enlazar unha librería de C de toda a vida?»*
 
-Esa es la primera pregunta que se hace cualquier ingeniero de sistemas al llegar a `pool`. Y la respuesta resume toda la filosofía de `ridgun-libs`:
+Esa é a primeira pregunta que se fai calquera enxeñeiro de sistemas ao chegar a `pool`. E a resposta resume toda a filosofía de `ridgun-libs`:
 
-Seamos sinceros: lanzar un hilo o actor nuevo por cada petición entrante sin límite superior (`unbounded spawning`) hace que un pico de tráfico agote la memoria en segundos (*Out Of Memory*).
+Sexamos sinceros: cando todas as peticións dun mesmo usuario ou dunha mesma chave deben chegar ao mesmo traballador, e de cando en vez unha mensaxe debe chegar a todos, escribir á man ese reparto e a parada ordenada en cada programa é repetitivo e fácil de facer mal.
 
-La lib **`pool`** agrupa un número fijo de agentes en un `AgentPool`: `pool ask shard` envía cada petición al agente elegido por su clave, de modo que la misma clave llega siempre al mismo agente; `pool broadcast` envía un mensaje a todos los agentes; `pool drain all` recoge, sin bloquear, las respuestas que están listas; y `pool shutdown` los detiene a todos.
+A lib **`pool`** agrupa un número fixo de axentes nun `AgentPool`: `pool ask shard` envía cada petición ao axente escollido pola súa chave, de modo que a mesma chave chega sempre ao mesmo axente; `pool broadcast` envía unha mensaxe a todos os axentes; `pool drain all` recolle, sen bloquear, as respostas que están listas; e `pool shutdown` detén todos eles.
 
-En un ecosistema tradicional, resolver las tareas del dominio **`AGENT`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`pool`** (`src/main/ridgun/lib/pool.ridgun`) aborda el problema con cuatro principios innegociables:
+Nun ecosistema tradicional, resolver as tarefas do dominio **`AGENT`** implica arrastrar dependencias externas en C, loitar con punteiros crus, conversións opacas de tipos, excepcións non verificadas ou pausas impredicibles do colector de lixo. En Ridgun, a lib **`pool`** (`src/main/ridgun/lib/pool.ridgun`) aborda o problema con catro principios innegociables:
 
-1. **Declara `import pool` (o `import pool as alias`) al inicio del archivo**: cada lib define su espacio de nombres `module :: pool` y en modo `--strict` las funciones multi-palabra se invocan siempre con espacios naturales.
-2. **Encadena tus tuberías de izquierda a derecha con `->`**: escribe `entrada paso uno -> paso dos -> resultado`, usa máscaras `(+ _ _ +)` para desestructurar secuencias y omite `_ =` en sentencias secuenciales (o descarta con `-> ()`).
-3. **Recursión de cola con TCO (*Tail-Call Optimization*)**: todos los recorridos internos de `pool` se compilan a bucles nativos en $O(1)$ espacio de pila.
-4. **Memoria determinista (`RMM1` / `RMM2`)**: cada estructura intermedia se libera en el instante exacto en que termina su última lectura, sin *Garbage Collector*.
+1. **Declara `import pool` (ou `import pool as alias`) ao inicio do ficheiro**: cada lib define o seu espazo de nomes `module :: pool` e en modo `--strict` as funcións multi-palabra invócanse sempre con espazos naturais.
+2. **Encadea as túas tubaxes de esquerda a dereita con `->`**: escribe `entrada paso un -> paso dous -> resultado`, usa máscaras `(+ _ _ +)` para desestruturar secuencias e omite `_ =` en sentenzas secuenciais (ou descarta con `-> ()`).
+3. **Recursión de cola con TCO (*Tail-Call Optimization*)**: todos os percorridos internos de `pool` compílanse a bucles nativos en espazo de pila $O(1)$.
+4. **Memoria determinista (`RMM1` / `RMM2`)**: cada estrutura intermedia libérase no instante exacto en que remata a súa última lectura, sen *Garbage Collector*.
 
 ---
 
-## 31.2. Artefactos nativos, importación y catálogo completo de la API de `pool`
+## 31.2. Artefactos nativos, importación e catálogo completo da API de `pool`
 
-En `ridgun-libs`, **`pool`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/pool.ridgun` (dominio `AGENT`). Al compilar con `stable bundle`, se empaqueta en un artefacto nativo:
+En `ridgun-libs`, **`pool`** é unha **lib** de primeira clase situada en `src/main/ridgun/lib/pool.ridgun` (dominio `AGENT`). Ao compilar con `stable bundle`, empaquétase nun formato nativo:
 
 | Artefacto | Ruta | Propósito |
 |---|---|---|
 | **Bundle Ridgun** | `target/bundles/pool.ridgunlib` | Distribución e importación directa con `import pool` |
 
-> Cada lib declara su propio espacio de nombres con `module :: pool`: basta con escribir `import pool` (o `import pool as alias`) en el encabezado y llamar a sus funciones con espacios naturales (`mi funcion x`) y tuberías `->` (`x mi funcion -> resultado`).
+> Cada lib declara o seu propio espazo de nomes con `module :: pool`: abonda con escribir `import pool` (ou `import pool as alias`) na cabeceira e chamar ás súas funcións con espazos naturais (`mina funcion x`) e tubaxes `->` (`x mina funcion -> resultado`).
 
-### 31.2.1. Resumen de familias funcionales de `pool`
+### 31.2.1. Resumo de familias funcionais de `pool`
 
-| Firma / Función / Tipo | Qué hace y cuándo usarla |
+| Sinatura / Función / Tipo | Que fai e cando usala |
 |---|---|
-| `Pool / pool size / pool agents` | Un `AgentPool` con un número fijo de agentes, su tamaño y sus agentes |
-| `pool ask shard` | Petición-respuesta con el agente elegido por clave: la misma clave llega siempre al mismo agente |
-| `pool broadcast` | Envía un mensaje a todos los agentes del pool |
-| `pool drain all / pool drain ready` | Recoge las respuestas que están listas, sin bloquear |
-| `pool shutdown` | Detiene todos los agentes del pool |
+| `Pool / pool size / pool agents` | Un `AgentPool` cun número fixo de axentes, o seu tamaño e os seus axentes |
+| `pool ask shard` | Petición-resposta co axente escollido por chave: a mesma chave chega sempre ao mesmo axente |
+| `pool broadcast` | Envía unha mensaxe a todos os axentes do pool |
+| `pool drain all / pool drain ready` | Recolle as respostas que están listas, sen bloquear |
+| `pool shutdown` | Detén todos os axentes do pool |
 
-### 31.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/pool.ridgun`
+### 31.2.2. Catálogo exhaustivo de tipos e sinaturas en `src/main/ridgun/lib/pool.ridgun`
 
-A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/pool.ridgun` (`1` tipos, `0` operadores y `15` funciones):
+A continuación tes o inventario completo de tipos alxébricos (`type`), operadores (`op ::`) e sinaturas de funcións (`fn ::`) definidos en `src/main/ridgun/lib/pool.ridgun` (`1` tipos, `0` operadores e `15` funcións):
 
-**Tipos algebraicos y registros (`type`) de `pool`:**
+**Tipos alxébricos e rexistros (`type`) de `pool`:**
 
 ```ridgun
 type AgentPool = Pool Int [Agent]
 ```
 
-| # | Función / Firma (`fn ::`) | Tipo de Retorno |
+| # | Función / Sinatura (`fn ::`) | Tipo de Retorno |
 |---|---|---|
 | `1` | `fn :: pool size AgentPool` | `Int` |
 | `2` | `fn :: pool agents AgentPool` | `[Agent]` |
@@ -69,13 +69,13 @@ type AgentPool = Pool Int [Agent]
 
 ---
 
-## 31.3. Explorando `pool` a fondo: Ejemplos paso a paso de cada funcionalidad
+## 31.3. Explorando `pool` a fondo: Exemplos paso a paso de cada funcionalidade
 
-No basta con ver la tabla de firmas: vamos a explorar **cada una de las funcionalidades** de la lib `pool` mediante ejemplos progresivos y ejecutables en Ridgun. Empezaremos por las dos recetas tabulares de uso cotidiano y después recorreremos en detalle todos los escenarios funcionales, transformaciones y casos límite verificados en `src/test/ridgun/test pool.ridgun`.
+Non abonda con ver a táboa de sinaturas: imos explorar **cada unha das funcionalidades** da lib `pool` mediante exemplos progresivos e executables en Ridgun. Comezaremos polas dúas receitas tabulares de uso cotián e despois percorreremos en detalle todos os escenarios funcionais, transformacións e casos límite verificados en `src/test/ridgun/test pool.ridgun`.
 
-### 31.3.1. Ejemplo 1: Flujo principal en estilo tabular con `pool`
+### 31.3.1. Exemplo 1: Fluxo principal en estilo tabular con `pool`
 
-Observa cómo en Ridgun los signos `=` y los pasos de transformación con `pool` quedan alineados como una tabla limpia, sin variables mutables innecesarias ni efectos laterales ocultos:
+Observa como en Ridgun os signos `=` e os pasos de transformación con `pool` quedan aliñados coma unha táboa limpa, sen variables mutables innecesarias nin efectos laterais ocultos:
 
 ```ridgun
 import pool
@@ -85,9 +85,9 @@ fn :: despachar a shard AgentPool Int String => String
         pool ask shard p hash_clave msg
 ```
 
-### 31.3.2. Ejemplo 2: Composición segura y manejo de casos de borde
+### 31.3.2. Exemplo 2: Composición segura e manexo de casos de bordo
 
-Toda función de la lib `pool` está diseñada para componerse con guardas booleanas `|` y con el resto de las 38 libs de `ridgun-libs`:
+Toda función da lib `pool` está deseñada para compoñerse con gardas booleanas `|` e co resto das 38 libs de `ridgun-libs`:
 
 ```ridgun
 import pool
@@ -98,9 +98,9 @@ fn :: difundir y cerrar AgentPool String => ()
         pool shutdown p
 ```
 
-### 31.3.3. Ejemplo 3: Combinadores de actores (`agent ask`, `agent try ask`, `agent send batch`, `agent map batch`, `agent drain ready`), pools particionados y reactor de conexiones
+### 31.3.3. Exemplo 3: Combinadores de actores (`agent ask`, `agent try ask`, `agent send batch`, `agent map batch`, `agent drain ready`), pools particionados e reactor de conexións
 
-En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `pool` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
+Neste exemplo práctico exploramos de forma exhaustiva como se comporta `pool` neste bloque funcional, incluíndo entradas estándar, combinacións de parámetros e valores fronteira:
 
 ```ridgun
 fn :: test spec combinators pool and net agent => ()
@@ -148,9 +148,9 @@ fn :: test spec combinators pool and net agent => ()
         assert false (is agent alive cc) "cc stopped on reactor shutdown"
 ```
 
-### 31.3.4. Ejemplo 4: Ciclo de vida de agentes (`is agent alive`, `agent status`, `stop agent`) y agente contador con estado aislado (`new counter agent`)
+### 31.3.4. Exemplo 4: Ciclo de vida de axentes (`is agent alive`, `agent status`, `stop agent`) e axente contador con estado illado (`new counter agent`)
 
-En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `pool` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
+Neste exemplo práctico exploramos de forma exhaustiva como se comporta `pool` neste bloque funcional, incluíndo entradas estándar, combinacións de parámetros e valores fronteira:
 
 ```ridgun
 fn :: test agent lifecycle and counter => ()
@@ -202,9 +202,9 @@ fn :: test agent lifecycle and counter => ()
         assert eq (is agent alive c2) False
 ```
 
-### 31.3.5. Ejemplo 5: Agente de bitácora *append-only* (`new log agent`) y almacén clave-valor en memoria por paso de mensajes (`new kv agent`)
+### 31.3.5. Exemplo 5: Axente de bitácora *append-only* (`new log agent`) e almacén clave-valor en memoria por paso de mensaxes (`new kv agent`)
 
-En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `pool` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
+Neste exemplo práctico exploramos de forma exhaustiva como se comporta `pool` neste bloque funcional, incluíndo entradas estándar, combinacións de parámetros e valores fronteira:
 
 ```ridgun
 fn :: test log and kv agents => ()
@@ -256,9 +256,9 @@ fn :: test log and kv agents => ()
         ()
 ```
 
-### 31.3.6. Ejemplo 6: Enrutamiento determinista por clave (`pool ask shard`), difusión masiva (`pool broadcast`), drenaje no bloqueante (`pool drain all`) y apagado (`pool shutdown`)
+### 31.3.6. Exemplo 6: Enrutamento determinista por clave (`pool ask shard`), difusión masiva (`pool broadcast`), drenaxe non bloqueante (`pool drain all`) e apagado (`pool shutdown`)
 
-En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `pool` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
+Neste exemplo práctico exploramos de forma exhaustiva como se comporta `pool` neste bloque funcional, incluíndo entradas estándar, combinacións de parámetros e valores fronteira:
 
 ```ridgun
 import agent
@@ -286,15 +286,48 @@ fn :: ejemplo pool completo => Int Int [Int]
         (sz, r_a + r_b, pend)
 ```
 
+### 31.3.7. Exemplo 7: Reparto por chave (`pool ask shard`): mesma chave, mesmo axente; chaves por quenda, axentes por quenda; difusión e parada
+
+Neste exemplo práctico exploramos de forma exhaustiva como se comporta `pool` neste bloque funcional, incluíndo entradas estándar, combinacións de parámetros e valores fronteira:
+
+```ridgun
+fn :: test pool routing by key => ()
+      test pool routing by key =
+        a0 = new counter agent 0
+        a1 = new counter agent 1000
+        a2 = new counter agent 2000
+        pl = Pool 3 [a0, a1, a2]
+        pool size pl -> assert int equals 3 "pool size 3"
+        agent list len (pool agents pl) 0 -> assert int equals 3 "pool agents holds the 3 agents"
+        pool ask shard pl 0 1 -> assert int equals 1 "key 0 -> agent 0"
+        pool ask shard pl 1 1 -> assert int equals 1001 "key 1 -> agent 1"
+        pool ask shard pl 2 1 -> assert int equals 2001 "key 2 -> agent 2"
+        pool ask shard pl 3 1 -> assert int equals 2 "key 3 -> agent 0 again: keys in turn visit the agents in turn"
+        pool ask shard pl 7 1 -> assert int equals 1002 "key 7 -> agent 1"
+        pool ask shard pl 7 1 -> assert int equals 1003 "the same key always reaches the same agent"
+        pool ask shard pl (0 - 2) 1 -> assert int equals 2002 "negative key -> agent abs(key) % size"
+        agent list len (pool drain all pl) 0 -> assert int equals 0 "pool drain all with nothing ready -> []"
+        pool broadcast pl 100
+        counter get a0 -> assert int equals 102 "broadcast reached agent 0"
+        counter get a1 -> assert int equals 1103 "broadcast reached agent 1"
+        counter get a2 -> assert int equals 2102 "broadcast reached agent 2"
+        one = Pool 1 [new counter agent 5]
+        pool ask shard one 12345 1 -> assert int equals 6 "a pool of one agent takes every key"
+        pool shutdown one
+        pool shutdown pl
+        is agent alive a0 -> assert false "pool shutdown stops agent 0"
+        is agent alive a2 -> assert false "pool shutdown stops agent 2"
+```
+
 ---
 
-## 31.4. Bajo el capó: cómo está construida `pool` en Ridgun puro (`src/main/ridgun/lib/pool.ridgun`)
+## 31.4. Baixo o capó: como está construída `pool` en Ridgun puro (`src/main/ridgun/lib/pool.ridgun`)
 
-Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**. Puedes abrir `src/main/ridgun/lib/pool.ridgun` y leer exactamente cómo está implementada cada operación usando *pattern matching*, árboles de guardas `|` / `|.` y recursión de cola (TCO). Veamos las piezas clave de su implementación real:
+Unha das maiores vantaxes de `ridgun-libs` é que **non hai caixas negras en C**. Podes abrir `src/main/ridgun/lib/pool.ridgun` e ler exactamente como está implementada cada operación usando *pattern matching*, árbores de gardas `|` / `|.` e recursión de cola (TCO). Vexamos as pezas clave da súa implementación real:
 
 ### 31.4.1. Implementación interna: Pool Size, Agent Selection, and Request-Reply by Key
 
-Fíjate en cómo `pool.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíxate en como `pool.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 module :: pool
@@ -327,7 +360,7 @@ fn :: pool ask shard AgentPool Int A => B
 
 ### 31.4.2. Implementación interna: Broadcast, Non-Blocking Drain, and Shutdown
 
-Fíjate en cómo `pool.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
+Fíxate en como `pool.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 -- Broadcast a message to every agent in the pool (e.g. configuration reload or tick)
@@ -378,21 +411,21 @@ fn :: pool shutdown AgentPool       => ()
 
 ---
 
-## 31.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` y las 5 Reglas de Oro de `pool`
+## 31.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` e as 5 Regras de Ouro de `pool`
 
-- **Garantía algorítmica y de seguridad**: El número de agentes se fija al construir el pool, por lo que la memoria del pool está acotada, y el enrutamiento por `abs(key) % size` es determinista: la misma clave llega siempre al mismo agente.
-- **Complejidad de pila $O(1)$ con TCO**: Todos los bucles recursivos en `src/main/ridgun/lib/pool.ridgun` están en posición de cola, por lo que `ridgunc` los compila a saltos nativos sin crecimiento de pila.
-- **Memoria determinista (`RMM1`/`RMM2`)**: Cero pausas de recolector de basura; todas las estructuras intermedias se liberan de forma determinista al salir del ámbito.
-- **Verificación continua**: Probada exhaustivamente con `stable check` y la suite automatizada `src/test/ridgun/test pool.ridgun`.
+- **Garantía algorítmica e de seguridade**: O número de axentes fíxase ao construír o pool, polo que a memoria do pool está acoutada, e o encamiñamento por `abs(key) % size` é determinista: a mesma chave chega sempre ao mesmo axente.
+- **Complexidade de pila $O(1)$ con TCO**: Todos os bucles recursivos en `src/main/ridgun/lib/pool.ridgun` están en posición de cola, polo que `ridgunc` os compila a saltos nativos sen crecemento de pila.
+- **Memoria determinista (`RMM1`/`RMM2`)**: Cero pausas de colector de lixo; todas as estruturas intermedias libéranse de forma determinista ao saír do ámbito.
+- **Verificación continua**: Probada exhaustivamente con `stable check` e a suite automatizada `src/test/ridgun/test pool.ridgun`.
 
-### Las 5 Reglas de Oro al programar con `pool`
+### As 5 Regras de Ouro ao programar con `pool`
 
-1. **Declara `import pool` al inicio del archivo** y llama a sus funciones con espacios, tal como están declaradas, para que tu código se lea como prosa.
-2. **Alinea tus tuberías de datos con `=`**: encadena las llamadas a `pool` en pasos con nombre propio y deja que `stable format` alinee las columnas.
-3. **Aprovecha las funciones totales de `pool` en tus guardas `|`**: comprueba los valores de retorno o desenvuelve los ADTs con *pattern matching* en lugar de asumir que la entrada externa siempre es válida.
-4. **Evita copiar grandes estructuras si solo necesitas consultar un campo**: recuerda que en `RMM2` los argumentos de entrada no incrementan ni decrementan contadores (`+0` / `-0`).
-5. **Combina `pool` con `test` (`import test`)**: escribe siempre aserciones con `assert equals` o `assert true` para fijar los invariantes de tu dominio.
+1. **Declara `import pool` ao inicio do ficheiro** e chama as súas funcións con espazos, tal como están declaradas, para que o teu código se lea coma prosa.
+2. **Aliña as túas tubaxes de datos con `=`**: encadea as chamadas a `pool` en pasos con nome propio e deixa que `stable format` aliñe as columnas.
+3. **Aproveita as funcións totais de `pool` nas túas gardas `|`**: comproba os valores de retorno ou desenvolve os ADTs con *pattern matching* en vez de asumir que a entrada externa sempre é válida.
+4. **Evita copiar grandes estruturas se só necesitas consultar un campo**: lembra que en `RMM2` os argumentos de entrada non incrementan nin decrementan contadores (`+0` / `-0`).
+5. **Combina `pool` con `test` (`import test`)**: escribe sempre asercións con `assert equals` ou `assert true` para fixar os invariantes do teu dominio.
 
 ---
 
-En el **Capítulo 32** pasaremos a explorar en profundidad la lib **`net_agent`** (La lib `net_agent` — Supervisor de Conexiones de Red y Puente de Eventos No Bloqueante).
+No **Capítulo 32** pasaremos a explorar en profundidade a lib **`net_agent`** (A lib `net_agent` — Un Axente por Conexión: Sondaxe Non Bloqueante e Varrido do Reactor).

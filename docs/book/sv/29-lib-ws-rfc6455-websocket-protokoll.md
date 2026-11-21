@@ -550,4 +550,4 @@ fn :: ws finish frame Bool Int Bool Tensor[U8] Int => WsRes
 
 ---
 
-I **Kapitel 30** går vi vidare och utforskar lib:en **`agent`** på djupet (Lib:en `agent` — Inbyggd Aktörskonkurrens (`agent`, `send`, `receive`), KV-lagring och Rate Limiter).
+I **Kapitel 30** går vi vidare och utforskar lib:en **`agent`** på djupet (Lib:en `agent` — Inbyggd Aktörskonkurrens (`agent`, `send`, `receive`), Fråga-svar-kombinatorer samt Räknar-, Logg- och Nyckel-värde-agenter).

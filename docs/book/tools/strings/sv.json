@@ -51,6 +51,8 @@
  "ex.mail.local": "En lokal SMTP-server: STARTTLS före AUTH, implicit TLS, avvisade mottagare och autentiseringsfel",
  "ex.mail.parse": "Tolkning av flerradiga SMTP-svar (`smtp parse response`)",
  "ex.mail.rejects": "Header-injektion och ogiltiga adresser avvisas vid rendering",
+ "ex.net_agent.datapath": "Datavägen över en riktig TCP-anslutning: `conn poll step`, agentens svar och `reactor sweep` vid stängning",
+ "ex.pool.routing": "Dirigering efter nyckel (`pool ask shard`): samma nyckel, samma agent; nycklar i tur och ordning, agenter i tur och ordning; utsändning och stopp",
  "ex.posix.bridge": "Kärnbryggan: avkodning av avslutningsstatus (`ProcExited`, `ProcSignal`), `AT_FDCWD` och inga literala systemanrop i lib:arna",
  "ex.posix.durable": "Varaktiga filoperationer: `posix fsync`, `posix fdatasync`, `posix ftruncate`, exklusiva lås och `posix pread`",
  "ex.posix.fork": "Processkontroll mot kärnan: `posix pipe`, `posix fork`, `posix dup2`, `posix execve` och `posix waitpid`",
@@ -138,10 +140,14 @@
  "fix.crypto.subtitle": "Hashar, HMAC, HKDF, PBKDF2, AEAD-chiffer, X25519, Ed25519, ECDSA, RSA och X.509",
  "fix.net_agent.desc": "Lib:en **`net_agent`** sluter cirkeln i `ridgun-libs` genom att förena **`posix`**, **`socket`** och **`agent`**: en `ConnSlot` parar ihop en anslutningsdeskriptor med den agent som håller dess tillstånd; `conn poll step` avfrågar deskriptorn utan att blockera, lämnar det som kommer in till agenten och skriver tillbaka dess svar; `reactor sweep` gör detta för en hel tabell med anslutningar och tar bort de stängda; och `reactor shutdown` stänger varje deskriptor och stoppar varje agent.",
  "fix.net_agent.guarantee": "En anslutning som stängs eller fallerar lämnar tabellen vid det svep som ser den, med deskriptorn stängd och agenten stoppad, och `reactor shutdown` gör detsamma för alla övriga, så ingen deskriptor och ingen agent läcker.",
+ "fix.net_agent.honest": "Låt oss vara ärliga: i en server är det enkelt att acceptera TCP-anslutningar; det svåra är att hålla varje anslutnings tillstånd åtskilt, läsa och skriva utan att blockera de andra, och stänga varje deskriptor och stoppa varje agent när en anslutning avslutas.",
  "fix.net_agent.subtitle": "En Agent per Anslutning: Icke-blockerande Avfrågning och Reaktorsvep",
  "fix.pool.desc": "Lib:en **`pool`** grupperar ett fast antal agenter i en `AgentPool`: `pool ask shard` skickar varje förfrågan till den agent som väljs av dess nyckel, så samma nyckel når alltid samma agent; `pool broadcast` skickar ett meddelande till varje agent; `pool drain all` samlar in, utan att blockera, de svar som är klara; och `pool shutdown` stoppar dem alla.",
  "fix.pool.guarantee": "Antalet agenter bestäms när poolen byggs, så poolens minne är begränsat, och dirigeringen med `abs(key) % size` är deterministisk: samma nyckel når alltid samma agent.",
+ "fix.pool.honest": "Låt oss vara ärliga: när alla förfrågningar för samma användare eller samma nyckel måste nå samma arbetare, och ett meddelande då och då måste nå alla, är det enformigt och lätt att göra fel att skriva den dirigeringen och det ordnade stoppet för hand i varje program.",
  "fix.pool.subtitle": "Agentpooler: Nyckelshardning, Utsändning och Icke-blockerande Tömning",
  "fix.tensor.desc": "Lib:en **`tensor`** kompletterar Ridguns inbyggda `Tensor[...]`-typ med de hjälpfunktioner som språket inte ger direkt: formfrågor (`tensor rows`, `tensor cols`, `tensor shape`), extraktion av en rad eller en kolumn (`tensor row`, `tensor col`), en explicit kopia (`tensor clone`), matrisprodukten (`tensor matmul`) och elementvisa operationer mellan två hela tensorer: XOR, AND, OR, addition, subtraktion och multiplikation.",
- "fix.tensor.subtitle": "Former, Rader och Kolumner, Matrisprodukt och Blockvisa Operationer"
+ "fix.tensor.subtitle": "Former, Rader och Kolumner, Matrisprodukt och Blockvisa Operationer",
+ "slug.net_agent": "en-agent-per-anslutning-och-reaktor",
+ "slug.pool": "agentpooler-och-nyckelshardning"
 }

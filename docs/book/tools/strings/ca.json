@@ -51,6 +51,8 @@
  "ex.mail.local": "Un servidor SMTP local: STARTTLS abans d'AUTH, TLS implícit, destinataris rebutjats i errors d'autenticació",
  "ex.mail.parse": "Anàlisi de respostes SMTP de diverses línies (`smtp parse response`)",
  "ex.mail.rejects": "Injecció de capçaleres i adreces invàlides rebutjades en renderitzar",
+ "ex.net_agent.datapath": "El camí de dades sobre una connexió TCP real: `conn poll step`, la resposta de l'agent i `reactor sweep` en tancar",
+ "ex.pool.routing": "Encaminament per clau (`pool ask shard`): mateixa clau, mateix agent; claus per torn, agents per torn; difusió i aturada",
  "ex.posix.bridge": "El pont amb el nucli: descodificació de l'estat de sortida (`ProcExited`, `ProcSignal`), `AT_FDCWD` i cap crida de sistema literal a les libs",
  "ex.posix.durable": "Operacions de fitxer duradores: `posix fsync`, `posix fdatasync`, `posix ftruncate`, bloquejos exclusius i `posix pread`",
  "ex.posix.fork": "Control de processos sobre el nucli: `posix pipe`, `posix fork`, `posix dup2`, `posix execve` i `posix waitpid`",
@@ -138,10 +140,14 @@
  "fix.crypto.subtitle": "Hashes, HMAC, HKDF, PBKDF2, Xifratges AEAD, X25519, Ed25519, ECDSA, RSA i X.509",
  "fix.net_agent.desc": "La lib **`net_agent`** tanca el cercle de `ridgun-libs` unint **`posix`**, **`socket`** i **`agent`**: un `ConnSlot` aparella un descriptor de connexió amb l'agent que en manté l'estat; `conn poll step` sondeja el descriptor sense bloquejar, passa a l'agent el que arriba i n'escriu la resposta de tornada; `reactor sweep` fa això per a tota una taula de connexions i en descarta les tancades; i `reactor shutdown` tanca tots els descriptors i atura tots els agents.",
  "fix.net_agent.guarantee": "Una connexió que es tanca o que falla surt de la taula en l'escombrat que la veu, amb el descriptor tancat i l'agent aturat, i `reactor shutdown` fa el mateix amb tota la resta, de manera que no hi ha fuites de cap descriptor ni de cap agent.",
+ "fix.net_agent.honest": "Siguem sincers: en un servidor, acceptar connexions TCP és la part fàcil; el difícil és mantenir separat l'estat de cada connexió, llegir i escriure sense bloquejar les altres, i tancar cada descriptor i aturar cada agent quan una connexió s'acaba.",
  "fix.net_agent.subtitle": "Un Agent per Connexió: Sondeig No Bloquejant i Escombrat del Reactor",
  "fix.pool.desc": "La lib **`pool`** agrupa un nombre fix d'agents en un `AgentPool`: `pool ask shard` envia cada petició a l'agent triat per la seva clau, de manera que la mateixa clau arriba sempre al mateix agent; `pool broadcast` envia un missatge a tots els agents; `pool drain all` recull, sense bloquejar, les respostes que estan llestes; i `pool shutdown` els atura tots.",
  "fix.pool.guarantee": "El nombre d'agents queda fixat quan es construeix el pool, de manera que la memòria del pool està acotada, i l'encaminament per `abs(key) % size` és determinista: la mateixa clau arriba sempre al mateix agent.",
+ "fix.pool.honest": "Siguem sincers: quan totes les peticions d'un mateix usuari o d'una mateixa clau han d'arribar al mateix treballador, i de tant en tant un missatge ha d'arribar a tots, escriure a mà aquest encaminament i l'aturada ordenada a cada programa és repetitiu i fàcil de fer malament.",
  "fix.pool.subtitle": "Pools d'Agents: Partició per Clau, Difusió i Drenatge No Bloquejant",
  "fix.tensor.desc": "La lib **`tensor`** afegeix, al tipus natiu `Tensor[...]` de Ridgun, les funcions auxiliars que el llenguatge no dona directament: consultes de forma (`tensor rows`, `tensor cols`, `tensor shape`), extracció d'una fila o d'una columna (`tensor row`, `tensor col`), una còpia explícita (`tensor clone`), el producte matricial (`tensor matmul`) i operacions element a element entre dos tensors sencers: XOR, AND, OR, suma, resta i multiplicació.",
- "fix.tensor.subtitle": "Formes, Files i Columnes, Producte Matricial i Operacions per Blocs"
+ "fix.tensor.subtitle": "Formes, Files i Columnes, Producte Matricial i Operacions per Blocs",
+ "slug.net_agent": "un-agent-per-connexio-i-reactor",
+ "slug.pool": "pools-agents-i-particio-per-clau"
 }

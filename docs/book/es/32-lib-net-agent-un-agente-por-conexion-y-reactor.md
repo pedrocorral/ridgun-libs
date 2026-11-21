@@ -1,55 +1,55 @@
-# Kapitel 32: Lib:en `net_agent` — En Agent per Anslutning: Icke-blockerande Avfrågning och Reaktorsvep
+# Capítulo 32: La lib `net_agent` — Un Agente por Conexión: Sondeo No Bloqueante y Barrido del Reactor
 
-## 32.1. Varför finns lib:en `net_agent`? (Det verkliga problemet och Ridguns filosofi)
+## 32.1. ¿Por qué existe la lib `net_agent`? (El problema real y la filosofía Ridgun)
 
-> *”Varför behöver jag en `net_agent`-lib skriven från grunden i ren Ridgun i stället för att bara länka in ett gammalt C-bibliotek?”*
+> *«¿Por qué necesito una lib `net_agent` escrita desde cero en Ridgun puro en lugar de enlazar una librería de C de toda la vida?»*
 
-Det är den första fråga varje systemingenjör ställer sig när man möter `net_agent`. Och svaret sammanfattar hela filosofin bakom `ridgun-libs`:
+Esa es la primera pregunta que se hace cualquier ingeniero de sistemas al llegar a `net_agent`. Y la respuesta resume toda la filosofía de `ridgun-libs`:
 
-Låt oss vara ärliga: i en riktig server som **Solstice** är det enkelt att acceptera TCP-anslutningar; det svåra är att begränsa max antal samtidiga klienter, rensa bort inaktiva zombie-anslutningar (*idle timeout*) och koppla ihop `ppoll`-loopen med dina aktörer utan att läcka fildeskriptorer.
+Seamos sinceros: en un servidor, aceptar conexiones TCP es la parte fácil; lo difícil es mantener separado el estado de cada conexión, leer y escribir sin bloquear a las demás, y cerrar cada descriptor y parar cada agente cuando una conexión termina.
 
-Lib:en **`net_agent`** sluter cirkeln i `ridgun-libs` genom att förena **`posix`**, **`socket`** och **`agent`**: en `ConnSlot` parar ihop en anslutningsdeskriptor med den agent som håller dess tillstånd; `conn poll step` avfrågar deskriptorn utan att blockera, lämnar det som kommer in till agenten och skriver tillbaka dess svar; `reactor sweep` gör detta för en hel tabell med anslutningar och tar bort de stängda; och `reactor shutdown` stänger varje deskriptor och stoppar varje agent.
+La lib **`net_agent`** cierra el círculo de `ridgun-libs` uniendo **`posix`**, **`socket`** y **`agent`**: un `ConnSlot` empareja un descriptor de conexión con el agente que guarda su estado; `conn poll step` sondea el descriptor sin bloquear, pasa lo que llega al agente y escribe de vuelta su respuesta; `reactor sweep` hace eso para toda una tabla de conexiones y descarta las cerradas; y `reactor shutdown` cierra todos los descriptores y detiene todos los agentes.
 
-I ett traditionellt ekosystem innebär uppgifter inom domänen **`AGENT`** ofta att man drar in externa C-beroenden, brottas med råa pekare, ogenomskinliga typkonverteringar, okontrollerade undantag eller oförutsägbara skräpsamlarpauser. I Ridgun löser lib:en **`net_agent`** (`src/main/ridgun/lib/net_agent.ridgun`) problemet genom fyra kompromisslösa principer:
+En un ecosistema tradicional, resolver las tareas del dominio **`AGENT`** implica arrastrar dependencias externas en C, lidiar con punteros crudos, conversiones opacas de tipos, excepciones no verificadas o pausas impredecibles del recolector de basura. En Ridgun, la lib **`net_agent`** (`src/main/ridgun/lib/net_agent.ridgun`) aborda el problema con cuatro principios innegociables:
 
-1. **Deklarera `import net_agent` (eller `import net_agent as alias`) överst i filen**: varje lib definierar sin `module :: net agent`-namnrymd och i `--strict`-läge anropas flerordsfunktioner alltid med naturliga mellanslag.
-2. **Kedja dina datapipelines från vänster till höger med `->`**: skriv `indata steg ett -> steg två -> resultat`, använd `(+ _ _ +)`-sekvensmasker för att packa upp tupler och utelämna `_ =` vid sekventiella satser (eller kasta med `-> ()`).
-3. **Svansrekursion med TCO (*Tail-Call Optimization*)**: alla interna genomlöpningar i `net_agent` kompileras till inbyggda hårdvaruloopar med $O(1)$ stackutrymme.
-4. **Deterministiskt minne (`RMM1` / `RMM2`)**: varje mellanliggande struktur frigörs i exakt det ögonblick dess sista läsning avslutas, helt utan *Garbage Collector*.
+1. **Declara `import net_agent` (o `import net_agent as alias`) al inicio del archivo**: cada lib define su espacio de nombres `module :: net agent` y en modo `--strict` las funciones multi-palabra se invocan siempre con espacios naturales.
+2. **Encadena tus tuberías de izquierda a derecha con `->`**: escribe `entrada paso uno -> paso dos -> resultado`, usa máscaras `(+ _ _ +)` para desestructurar secuencias y omite `_ =` en sentencias secuenciales (o descarta con `-> ()`).
+3. **Recursión de cola con TCO (*Tail-Call Optimization*)**: todos los recorridos internos de `net_agent` se compilan a bucles nativos en $O(1)$ espacio de pila.
+4. **Memoria determinista (`RMM1` / `RMM2`)**: cada estructura intermedia se libera en el instante exacto en que termina su última lectura, sin *Garbage Collector*.
 
 ---
 
-## 32.2. Inbyggda artefakter, import och komplett API-katalog för `net_agent`
+## 32.2. Artefactos nativos, importación y catálogo completo de la API de `net_agent`
 
-I `ridgun-libs` är **`net_agent`** en förstklassig **lib** placerad i `src/main/ridgun/lib/net_agent.ridgun` (domän `AGENT`). När du bygger med `stable bundle` paketeras den i ett inbyggt format:
+En `ridgun-libs`, **`net_agent`** es una **lib** de primera clase ubicada en `src/main/ridgun/lib/net_agent.ridgun` (dominio `AGENT`). Al compilar con `stable bundle`, se empaqueta en un artefacto nativo:
 
-| Artefakt | Sökväg | Syfte |
+| Artefacto | Ruta | Propósito |
 |---|---|---|
-| **Ridgun-bundle** | `target/bundles/net_agent.ridgunlib` | Portabel distribution och direkt import med `import net_agent` |
+| **Bundle Ridgun** | `target/bundles/net_agent.ridgunlib` | Distribución e importación directa con `import net_agent` |
 
-> Varje lib deklarerar sin egen namnrymd med `module :: net agent`: skriv bara `import net_agent` (eller `import net_agent as alias`) överst och anropa dess funktioner med naturliga mellanslag (`min funktion x`) och `->`-pipelines (`x min funktion -> resultat`).
+> Cada lib declara su propio espacio de nombres con `module :: net agent`: basta con escribir `import net_agent` (o `import net_agent as alias`) en el encabezado y llamar a sus funciones con espacios naturales (`mi funcion x`) y tuberías `->` (`x mi funcion -> resultado`).
 
-### 32.2.1. Översikt över funktionella familjer i `net_agent`
+### 32.2.1. Resumen de familias funcionales de `net_agent`
 
-| Signatur / Funktion / Typ | Vad den gör och när den används |
+| Firma / Función / Tipo | Qué hace y cuándo usarla |
 |---|---|
-| `ConnSlot / StepOutcome` | En anslutningsdeskriptor med sin agent, och resultatet av ett steg: `ConnKeep` eller `ConnClosed` |
-| `conn poll step` | Avfrågar en anslutning utan att blockera, lämnar det som kommer in till dess agent och skickar svaret |
-| `reactor sweep` | Ett steg över varje anslutning i en tabell; de stängda lämnar den |
-| `reactor shutdown` | Stänger varje deskriptor och stoppar varje agent |
+| `ConnSlot / StepOutcome` | Un descriptor de conexión con su agente, y el resultado de un paso: `ConnKeep` o `ConnClosed` |
+| `conn poll step` | Sondea una conexión sin bloquear, pasa lo que llega a su agente y envía la respuesta |
+| `reactor sweep` | Un paso sobre todas las conexiones de una tabla; las cerradas salen de ella |
+| `reactor shutdown` | Cierra todos los descriptores y detiene todos los agentes |
 
-### 32.2.2. Komplett katalog över typer och signaturer i `src/main/ridgun/lib/net_agent.ridgun`
+### 32.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/net_agent.ridgun`
 
-Nedan följer hela förteckningen över algebraiska datatyper (`type`), mixfix-operatorer (`op ::`) och funktionssignaturer (`fn ::`) som definieras i `src/main/ridgun/lib/net_agent.ridgun` (`2` typer, `0` operatorer och `8` funktioner):
+A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/net_agent.ridgun` (`2` tipos, `0` operadores y `8` funciones):
 
-**Algebraiska datatyper och poster (`type`) i `net_agent`:**
+**Tipos algebraicos y registros (`type`) de `net_agent`:**
 
 ```ridgun
 type ConnSlot = ConnSlot Int Agent
 type StepOutcome = ConnKeep ConnSlot String | ConnClosed
 ```
 
-| # | Funktion / Signatur (`fn ::`) | Returtyp |
+| # | Función / Firma (`fn ::`) | Tipo de Retorno |
 |---|---|---|
 | `1` | `fn :: conn poll step ConnSlot` | `StepOutcome` |
 | `2` | `fn :: conn handle event Int Agent Int` | `StepOutcome` |
@@ -62,13 +62,13 @@ type StepOutcome = ConnKeep ConnSlot String | ConnClosed
 
 ---
 
-## 32.3. Djupdykning i `net_agent`: Steg-för-steg-exempel för varje funktion
+## 32.3. Explorando `net_agent` a fondo: Ejemplos paso a paso de cada funcionalidad
 
-Det räcker inte med en signaturtabell: låt oss utforska **varje funktionalitet** i lib:en `net_agent` genom progressiva, körbara Ridgun-exempel. Vi börjar med två tabellbaserade vardagsrecept och går därefter igenom alla funktionella scenarier, transformationer och gränsfall som verifieras i `src/test/ridgun/test net_agent.ridgun`.
+No basta con ver la tabla de firmas: vamos a explorar **cada una de las funcionalidades** de la lib `net_agent` mediante ejemplos progresivos y ejecutables en Ridgun. Empezaremos por las dos recetas tabulares de uso cotidiano y después recorreremos en detalle todos los escenarios funcionales, transformaciones y casos límite verificados en `src/test/ridgun/test net_agent.ridgun`.
 
-### 32.3.1. Exempel 1: Huvudflöde i tabellform med `net_agent`
+### 32.3.1. Ejemplo 1: Flujo principal en estilo tabular con `net_agent`
 
-Lägg märke till hur `=`-tecknen och transformationsstegen med `net_agent` linjeras som en ren tabell utan onödiga muterbara variabler eller dolda sidoeffekter:
+Observa cómo en Ridgun los signos `=` y los pasos de transformación con `net_agent` quedan alineados como una tabla limpia, sin variables mutables innecesarias ni efectos laterales ocultos:
 
 ```ridgun
 import net_agent
@@ -78,9 +78,9 @@ fn :: barrer conexiones activas [ConnSlot] => [ConnSlot]
         tabla reactor sweep
 ```
 
-### 32.3.2. Exempel 2: Säker komposition och hantering av gränsfall
+### 32.3.2. Ejemplo 2: Composición segura y manejo de casos de borde
 
-Varje funktion i lib:en `net_agent` är utformad för att kombineras sömlöst med booleska vakter `|` och med övriga 38 libs i `ridgun-libs`:
+Toda función de la lib `net_agent` está diseñada para componerse con guardas booleanas `|` y con el resto de las 38 libs de `ridgun-libs`:
 
 ```ridgun
 import net_agent
@@ -90,9 +90,9 @@ fn :: apagar reactor [ConnSlot] => ()
         tabla reactor shutdown
 ```
 
-### 32.3.3. Exempel 3: Aktörskombinatorer (`agent ask`, `agent try ask`, `agent send batch`, `agent map batch`, `agent drain ready`), shardade pooler och anslutningsreaktor
+### 32.3.3. Ejemplo 3: Combinadores de actores (`agent ask`, `agent try ask`, `agent send batch`, `agent map batch`, `agent drain ready`), pools particionados y reactor de conexiones
 
-I detta praktiska exempel undersöker vi grundligt hur `net_agent` beter sig inom detta funktionsområde, inklusive standardindata, parameterkombinationer och gränsvärden:
+En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `net_agent` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
 
 ```ridgun
 fn :: test spec combinators pool and net agent => ()
@@ -140,9 +140,9 @@ fn :: test spec combinators pool and net agent => ()
         assert false (is agent alive cc) "cc stopped on reactor shutdown"
 ```
 
-### 32.3.4. Exempel 4: Agentlivscykel (`is agent alive`, `agent status`, `stop agent`) och isolerad tillståndsfull räknaragent (`new counter agent`)
+### 32.3.4. Ejemplo 4: Ciclo de vida de agentes (`is agent alive`, `agent status`, `stop agent`) y agente contador con estado aislado (`new counter agent`)
 
-I detta praktiska exempel undersöker vi grundligt hur `net_agent` beter sig inom detta funktionsområde, inklusive standardindata, parameterkombinationer och gränsvärden:
+En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `net_agent` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
 
 ```ridgun
 fn :: test agent lifecycle and counter => ()
@@ -194,9 +194,9 @@ fn :: test agent lifecycle and counter => ()
         assert eq (is agent alive c2) False
 ```
 
-### 32.3.5. Exempel 5: Append-only-loggagent (`new log agent`) och meddelandebaserad nyckel-värde-lagring i minnet (`new kv agent`)
+### 32.3.5. Ejemplo 5: Agente de bitácora *append-only* (`new log agent`) y almacén clave-valor en memoria por paso de mensajes (`new kv agent`)
 
-I detta praktiska exempel undersöker vi grundligt hur `net_agent` beter sig inom detta funktionsområde, inklusive standardindata, parameterkombinationer och gränsvärden:
+En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `net_agent` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
 
 ```ridgun
 fn :: test log and kv agents => ()
@@ -248,9 +248,9 @@ fn :: test log and kv agents => ()
         ()
 ```
 
-### 32.3.6. Exempel 6: Icke-blockerande deskriptoravfrågning (`conn poll step`), svepning av anslutningstabell (`reactor sweep`) och kontrollerad nedstängning (`reactor shutdown`)
+### 32.3.6. Ejemplo 6: Sondeo no bloqueante de descriptores (`conn poll step`), barrido de tabla de conexiones (`reactor sweep`) y apagado limpio (`reactor shutdown`)
 
-I detta praktiska exempel undersöker vi grundligt hur `net_agent` beter sig inom detta funktionsområde, inklusive standardindata, parameterkombinationer och gränsvärden:
+En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `net_agent` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
 
 ```ridgun
 import agent
@@ -273,15 +273,58 @@ fn :: ejemplo reactor conexiones Int Int => [ConnSlot]
         []
 ```
 
+### 32.3.7. Ejemplo 7: El camino de datos sobre una conexión TCP real: `conn poll step`, la respuesta del agente y `reactor sweep` al cerrar
+
+En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `net_agent` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
+
+```ridgun
+fn :: test net agent data path => ()
+      test net agent data path =
+        l_res = sys tcp listen "127.0.0.1" 0 16
+        sock rc l_res -> assert int equals 0 "listen on an ephemeral port"
+        lfd   = sock fd l_res
+        c_res = sys tcp connect "127.0.0.1" (sys local port lfd) 500
+        sock rc c_res -> assert int equals 0 "client connects"
+        cfd   = sock fd c_res
+        a_res = sys accept lfd 500
+        sock accept rc a_res -> assert int equals 0 "server accepts"
+        sfd   = sock accept fd a_res
+        ag    = agent (ag echo conn step) (CounterState 0)
+        slot  = ConnSlot sfd ag
+
+        outcome text (conn poll step slot) -> assert str eq "keep:" "no data: the slot is kept and nothing is written"
+        sock recv rc (sys recv cfd 16 20) -> assert int equals (0 - 2) "no data: the client receives nothing"
+
+        s1 = sys send cfd "ping" 500
+        sock rc s1 -> assert int equals 0 "client sends ping"
+        step until reply slot cfd 50 -> assert str eq "keep:echo:1:ping" "the data reaches the agent and its reply is written"
+        sock recv data (sys recv cfd 64 500) -> assert str eq "echo:1:ping" "the client reads the reply"
+
+        s2 = sys send cfd "pong" 500
+        sock rc s2 -> assert int equals 0 "client sends pong"
+        step until reply slot cfd 50 -> assert str eq "keep:echo:2:pong" "the agent keeps the state of its connection"
+        sock recv data (sys recv cfd 64 500) -> assert str eq "echo:2:pong" "the client reads the second reply"
+
+        agent list len (reactor sweep [slot]) 0 -> assert int equals 1 "reactor sweep keeps a live connection"
+        is agent alive ag -> assert true "the agent of a live connection is running"
+
+        sys close cfd
+        sys poll sfd 1 500 -> closed_ev
+        agent list len (reactor sweep [slot]) 0 -> assert int equals 0 "reactor sweep drops a connection closed by the peer"
+        is agent alive ag -> assert false "the agent stops when its connection closes"
+        sys close lfd
+        ()
+```
+
 ---
 
-## 32.4. Under huven: hur `net_agent` är byggd i ren Ridgun (`src/main/ridgun/lib/net_agent.ridgun`)
+## 32.4. Bajo el capó: cómo está construida `net_agent` en Ridgun puro (`src/main/ridgun/lib/net_agent.ridgun`)
 
-En av de största fördelarna med `ridgun-libs` är att **det inte finns några svarta lådor i C**. Du kan öppna `src/main/ridgun/lib/net_agent.ridgun` och läsa exakt hur varje operation är implementerad med mönstermatchning, `|` / `|.`-vaktträd och svansrekursion (TCO). Låt oss titta på nyckeldelarna i den faktiska implementationen:
+Una de las mayores ventajas de `ridgun-libs` es que **no hay cajas negras en C**. Puedes abrir `src/main/ridgun/lib/net_agent.ridgun` y leer exactamente cómo está implementada cada operación usando *pattern matching*, árboles de guardas `|` / `|.` y recursión de cola (TCO). Veamos las piezas clave de su implementación real:
 
-### 32.4.1. Intern implementation: One Step of a Connection: Poll, Pass to the Agent, Write the Reply
+### 32.4.1. Implementación interna: One Step of a Connection: Poll, Pass to the Agent, Write the Reply
 
-Se hur `net_agent.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Fíjate en cómo `net_agent.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 module :: net_agent
@@ -337,9 +380,9 @@ fn :: conn drain outbound Int Agent Option => StepOutcome
         ConnKeep (ConnSlot fd ag) s
 ```
 
-### 32.4.2. Intern implementation: Reactor Sweep and Shutdown
+### 32.4.2. Implementación interna: Reactor Sweep and Shutdown
 
-Se hur `net_agent.ridgun` deklarerar explicita `fn :: ... => ...`-kontrakt först och löser varje fall genom linjerade ekvationer och svansanrop:
+Fíjate en cómo `net_agent.ridgun` estructura las firmas `fn :: ... => ...` primero y resuelve cada caso mediante ecuaciones alineadas y llamadas de cola:
 
 ```ridgun
 -- Sweep an entire connection table, pruning closed connections and keeping active ones
@@ -365,21 +408,21 @@ fn :: reactor shutdown [ConnSlot] => ()
 
 ---
 
-## 32.5. Algoritmiska garantier, `RMM1`/`RMM2`-minne och de 5 Gyllene Reglerna för `net_agent`
+## 32.5. Garantías algorítmicas, memoria `RMM1`/`RMM2` y las 5 Reglas de Oro de `net_agent`
 
-- **Algoritmisk garanti och säkerhet**: En anslutning som stängs eller fallerar lämnar tabellen vid det svep som ser den, med deskriptorn stängd och agenten stoppad, och `reactor shutdown` gör detsamma för alla övriga, så ingen deskriptor och ingen agent läcker.
-- **$O(1)$ stackkomplexitet med TCO**: Alla rekursiva loopar i `src/main/ridgun/lib/net_agent.ridgun` ligger i svansposition, så `ridgunc` kompilerar dem till inbyggda hopp utan stacktillväxt.
-- **Deterministiskt minne (`RMM1`/`RMM2`)**: Noll skräpsamlarpauser; alla temporära strukturer frigörs deterministiskt när räckvidden lämnas.
-- **Kontinuerlig verifiering**: Statiskt kontrollerad med `stable check` och verifierad av den automatiserade testsviten `src/test/ridgun/test net_agent.ridgun`.
+- **Garantía algorítmica y de seguridad**: Una conexión que se cierra o que falla sale de la tabla en el barrido que la ve, con su descriptor cerrado y su agente detenido, y `reactor shutdown` hace lo mismo con todas las demás, de modo que no se fuga ningún descriptor ni ningún agente.
+- **Complejidad de pila $O(1)$ con TCO**: Todos los bucles recursivos en `src/main/ridgun/lib/net_agent.ridgun` están en posición de cola, por lo que `ridgunc` los compila a saltos nativos sin crecimiento de pila.
+- **Memoria determinista (`RMM1`/`RMM2`)**: Cero pausas de recolector de basura; todas las estructuras intermedias se liberan de forma determinista al salir del ámbito.
+- **Verificación continua**: Probada exhaustivamente con `stable check` y la suite automatizada `src/test/ridgun/test net_agent.ridgun`.
 
-### De 5 Gyllene Reglerna när du programmerar med `net_agent`
+### Las 5 Reglas de Oro al programar con `net_agent`
 
-1. **Deklarera `import net_agent` överst i filen** och anropa dess funktioner med mellanslag, precis som de är deklarerade, så att koden läses som naturlig prosa.
-2. **Linjera dina datapipelines med `=`**: kedja samman `net_agent`-anrop i namngivna mellansteg och låt `stable format` linjera kolumnerna.
-3. **Utnyttja `net_agent`:s totala funktioner i dina `|`-vakter**: kontrollera returvärden eller packa upp ADT:er med mönstermatchning i stället för att anta att extern indata alltid är giltig.
-4. **Undvik att kopiera stora strukturer när du bara läser ett fält**: kom ihåg att i `RMM2` medför inargument noll referensräkningskostnad (`+0` / `-0`).
-5. **Kombinera `net_agent` med `test` (`import test`)**: lås alltid fast dina domäninvarianter med `assert equals` eller `assert true`.
+1. **Declara `import net_agent` al inicio del archivo** y llama a sus funciones con espacios, tal como están declaradas, para que tu código se lea como prosa.
+2. **Alinea tus tuberías de datos con `=`**: encadena las llamadas a `net_agent` en pasos con nombre propio y deja que `stable format` alinee las columnas.
+3. **Aprovecha las funciones totales de `net_agent` en tus guardas `|`**: comprueba los valores de retorno o desenvuelve los ADTs con *pattern matching* en lugar de asumir que la entrada externa siempre es válida.
+4. **Evita copiar grandes estructuras si solo necesitas consultar un campo**: recuerda que en `RMM2` los argumentos de entrada no incrementan ni decrementan contadores (`+0` / `-0`).
+5. **Combina `net_agent` con `test` (`import test`)**: escribe siempre aserciones con `assert equals` o `assert true` para fijar los invariantes de tu dominio.
 
 ---
 
-Du har nu genomfört hela djupdykningen genom alla **32 standard-libs i `ridgun-libs`**! Nu har du alla byggstenar som krävs för att bygga kompletta applikationer och systemverktyg i ren Ridgun.
+En el **Capítulo 33** pasaremos a explorar en profundidad la lib **`ai`** (La lib `ai` — Agentes de IA, Tool Calling, Streaming SSE, ReAct Acotado, Guardarraíles, Mini-RAG y MCP).

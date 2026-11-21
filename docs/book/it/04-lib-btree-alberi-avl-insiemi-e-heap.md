@@ -583,4 +583,4 @@ fn :: heap size MinHeap => Int
 
 ---
 
-Nel **Capitolo 05** passeremo a esplorare in profondità la lib **`tensor`** (La lib `tensor` — Tensori Multidimensionali, Viste e Contrazione di Einstein).
+Nel **Capitolo 05** passeremo a esplorare in profondità la lib **`tensor`** (La lib `tensor` — Forme, Righe e Colonne, Prodotto di Matrici e Operazioni a Blocchi).

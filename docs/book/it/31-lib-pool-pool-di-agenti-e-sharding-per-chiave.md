@@ -6,7 +6,7 @@
 
 Questa è la prima domanda che si pone qualsiasi ingegnere di sistema arrivando a `pool`. E la risposta riassume l'intera filosofia di `ridgun-libs`:
 
-Siamo sinceri: avviare un nuovo thread o attore per ogni richiesta in ingresso senza un limite superiore (`unbounded spawning`) fa sì che un picco di traffico esaurisca la memoria in pochi secondi (*Out Of Memory*).
+Siamo sinceri: quando tutte le richieste dello stesso utente o della stessa chiave devono arrivare allo stesso worker, e ogni tanto un messaggio deve arrivare a tutti, scrivere a mano quell'instradamento e l'arresto ordinato in ogni programma è ripetitivo e facile da sbagliare.
 
 La lib **`pool`** raggruppa un numero fisso di agenti in un `AgentPool`: `pool ask shard` invia ogni richiesta all'agente scelto in base alla sua chiave, così la stessa chiave raggiunge sempre lo stesso agente; `pool broadcast` invia un messaggio a ogni agente; `pool drain all` raccoglie, senza bloccarsi, le risposte che sono pronte; e `pool shutdown` li arresta tutti.
 
@@ -286,6 +286,39 @@ fn :: ejemplo pool completo => Int Int [Int]
         (sz, r_a + r_b, pend)
 ```
 
+### 31.3.7. Esempio 7: Instradamento per chiave (`pool ask shard`): stessa chiave, stesso agente; chiavi a turno, agenti a turno; broadcast e arresto
+
+In questo esempio pratico esploriamo in modo esaustivo come si comporta `pool` in questo blocco funzionale, inclusi input standard, combinazioni di parametri e valori di frontiera:
+
+```ridgun
+fn :: test pool routing by key => ()
+      test pool routing by key =
+        a0 = new counter agent 0
+        a1 = new counter agent 1000
+        a2 = new counter agent 2000
+        pl = Pool 3 [a0, a1, a2]
+        pool size pl -> assert int equals 3 "pool size 3"
+        agent list len (pool agents pl) 0 -> assert int equals 3 "pool agents holds the 3 agents"
+        pool ask shard pl 0 1 -> assert int equals 1 "key 0 -> agent 0"
+        pool ask shard pl 1 1 -> assert int equals 1001 "key 1 -> agent 1"
+        pool ask shard pl 2 1 -> assert int equals 2001 "key 2 -> agent 2"
+        pool ask shard pl 3 1 -> assert int equals 2 "key 3 -> agent 0 again: keys in turn visit the agents in turn"
+        pool ask shard pl 7 1 -> assert int equals 1002 "key 7 -> agent 1"
+        pool ask shard pl 7 1 -> assert int equals 1003 "the same key always reaches the same agent"
+        pool ask shard pl (0 - 2) 1 -> assert int equals 2002 "negative key -> agent abs(key) % size"
+        agent list len (pool drain all pl) 0 -> assert int equals 0 "pool drain all with nothing ready -> []"
+        pool broadcast pl 100
+        counter get a0 -> assert int equals 102 "broadcast reached agent 0"
+        counter get a1 -> assert int equals 1103 "broadcast reached agent 1"
+        counter get a2 -> assert int equals 2102 "broadcast reached agent 2"
+        one = Pool 1 [new counter agent 5]
+        pool ask shard one 12345 1 -> assert int equals 6 "a pool of one agent takes every key"
+        pool shutdown one
+        pool shutdown pl
+        is agent alive a0 -> assert false "pool shutdown stops agent 0"
+        is agent alive a2 -> assert false "pool shutdown stops agent 2"
+```
+
 ---
 
 ## 31.4. Sotto il cofano: come è costruita `pool` in Ridgun puro (`src/main/ridgun/lib/pool.ridgun`)
@@ -395,4 +428,4 @@ fn :: pool shutdown AgentPool       => ()
 
 ---
 
-Nel **Capitolo 32** passeremo a esplorare in profondità la lib **`net_agent`** (La lib `net_agent` — Supervisore di Connessioni di Rete e Ponte di Eventi Non Bloccante).
+Nel **Capitolo 32** passeremo a esplorare in profondità la lib **`net_agent`** (La lib `net_agent` — Un Agente per Connessione: Polling Non Bloccante e Passata del Reactor).

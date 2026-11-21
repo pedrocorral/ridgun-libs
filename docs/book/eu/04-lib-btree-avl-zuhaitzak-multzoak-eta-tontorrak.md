@@ -583,4 +583,4 @@ fn :: heap size MinHeap => Int
 
 ---
 
-**05. kapituluan** **`tensor`** lib-a sakonki esploratuko dugu (`tensor` lib-a — Dimentsio Anitzeko Tentsoreak, Bistak eta Einsteinen Uzkurdura).
+**05. kapituluan** **`tensor`** lib-a sakonki esploratuko dugu (`tensor` lib-a — Formak, Errenkadak eta Zutabeak, Matrize-biderketa eta Blokekako Eragiketak).

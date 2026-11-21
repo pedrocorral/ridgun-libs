@@ -583,4 +583,4 @@ fn :: heap size MinHeap => Int
 
 ---
 
-I **Kapitel 05** går vi vidare och utforskar lib:en **`tensor`** på djupet (Lib:en `tensor` — Flerdimensionella Tensorer, Vyer och Einsteinkontraktion).
+I **Kapitel 05** går vi vidare och utforskar lib:en **`tensor`** på djupet (Lib:en `tensor` — Former, Rader och Kolumner, Matrisprodukt och Blockvisa Operationer).

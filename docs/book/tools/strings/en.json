@@ -51,6 +51,8 @@
  "ex.mail.local": "A Local SMTP Server: STARTTLS before AUTH, Implicit TLS, Rejected Recipients, and Authentication Errors",
  "ex.mail.parse": "Parsing Multi-Line SMTP Replies (`smtp parse response`)",
  "ex.mail.rejects": "Header Injection and Invalid Addresses Rejected When Rendering",
+ "ex.net_agent.datapath": "The Data Path over a Real TCP Connection: `conn poll step`, the Agent's Reply, and `reactor sweep` on Close",
+ "ex.pool.routing": "Routing by Key (`pool ask shard`): Same Key, Same Agent; Keys in Turn, Agents in Turn; Broadcast and Shutdown",
  "ex.posix.bridge": "The Kernel Bridge: Exit-Status Decoding (`ProcExited`, `ProcSignal`), `AT_FDCWD`, and No Literal System Calls in the Libs",
  "ex.posix.durable": "Durable File Operations: `posix fsync`, `posix fdatasync`, `posix ftruncate`, Exclusive Locks, and `posix pread`",
  "ex.posix.fork": "Process Control on the Kernel: `posix pipe`, `posix fork`, `posix dup2`, `posix execve`, and `posix waitpid`",
@@ -138,10 +140,14 @@
  "fix.crypto.subtitle": "Hashes, HMAC, HKDF, PBKDF2, AEAD Ciphers, X25519, Ed25519, ECDSA, RSA, and X.509",
  "fix.net_agent.desc": "The **`net_agent`** lib closes the loop of `ridgun-libs` by uniting **`posix`**, **`socket`**, and **`agent`**: a `ConnSlot` pairs a connection descriptor with the agent that holds its state; `conn poll step` polls the descriptor without blocking, passes what arrives to the agent and writes its reply back; `reactor sweep` does that for a whole table of connections and drops the closed ones; and `reactor shutdown` closes every descriptor and stops every agent.",
  "fix.net_agent.guarantee": "A connection that is closed or fails leaves the table on the sweep that sees it, with its descriptor closed and its agent stopped, and `reactor shutdown` does the same for all the rest, so no descriptor and no agent is leaked.",
+ "fix.net_agent.honest": "Let's be honest: in a server, accepting TCP connections is the easy part; the hard part is keeping the state of each connection apart, reading and writing without blocking the others, and closing every descriptor and stopping every agent when a connection ends.",
  "fix.net_agent.subtitle": "One Agent per Connection: Non-Blocking Polling and Reactor Sweep",
  "fix.pool.desc": "The **`pool`** lib groups a fixed number of agents into an `AgentPool`: `pool ask shard` sends each request to the agent chosen by its key, so the same key always reaches the same agent; `pool broadcast` sends one message to every agent; `pool drain all` collects, without blocking, the replies that are ready; and `pool shutdown` stops all of them.",
  "fix.pool.guarantee": "The number of agents is fixed when the pool is built, so the memory of the pool is bounded, and routing by `abs(key) % size` is deterministic: the same key always reaches the same agent.",
+ "fix.pool.honest": "Let's be honest: when every request for the same user or the same key must reach the same worker, and now and then one message must reach all of them, writing that routing and the orderly stop by hand in every program is repetitive and easy to get wrong.",
  "fix.pool.subtitle": "Agent Pools: Sharding by Key, Broadcast, and Non-Blocking Drain",
  "fix.tensor.desc": "The **`tensor`** lib adds, to Ridgun's native `Tensor[...]` type, the helpers that the language does not give directly: shape queries (`tensor rows`, `tensor cols`, `tensor shape`), extraction of one row or one column (`tensor row`, `tensor col`), an explicit copy (`tensor clone`), the matrix product (`tensor matmul`), and element-wise operations between two whole tensors: XOR, AND, OR, addition, subtraction and multiplication.",
- "fix.tensor.subtitle": "Shapes, Rows and Columns, Matrix Product, and Block-Wise Operations"
+ "fix.tensor.subtitle": "Shapes, Rows and Columns, Matrix Product, and Block-Wise Operations",
+ "slug.net_agent": "one-agent-per-connection-and-reactor",
+ "slug.pool": "agent-pools-and-sharding-by-key"
 }

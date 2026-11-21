@@ -51,6 +51,8 @@
  "ex.mail.local": "Un servidor SMTP local: STARTTLS antes de AUTH, TLS implícito, destinatarios rexeitados e erros de autenticación",
  "ex.mail.parse": "Análise de respostas SMTP de varias liñas (`smtp parse response`)",
  "ex.mail.rejects": "Inxección de cabeceiras e enderezos non válidos rexeitados ao renderizar",
+ "ex.net_agent.datapath": "O camiño de datos sobre unha conexión TCP real: `conn poll step`, a resposta do axente e `reactor sweep` ao pechar",
+ "ex.pool.routing": "Reparto por chave (`pool ask shard`): mesma chave, mesmo axente; chaves por quenda, axentes por quenda; difusión e parada",
  "ex.posix.bridge": "A ponte co kernel: decodificación do estado de saída (`ProcExited`, `ProcSignal`), `AT_FDCWD` e ningunha chamada ao sistema literal nas libs",
  "ex.posix.durable": "Operacións duradeiras sobre ficheiros: `posix fsync`, `posix fdatasync`, `posix ftruncate`, bloqueos exclusivos e `posix pread`",
  "ex.posix.fork": "Control de procesos sobre o kernel: `posix pipe`, `posix fork`, `posix dup2`, `posix execve` e `posix waitpid`",
@@ -138,10 +140,14 @@
  "fix.crypto.subtitle": "Hashes, HMAC, HKDF, PBKDF2, Cifrados AEAD, X25519, Ed25519, ECDSA, RSA e X.509",
  "fix.net_agent.desc": "A lib **`net_agent`** pecha o círculo de `ridgun-libs` unindo **`posix`**, **`socket`** e **`agent`**: un `ConnSlot` emparella un descritor de conexión co axente que garda o seu estado; `conn poll step` sonda o descritor sen bloquear, pásalle ao axente o que chega e escribe de volta a súa resposta; `reactor sweep` fai iso para unha táboa enteira de conexións e descarta as pechadas; e `reactor shutdown` pecha todos os descritores e detén todos os axentes.",
  "fix.net_agent.guarantee": "Unha conexión que se pecha ou que falla sae da táboa no varrido que a detecta, co seu descritor pechado e o seu axente detido, e `reactor shutdown` fai o mesmo con todas as demais, polo que non hai fuga de ningún descritor nin de ningún axente.",
+ "fix.net_agent.honest": "Sexamos sinceros: nun servidor, aceptar conexións TCP é a parte fácil; o difícil é manter separado o estado de cada conexión, ler e escribir sen bloquear as demais, e pechar cada descritor e parar cada axente cando unha conexión remata.",
  "fix.net_agent.subtitle": "Un Axente por Conexión: Sondaxe Non Bloqueante e Varrido do Reactor",
  "fix.pool.desc": "A lib **`pool`** agrupa un número fixo de axentes nun `AgentPool`: `pool ask shard` envía cada petición ao axente escollido pola súa chave, de modo que a mesma chave chega sempre ao mesmo axente; `pool broadcast` envía unha mensaxe a todos os axentes; `pool drain all` recolle, sen bloquear, as respostas que están listas; e `pool shutdown` detén todos eles.",
  "fix.pool.guarantee": "O número de axentes fíxase ao construír o pool, polo que a memoria do pool está acoutada, e o encamiñamento por `abs(key) % size` é determinista: a mesma chave chega sempre ao mesmo axente.",
+ "fix.pool.honest": "Sexamos sinceros: cando todas as peticións dun mesmo usuario ou dunha mesma chave deben chegar ao mesmo traballador, e de cando en vez unha mensaxe debe chegar a todos, escribir á man ese reparto e a parada ordenada en cada programa é repetitivo e fácil de facer mal.",
  "fix.pool.subtitle": "Pools de Axentes: Reparto por Chave, Difusión e Baleirado Non Bloqueante",
  "fix.tensor.desc": "A lib **`tensor`** engade, ao tipo nativo `Tensor[...]` de Ridgun, as funcións auxiliares que a linguaxe non dá directamente: consultas de forma (`tensor rows`, `tensor cols`, `tensor shape`), extracción dunha fila ou dunha columna (`tensor row`, `tensor col`), unha copia explícita (`tensor clone`), o produto matricial (`tensor matmul`) e operacións elemento a elemento entre dous tensores completos: XOR, AND, OR, suma, resta e multiplicación.",
- "fix.tensor.subtitle": "Formas, Filas e Columnas, Produto Matricial e Operacións por Bloques"
+ "fix.tensor.subtitle": "Formas, Filas e Columnas, Produto Matricial e Operacións por Bloques",
+ "slug.net_agent": "un-axente-por-conexion-e-reactor",
+ "slug.pool": "pools-de-axentes-e-reparto-por-chave"
 }

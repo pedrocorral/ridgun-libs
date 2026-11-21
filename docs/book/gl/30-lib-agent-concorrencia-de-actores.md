@@ -561,4 +561,4 @@ fn :: agent kv clear (Agent KvCmd String) => String
 
 ---
 
-No **Capítulo 31** pasaremos a explorar en profundidade a lib **`pool`** (A lib `pool` — Pool Acoutado de Traballadores, Round-Robin e Roubo de Traballo).
+No **Capítulo 31** pasaremos a explorar en profundidade a lib **`pool`** (A lib `pool` — Pools de Axentes: Reparto por Chave, Difusión e Baleirado Non Bloqueante).

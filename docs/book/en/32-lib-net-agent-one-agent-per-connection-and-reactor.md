@@ -6,7 +6,7 @@
 
 That is the first question every systems engineer asks when meeting `net_agent`. And the answer captures the entire philosophy of `ridgun-libs`:
 
-Let's be honest: in a real server like **Solstice**, accepting TCP connections is the easy part; the hard part is enforcing max concurrent clients, reaping idle zombie connections, and bridging `ppoll` readiness into actor messages without leaking file descriptors.
+Let's be honest: in a server, accepting TCP connections is the easy part; the hard part is keeping the state of each connection apart, reading and writing without blocking the others, and closing every descriptor and stopping every agent when a connection ends.
 
 The **`net_agent`** lib closes the loop of `ridgun-libs` by uniting **`posix`**, **`socket`**, and **`agent`**: a `ConnSlot` pairs a connection descriptor with the agent that holds its state; `conn poll step` polls the descriptor without blocking, passes what arrives to the agent and writes its reply back; `reactor sweep` does that for a whole table of connections and drops the closed ones; and `reactor shutdown` closes every descriptor and stops every agent.
 
@@ -273,6 +273,49 @@ fn :: ejemplo reactor conexiones Int Int => [ConnSlot]
         []
 ```
 
+### 32.3.7. Example 7: The Data Path over a Real TCP Connection: `conn poll step`, the Agent's Reply, and `reactor sweep` on Close
+
+In this hands-on walkthrough we thoroughly exercise how `net_agent` behaves across this functional area, covering standard inputs, parameter combinations, and corner cases:
+
+```ridgun
+fn :: test net agent data path => ()
+      test net agent data path =
+        l_res = sys tcp listen "127.0.0.1" 0 16
+        sock rc l_res -> assert int equals 0 "listen on an ephemeral port"
+        lfd   = sock fd l_res
+        c_res = sys tcp connect "127.0.0.1" (sys local port lfd) 500
+        sock rc c_res -> assert int equals 0 "client connects"
+        cfd   = sock fd c_res
+        a_res = sys accept lfd 500
+        sock accept rc a_res -> assert int equals 0 "server accepts"
+        sfd   = sock accept fd a_res
+        ag    = agent (ag echo conn step) (CounterState 0)
+        slot  = ConnSlot sfd ag
+
+        outcome text (conn poll step slot) -> assert str eq "keep:" "no data: the slot is kept and nothing is written"
+        sock recv rc (sys recv cfd 16 20) -> assert int equals (0 - 2) "no data: the client receives nothing"
+
+        s1 = sys send cfd "ping" 500
+        sock rc s1 -> assert int equals 0 "client sends ping"
+        step until reply slot cfd 50 -> assert str eq "keep:echo:1:ping" "the data reaches the agent and its reply is written"
+        sock recv data (sys recv cfd 64 500) -> assert str eq "echo:1:ping" "the client reads the reply"
+
+        s2 = sys send cfd "pong" 500
+        sock rc s2 -> assert int equals 0 "client sends pong"
+        step until reply slot cfd 50 -> assert str eq "keep:echo:2:pong" "the agent keeps the state of its connection"
+        sock recv data (sys recv cfd 64 500) -> assert str eq "echo:2:pong" "the client reads the second reply"
+
+        agent list len (reactor sweep [slot]) 0 -> assert int equals 1 "reactor sweep keeps a live connection"
+        is agent alive ag -> assert true "the agent of a live connection is running"
+
+        sys close cfd
+        sys poll sfd 1 500 -> closed_ev
+        agent list len (reactor sweep [slot]) 0 -> assert int equals 0 "reactor sweep drops a connection closed by the peer"
+        is agent alive ag -> assert false "the agent stops when its connection closes"
+        sys close lfd
+        ()
+```
+
 ---
 
 ## 32.4. Under the Hood: How `net_agent` Is Built in Pure Ridgun (`src/main/ridgun/lib/net_agent.ridgun`)
@@ -382,4 +425,4 @@ fn :: reactor shutdown [ConnSlot] => ()
 
 ---
 
-You have completed the comprehensive tour of all **32 standard libs in `ridgun-libs`**! You now have every building block needed to craft complete, zero-`libc` applications and systems tools in pure Ridgun.
+In **Chapter 33**, we will explore the **`ai`** lib in full depth (The `ai` lib — AI Agents, Tool Calling, SSE Streaming, Bounded ReAct, Guardrails, Mini-RAG & MCP).

@@ -1,55 +1,55 @@
-# Capítol 31: La lib `pool` — Pools d'Agents: Partició per Clau, Difusió i Drenatge No Bloquejant
+# 31. kapitulua: `pool` lib-a — Agente-poolak: Gako bidezko Zatikatzea, Hedapena eta Hustuketa Ez-blokeatzailea
 
-## 31.1. Per què existeix la lib `pool`? (El problema real i la filosofia Ridgun)
+## 31.1. Zergatik existitzen da `pool` lib-a? (Benetako arazoa eta Ridgun filosofia)
 
-> *«Per què necessito una lib `pool` escrita des de zero en Ridgun pur en lloc d'enllaçar una llibreria de C de tota la vida?»*
+> *«Zergatik behar dut `pool` lib bat hutsetik Ridgun hutsean idatzia, betiko C liburutegi bat estekatu beharrean?»*
 
-Aquesta és la primera pregunta que es fa qualsevol enginyer de sistemes en arribar a `pool`. I la resposta resumeix tota la filosofia de `ridgun-libs`:
+Hori da edozein sistema-ingeniarik `pool`-era iristean egiten duen lehen galdera. Eta erantzunak `ridgun-libs`-en filosofia osoa laburbiltzen du:
 
-Siguem sincers: llançar un fil o actor nou per cada petició entrant sense límit superior (`unbounded spawning`) fa que un pic de trànsit esgoti la memòria en segons (*Out Of Memory*).
+Izan gaitezen zintzoak: erabiltzaile beraren edo gako beraren eskaera guztiek langile berera iritsi behar dutenean, eta noizean behin mezu batek guztiengana iritsi behar duenean, bideratze hori eta geldialdi ordenatua programa bakoitzean eskuz idaztea errepikakorra da eta erraz egiten da gaizki.
 
-La lib **`pool`** agrupa un nombre fix d'agents en un `AgentPool`: `pool ask shard` envia cada petició a l'agent triat per la seva clau, de manera que la mateixa clau arriba sempre al mateix agent; `pool broadcast` envia un missatge a tots els agents; `pool drain all` recull, sense bloquejar, les respostes que estan llestes; i `pool shutdown` els atura tots.
+**`pool`** lib-ak agente kopuru finko bat `AgentPool` batean biltzen du: `pool ask shard`-ek eskaera bakoitza bere gakoak aukeratutako agenteari bidaltzen dio, eta, hala, gako bera beti agente berera iristen da; `pool broadcast`-ek mezu bat agente guztiei bidaltzen die; `pool drain all`-ek prest dauden erantzunak biltzen ditu, blokeatu gabe; eta `pool shutdown`-ek guztiak gelditzen ditu.
 
-En un ecosistema tradicional, resoldre les tasques del domini **`AGENT`** implica arrossegar dependències externes en C, lluitar amb punters crus, conversions opaques de tipus, excepcions no verificades o pauses impredictibles del recol·lector de brossa. En Ridgun, la lib **`pool`** (`src/main/ridgun/lib/pool.ridgun`) aborda el problema amb quatre principis innegociables:
+Ekosistema tradizional batean, **`AGENT`** domeinuko zereginak ebazteak C-ko kanpo-mendekotasunak arrastatzea, erakusle gordinekin borrokatzea, mota-bihurketa opakuak, egiaztatu gabeko salbuespenak edo zabor-biltzailearen geldialdi ustekabekoak jasatea dakar. Ridgunen, **`pool`** lib-ak (`src/main/ridgun/lib/pool.ridgun`) lau printzipio negoziatu ezinekin heltzen dio arazoari:
 
-1. **Declara `import pool` (o `import pool as alias`) a l'inici del fitxer**: cada lib defineix el seu espai de noms `module :: pool` i en mode `--strict` les funcions multi-paraula s'invoquen sempre amb espais naturals.
-2. **Encadena les teves canonades d'esquerra a dreta amb `->`**: escriu `entrada pas u -> pas dos -> resultat`, fes servir màscares `(+ _ _ +)` per desestructurar seqüències i omet `_ =` en sentències seqüencials (o descarta amb `-> ()`).
-3. **Recursió de cua amb TCO (*Tail-Call Optimization*)**: tots els recorreguts interns de `pool` es compilen a bucles natius en espai de pila $O(1)$.
-4. **Memòria determinista (`RMM1` / `RMM2`)**: cada estructura intermèdia s'allibera en l'instant exacte en què acaba la seva última lectura, sense *Garbage Collector*.
+1. **Deklaratu `import pool` (edo `import pool as alias`) fitxategiaren hasieran**: lib bakoitzak `module :: pool` izen-espazioa definitzen du eta `--strict` moduan hitz anitzeko funtzioei zuriune naturalekin deitzen zaie beti.
+2. **Kateatu zure datu-hodiak ezkerretik eskuinera `->` bidez**: idatzi `sarrera lehen urratsa -> bigarren urratsa -> emaitza`, erabili `(+ _ _ +)` maskarak sekuentziak desegituratzeko eta kendu `_ =` sententzia sekuentzialetan (edo baztertu `-> ()` bidez).
+3. **Isats-errekurtsioa TCOrekin (*Tail-Call Optimization*)**: `pool`-eko barne-ibilbide guztiak $O(1)$ pila-espazioko begizta natiboetara konpilatzen dira.
+4. **Memoria determinista (`RMM1` / `RMM2`)**: tarteko egitura bakoitza bere azken irakurketa amaitzen den une zehatzean askatzen da, *Garbage Collector* gabe.
 
 ---
 
-## 31.2. Artefactes natius, importació i catàleg complet de l'API de `pool`
+## 31.2. Artefaktu natiboak, inportazioa eta `pool` APIaren katalogo osoa
 
-A `ridgun-libs`, **`pool`** és una **lib** de primera classe situada a `src/main/ridgun/lib/pool.ridgun` (domini `AGENT`). En compilar amb `stable bundle`, s'empaqueta en un format natiu:
+`ridgun-libs`-en, **`pool`** lehen mailako **lib** bat da, `src/main/ridgun/lib/pool.ridgun` bidean kokatua (`AGENT` domeinua). `stable bundle`-ekin konpilatzean, formatu natibo bakarrean paketatzen da:
 
-| Artefacte | Ruta | Propòsit |
+| Artefaktua | Bidea | Helburua |
 |---|---|---|
-| **Bundle Ridgun** | `target/bundles/pool.ridgunlib` | Distribució i importació directa amb `import pool` |
+| **Ridgun Bundle-a** | `target/bundles/pool.ridgunlib` | Banaketa eta inportazio zuzena `import pool` bidez |
 
-> Cada lib declara el seu propi espai de noms amb `module :: pool`: n'hi ha prou d'escriure `import pool` (o `import pool as alias`) a la capçalera i cridar les seves funcions amb espais naturals (`la meva funcio x`) i canonades `->` (`x la meva funcio -> resultat`).
+> Lib bakoitzak bere izen-espazioa deklaratzen du `module :: pool` bidez: nahikoa da goiburuan `import pool` (edo `import pool as alias`) idaztea eta bere funtzioei zuriune naturalekin (`nire funtzioa x`) eta `->` hodiekin (`x nire funtzioa -> emaitza`) deitzea.
 
-### 31.2.1. Resum de famílies funcionals de `pool`
+### 31.2.1. `pool`-eko familia funtzionalen laburpena
 
-| Signatura / Funció / Tipus | Què fa i quan fer-la servir |
+| Sinadura / Funtzioa / Mota | Zer egiten duen eta noiz erabili |
 |---|---|
-| `Pool / pool size / pool agents` | Un `AgentPool` amb un nombre fix d'agents, la seva mida i els seus agents |
-| `pool ask shard` | Petició-resposta amb l'agent triat per clau: la mateixa clau arriba sempre al mateix agent |
-| `pool broadcast` | Envia un missatge a tots els agents del pool |
-| `pool drain all / pool drain ready` | Recull les respostes que estan llestes, sense bloquejar |
-| `pool shutdown` | Atura tots els agents del pool |
+| `Pool / pool size / pool agents` | Agente kopuru finkoko `AgentPool` bat, bere tamaina eta bere agenteak |
+| `pool ask shard` | Eskaera-erantzuna gakoaren arabera aukeratutako agentearekin: gako bera beti agente berera iristen da |
+| `pool broadcast` | Mezu bat bidaltzen die pooleko agente guztiei |
+| `pool drain all / pool drain ready` | Prest dauden erantzunak biltzen ditu, blokeatu gabe |
+| `pool shutdown` | Pooleko agente guztiak gelditzen ditu |
 
-### 31.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/pool.ridgun`
+### 31.2.2. `src/main/ridgun/lib/pool.ridgun`-eko mota eta sinadura guztien katalogoa
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/pool.ridgun` (`1` tipus, `0` operadors i `15` funcions):
+Jarraian duzu `src/main/ridgun/lib/pool.ridgun` fitxategian definitutako mota aljebraiko (`type`), eragile (`op ::`) eta funtzio-sinadura (`fn ::`) guztien inbentario osoa (`1` mota, `0` eragile eta `15` funtzio):
 
-**Tipus algebraics i registres (`type`) de `pool`:**
+**`pool`-eko mota aljebraikoak eta erregistroak (`type`):**
 
 ```ridgun
 type AgentPool = Pool Int [Agent]
 ```
 
-| # | Funció / Signatura (`fn ::`) | Tipus de Retorn |
+| # | Funtzioa / Sinadura (`fn ::`) | Itzulera-mota |
 |---|---|---|
 | `1` | `fn :: pool size AgentPool` | `Int` |
 | `2` | `fn :: pool agents AgentPool` | `[Agent]` |
@@ -69,13 +69,13 @@ type AgentPool = Pool Int [Agent]
 
 ---
 
-## 31.3. Explorant `pool` a fons: Exemples pas a pas de cada funcionalitat
+## 31.3. `pool` sakonki esploratzen: Funtzionalitate bakoitzaren urratsez urratseko adibideak
 
-No n'hi ha prou de veure la taula de signatures: explorarem **cadascuna de les funcionalitats** de la lib `pool` mitjançant exemples progressius i executables en Ridgun. Començarem per les dues receptes tabulars d'ús quotidià i després recorrerem en detall tots els escenaris funcionals, transformacions i casos límit verificats a `src/test/ridgun/test pool.ridgun`.
+Ez da nahikoa sinadura-taula ikustea: `pool` lib-aren **funtzionalitate bakoitza** Ridgunen exekutagarriak diren adibide progresiboen bidez esploratuko dugu. Eguneroko bi errezeta taularatuekin hasiko gara eta ondoren xehetasunez ikusiko ditugu `src/test/ridgun/test pool.ridgun`-en egiaztatutako agertoki funtzional eta muga-kasu guztiak.
 
-### 31.3.1. Exemple 1: Flux principal en estil tabular amb `pool`
+### 31.3.1. 1. adibidea: Fluxu nagusia estilo taularatuan `pool` erabiliz
 
-Observa com en Ridgun els signes `=` i els passos de transformació amb `pool` queden alineats com una taula neta, sense variables mutables innecessàries ni efectes laterals ocults:
+Ikusi nola Ridgunen `=` ikurrak eta `pool` bidezko eraldaketa-urratsak taula garbi bat bezala lerrokatuta geratzen diren, beharrezkoak ez diren aldagai aldakorrik edo ezkutuko albo-ondoriorik gabe:
 
 ```ridgun
 import pool
@@ -85,9 +85,9 @@ fn :: despachar a shard AgentPool Int String => String
         pool ask shard p hash_clave msg
 ```
 
-### 31.3.2. Exemple 2: Composició segura i gestió de casos de vora
+### 31.3.2. 2. adibidea: Konposizio segurua eta muga-kasuen kudeaketa
 
-Tota funció de la lib `pool` està dissenyada per compondre's amb guardes booleanes `|` i amb la resta de les 38 libs de `ridgun-libs`:
+`pool` lib-eko funtzio oro `|` guarda boolearrekin eta `ridgun-libs`-eko gainerako 38 lib-ekin konposatzeko diseinatuta dago:
 
 ```ridgun
 import pool
@@ -98,9 +98,9 @@ fn :: difundir y cerrar AgentPool String => ()
         pool shutdown p
 ```
 
-### 31.3.3. Exemple 3: Combinadors d'actors (`agent ask`, `agent try ask`, `agent send batch`, `agent map batch`, `agent drain ready`), pools particionats i reactor de connexions
+### 31.3.3. 3. adibidea: Aktore-konbinatzaileak (`agent ask`, `agent try ask`, `agent send batch`, `agent map batch`, `agent drain ready`), zatikatutako pool-ak eta konexio-erreaktorea
 
-En aquest exemple pràctic explorem de manera exhaustiva com es comporta `pool` en aquest bloc funcional, incloent-hi entrades estàndard, combinacions de paràmetres i valors frontera:
+Adibide praktiko honetan `pool` bloke funtzional honetan nola portatzen den sakonki aztertzen dugu, sarrera estandarrak, parametro-konbinazioak eta muga-balioak barne:
 
 ```ridgun
 fn :: test spec combinators pool and net agent => ()
@@ -148,9 +148,9 @@ fn :: test spec combinators pool and net agent => ()
         assert false (is agent alive cc) "cc stopped on reactor shutdown"
 ```
 
-### 31.3.4. Exemple 4: Cicle de vida d'agents (`is agent alive`, `agent status`, `stop agent`) i agent comptador amb estat aïllat (`new counter agent`)
+### 31.3.4. 4. adibidea: Agenteen bizi-zikloa (`is agent alive`, `agent status`, `stop agent`) eta egoera isolatuko agente kontagailua (`new counter agent`)
 
-En aquest exemple pràctic explorem de manera exhaustiva com es comporta `pool` en aquest bloc funcional, incloent-hi entrades estàndard, combinacions de paràmetres i valors frontera:
+Adibide praktiko honetan `pool` bloke funtzional honetan nola portatzen den sakonki aztertzen dugu, sarrera estandarrak, parametro-konbinazioak eta muga-balioak barne:
 
 ```ridgun
 fn :: test agent lifecycle and counter => ()
@@ -202,9 +202,9 @@ fn :: test agent lifecycle and counter => ()
         assert eq (is agent alive c2) False
 ```
 
-### 31.3.5. Exemple 5: Agent de bitàcola *append-only* (`new log agent`) i magatzem clau-valor en memòria per pas de missatges (`new kv agent`)
+### 31.3.5. 5. adibidea: *Append-only* egunkari-agentea (`new log agent`) eta mezu-igorpenezko memoriako gako-balio biltegia (`new kv agent`)
 
-En aquest exemple pràctic explorem de manera exhaustiva com es comporta `pool` en aquest bloc funcional, incloent-hi entrades estàndard, combinacions de paràmetres i valors frontera:
+Adibide praktiko honetan `pool` bloke funtzional honetan nola portatzen den sakonki aztertzen dugu, sarrera estandarrak, parametro-konbinazioak eta muga-balioak barne:
 
 ```ridgun
 fn :: test log and kv agents => ()
@@ -256,9 +256,9 @@ fn :: test log and kv agents => ()
         ()
 ```
 
-### 31.3.6. Exemple 6: Encaminament determinista per clau (`pool ask shard`), difusió massiva (`pool broadcast`), drenatge no bloquejant (`pool drain all`) i apagada (`pool shutdown`)
+### 31.3.6. 6. adibidea: Gako bidezko bideratze determinista (`pool ask shard`), hedapen masiboa (`pool broadcast`), hustuketa ez-blokeatzailea (`pool drain all`) eta itzaltzea (`pool shutdown`)
 
-En aquest exemple pràctic explorem de manera exhaustiva com es comporta `pool` en aquest bloc funcional, incloent-hi entrades estàndard, combinacions de paràmetres i valors frontera:
+Adibide praktiko honetan `pool` bloke funtzional honetan nola portatzen den sakonki aztertzen dugu, sarrera estandarrak, parametro-konbinazioak eta muga-balioak barne:
 
 ```ridgun
 import agent
@@ -286,15 +286,48 @@ fn :: ejemplo pool completo => Int Int [Int]
         (sz, r_a + r_b, pend)
 ```
 
+### 31.3.7. 7. adibidea: Gako bidezko bideratzea (`pool ask shard`): gako bera, agente bera; gakoak txandaka, agenteak txandaka; hedapena eta geldialdia
+
+Adibide praktiko honetan `pool` bloke funtzional honetan nola portatzen den sakonki aztertzen dugu, sarrera estandarrak, parametro-konbinazioak eta muga-balioak barne:
+
+```ridgun
+fn :: test pool routing by key => ()
+      test pool routing by key =
+        a0 = new counter agent 0
+        a1 = new counter agent 1000
+        a2 = new counter agent 2000
+        pl = Pool 3 [a0, a1, a2]
+        pool size pl -> assert int equals 3 "pool size 3"
+        agent list len (pool agents pl) 0 -> assert int equals 3 "pool agents holds the 3 agents"
+        pool ask shard pl 0 1 -> assert int equals 1 "key 0 -> agent 0"
+        pool ask shard pl 1 1 -> assert int equals 1001 "key 1 -> agent 1"
+        pool ask shard pl 2 1 -> assert int equals 2001 "key 2 -> agent 2"
+        pool ask shard pl 3 1 -> assert int equals 2 "key 3 -> agent 0 again: keys in turn visit the agents in turn"
+        pool ask shard pl 7 1 -> assert int equals 1002 "key 7 -> agent 1"
+        pool ask shard pl 7 1 -> assert int equals 1003 "the same key always reaches the same agent"
+        pool ask shard pl (0 - 2) 1 -> assert int equals 2002 "negative key -> agent abs(key) % size"
+        agent list len (pool drain all pl) 0 -> assert int equals 0 "pool drain all with nothing ready -> []"
+        pool broadcast pl 100
+        counter get a0 -> assert int equals 102 "broadcast reached agent 0"
+        counter get a1 -> assert int equals 1103 "broadcast reached agent 1"
+        counter get a2 -> assert int equals 2102 "broadcast reached agent 2"
+        one = Pool 1 [new counter agent 5]
+        pool ask shard one 12345 1 -> assert int equals 6 "a pool of one agent takes every key"
+        pool shutdown one
+        pool shutdown pl
+        is agent alive a0 -> assert false "pool shutdown stops agent 0"
+        is agent alive a2 -> assert false "pool shutdown stops agent 2"
+```
+
 ---
 
-## 31.4. Sota el capó: com està construïda `pool` en Ridgun pur (`src/main/ridgun/lib/pool.ridgun`)
+## 31.4. Kaputaren azpian: nola dagoen eraikia `pool` Ridgun hutsean (`src/main/ridgun/lib/pool.ridgun`)
 
-Un dels majors avantatges de `ridgun-libs` és que **no hi ha caixes negres en C**. Pots obrir `src/main/ridgun/lib/pool.ridgun` i llegir exactament com està implementada cada operació fent servir *pattern matching*, arbres de guardes `|` / `|.` i recursió de cua (TCO). Vegem les peces clau de la seva implementació real:
+`ridgun-libs`-en abantaila handienetako bat **C-ko kutxa beltzik ez egotea** da. `src/main/ridgun/lib/pool.ridgun` ireki dezakezu eta eragiketa bakoitza *pattern matching*, `|` / `|.` guarda-zuhaitzak eta isats-errekurtsioa (TCO) erabiliz nola inplementatuta dagoen irakurri. Ikus ditzagun bere benetako inplementazioaren funtsezko piezak:
 
-### 31.4.1. Implementació interna: Pool Size, Agent Selection, and Request-Reply by Key
+### 31.4.1. Barne-inplementazioa: Pool Size, Agent Selection, and Request-Reply by Key
 
-Fixa't en com `pool.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Ikusi nola `pool.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 module :: pool
@@ -325,9 +358,9 @@ fn :: pool ask shard AgentPool Int A => B
         ask target_ag msg
 ```
 
-### 31.4.2. Implementació interna: Broadcast, Non-Blocking Drain, and Shutdown
+### 31.4.2. Barne-inplementazioa: Broadcast, Non-Blocking Drain, and Shutdown
 
-Fixa't en com `pool.ridgun` estructura les signatures `fn :: ... => ...` primer i resol cada cas mitjançant equacions alineades i crides de cua:
+Ikusi nola `pool.ridgun`-ek lehenik `fn :: ... => ...` sinadurak egituratzen dituen eta kasu bakoitza lerrokatutako ekuazioen eta isats-deien bidez ebazten duen:
 
 ```ridgun
 -- Broadcast a message to every agent in the pool (e.g. configuration reload or tick)
@@ -378,21 +411,21 @@ fn :: pool shutdown AgentPool       => ()
 
 ---
 
-## 31.5. Garanties algorísmiques, memòria `RMM1`/`RMM2` i les 5 Regles d'Or de `pool`
+## 31.5. Berme algoritmikoak, `RMM1`/`RMM2` memoria eta `pool`-en Urrezko 5 Arauak
 
-- **Garantia algorísmica i de seguretat**: El nombre d'agents queda fixat quan es construeix el pool, de manera que la memòria del pool està acotada, i l'encaminament per `abs(key) % size` és determinista: la mateixa clau arriba sempre al mateix agent.
-- **Complexitat de pila $O(1)$ amb TCO**: Tots els bucles recursius a `src/main/ridgun/lib/pool.ridgun` estan en posició de cua, de manera que `ridgunc` els compila a salts natius sense creixement de pila.
-- **Memòria determinista (`RMM1`/`RMM2`)**: Zero pauses de recol·lector de brossa; totes les estructures intermèdies s'alliberen de forma determinista en sortir de l'àmbit.
-- **Verificació contínua**: Provada exhaustivament amb `stable check` i la suite automatitzada `src/test/ridgun/test pool.ridgun`.
+- **Berme algoritmikoa eta segurtasunekoa**: Agente kopurua poola eraikitzean finkatzen da; beraz, poolaren memoria mugatua da, eta `abs(key) % size` bidezko bideratzea determinista da: gako bera beti agente berera iristen da.
+- **$O(1)$ pila-konplexutasuna TCOrekin**: `src/main/ridgun/lib/pool.ridgun`-eko begizta errekurtsibo guztiak isats-posizioan daude; beraz, `ridgunc`-ek pila-hazkuntzarik gabeko jauzi natiboetara konpilatzen ditu.
+- **Memoria determinista (`RMM1`/`RMM2`)**: Zero zabor-biltzaile etenaldi; tarteko egitura guztiak modu deterministan askatzen dira esparrutik irtetean.
+- **Etengabeko egiaztapena**: Zorrotz probatua `stable check` eta `src/test/ridgun/test pool.ridgun` suite automatizatuaren bidez.
 
-### Les 5 Regles d'Or en programar amb `pool`
+### `pool`-ekin programatzeko Urrezko 5 Arauak
 
-1. **Declara `import pool` a l'inici del fitxer** i crida les seves funcions amb espais, tal com estan declarades, perquè el teu codi es llegeixi com a prosa.
-2. **Alinea les teves canonades de dades amb `=`**: encadena les crides a `pool` en passos amb nom propi i deixa que `stable format` alineï les columnes.
-3. **Aprofita les funcions totals de `pool` a les teves guardes `|`**: comprova els valors de retorn o desembolica els ADTs amb *pattern matching* en lloc d'assumir que l'entrada externa sempre és vàlida.
-4. **Evita copiar grans estructures si només necessites consultar un camp**: recorda que en `RMM2` els arguments d'entrada no incrementen ni decrementen comptadors (`+0` / `-0`).
-5. **Combina `pool` amb `test` (`import test`)**: escriu sempre assercions amb `assert equals` o `assert true` per fixar els invariants del teu domini.
+1. **Deklaratu `import pool` fitxategiaren hasieran** eta deitu bere funtzioei zuriuneekin, deklaratuta dauden bezala, zure kodea prosa bezala irakur dadin.
+2. **Lerrokatu zure datu-hodiak `=` ikurrarekin**: kateatu `pool`-erako deiak izen propioko urratsetan eta utzi `stable format`-i zutabeak lerrokatzen.
+3. **Baliatu `pool`-eko funtzio osoak zure `|` guardetan**: egiaztatu itzulera-balioak edo askatu ADTak *pattern matching* bidez, kanpoko sarrera beti baliozkoa dela suposatu beharrean.
+4. **Saihestu egitura handiak kopiatzea eremu bat kontsultatu besterik behar ez baduzu**: gogoratu `RMM2`-n sarrerako argumentuek ez dituztela kontagailuak handitzen edo txikitzen (`+0` / `-0`).
+5. **Konbinatu `pool` eta `test` (`import test`)**: idatzi beti asertzioak `assert equals` edo `assert true` erabiliz zure domeinuaren inbarianteak finkatzeko.
 
 ---
 
-Al **Capítol 32** passarem a explorar en profunditat la lib **`net_agent`** (La lib `net_agent` — Supervisor de Connexions de Xarxa i Pont d'Esdeveniments No Bloquejant).
+**32. kapituluan** **`net_agent`** lib-a sakonki esploratuko dugu (`net_agent` lib-a — Agente bat Konexio bakoitzeko: Zundaketa Ez-blokeatzailea eta Erreaktorearen Ekorketa).

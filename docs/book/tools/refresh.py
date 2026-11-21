@@ -181,6 +181,9 @@ def fix_prose(ls,lib,lang,nn):
         ls[g]=ls[g][:ls[g].index('**: ')+4]+st(lang,f'fix.{lib}.guarantee')
     sub=S[lang].get(f'fix.{lib}.subtitle') or EN.get(f'fix.{lib}.subtitle')
     if sub: ls[0]=ls[0].split(' — ')[0]+' — '+st(lang,f'fix.{lib}.subtitle')
+    if f'fix.{lib}.honest' in EN:
+        assert ls[2].startswith('## ') and ls[14].startswith('1. '), (lang,nn)
+        ls[8]=st(lang,f'fix.{lib}.honest')
     if f'fix.{lib}.desc' in EN:
         assert ls[2].startswith('## ') and ls[14].startswith('1. '), (lang,nn)
         ls[10]=st(lang,f'fix.{lib}.desc')
@@ -304,6 +307,7 @@ def update_index(lang):
         m=re.match(r'^\| `(\d\d)-lib-[^`]*` \| ',l)
         if m:
             nn=m.group(1); parts=l.split(' | '); have.add(nn)
+            parts[0]=f'| `{os.path.basename(path_of(lang,nn))}`'
             parts[1]=open(path_of(lang,nn)).readline().strip()[2:]
             l=' | '.join(parts)
         out.append(l)
@@ -332,6 +336,9 @@ def main():
             ls=regen_catalog(ls,lib,lang,nn)
             ls=regen_examples(ls,lib,lang,nn)
             ls=regen_internals(ls,lib,lang,nn)
+            if f'slug.{lib}' in EN:                      # a chapter whose file name changed
+                new=f'{BOOK}{lang}/{nn}-lib-{lib.replace("_","-")}-{st(lang,f"slug.{lib}")}.md'
+                if new!=f: os.remove(f); f=new
             files[nn]=[f,lib,ls]
         for nn,lib in NEW_CHAPTERS:
             ls=fix_prose(build_chapter(lang,nn,lib),lib,lang,nn)
@@ -342,7 +349,7 @@ def main():
             nxt=None
             if i+1<len(nums):
                 nf,nlib,nls=files[nums[i+1]]; nxt=(nums[i+1],nlib,h1_title(nls[0]))
-            if nn in ('24','33','34','35','36','37','38'): ls=set_ending(ls,lang,nxt)
+            ls=set_ending(ls,lang,nxt)
             open(f,'w').write('\n'.join(ls).rstrip('\n')+'\n')
         update_index(lang)
     update_counts()

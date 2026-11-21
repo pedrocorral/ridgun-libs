@@ -477,4 +477,4 @@ fn :: io read with timeout String Int => IoResult
 
 ---
 
-**24. kapituluan** **`crypto`** lib-a sakonki esploratuko dugu (`crypto` lib-a — SHA-256, HMAC, PBKDF2, Argon2id eta ChaCha20-Poly1305 AEAD).
+**24. kapituluan** **`crypto`** lib-a sakonki esploratuko dugu (`crypto` lib-a — Hash Funtzioak, HMAC, HKDF, PBKDF2, AEAD Zifraketak, X25519, Ed25519, ECDSA, RSA eta X.509).

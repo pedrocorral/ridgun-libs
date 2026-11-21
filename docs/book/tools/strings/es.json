@@ -51,6 +51,8 @@
  "ex.mail.local": "Un servidor SMTP local: STARTTLS antes de AUTH, TLS implícito, destinatarios rechazados y errores de autenticación",
  "ex.mail.parse": "Análisis de respuestas SMTP de varias líneas (`smtp parse response`)",
  "ex.mail.rejects": "Inyección de cabeceras y direcciones inválidas rechazadas al renderizar",
+ "ex.net_agent.datapath": "El camino de datos sobre una conexión TCP real: `conn poll step`, la respuesta del agente y `reactor sweep` al cerrar",
+ "ex.pool.routing": "Reparto por clave (`pool ask shard`): misma clave, mismo agente; claves por turno, agentes por turno; difusión y parada",
  "ex.posix.bridge": "El puente al kernel: decodificación del estado de salida (`ProcExited`, `ProcSignal`), `AT_FDCWD` y ninguna llamada al sistema literal en las libs",
  "ex.posix.durable": "Operaciones de archivo duraderas: `posix fsync`, `posix fdatasync`, `posix ftruncate`, bloqueos exclusivos y `posix pread`",
  "ex.posix.fork": "Control de procesos sobre el kernel: `posix pipe`, `posix fork`, `posix dup2`, `posix execve` y `posix waitpid`",
@@ -138,10 +140,14 @@
  "fix.crypto.subtitle": "Hashes, HMAC, HKDF, PBKDF2, Cifrados AEAD, X25519, Ed25519, ECDSA, RSA y X.509",
  "fix.net_agent.desc": "La lib **`net_agent`** cierra el círculo de `ridgun-libs` uniendo **`posix`**, **`socket`** y **`agent`**: un `ConnSlot` empareja un descriptor de conexión con el agente que guarda su estado; `conn poll step` sondea el descriptor sin bloquear, pasa lo que llega al agente y escribe de vuelta su respuesta; `reactor sweep` hace eso para toda una tabla de conexiones y descarta las cerradas; y `reactor shutdown` cierra todos los descriptores y detiene todos los agentes.",
  "fix.net_agent.guarantee": "Una conexión que se cierra o que falla sale de la tabla en el barrido que la ve, con su descriptor cerrado y su agente detenido, y `reactor shutdown` hace lo mismo con todas las demás, de modo que no se fuga ningún descriptor ni ningún agente.",
+ "fix.net_agent.honest": "Seamos sinceros: en un servidor, aceptar conexiones TCP es la parte fácil; lo difícil es mantener separado el estado de cada conexión, leer y escribir sin bloquear a las demás, y cerrar cada descriptor y parar cada agente cuando una conexión termina.",
  "fix.net_agent.subtitle": "Un Agente por Conexión: Sondeo No Bloqueante y Barrido del Reactor",
  "fix.pool.desc": "La lib **`pool`** agrupa un número fijo de agentes en un `AgentPool`: `pool ask shard` envía cada petición al agente elegido por su clave, de modo que la misma clave llega siempre al mismo agente; `pool broadcast` envía un mensaje a todos los agentes; `pool drain all` recoge, sin bloquear, las respuestas que están listas; y `pool shutdown` los detiene a todos.",
  "fix.pool.guarantee": "El número de agentes se fija al construir el pool, por lo que la memoria del pool está acotada, y el enrutamiento por `abs(key) % size` es determinista: la misma clave llega siempre al mismo agente.",
+ "fix.pool.honest": "Seamos sinceros: cuando todas las peticiones de un mismo usuario o de una misma clave deben llegar al mismo trabajador, y de vez en cuando un mensaje debe llegar a todos, escribir a mano ese reparto y la parada ordenada en cada programa es repetitivo y fácil de hacer mal.",
  "fix.pool.subtitle": "Pools de Agentes: Reparto por Clave, Difusión y Drenaje No Bloqueante",
  "fix.tensor.desc": "La lib **`tensor`** añade, al tipo nativo `Tensor[...]` de Ridgun, las utilidades que el lenguaje no da directamente: consultas de forma (`tensor rows`, `tensor cols`, `tensor shape`), extracción de una fila o de una columna (`tensor row`, `tensor col`), una copia explícita (`tensor clone`), el producto matricial (`tensor matmul`) y operaciones elemento a elemento entre dos tensores completos: XOR, AND, OR, suma, resta y multiplicación.",
- "fix.tensor.subtitle": "Formas, Filas y Columnas, Producto Matricial y Operaciones por Bloques"
+ "fix.tensor.subtitle": "Formas, Filas y Columnas, Producto Matricial y Operaciones por Bloques",
+ "slug.net_agent": "un-agente-por-conexion-y-reactor",
+ "slug.pool": "pools-de-agentes-y-reparto-por-clave"
 }
