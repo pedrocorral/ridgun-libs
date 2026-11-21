@@ -22,13 +22,13 @@ The compiler no longer carries any cipher or hash: since ridgunc 1.0.51 a lib wr
 - AC2: Given a 32-byte key, a 12-byte nonce, associated data and a plaintext, when `aes256 gcm seal` runs, then the result is the ciphertext followed by the 16-byte tag of NIST SP 800-38D (test cases 13, 14 and 16 of McGrew and Viega); a key or a nonce of another length gives `""`.
 - AC3: Given what `aes256 gcm seal` returned, when `aes256 gcm open` runs with the same key, nonce and associated data, then it returns `0` and the plaintext. With other associated data or one changed byte it returns `-12` and no plaintext; with a key or a nonce of another length, `-7`.
 - AC4: Given SHA-256 of messages of every length from 0 to 300 bytes and of 70 000 bytes, PBKDF2-HMAC-SHA-256 with passwords and salts shorter and longer than a block, and AES-128 and AES-256 in block, counter and GCM use, when the program runs with `RIDGUN_CPU=2` (portable definitions), then every result is the same as without it.
-- AC5: Given a message of 512 bytes or more, when `sha256 bytes` or `sha256 hex` runs, then the digest is computed on the processor operations and equals the digest of the runtime.
+- AC5: Given a message of any length, when `sha256 bytes`, `sha256 hex`, `sha256 raw`, `sha256 str`, `sha256 digest`, `sha256 file`, `hmac sha256` or `pbkdf2 hmac sha256` runs, then the result is computed on the processor operations of this lib, with no SHA-256 of the runtime, and it is the value Python's `hashlib` gives.
 
 ## Actors & permissions
 - Any Ridgun program or lib importing `crypto`.
 
 ## Constraints & edge cases
-- `sha256 bytes` and `sha256 hex` of messages shorter than 512 bytes use the SHA-256 of the runtime: with ridgunc 1.0.51 the fixed cost of preparing a message for the operations is larger than what the instructions save (`ADR-0016`).
+- `sha256 file` of a file that cannot be opened or read gives the digest of nothing, as the runtime's did.
 - The variants of the operations exist for x86-64 only. On other processors the portable definitions run.
 - The counter of GCM wraps at 2^32 blocks, as NIST SP 800-38D says.
 

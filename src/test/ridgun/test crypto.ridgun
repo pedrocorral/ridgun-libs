@@ -314,29 +314,59 @@ fn :: sha msg fill Tensor[U8] Int Int => Tensor[U8]
 fn :: sha msg Int => String
       sha msg n =  tensor to str (sha msg fill (Tensor[U8 * n]) 0 n)
 
--- How many lengths from `n` to `to` give a digest on the operations that is not the runtime's.
-fn :: sha cpu differs Int Int Int => Int
-      sha cpu differs n to bad
-        | n > to                                                  = bad
-        | (sha256 cpu bytes (sha msg n)) == (sha256 raw (sha msg n)) = sha cpu differs (n + 1) to bad
-        | otherwise                                               = sha cpu differs (n + 1) to (bad + 1)
+-- The digests of the messages of `n` to `to` bytes, one after another.
+fn :: sha chain Int Int String => String
+      sha chain n to acc
+        | n > to    = acc
+        | otherwise = sha chain (n + 1) to (acc + (sha256 bytes (sha msg n)))
 
--- SHA-256 and PBKDF2 on processor operations (`sha256 round`, `sha256 rounds`, `sha256 schedule`,
--- `sha256 compress`, `sha256 block`, `sha256 hmac outer`, `sha256 hmac step`). `stable test` runs this
--- suite twice: on the instructions of the processor and, with RIDGUN_CPU=2, on the portable definitions.
+-- The HMACs of the messages of `n` to `to` bytes, each under a key of `n % 150` bytes, one after another.
+fn :: hmac chain Int Int String => String
+      hmac chain n to acc
+        | n > to    = acc
+        | otherwise = hmac chain (n + 1) to (acc + (hmac sha256 (sha msg (n % 150)) (sha msg n)))
+
+fn :: put file String String => Int
+      put file path data =
+        fd = posix open path ((o wronly) + (o creat) + (o trunc)) 420
+        n  = posix write fd data
+        posix close fd -> ()
+        n
+
+-- SHA-256, HMAC and PBKDF2 on processor operations (`sha256 round`, `sha256 rounds`, `sha256 schedule`,
+-- `sha256 compress`, `sha256 block`, `sha256 end`, `sha256 end two`, `sha256 short`, `sha256 mid`,
+-- `sha256 hmac one`, `sha256 hmac keys`, `sha256 hmac outer`, `sha256 hmac step`). Nothing here uses a SHA-256
+-- of the runtime: the expected values come from Python's hashlib. `stable test` runs this suite twice: on the
+-- instructions of the processor and, with RIDGUN_CPU=2, on the portable definitions.
 -- @tests TS-CRYPTO-007
 fn :: test sha256 and pbkdf2 on processor operations => ()
       test sha256 and pbkdf2 on processor operations =
-        sha cpu differs 0 300 0 -> assert int equals 0 "sha256 cpu bytes equals the runtime for every length from 0 to 300"
-        sha cpu differs 500 580 0 -> assert int equals 0 "and from 500 to 580, around the length where sha256 bytes changes path"
-        sha cpu differs 4095 4097 0 -> assert int equals 0 "and around 4 KB"
-        sha cpu differs 70000 70000 0 -> assert int equals 0 "and for 70 000 bytes"
-        sha256 cpu from -> assert int equals 512 "sha256 bytes uses the operations from 512 bytes on"
-        sha256 bytes (sha msg 511) -> assert str eq (sha256 raw (sha msg 511)) "511 bytes: the runtime path"
-        sha256 bytes (sha msg 512) -> assert str eq (sha256 raw (sha msg 512)) "512 bytes: the operations"
-        sha256 hex (sha msg 4096) -> assert str eq (sha256 str (sha msg 4096)) "sha256 hex of 4 KB equals the runtime"
+        sha256 hex (sha chain 0 300 "") -> assert str eq "7722024365d27836079cbf29de35d060b9383d7c713083199661392f983216d4" "the digests of every length from 0 to 300 bytes are Python's"
+        sha256 hex (sha chain 500 580 "") -> assert str eq "57ea294cbc2c8bbe43f7083b5acc134734e0f43e44900161517e26119494fa8f" "and of every length from 500 to 580"
+        sha256 hex (sha chain 4095 4097 "") -> assert str eq "d4f023801c2b814424b08cf869c14c329d9493e152cc207f5c02b9bae41c17d6" "and around 4 KB"
+        sha256 hex (sha msg 70000) -> assert str eq "d284461e47fa34e0034954c43b9a11312be4932f0d45309c81b6355b65dbe334" "and of 70 000 bytes"
         sha256 hex make a1m -> assert str eq "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0" "FIPS 180-4: one million 'a'"
-        sha256 cpu bytes "abc" -> bytes to hex str -> assert str eq "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" "FIPS 180-4: abc on the operations"
+        sha256 hex "abc" -> assert str eq "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" "FIPS 180-4: abc"
+
+        -- the names the runtime used to give
+        sha256 raw "abc" -> assert str eq (sha256 bytes "abc") "sha256 raw is sha256 bytes"
+        sha256 str "abc" -> assert str eq (sha256 hex "abc") "sha256 str is sha256 hex"
+        tensor to str (sha256 digest (tensor from str "abc")) -> assert str eq (sha256 bytes "abc") "sha256 digest of a tensor gives the 32 bytes as a tensor"
+        f_abc = "/tmp/ridgun-libs-test-crypto-sha256-abc"
+        f_big = "/tmp/ridgun-libs-test-crypto-sha256-big"
+        put file f_abc "abc" -> assert int equals 3 "a file of 3 bytes is written"
+        put file f_big (sha msg 200000) -> assert int equals 200000 "a file of 200 000 bytes is written"
+        sha256 file f_abc -> assert str eq "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" "sha256 file of a small file"
+        sha256 file f_big -> assert str eq "56bfedd2826b1d2e9cdde6a38608dee5cf64f899bf711de08749cc7776dd2d12" "sha256 file of 200 000 bytes, read in several pieces"
+        sha256 file "/tmp/ridgun-libs-test-crypto-no-such-file" -> assert str eq "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" "a file that cannot be opened gives the digest of nothing"
+        sha256 file "/tmp" -> assert str eq "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" "and so does a directory"
+        sys unlink f_abc -> assert true "the small file is removed"
+        sys unlink f_big -> assert true "the big file is removed"
+
+        -- HMAC-SHA-256: RFC 4231 and every message length from 0 to 400 with keys of 0 to 149 bytes
+        bytes to hex str (hmac sha256 "Jefe" "what do ya want for nothing?") -> assert str eq "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843" "RFC 4231 test case 2"
+        bytes to hex str (hmac sha256 (c repeat byte 170 131) "Test Using Larger Than Block-Size Key - Hash Key First") -> assert str eq "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54" "RFC 4231 test case 6: a key longer than a block"
+        sha256 hex (hmac chain 0 400 "") -> assert str eq "907fba7eaf8a517237d4924964208b88cfd987d60d926706f94454bd0a11c098" "the HMACs of 401 messages and keys are Python's"
 
         -- PBKDF2-HMAC-SHA-256: RFC 7914 §11 and cases computed with Python's hashlib
         bytes to hex str (pbkdf2 hmac sha256 "passwd" "salt" 1 64) -> assert str eq "55ac046e56e3089fec1691c22544b605f94185216dde0465e68b9d57c20dacbc49ca9cccf179b645991664b39d77ef317c71b845b1e30bd509112041d3a19783" "RFC 7914: passwd / salt / 1"

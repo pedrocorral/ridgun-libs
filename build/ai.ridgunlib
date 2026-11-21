@@ -12,6 +12,8 @@
 
 module :: ai
 
+import crypto
+
 type AiMsg          = am_role: String, am_content: String, am_tool_id: String, am_is_err: Bool
 type AiUsage        = au_prompt: Int, au_completion: Int, au_total: Int
 type AiConv         = ac_system: String, ac_msgs: [AiMsg], ac_steps: Int, ac_usage: AiUsage

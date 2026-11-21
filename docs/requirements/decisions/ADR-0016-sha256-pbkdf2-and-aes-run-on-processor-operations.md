@@ -1,12 +1,12 @@
 ---
 id: ADR-0016
-title: SHA-256, PBKDF2 and AES run on processor operations; short SHA-256 stays on the runtime for now
+title: SHA-256, PBKDF2 and AES run on processor operations; nothing in libs uses a SHA-256 of the compiler
 status: accepted
 date: 2026-11-21
 supersedes: []
 affects: [FR-CRYPTO-003, FR-CRYPTO-006, FR-CRYPTO-007, TS-CRYPTO-007, ADR-0014, src/main/ridgun/lib/crypto.ridgun, src/main/ridgun/lib/codec.ridgun, src/main/ridgun/lib/json.ridgun, src/test/ridgun/test crypto.ridgun]
 ---
-# ADR-0016 — SHA-256, PBKDF2 and AES run on processor operations; short SHA-256 stays on the runtime for now
+# ADR-0016 — SHA-256, PBKDF2 and AES run on processor operations; nothing in libs uses a SHA-256 of the compiler
 
 **Asked by the compiler team and ordered by the user on 2026-11-21.**
 
@@ -45,8 +45,14 @@ Option 2.
 - The declaration is `arch ::`, a variant is written `on x64` and an instruction `cpu aesenc`, without quotes. `crypto.ridgun` is migrated.
 - `idem ::` (1.0.54) declares a function whose body runs once: the S-box of AES and the first state of SHA-256 are built once for the whole program. AES-128-GCM of 64 bytes goes from about 30 µs to about 16 µs.
 
-## Consequences
-- The runtime's SHA-256 cannot be removed yet: `crypto` (short messages and HMAC) and `ai` (`sha256 str`) still call it. What the compiler must give first is written in `/tmp/ridgun-compiler/2026-11-19/libs-pendiente.md` (entry of 2026-11-21).
+## Second update of the same day: nothing in libs uses the runtime's SHA-256
+- A message goes through one operation, with no table and no tensor between its blocks: `sha256 short` (fewer than 64 bytes), `sha256 mid` (64 to 127 bytes), and the loop over rows plus `sha256 end` for longer ones. The first state is written in the operation and the length reaches it as two numbers.
+- HMAC-SHA-256 is one operation for a short message (`sha256 hmac one`: both key blocks, the message and the outer hash), and key states plus the loop for a long one.
+- Measured against the runtime's SHA-256: 32 bytes 237 ns against 230; 100 bytes 375 against 415; 200 bytes 930 against 800; 1 KB 2,5 µs against 3,4; 4 KB 7,7 µs against 12,2. HMAC of a short message 465 ns, before 1 640 ns.
+- `crypto` offers `sha256 raw`, `sha256 str`, `sha256 digest` and `sha256 file` with the results the runtime gave; `ai` imports `crypto`. The sections above that say short messages and HMAC stay on the runtime no longer hold.
+
+- ridgunc 1.0.56 removed the SHA-256 of the compiler and the runtime. libs and the 17 projects that use it pass their tests with that compiler (2026-11-21): no lib calls it (see the second update above).
+- The runtime's SHA-256 can be removed: no lib calls it (see the second update above).
 - `stable test` runs every suite twice (the second time with `RIDGUN_CPU=2`).
 - `ADR-0014` still holds for ChaCha20, Poly1305, GHASH, the big-number arithmetic and Argon2id; its AES-CTR on sixteen byte tensors is replaced by this decision.
 - Requirements to update: none of the approved ones change behaviour; `FR-CRYPTO-007` adds AES-256 and the two-mode criterion.

@@ -63,7 +63,7 @@ auth: none
   - `x25519 String String => String`, `x25519 public key String => String`
   - `aes128 block String String => String`, `aes128 gcm seal String String String String => String`, `aes128 gcm open String String String String => Int String`
   - `aes256 block String String => String`, `aes256 gcm seal String String String String => String`, `aes256 gcm open String String String String => Int String` (`FR-CRYPTO-007`; a 32-byte key)
-  - `sha256 cpu bytes String => String`: SHA-256 of a message of any length on the processor operations; `sha256 cpu from => Int`: the length from which `sha256 bytes` and `sha256 hex` use them (512)
+  - `sha256 raw String => String`, `sha256 str String => String`, `sha256 digest Tensor[U8] => Tensor[U8]`, `sha256 file String => String`: the names the runtime gave until ridgunc 1.0.55, with the same results (`sha256 raw` is `sha256 bytes`, `sha256 str` is `sha256 hex`)
   - `p256 public key String => String`, `p256 ecdh String String => String`
   - `ecdsa p256 verify String String String => Bool`, `ecdsa p256 verify sha256 String String String => Bool`
   - `ecdsa p384 verify String String String => Bool`, `ecdsa p384 verify sha384 String String String => Bool`
