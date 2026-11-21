@@ -8,7 +8,7 @@ import subprocess,hashlib,sys,tempfile,shutil
 defs=set()
 def addnames(text):
     for l in text.split('\n'):
-        m=re.match(r'^\s*(?:fn|op|cpu op) :: (.*?)\s*=>',l)
+        m=re.match(r'^\s*(?:fn|op|arch|idem) :: (.*?)\s*=>',l)
         if m:
             n=[]
             for x in m.group(1).split():
@@ -19,7 +19,7 @@ for f in glob.glob(SRC+'*.ridgun'): addnames(open(f).read())
 addnames(subprocess.run('ulimit -v 4000000; ridgunc prelude',shell=True,capture_output=True,text=True).stdout)
 BUILTIN={'str len','str slice','str contains','str starts with','str join','str char at','int to str','str to int','char from code','read file','write file','sys pipe','sys poll','sys close','sys read fd','sys write fd',
  'sys os','sys arch','sys time ms','sys wall time ms','send ... to','receive from','try receive from','sys open mode','shell exec','cli args','sys mkdir','sys exit','with region','with timeout','sys deadline ms','sys remaining ms',
- 'siphash13 range','siphash13 range low','clamp x between lo and hi','export argon2id','cpu op','new channel','send through','sys lstat','sys getenv','sys exec','sys fork','sys read','sys write'}
+ 'siphash13 range','siphash13 range low','clamp x between lo and hi','export argon2id','new channel','send through','sys lstat','sys getenv','sys exec','sys fork','sys read','sys write'}
 def names_report(lang='en'):
     tot=0
     for f in chapters(lang):
@@ -51,7 +51,7 @@ def code_report():
                     h=hashlib.md5(code.encode()).hexdigest()[:10]
                     if h not in seen:
                         open(f'{libdir}/zzv{h}.ridgun','w').write(code)
-                        r=subprocess.run(f'cd {libdir}; ulimit -v 4000000; timeout 120 ridgunc check zzv{h}.ridgun 2>&1',shell=True,capture_output=True,text=True).stdout
+                        r=subprocess.run(f'cd {libdir}; ulimit -v 4000000; timeout 120 ridgunc check --strict zzv{h}.ridgun 2>&1',shell=True,capture_output=True,text=True).stdout
                         seen[h]='0 error(s).' in r
                         if not seen[h]: bad+=1; print('HAND FAILS',lang,nn,[l[:120] for l in r.split('\n') if 'error' in l][:2])
                 elif s4>0 and s4<pos<s5:

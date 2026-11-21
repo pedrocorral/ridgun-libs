@@ -1,0 +1,200 @@
+-- ============================================================
+-- src/test/ridgun/test pool.ridgun
+-- The bounded pool of worker agents and the routing by key (POOL)
+-- @tests TS-POOL-001
+-- ============================================================
+
+import test
+import agent
+import pool
+import posix
+
+-- A worker: its state is the number of jobs it has done, a job is the milliseconds to take,
+-- and the result is `job * 1000 + jobs done before`.
+fn :: tw work Int Int => Int Int
+      tw work done_before ms =
+        sys poll (0 - 1) 0 ms -> waited
+        (done_before + 1, (ms * 1000) + done_before)
+
+fn :: pd slot (PoolDone Int)      => Int
+      pd slot (PoolDone k _ _)    =  k
+
+fn :: pd tag (PoolDone Int)       => String
+      pd tag (PoolDone _ tag _)   =  tag
+
+fn :: pd result (PoolDone Int)    => Int
+      pd result (PoolDone _ _ r)  =  r
+
+fn :: pd count [(PoolDone Int)] Int => Int
+      pd count []       n          =  n
+      pd count (_:rest) n          =  pd count rest (n + 1)
+
+fn :: pd slots sum [(PoolDone Int)] Int => Int
+      pd slots sum []       n           =  n
+      pd slots sum (d:rest) n           =  pd slots sum rest (n + (pd slot d))
+
+fn :: pd results sum [(PoolDone Int)] Int => Int
+      pd results sum []       n            =  n
+      pd results sum (d:rest) n            =  pd results sum rest (n + (pd result d))
+
+fn :: pd tagged [(PoolDone Int)] String Int => Int
+      pd tagged []       _   n =  n
+      pd tagged (d:rest) tag n =
+        | (pd tag d) == tag = pd tagged rest tag (n + 1)
+        | otherwise         = pd tagged rest tag n
+
+fn :: pd first [(PoolDone Int)] => PoolDone Int
+      pd first (d:_)            =  d
+
+fn :: is ready PollStatus    => Bool
+      is ready (PollReady _) =  True
+      is ready _             =  False
+
+-- Collects until `want` results are in or `tries` collects of 500 ms have passed.
+fn :: collect all (WorkerPool Int Int Int) Int Int [(PoolDone Int)] => [PoolDone Int] (WorkerPool Int Int Int)
+      collect all p want tries got =
+        | (pd count got 0) >= want or tries <= 0 = (got, p)
+        | otherwise                              = collect more (pool collect p 500) want tries got
+
+fn :: collect more ([(PoolDone Int)] (WorkerPool Int Int Int)) Int Int [(PoolDone Int)] => [PoolDone Int] (WorkerPool Int Int Int)
+      collect more (more, p) want tries got =  collect all p want (tries - 1) (got :: more)
+
+-- AC1, AC2, AC3, AC4, AC5: jobs go to idle workers, a full pool refuses at once, and a job that ends is
+-- seen on the pool's descriptor and collected once.
+-- @tests TS-POOL-001
+fn :: test pool takes jobs and refuses when full => ()
+      test pool takes jobs and refuses when full =
+        p0 = pool start 3 (tw work) 0
+        pool capacity p0 -> assert int equals 3 "a pool of 3 workers"
+        pool busy p0 -> assert int equals 0 "no worker is busy at the start"
+        pool idle p0 -> assert int equals 3 "the three are idle"
+        (pool done fd p0) >= 0 -> assert true "the pool has a descriptor to wait on"
+        k1, p1 = pool submit p0 300 "a"
+        k2, p2 = pool submit p1 300 "a"
+        k3, p3 = pool submit p2 300 "b"
+        k1 -> assert int equals 0 "the first job goes to worker 0"
+        k2 -> assert int equals 1 "the second to worker 1"
+        k3 -> assert int equals 2 "the third to worker 2"
+        pool busy p3 -> assert int equals 3 "the three workers are busy"
+        t0 = sys monotonic ms
+        k4, p4 = pool submit p3 300 "c"
+        k4 -> assert int equals (0 - 1) "a fourth job is refused"
+        ((sys monotonic ms) - t0) < 100 -> assert true "and refused at once, without waiting"
+        pool refused p4 -> assert int equals 1 "the pool counts the refused job"
+        pool tagged p4 "a" -> assert int equals 2 "two busy workers hold the tag a"
+        pool tagged p4 "b" -> assert int equals 1 "one holds the tag b"
+        pool tagged p4 "c" -> assert int equals 0 "none holds the tag of the refused job"
+
+        t1 = sys monotonic ms
+        none, p5 = pool collect p4 0
+        pd count none 0 -> assert int equals 0 "collect without waiting: nothing has ended"
+        ((sys monotonic ms) - t1) < 100 -> assert true "and it returns at once"
+        t2 = sys monotonic ms
+        none2, p6 = pool collect p5 50
+        pd count none2 0 -> assert int equals 0 "collect with 50 ms: still nothing"
+        ((sys monotonic ms) - t2) >= 40 -> assert true "after waiting about 50 ms"
+
+        is ready (wait fd (pool done fd p6) (poll in) 2000) -> assert true "the pool's descriptor is readable when a job ends"
+        got, p7 = collect all p6 3 10 []
+        pd count got 0 -> assert int equals 3 "the three results are collected"
+        pd slots sum got 0 -> assert int equals 3 "one from each worker: 0 + 1 + 2"
+        pd results sum got 0 -> assert int equals 900000 "each result is its own job on a fresh state"
+        pd tagged got "a" 0 -> assert int equals 2 "two results carry the tag a"
+        pd tagged got "b" 0 -> assert int equals 1 "one carries the tag b"
+        pool busy p7 -> assert int equals 0 "every worker is idle again"
+        pool tagged p7 "a" -> assert int equals 0 "and no tag is held"
+        late, p8 = pool collect p7 0
+        pd count late 0 -> assert int equals 0 "a result is never returned twice"
+
+        -- AC6 and AC1: jobs that end in another order keep their own results, and a worker keeps its state
+        ka, p9  = pool submit p8 200 "slow"
+        kb, p10 = pool submit p9 20 "fast"
+        ka -> assert int equals 0 "the slow job goes to worker 0"
+        kb -> assert int equals 1 "the fast job to worker 1"
+        first, p11 = collect all p10 1 10 []
+        pd tag (pd first first) -> assert str eq "fast" "the fast job ends first"
+        pd slot (pd first first) -> assert int equals 1 "and comes from worker 1"
+        pd result (pd first first) -> assert int equals 20001 "with its own result; worker 1 had done one job before"
+        second, p12 = collect all p11 1 10 []
+        pd tag (pd first second) -> assert str eq "slow" "the slow job ends later"
+        pd result (pd first second) -> assert int equals 200001 "with its own result; worker 0 had done one job before"
+
+        -- AC7: drain
+        kx, p13 = pool submit p12 100 "x"
+        ky, p14 = pool submit p13 100 "y"
+        drained, p15 = pool drain p14 2000
+        pd count drained 0 -> assert int equals 2 "drain returns the results of the two jobs in flight"
+        pd results sum drained 0 -> assert int equals 200004 "workers 0 and 1 had done two jobs each: 100002 + 100002"
+        pool busy p15 -> assert int equals 0 "nothing runs after the drain"
+        kz, p16 = pool submit p15 10 "z"
+        kz -> assert int equals (0 - 1) "a drained pool takes no more jobs"
+        pool done fd p16 -> assert int equals (0 - 1) "and its descriptor is closed"
+        ()
+
+-- Constraints: from 1 to 64 workers.
+-- @tests TS-POOL-001
+fn :: test pool size limits => ()
+      test pool size limits =
+        one = pool start 0 (tw work) 0
+        pool capacity one -> assert int equals 1 "fewer than 1 worker gives 1"
+        _, o2 = pool drain one 100
+        many = pool start 100 (tw work) 0
+        pool capacity many -> assert int equals 64 "more than 64 workers gives 64"
+        _, m2 = pool drain many 100
+        pool capacity m2 -> assert int equals 0 "a drained pool has no workers"
+        ()
+
+-- Pool routing by key: agent `abs(key) % size`; keys in turn visit the agents in turn.
+-- @tests TS-AGENT-001
+fn :: test pool routing by key => ()
+      test pool routing by key =
+        a0 = new counter agent 0
+        a1 = new counter agent 1000
+        a2 = new counter agent 2000
+        pl = Pool 3 [a0, a1, a2]
+        pool size pl -> assert int equals 3 "pool size 3"
+        agent list len (pool agents pl) 0 -> assert int equals 3 "pool agents holds the 3 agents"
+        pool ask shard pl 0 1 -> assert int equals 1 "key 0 -> agent 0"
+        pool ask shard pl 1 1 -> assert int equals 1001 "key 1 -> agent 1"
+        pool ask shard pl 2 1 -> assert int equals 2001 "key 2 -> agent 2"
+        pool ask shard pl 3 1 -> assert int equals 2 "key 3 -> agent 0 again: keys in turn visit the agents in turn"
+        pool ask shard pl 7 1 -> assert int equals 1002 "key 7 -> agent 1"
+        pool ask shard pl 7 1 -> assert int equals 1003 "the same key always reaches the same agent"
+        pool ask shard pl (0 - 2) 1 -> assert int equals 2002 "negative key -> agent abs(key) % size"
+        agent list len (pool drain all pl) 0 -> assert int equals 0 "pool drain all with nothing ready -> []"
+        pool broadcast pl 100
+        counter get a0 -> assert int equals 102 "broadcast reached agent 0"
+        counter get a1 -> assert int equals 1103 "broadcast reached agent 1"
+        counter get a2 -> assert int equals 2102 "broadcast reached agent 2"
+        one = Pool 1 [new counter agent 5]
+        pool ask shard one 12345 1 -> assert int equals 6 "a pool of one agent takes every key"
+        pool shutdown one
+        pool shutdown pl
+        is agent alive a0 -> assert false "pool shutdown stops agent 0"
+        is agent alive a2 -> assert false "pool shutdown stops agent 2"
+
+-- The routing by key on a list with no agents, and the size of a list.
+-- @tests TS-POOL-001
+fn :: test pool routing edge cases => ()
+      test pool routing edge cases =
+        none = pool of []
+        pool is empty none -> assert true "a list with no agents is empty"
+        pool size none -> assert int equals 0 "and its size is 0"
+        pool ask shard or none 3 1 (0 - 1) -> assert int equals (0 - 1) "pool ask shard or gives its default when there is nobody to ask"
+        a = new counter agent 0
+        b = new counter agent 1000
+        two = Pool 5 [a, b]
+        pool size two -> assert int equals 2 "the size is the number of agents, whatever number was written"
+        pool ask shard two 3 1 -> assert int equals 1001 "key 3 over two agents reaches agent 1"
+        pool ask shard or two 4 1 (0 - 1) -> assert int equals 1 "key 4 reaches agent 0, also with a default"
+        pool is empty two -> assert false "a list with agents is not empty"
+        pool shutdown two
+        ()
+
+fn :: main => ()
+      main =
+        test pool takes jobs and refuses when full
+        test pool size limits
+        test pool routing by key
+        test pool routing edge cases
+        echo "[PASS] test pool: TS-POOL-001 passed"

@@ -2,7 +2,7 @@
 
 | Requirement | Test specs | Implemented in | Tested in | Gap |
 |---|---|---|---|---|
-| API-AGENT-001 | TS-AGENT-001 | src/main/ridgun/lib/agent.ridgun, src/main/ridgun/lib/net_agent.ridgun, src/main/ridgun/lib/pool.ridgun | src/test/ridgun/test agent.ridgun | ok |
+| API-AGENT-001 | TS-AGENT-001 | src/main/ridgun/lib/agent.ridgun, src/main/ridgun/lib/net_agent.ridgun | src/test/ridgun/test agent.ridgun | ok |
 | API-AI-001 | — | src/main/ridgun/lib/ai.ridgun | — | no test spec |
 | API-BTREE-001 | TS-BTREE-001 | src/main/ridgun/lib/btree.ridgun | src/test/ridgun/test btree.ridgun | ok |
 | API-CLI-001 | TS-CLI-001 | src/main/ridgun/lib/cli.ridgun | src/test/ridgun/test cli.ridgun | ok |
@@ -23,6 +23,7 @@
 | API-LOCALE-001 | — | src/main/ridgun/lib/locale.ridgun | — | no test spec |
 | API-LOG-001 | TS-LOG-001 | src/main/ridgun/lib/log.ridgun | src/test/ridgun/test log.ridgun | ok |
 | API-MAIL-001 | TS-MAIL-001 | src/main/ridgun/lib/mail.ridgun | src/test/ridgun/test mail.ridgun | ok |
+| API-POOL-001 | TS-POOL-001 | src/main/ridgun/lib/pool.ridgun | src/test/ridgun/test pool.ridgun | ok |
 | API-MATH-001 | TS-MATH-001 | src/main/ridgun/lib/math.ridgun | src/test/ridgun/test math.ridgun | ok |
 | API-PATH-001 | TS-PATH-001 | src/main/ridgun/lib/path.ridgun | src/test/ridgun/test path.ridgun | ok |
 | API-POSIX-001 | TS-POSIX-001 | src/main/ridgun/lib/posix.ridgun | src/test/ridgun/test posix.ridgun | ok |
@@ -36,7 +37,7 @@
 | API-TST-001 | TS-TST-001 | src/main/ridgun/lib/test.ridgun | src/test/ridgun/test test.ridgun | ok |
 | API-UUID-001 | TS-UUID-001 | src/main/ridgun/lib/uuid.ridgun | src/test/ridgun/test uuid.ridgun | ok |
 | API-WS-001 | TS-WS-001 | src/main/ridgun/lib/ws.ridgun | src/test/ridgun/test ws.ridgun | ok |
-| FR-AGENT-001 | TS-AGENT-001 | src/main/ridgun/lib/agent.ridgun, src/main/ridgun/lib/net_agent.ridgun, src/main/ridgun/lib/pool.ridgun | src/test/ridgun/test agent.ridgun | ok |
+| FR-AGENT-001 | TS-AGENT-001 | src/main/ridgun/lib/agent.ridgun, src/main/ridgun/lib/net_agent.ridgun | src/test/ridgun/test agent.ridgun | ok |
 | FR-AI-001 | — | src/main/ridgun/lib/ai.ridgun | — | no test spec |
 | FR-BTREE-001 | TS-BTREE-001 | src/main/ridgun/lib/btree.ridgun | src/test/ridgun/test btree.ridgun | ok |
 | FR-CLI-001 | TS-CLI-001 | src/main/ridgun/lib/cli.ridgun | src/test/ridgun/test cli.ridgun | ok |
@@ -71,6 +72,7 @@
 | FR-POSIX-002 | TS-POSIX-002 | src/main/ridgun/lib/posix.ridgun | src/test/ridgun/test posix.ridgun | ok |
 | FR-POSIX-003 | TS-POSIX-003 | src/main/ridgun/lib/posix.ridgun | src/test/ridgun/test posix.ridgun | ok |
 | FR-POSIX-004 | TS-POSIX-004 | src/main/ridgun/lib/argon2id.ridgun, src/main/ridgun/lib/posix.ridgun, src/main/ridgun/lib/socket.ridgun, src/main/ridgun/lib/uuid.ridgun | src/test/ridgun/test posix.ridgun | ok |
+| FR-POOL-001 | TS-POOL-001 | src/main/ridgun/lib/pool.ridgun | src/test/ridgun/test pool.ridgun | ok |
 | FR-REGEX-001 | TS-REGEX-001 | src/main/ridgun/lib/regex.ridgun | src/test/ridgun/test regex.ridgun | ok |
 | FR-SOCK-001 | TS-SOCK-001 | src/main/ridgun/lib/socket.ridgun | src/test/ridgun/test socket.ridgun | ok |
 | FR-SOCK-002 | TS-SOCK-002 | src/main/ridgun/lib/socket.ridgun | src/test/ridgun/test socket.ridgun | ok |

@@ -6,7 +6,7 @@ NEW_CHAPTERS=[('35','hash'),('36','hashmap'),('37','tls'),('38','mail')]
 # Internals: ('sec', banner title prefix) or ('rng', title, first line prefix, last definition prefix)
 INTERNALS={
  'crypto':[('sec','RGF-019 Raw Byte Manipulation'),('sec','RFC 8439 ChaCha20 Stream Cipher'),('sec','RFC 8439 Poly1305 One-Time Authenticator'),
-           ('rng','SHA-256 on Processor Operations: a Block, the HMAC Step of PBKDF2 and the Loops','cpu op :: sha256 block','fn :: sha256 absorb'),
+           ('rng','SHA-256 on Processor Operations: a Block, the HMAC Step of PBKDF2 and the Loops','arch :: sha256 block','fn :: sha256 absorb'),
            ('sec','AES on processor operations'),
            ('rng','Montgomery Multiplication for Odd Moduli (`bn mont mul`, `bn mont pow`, `bn mod exp`)','fn :: bn mont loop','fn :: bn mod exp ')],
  'argon2id':[('sec','Byte (Tensor[U8], ADR-0010)'),('sec','Pure-Ridgun RFC 7693 BLAKE2b-512'),
@@ -16,8 +16,7 @@ INTERNALS={
  'jwt':[('sec','Tensor[U8] Byte & Base64url Helpers'),('sec','Constant-Time Equality'),('sec','HS256 (HMAC-SHA256) Signing & Verification'),('sec','Structured Claims Signing & Temporal Validation')],
  'ws':[('sec','Byte Helpers'),('sec','Tensor[U8] Byte Helpers'),('sec','Base64 for the RFC 6455 Handshake'),('sec','RFC 6455 XOR Masking & Frame Encoding / Decoding')],
  'posix':[('sec','Poll & Process Status ADTs'),('sec','Path Safety Validation'),('sec','RG-010 Filesystem & Process Operations'),('sec','Durable File Sync, Truncate, Lock & Positional Read'),('sec','Ridgun v0.9.5 Target OS / Arch & Process Probe Helpers')],
- 'pool':[('rng','Pool Size, Agent Selection, and Request-Reply by Key','type AgentPool','fn :: pool ask shard'),
-         ('rng','Broadcast, Non-Blocking Drain, and Shutdown','fn :: pool broadcast','fn :: pool shutdown')],
+ 'pool':[('sec','Worker pool (FR-POOL-001 AC1 to AC7)'),('sec','Routing by key over a list of agents')],
  'net_agent':[('rng','One Step of a Connection: Poll, Pass to the Agent, Write the Reply','type ConnSlot','fn :: conn after write'),
          ('rng','Reactor Sweep and Shutdown','fn :: reactor sweep ','fn :: reactor shutdown')],
  'hash':[('rng','SipRound on 32-Bit Halves: One Message Word per Turn','fn :: hs byte','fn :: siphash13 loop'),
@@ -39,7 +38,7 @@ NEW_EXAMPLES={
  'linalg':[('sqrt','fn :: test sqrt and exp ')],
  'jwt':[('bytes','fn :: test jwt bytes and utf8 round trip '),('vectors','fn :: test jwt standard vectors ')],
  'ws':[('large','fn :: test ws large frame round trip ')],
- 'pool':[('routing','fn :: test pool routing by key ')],
+ 'pool':[('routing','fn :: test pool routing by key '),('jobs','fn :: test pool takes jobs and refuses when full '),('limits','fn :: test pool size limits '),('edges','fn :: test pool routing edge cases ')],
  'net_agent':[('datapath','fn :: test net agent data path '),('slowpeer','fn :: test net agent large reply and slow peer ')],
  'hash':[('vectors','fn :: test siphash13 vectors '),('native','fn :: test native matches reference ')],
  'hashmap':[('basics','fn :: test hashmap basics '),('add','fn :: test hashmap add '),('keys','fn :: test hashmap unusual keys '),('records','fn :: test hashmap record values '),('growth','fn :: test hashmap growth ')],
@@ -171,7 +170,8 @@ FAMILIES_REPLACE={
  'agent':[('ask','`agent ask / agent try ask / ask int / ask str / ask int with timeout / ask str with timeout`'),('batch','`agent send batch / agent map batch / agent receive count / agent drain ready / relay int / relay str`'),
           ('life','`is agent alive / agent status / stop agent / agent stop all`'),('counter','`new counter agent / counter add / counter get / counter reset`'),('log','`new log agent / log append / log read / log clear`'),
           ('kv','`new kv agent / agent kv put / agent kv get / agent kv delete / agent kv has / agent kv count / agent kv keys / agent kv clear`')],
- 'pool':[('pool','`Pool / pool size / pool agents`'),('shard','`pool ask shard`'),('broadcast','`pool broadcast`'),('drain','`pool drain all / pool drain ready`'),('shutdown','`pool shutdown`')],
+ 'pool':[('start','`pool start / pool capacity / pool busy / pool idle`'),('submit','`pool submit / pool refused`'),('collect','`pool done fd / pool collect`'),('tagged','`pool tagged`'),('drainw','`pool drain`'),
+         ('pool','`pool of / pool size / pool is empty / pool agents`'),('shard','`pool ask shard / pool ask shard or`'),('broadcast','`pool broadcast`'),('drain','`pool drain all / pool drain ready`'),('shutdown','`pool shutdown`')],
  'net_agent':[('slot','`ConnSlot / StepOutcome`'),('step','`conn poll step`'),('sweep','`reactor sweep`'),('shutdown','`reactor shutdown`')],
 }
 # One row replaced: old code cell -> (new code cell, string key or None to keep the old purpose)
@@ -217,3 +217,34 @@ RENAME={
           'kv count':'agent kv count','kv keys':'agent kv keys','kv clear':'agent kv clear'},
 }
 RENAME['pool']=dict(RENAME['agent']); RENAME['net_agent']=dict(RENAME['agent'])
+
+# Examples that leave a chapter: start of the first line of their code
+DROP_EXAMPLES={
+ 'pool':['fn :: test spec combinators pool and net agent ','fn :: test agent lifecycle and counter ','fn :: test log and kv agents '],
+}
+# New code for the hand-written examples 1 and 2 of a chapter that already exists
+HAND_OVERRIDE={
+ 'pool':{1:'''import pool
+
+fn :: doblar Int Int => Int Int
+      doblar hechos n =  (hechos + 1, n * 2)
+
+fn :: enviar y recoger => Int
+      enviar y recoger =
+        p0          = pool start 4 (doblar) 0
+        quien, p1   = pool submit p0 21 "cliente-a"
+        hechos, p2  = pool collect p1 1000
+        resto, p3   = pool drain p2 1000
+        pool refused p3
+''',2:'''import pool
+
+fn :: entregado (Int (WorkerPool Int Int Int)) => String (WorkerPool Int Int Int)
+      entregado (k, p) =  ("trabajador {k}", p)
+
+fn :: aceptar o rechazar (WorkerPool Int Int Int) Int String => String (WorkerPool Int Int Int)
+      aceptar o rechazar p trabajo cliente =
+        | (pool tagged p cliente) >= 2 = ("demasiadas peticiones de " + cliente, p)
+        | (pool idle p) == 0           = ("ocupado", p)
+        | otherwise                    = entregado (pool submit p trabajo cliente)
+'''},
+}

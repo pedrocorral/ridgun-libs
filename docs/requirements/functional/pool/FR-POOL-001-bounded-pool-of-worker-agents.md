@@ -2,12 +2,12 @@
 id: FR-POOL-001
 title: Run jobs on a bounded pool of worker agents that keep their own state
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: POOL
 depends_on: [FR-AGENT-001, FR-POSIX-001]
 related: [API-POOL-001, DM-Pool, ADR-0015, FR-POSIX-005, VUL-INFRA-002, VUL-INPUT-001]
-tests: []
+tests: [TS-POOL-001]
 ---
 # FR-POOL-001 — Run jobs on a bounded pool of worker agents that keep their own state
 

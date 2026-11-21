@@ -33,7 +33,7 @@
 | `28-lib-http-uris-http11-and-tcp-client.md` | Chapter 28: The `http` Lib — RFC 3986 URIs, RFC 9112 HTTP/1.1 Wire Codec, and Live TCP Client | Learning and using the `http` (`HTTP`) lib in Ridgun projects |
 | `29-lib-ws-rfc6455-websocket-protocol.md` | Chapter 29: The `ws` Lib — RFC 6455 WebSocket Handshake, 16/64-Bit Frame Codec, and XOR Masking | Learning and using the `ws` (`WS`) lib in Ridgun projects |
 | `30-lib-agent-native-actor-concurrency.md` | Chapter 30: The `agent` Lib — Native Actor Concurrency (`agent`, `send`, `receive`), Request-Reply Combinators, and Counter, Log and Key-Value Agents | Learning and using the `agent` (`AGENT`) lib in Ridgun projects |
-| `31-lib-pool-agent-pools-and-sharding-by-key.md` | Chapter 31: The `pool` Lib — Agent Pools: Sharding by Key, Broadcast, and Non-Blocking Drain | Learning and using the `pool` (`AGENT`) lib in Ridgun projects |
+| `31-lib-pool-bounded-pool-of-worker-agents.md` | Chapter 31: The `pool` Lib — A Bounded Pool of Worker Agents, and Routing by Key | Learning and using the `pool` (`AGENT`) lib in Ridgun projects |
 | `32-lib-net-agent-one-agent-per-connection-and-reactor.md` | Chapter 32: The `net_agent` Lib — One Agent per Connection: Non-Blocking Polling and Reactor Sweep | Learning and using the `net_agent` (`AGENT`) lib in Ridgun projects |
 | `33-lib-ai-ai-agents-tools-streaming-rag-and-mcp.md` | Chapter 33: The `ai` lib — AI Agents, Tool Calling, SSE Streaming, Bounded ReAct, Guardrails, Mini-RAG & MCP | Learn and use the `ai` (`AI`) lib in Ridgun projects |
 | `34-lib-locale-cldr-plurals-dates-and-numbers.md` | Chapter 34: The `locale` Lib — CLDR Plural Rules, UTC Date & Number Formatting, and Language Autonyms | Learning and using the `locale` (`LOCALE`) lib in Ridgun projects |

@@ -1,52 +1,291 @@
 -- ============================================================
 -- src/main/ridgun/lib/pool.ridgun
--- Pure-Ridgun Sharded & Round-Robin Agent Pools Library (AGENT)
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
--- @implements DM-Agent
--- @mitigates VUL-INPUT-001
+-- Bounded pool of worker agents with their own state, and routing by key over a list of agents (POOL)
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+-- @implements DM-Pool
+-- @mitigates VUL-INFRA-002
 -- ============================================================
 
 module :: pool
 
+import posix
+
+-- ── Worker pool (FR-POOL-001 AC1 to AC7) ─────────────────────
+-- A fixed number of worker agents, each with its own state. A job goes to an idle worker or is refused.
+-- When a worker ends a job it writes its number to a pipe, so the caller waits on a descriptor and never polls.
+
+-- What a worker gets: the function to run, its own number, the write end of the pipe and the job.
+-- Inside a `type` the pair of the result is written `(S, R)` (ridgunc 1.0.51 does not read `S R` there).
+type PoolMsg S J R = PoolMsg (S J => (S, R)) Int Int J
+
+-- One worker: its agent, whether it runs a job, its number and the tag of that job.
+-- ps_s, ps_j, ps_r are always empty: ridgunc 1.0.51 only counts a type parameter that is the type of a field
+-- or of a list field, and here S, J and R appear only inside the agent's type.
+type PoolSlot S J R = ps_agent: (Agent (PoolMsg S J R) R), ps_busy: Bool, ps_index: Int, ps_tag: String, ps_s: [S], ps_j: [J], ps_r: [R]
+
+-- wp_done_r / wp_done_w: the pipe the workers report on. wp_open: False once the pool is drained.
+-- wp_s, wp_j, wp_r are always empty, for the same reason as in PoolSlot.
+type WorkerPool S J R = wp_fn: (S J => (S, R)), wp_slots: [(PoolSlot S J R)], wp_done_r: Int, wp_done_w: Int, wp_refused: Int, wp_open: Bool, wp_s: [S], wp_j: [J], wp_r: [R]
+
+-- A job that ended: the worker that ran it, its tag and its result.
+type PoolDone R = PoolDone Int String R
+
+-- The worker: runs the job on its state, tells the pool it has ended, and answers the result.
+-- The number written is the worker's number plus 1, so it is never the byte 0.
+fn :: pool run S (PoolMsg S J R) => S R
+      pool run st (PoolMsg f slot done job) =
+        st2, r = f st job
+        posix write done (char from code (slot + 1)) -> ()
+        (st2, r)
+
+fn :: pool new slots S Int Int => [PoolSlot S J R]
+      pool new slots s0 i n =
+        | i >= n    = []
+        | otherwise = [PoolSlot (agent (pool run) s0) False i "" [] [] []] :: (pool new slots s0 (i + 1) n)
+
+fn :: pool clamp workers Int => Int
+      pool clamp workers n =
+        | n < 1     = 1
+        | n > 64    = 64
+        | otherwise = n
+
+fn :: pool started (S J => (S, R)) S Int (Int Int Int) => WorkerPool S J R
+      pool started f s0 n (rc, r, w) =
+        | rc != 0   = WorkerPool f [] (0 - 1) (0 - 1) 0 False [] [] []
+        | otherwise = WorkerPool f (pool new slots s0 0 n) r w 0 True [] [] []
+
+-- A pool of `n` workers (1 to 64) that run `f`, each starting from the state `s0`.
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+-- @mitigates VUL-INFRA-002
+fn :: pool start Int (S J => (S, R)) S => WorkerPool S J R
+      pool start n f s0 =  pool started f s0 (pool clamp workers n) posix pipe
+
+fn :: pool slot count [(PoolSlot S J R)] Int => Int
+      pool slot count []       n =  n
+      pool slot count (_:rest) n =  pool slot count rest (n + 1)
+
+fn :: pool busy count [(PoolSlot S J R)] Int => Int
+      pool busy count []       n =  n
+      pool busy count (s:rest) n =
+        | ps_busy s = pool busy count rest (n + 1)
+        | otherwise = pool busy count rest n
+
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+fn :: pool capacity (WorkerPool S J R) => Int
+      pool capacity p =  pool slot count (wp_slots p) 0
+
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+fn :: pool busy (WorkerPool S J R) => Int
+      pool busy p =  pool busy count (wp_slots p) 0
+
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+fn :: pool idle (WorkerPool S J R) => Int
+      pool idle p =  (pool capacity p) - (pool busy p)
+
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+fn :: pool refused (WorkerPool S J R) => Int
+      pool refused p =  wp_refused p
+
+-- The descriptor that is readable when a job has ended (-1 when the pool could not start).
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+fn :: pool done fd (WorkerPool S J R) => Int
+      pool done fd p =  wp_done_r p
+
+fn :: pool tag count [(PoolSlot S J R)] String Int => Int
+      pool tag count []       _   n =  n
+      pool tag count (s:rest) tag n =
+        | (ps_busy s) and (ps_tag s) == tag = pool tag count rest tag (n + 1)
+        | otherwise                         = pool tag count rest tag n
+
+-- Busy workers whose job was submitted with `tag`.
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+fn :: pool tagged (WorkerPool S J R) String => Int
+      pool tagged p tag =  pool tag count (wp_slots p) tag 0
+
+-- The number of the first idle worker, or -1.
+fn :: pool first idle [(PoolSlot S J R)] => Int
+      pool first idle []       =  0 - 1
+      pool first idle (s:rest) =
+        | ps_busy s = pool first idle rest
+        | otherwise = ps_index s
+
+-- Hands the job to worker `k` and marks it busy with the tag.
+fn :: pool hand [(PoolSlot S J R)] (S J => (S, R)) Int Int J String => [PoolSlot S J R]
+      pool hand []       _ _ _ _   _   =  []
+      pool hand (s:rest) f w k job tag =
+        | (ps_index s) == k = [pool handed s (PoolMsg f k w job) tag] :: rest
+        | otherwise         = [s] :: (pool hand rest f w k job tag)
+
+fn :: pool handed (PoolSlot S J R) (PoolMsg S J R) String => PoolSlot S J R
+      pool handed s m tag =
+        send m to (ps_agent s)
+        s with ps_busy = True, ps_tag = tag
+
+fn :: pool submit to (WorkerPool S J R) J String Int => Int (WorkerPool S J R)
+      pool submit to p job tag k =
+        | k < 0     = (0 - 1, p with wp_refused = ((wp_refused p) + 1))
+        | otherwise = (k, p with wp_slots = (pool hand (wp_slots p) (wp_fn p) (wp_done_w p) k job tag))
+
+-- Gives the job to an idle worker: the answer is the number of that worker, or -1 when every worker
+-- is busy or the pool was drained, and the pool to use from now on. It never waits.
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+-- @mitigates VUL-INFRA-002
+fn :: pool submit (WorkerPool S J R) J String => Int (WorkerPool S J R)
+      pool submit p job tag =
+        | not (wp_open p) = (0 - 1, p with wp_refused = ((wp_refused p) + 1))
+        | otherwise       = pool submit to p job tag (pool first idle (wp_slots p))
+
+fn :: pool is ready PollStatus    => Bool
+      pool is ready (PollReady _) =  True
+      pool is ready _             =  False
+
+-- Frees worker `k` and takes its result, which is ready: its byte is in the pipe.
+fn :: pool take [(PoolSlot S J R)] Int [(PoolSlot S J R)] [(PoolDone R)] => [PoolSlot S J R] [PoolDone R]
+      pool take []       _ kept got =  (kept, got)
+      pool take (s:rest) k kept got =
+        | (ps_index s) == k and (ps_busy s) = pool take rest k (kept :: [s with ps_busy = False, ps_tag = ""]) (got :: [PoolDone k (ps_tag s) (receive from (ps_agent s))])
+        | otherwise                         = pool take rest k (kept :: [s]) got
+
+fn :: pool take all [(PoolSlot S J R)] String Int [(PoolDone R)] => [PoolSlot S J R] [PoolDone R]
+      pool take all slots bytes i got =
+        | i >= (str len bytes) = (slots, got)
+        | otherwise            = pool take next (pool take slots ((str char at bytes i) - 1) [] got) bytes i
+
+fn :: pool take next ([(PoolSlot S J R)] [(PoolDone R)]) String Int => [PoolSlot S J R] [PoolDone R]
+      pool take next (slots, got) bytes i =  pool take all slots bytes (i + 1) got
+
+fn :: pool collected (WorkerPool S J R) ([(PoolSlot S J R)] [(PoolDone R)]) => [PoolDone R] (WorkerPool S J R)
+      pool collected p (slots, got) =  (got, p with wp_slots = slots)
+
+-- The jobs that have ended, each exactly once, and the pool to use from now on.
+-- Waits at most `timeout_ms` for the first one (0: does not wait).
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+fn :: pool collect (WorkerPool S J R) Int => [PoolDone R] (WorkerPool S J R)
+      pool collect p timeout_ms =
+        | (pool busy p) == 0                                           = ([], p)
+        | pool is ready (wait fd (wp_done_r p) (poll in) timeout_ms)   = pool collected p (pool take all (wp_slots p) (posix read (wp_done_r p) 256) 0 [])
+        | otherwise                                                    = ([], p)
+
+fn :: pool stop slots [(PoolSlot S J R)] => ()
+      pool stop slots []       =  ()
+      pool stop slots (s:rest) =
+        stop (ps_agent s)
+        pool stop slots rest
+
+fn :: pool closed (WorkerPool S J R) [(PoolDone R)] => [PoolDone R] (WorkerPool S J R)
+      pool closed p got =
+        pool stop slots (wp_slots p)
+        posix close (wp_done_r p) -> ()
+        posix close (wp_done_w p) -> ()
+        (got, p with wp_slots = [], wp_done_r = (0 - 1), wp_done_w = (0 - 1), wp_open = False)
+
+fn :: pool drain until (WorkerPool S J R) Int [(PoolDone R)] => [PoolDone R] (WorkerPool S J R)
+      pool drain until p deadline got =
+        | (pool busy p) == 0 or (sys monotonic ms) >= deadline = pool closed p got
+        | otherwise                                            = pool drain more (pool collect p (deadline - (sys monotonic ms))) deadline got
+
+fn :: pool drain more ([(PoolDone R)] (WorkerPool S J R)) Int [(PoolDone R)] => [PoolDone R] (WorkerPool S J R)
+      pool drain more (more, p) deadline got =  pool drain until p deadline (got :: more)
+
+-- Takes no more jobs, waits at most `timeout_ms` for the ones in flight, stops every worker and closes
+-- the pipe. The answer is the results of those jobs and the drained pool.
+-- The result comes first in every pair: ridgunc 1.0.55 in strict mode refuses an output that starts with `(`.
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+fn :: pool drain (WorkerPool S J R) Int => [PoolDone R] (WorkerPool S J R)
+      pool drain p timeout_ms =
+        | not (wp_open p) = ([], p)
+        | otherwise       = pool drain until (p with wp_open = False) ((sys monotonic ms) + timeout_ms) []
+
+-- ── Routing by key over a list of agents (FR-POOL-001 AC8) ───
+
+
 type AgentPool = Pool Int [Agent]
 
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
-fn :: pool size AgentPool   => Int
-      pool size (Pool sz _) =  sz
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+fn :: pool count [Agent]  Int => Int
+      pool count []       n   =  n
+      pool count (_:rest) n   =  pool count rest (n + 1)
 
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
+-- A pool of the agents of a list.
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+fn :: pool of [Agent] => AgentPool
+      pool of ags     =  Pool (pool count ags 0) ags
+
+-- The number of agents the pool holds (the list decides, not the number written in `Pool n agents`).
+fn :: pool size AgentPool    => Int
+      pool size (Pool _ ags) =  pool count ags 0
+
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+fn :: pool is empty AgentPool => Bool
+      pool is empty pl        =  (pool size pl) == 0
+
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
 fn :: pool agents AgentPool    => [Agent]
       pool agents (Pool _ ags) =  ags
 
 -- Look up the i-th agent in a pool (0-indexed)
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
 fn :: pool get agent [Agent]  Int => Agent
       pool get agent (ag:_)   0   =  ag
       pool get agent (_:rest) idx =  pool get agent rest (idx - 1)
 
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
 fn :: pool abs Int => Int
       pool abs x
         | x < 0     = 0 - x
         | otherwise = x
 
--- Route a message to a deterministic shard `key_hash % size` and return the reply via `ask`
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
+-- Routes a message to agent `abs(key) % n`, n being the number of agents of the pool, and returns its reply.
+-- A pool with no agents has nobody to ask: the program stops with a message. `pool ask shard or` does not stop.
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
 fn :: pool ask shard AgentPool Int A => B
-      pool ask shard (Pool size agents) key_hash msg =
-        (pool abs key_hash) % size -> shard_idx
-        pool get agent agents shard_idx -> target_ag
-        ask target_ag msg
+      pool ask shard (Pool _ agents) key_hash msg =
+        pool ask at agents (pool count agents 0) key_hash msg
+
+fn :: pool ask at [Agent] Int Int A => B
+      pool ask at agents n key_hash msg =
+        | n <= 0    = pool stop empty msg
+        | otherwise = ask (pool get agent agents ((pool abs key_hash) % n)) msg
+
+fn :: pool stop empty A => B
+      pool stop empty msg =
+        echo "pool ask shard: the pool has no agents"
+        sys exit 1
+        pool stop empty msg
+
+-- The same, or `default` when the pool has no agents.
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+fn :: pool ask shard or AgentPool Int A B => B
+      pool ask shard or (Pool _ agents) key_hash msg default =
+        pool ask at or agents (pool count agents 0) key_hash msg default
+
+fn :: pool ask at or [Agent] Int Int A B => B
+      pool ask at or agents n key_hash msg default =
+        | n <= 0    = default
+        | otherwise = ask (pool get agent agents ((pool abs key_hash) % n)) msg
 
 -- Broadcast a message to every agent in the pool (e.g. configuration reload or tick)
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
 fn :: pool broadcast AgentPool       A   => ()
       pool broadcast (Pool _ agents) msg =  pool broadcast list agents msg
 
@@ -72,8 +311,8 @@ fn :: pool drain step Agent Option [B] => [B]
       pool drain step ag (Some r) acc = pool drain ready loop ag (acc :: [r])
 
 -- Drain all ready responses across all shards in the pool (non-blocking)
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
 fn :: pool drain all AgentPool       => [B]
       pool drain all (Pool _ agents) =  pool drain list agents []
 
@@ -90,7 +329,7 @@ fn :: pool stop list [Agent]   => ()
         pool stop list rest
 
 -- Stop all agents in the pool and reclaim their isolated state
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
 fn :: pool shutdown AgentPool       => ()
       pool shutdown (Pool _ agents) =  pool stop list agents

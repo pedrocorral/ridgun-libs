@@ -37,3 +37,4 @@ Read this when: working in a domain.
 | `locale/` | Test specifications for `LOCALE` (`FR-LOCALE-001`) | Testing `locale.ridgun` |
 | `tls/` | Test specifications for `TLS` (`FR-TLS-001`) | Testing `tls.ridgun` |
 | `mail/` | Test specifications for `MAIL` (`FR-MAIL-001`) | Testing `mail.ridgun` |
+| `pool/` | Test specifications for `POOL` (`FR-POOL-001`) | Testing `pool.ridgun` |

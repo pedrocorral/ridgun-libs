@@ -561,4 +561,4 @@ fn :: agent kv clear (Agent KvCmd String) => String
 
 ---
 
-**31. kapituluan** **`pool`** lib-a sakonki esploratuko dugu (`pool` lib-a — Agente-poolak: Gako bidezko Zatikatzea, Hedapena eta Hustuketa Ez-blokeatzailea).
+**31. kapituluan** **`pool`** lib-a sakonki esploratuko dugu (`pool` lib-a — Agente Langileen Pool Mugatua eta Gako bidezko Zatikatzea).

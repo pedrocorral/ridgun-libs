@@ -24,14 +24,7 @@ auth: none
   - `agent map batch Agent [A] => [B]`
   - `agent drain ready Agent => [B]`
   - `agent stop all [Agent] => ()`
-- Sharded & Round-Robin Agent Pools (`pool.ridgun`):
-  - `type AgentPool = Pool Int [Agent]`
-  - `pool get agent [Agent] Int => Agent`
-  - `pool ask shard AgentPool Int A => B`
-  - `pool abs Int => Int`
-  - `pool broadcast AgentPool A => ()`
-  - `pool drain all AgentPool => [B]`
-  - `pool shutdown AgentPool => ()`
+- Agent pools (`pool.ridgun`): see `API-POOL-001`.
 - Per-Connection Stateful Agent Reactor (`net_agent.ridgun`):
   - `type ConnSlot = ConnSlot Int Agent`
   - `type StepOutcome = ConnKeep ConnSlot String | ConnClosed`

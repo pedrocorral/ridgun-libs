@@ -11,7 +11,7 @@ def lib_of(path):
     return 'net_agent' if n=='net' else n
 def src_of(lib): return open(SRC+lib+'.ridgun').read()
 def test_path(lib):
-    if lib in ('pool','net_agent'): lib='agent'
+    if lib=='net_agent': lib='agent'          # net_agent is tested in the suite of agent
     for c in (f'test {lib}.ridgun', f'test {lib.replace("_"," ")}.ridgun'):
         if os.path.exists(TST+c): return TST+c
     return None
@@ -70,7 +70,7 @@ def catalog(src):
     for l in src.split('\n'):
         if re.match(r'^(expand )?type ',l): types.append(l.rstrip())
         elif l.startswith('op :: '): ops.append(re.sub(r'\s+',' ',l).strip())
-        elif (l.startswith('fn :: ') or l.startswith('cpu op :: ')) and '=>' in l:   # a processor operation is listed with the functions
+        elif l.startswith(('fn :: ','arch :: ','idem :: ')) and '=>' in l:   # processor operations and run-once functions are listed with the functions
             left,ret=l.split('=>',1)
             fns.append((re.sub(r'\s+',' ',left).strip(),re.sub(r'\s+',' ',ret).strip()))
     return types,ops,fns

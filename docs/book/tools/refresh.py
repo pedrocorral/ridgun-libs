@@ -85,46 +85,59 @@ def example_code(lib,tf,order,prefix):
     if not k: raise SystemExit(f'{lib}: no test function {prefix!r}')
     return clean(tf[k[0]])
 def regen_examples(ls,lib,lang,nn):
+    """Section NN.3: examples that show a test get the current test function; examples named in DROP_EXAMPLES
+    leave; hand examples named in HAND_OVERRIDE get new code; examples of NEW_EXAMPLES not shown yet are added;
+    the examples are numbered again."""
     s=find(ls,rf'^## {nn}\.3\.')
     if s<0: return ls
     e=find(ls,r'^## ',s+1)
     if e<0: e=len(ls)
+    cut=e
+    while cut>s and ls[cut-1].strip()!='---': cut-=1
+    cut=cut-1 if cut>s else e                      # the '---' that closes the section, when there is one
+    heads=[i for i in range(s,cut) if re.match(rf'^### {nn}\.3\.\d+\. ',ls[i])]
+    if not heads: return ls
+    pre=ls[s:heads[0]]
+    chunks=[ls[h:(heads[k+1] if k+1<len(heads) else cut)] for k,h in enumerate(heads)]
     tf,order=tests_of(lib)
-    out=ls[:s]; i=s; shown=set(); intro=None; last_head=None
-    while i<e:
-        l=ls[i]
-        m=re.match(rf'^### {nn}\.3\.(\d+)\. ',l)
-        if m: last_head=(int(m.group(1)),l)
-        if l.startswith('```ridgun'):
-            j=i+1
-            while not ls[j].startswith('```'): j+=1
-            code=ls[i+1:j]; head=code[0].rstrip() if code else ''
-            if head in tf and head.startswith('fn :: test'):
-                new=clean(tf[head]).split('\n'); shown.add(head)
-                if intro is None:
-                    k=i-1
-                    while not ls[k].strip(): k-=1
-                    intro=ls[k]
-                out+=['```ridgun']+new+['```']
-            else:
-                if head.startswith('fn :: test'): REPORT.append(f'{lang}/{nn} {lib}: example shows a test that is gone: {head}')
-                out+=ls[i:j+1]
-            i=j+1; continue
-        out.append(l); i+=1
-    add=[(k,p) for k,p in NEW_EXAMPLES.get(lib,[]) if not any(h.startswith(p) for h in shown)]
-    if add and lib not in DOMAIN:
-        # insert before the '---' that closes the section
-        cut=len(out)
-        while out[cut-1].strip()!='---': cut-=1
-        cut-=1
-        tail=out[cut:]; out=out[:cut]
-        while out and not out[-1].strip(): out.pop()
-        n,hl=last_head
-        for key,p in add:
+    drops=DROP_EXAMPLES.get(lib,[]); over=HAND_OVERRIDE.get(lib,{}) if lib not in DOMAIN else {}
+    shown=set(); intro=None; kept=[]
+    for k,ch in enumerate(chunks):
+        a=find(ch,r'^```ridgun'); 
+        if a<0: kept.append(ch); continue
+        z=a+1
+        while not ch[z].startswith('```'): z+=1
+        code=ch[a+1:z]; head=code[0].rstrip() if code else ''
+        if any(head.startswith(d) for d in drops): continue
+        if head in tf and head.startswith('fn :: test'):
+            shown.add(head)
+            if intro is None:
+                i=a-1
+                while not ch[i].strip(): i-=1
+                intro=ch[i]
+            code=clean(tf[head]).split('\n')
+        elif (k+1) in over:
+            code=over[k+1].rstrip('\n').split('\n')
+        elif head.startswith('fn :: test'):
+            REPORT.append(f'{lang}/{nn} {lib}: example shows a test that is gone: {head}')
+        ch=ch[:a+1]+code+ch[z:]
+        while ch and not ch[-1].strip(): ch.pop()
+        kept.append(ch)
+    out=ls[:s]+pre
+    n=0; model=chunks[0][0]
+    for ch in kept:
+        n+=1
+        m=re.match(rf'^### {nn}\.3\.(\d+)\.(.*)$',ch[0])
+        rest=m.group(2) if int(m.group(1))==n else re.sub(rf'\b{m.group(1)}\b',str(n),m.group(2),count=1)
+        out+=[f'### {nn}.3.{n}.{rest}']+ch[1:]+['']
+    if lib not in DOMAIN:
+        if intro is None and NEW_EXAMPLES.get(lib):
+            intro=lines_of(lang,'12')[96].replace('glob',lib)       # the sentence that opens a test example
+        for key,pfx in NEW_EXAMPLES.get(lib,[]):
+            if any(h.startswith(pfx) for h in shown): continue
             n+=1
-            out+=['',example_heading(hl,nn,n,st(lang,f'ex.{lib}.{key}')),'',intro,'','```ridgun']+example_code(lib,tf,order,p).split('\n')+['```']
-        out+=['']+tail
-    return out+ls[e:]
+            out+=[example_heading(model,nn,n,st(lang,f'ex.{lib}.{key}')),'',intro,'','```ridgun']+example_code(lib,tf,order,pfx).split('\n')+['```','']
+    return out+ls[cut:]
 def example_heading(model,nn,n,title):
     m=re.match(rf'^### {nn}\.3\.(\d+)\. (.*?): ',model)
     old=m.group(1); label=re.sub(rf'\b{old}\b',str(n),m.group(2),count=1)

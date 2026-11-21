@@ -34,35 +34,6 @@ fn :: ag echo conn step CounterState String => CounterState String
         nxt = (cnt_val st) + 1
         (CounterState nxt, "echo:{nxt}:{msg}")
 
--- Pool routing by key: agent `abs(key) % size`; keys in turn visit the agents in turn.
--- @tests TS-AGENT-001
-fn :: test pool routing by key => ()
-      test pool routing by key =
-        a0 = new counter agent 0
-        a1 = new counter agent 1000
-        a2 = new counter agent 2000
-        pl = Pool 3 [a0, a1, a2]
-        pool size pl -> assert int equals 3 "pool size 3"
-        agent list len (pool agents pl) 0 -> assert int equals 3 "pool agents holds the 3 agents"
-        pool ask shard pl 0 1 -> assert int equals 1 "key 0 -> agent 0"
-        pool ask shard pl 1 1 -> assert int equals 1001 "key 1 -> agent 1"
-        pool ask shard pl 2 1 -> assert int equals 2001 "key 2 -> agent 2"
-        pool ask shard pl 3 1 -> assert int equals 2 "key 3 -> agent 0 again: keys in turn visit the agents in turn"
-        pool ask shard pl 7 1 -> assert int equals 1002 "key 7 -> agent 1"
-        pool ask shard pl 7 1 -> assert int equals 1003 "the same key always reaches the same agent"
-        pool ask shard pl (0 - 2) 1 -> assert int equals 2002 "negative key -> agent abs(key) % size"
-        agent list len (pool drain all pl) 0 -> assert int equals 0 "pool drain all with nothing ready -> []"
-        pool broadcast pl 100
-        counter get a0 -> assert int equals 102 "broadcast reached agent 0"
-        counter get a1 -> assert int equals 1103 "broadcast reached agent 1"
-        counter get a2 -> assert int equals 2102 "broadcast reached agent 2"
-        one = Pool 1 [new counter agent 5]
-        pool ask shard one 12345 1 -> assert int equals 6 "a pool of one agent takes every key"
-        pool shutdown one
-        pool shutdown pl
-        is agent alive a0 -> assert false "pool shutdown stops agent 0"
-        is agent alive a2 -> assert false "pool shutdown stops agent 2"
-
 fn :: outcome text StepOutcome       => String
       outcome text ConnClosed        =  "closed"
       outcome text (ConnKeep _ out)  =  "keep:" + out
@@ -325,7 +296,6 @@ fn :: test log and kv agents => ()
 fn :: main => ()
       main =
         test spec combinators pool and net agent
-        test pool routing by key
         test net agent data path
         test net agent large reply and slow peer
         test agent lifecycle and counter

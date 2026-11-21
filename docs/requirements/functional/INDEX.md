@@ -37,5 +37,5 @@ Read this when: working on a domain. Skip when: the domain is not yours.
 | `locale/` | CLDR locale data library for cardinal plural rules, UTC date/datetime formatting, number formatting & language autonyms (`FR-LOCALE-001`) | Working on `locale.ridgun` |
 | `tls/` | RFC 8446 TLS 1.3 & RFC 5246 TLS 1.2 (ECDHE + AEAD) client protocol & X.509 certificate verification library (`FR-TLS-001`) | Working on `tls.ridgun` |
 | `mail/` | RFC 5322 email composition & RFC 5321/6409/8314/3207/4954 SMTP client over TLS library (`FR-MAIL-001`) | Working on `mail.ridgun` |
-| `pool/` | Bounded pool of worker agents with their own state, completion without polling and routing by key (`FR-POOL-001`, approved) | Working on `pool.ridgun` |
+| `pool/` | Bounded pool of worker agents with their own state, completion without polling and routing by key (`FR-POOL-001`) | Working on `pool.ridgun` |
 | `netagent/` | Connection reactor: one loop, buffers and limits per connection (`FR-NETAGENT-001`, approved) | Working on `net_agent.ridgun` |

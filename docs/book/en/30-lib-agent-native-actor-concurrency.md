@@ -561,4 +561,4 @@ fn :: agent kv clear (Agent KvCmd String) => String
 
 ---
 
-In **Chapter 31**, we will explore the **`pool`** lib in full depth (The `pool` Lib — Agent Pools: Sharding by Key, Broadcast, and Non-Blocking Drain).
+In **Chapter 31**, we will explore the **`pool`** lib in full depth (The `pool` Lib — A Bounded Pool of Worker Agents, and Routing by Key).

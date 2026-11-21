@@ -129,13 +129,13 @@ type X509Cert = tbs_der: String, issuer_der: String, subject_der: String, issuer
 | `62` | `fn :: md5 out Tensor[Int] Tensor[U8] Int` | `Tensor[U8]` |
 | `63` | `fn :: md5 bytes String` | `String` |
 | `64` | `fn :: md5 hex String` | `String` |
-| `65` | `cpu op :: sha256 round Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1]` | `Tensor[U32 * 1] Tensor[U32 * 1]` |
-| `66` | `cpu op :: sha256 rounds Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4] Tensor[U32 * 4]` |
-| `67` | `cpu op :: sha256 schedule Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4]` |
-| `68` | `cpu op :: sha256 compress Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4] Tensor[U32 * 4]` |
-| `69` | `cpu op :: sha256 block Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U8 * 64]` | `Tensor[U32 * 4] Tensor[U32 * 4]` |
-| `70` | `cpu op :: sha256 hmac outer Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4] Tensor[U32 * 4]` |
-| `71` | `cpu op :: sha256 hmac step Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4] Tensor[U32 * 4]` |
+| `65` | `arch :: sha256 round Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1]` | `Tensor[U32 * 1] Tensor[U32 * 1]` |
+| `66` | `arch :: sha256 rounds Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4] Tensor[U32 * 4]` |
+| `67` | `arch :: sha256 schedule Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4]` |
+| `68` | `arch :: sha256 compress Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4] Tensor[U32 * 4]` |
+| `69` | `arch :: sha256 block Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U8 * 64]` | `Tensor[U32 * 4] Tensor[U32 * 4]` |
+| `70` | `arch :: sha256 hmac outer Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4] Tensor[U32 * 4]` |
+| `71` | `arch :: sha256 hmac step Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4] Tensor[U32 * 4]` |
 | `72` | `fn :: sha256 pbkdf2 loop Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Int` | `Tensor[U32 * 4] Tensor[U32 * 4]` |
 | `73` | `fn :: sha256 absorb Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U8 * n * 64] Int Int` | `Tensor[U32 * 4] Tensor[U32 * 4]` |
 | `74` | `fn :: sha256 tail Tensor[U8] String Int Int Int` | `Tensor[U8]` |
@@ -145,8 +145,8 @@ type X509Cert = tbs_der: String, issuer_der: String, subject_der: String, issuer
 | `78` | `fn :: sha256 padded String Int` | `Tensor[U8]` |
 | `79` | `fn :: sha256 out (Tensor[U32], Tensor[U32])` | `String` |
 | `80` | `fn :: sha256 group4 Int Int Int Int` | `Tensor[U32]` |
-| `81` | `fn :: sha256 iv a` | `Tensor[U32]` |
-| `82` | `fn :: sha256 iv e` | `Tensor[U32]` |
+| `81` | `idem :: sha256 iv a` | `Tensor[U32]` |
+| `82` | `idem :: sha256 iv e` | `Tensor[U32]` |
 | `83` | `fn :: sha256 blocks of Int` | `Int` |
 | `84` | `fn :: sha256 cpu bytes String` | `String` |
 | `85` | `fn :: sha256 cpu from` | `Int` |
@@ -357,17 +357,17 @@ type X509Cert = tbs_der: String, issuer_der: String, subject_der: String, issuer
 | `290` | `fn :: x25519 check non zero String` | `String` |
 | `291` | `fn :: x25519 String String` | `String` |
 | `292` | `fn :: x25519 public key String` | `String` |
-| `293` | `cpu op :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
-| `294` | `cpu op :: aes last round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
-| `295` | `cpu op :: aes128 encrypt block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
-| `296` | `cpu op :: aes256 encrypt block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
-| `297` | `cpu op :: aes128 ctr block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int` | `Tensor[U8 * 16]` |
-| `298` | `cpu op :: aes256 ctr block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int` | `Tensor[U8 * 16]` |
+| `293` | `arch :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
+| `294` | `arch :: aes last round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
+| `295` | `arch :: aes128 encrypt block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
+| `296` | `arch :: aes256 encrypt block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
+| `297` | `arch :: aes128 ctr block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int` | `Tensor[U8 * 16]` |
+| `298` | `arch :: aes256 ctr block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int` | `Tensor[U8 * 16]` |
 | `299` | `fn :: aes128 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int Int Int` | `Tensor[U8 * n * 16]` |
 | `300` | `fn :: aes256 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int Int Int` | `Tensor[U8 * n * 16]` |
 | `301` | `fn :: aes rotl8 Int Int` | `Int` |
 | `302` | `fn :: aes box fill Tensor[U8] Int Int Bool` | `Tensor[U8]` |
-| `303` | `fn :: aes make box` | `Tensor[U8]` |
+| `303` | `idem :: aes make box` | `Tensor[U8]` |
 | `304` | `fn :: aes key byte Tensor[U8] Int Int` | `Int` |
 | `305` | `fn :: aes put word Tensor[U8] Int Int Int Int Int` | `Tensor[U8]` |
 | `306` | `fn :: aes expand Tensor[U8] Tensor[U8] Int Int Int Int` | `Tensor[U8]` |
@@ -1932,39 +1932,39 @@ Fíxate en como `crypto.ridgun` estrutura as sinaturas `fn :: ... => ...` primei
 
 ```ridgun
 -- One block of 64 bytes: its words are read big-endian.
-cpu op :: sha256 block Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U8 * 64] => Tensor[U32 * 4] Tensor[U32 * 4]
-          sha256 block abcd efgh m =
-            w0 = group as u32 (group pick m [3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12])
-            w1 = group as u32 (group pick m [19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28])
-            w2 = group as u32 (group pick m [35, 34, 33, 32, 39, 38, 37, 36, 43, 42, 41, 40, 47, 46, 45, 44])
-            w3 = group as u32 (group pick m [51, 50, 49, 48, 55, 54, 53, 52, 59, 58, 57, 56, 63, 62, 61, 60])
-            a1, e1 = sha256 compress abcd efgh w0 w1 w2 w3
-            (a1, e1)
+arch :: sha256 block Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U8 * 64] => Tensor[U32 * 4] Tensor[U32 * 4]
+        sha256 block abcd efgh m =
+          w0 = group as u32 (group pick m [3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12])
+          w1 = group as u32 (group pick m [19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28])
+          w2 = group as u32 (group pick m [35, 34, 33, 32, 39, 38, 37, 36, 43, 42, 41, 40, 47, 46, 45, 44])
+          w3 = group as u32 (group pick m [51, 50, 49, 48, 55, 54, 53, 52, 59, 58, 57, 56, 63, 62, 61, 60])
+          a1, e1 = sha256 compress abcd efgh w0 w1 w2 w3
+          (a1, e1)
 
 -- The outer hash of HMAC-SHA-256 from the outer key state and the inner digest (two word groups):
 -- the block is digest || 0x80 || zeros || 768 bits.
-cpu op :: sha256 hmac outer Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
-          sha256 hmac outer oa oe na ne =
-            z  = na_i xor na_i
-            hi = z_i + 0x80000000
-            lo = z_i + 768
-            w2 = group pick two hi z [0, 4, 5, 6]
-            w3 = group pick two z lo [0, 1, 2, 4]
-            a2, e2 = sha256 compress oa oe na ne w2 w3
-            (a2, e2)
+arch :: sha256 hmac outer Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
+        sha256 hmac outer oa oe na ne =
+          z  = na_i xor na_i
+          hi = z_i + 0x80000000
+          lo = z_i + 768
+          w2 = group pick two hi z [0, 4, 5, 6]
+          w3 = group pick two z lo [0, 1, 2, 4]
+          a2, e2 = sha256 compress oa oe na ne w2 w3
+          (a2, e2)
 
 -- HMAC-SHA-256 of a 32-byte message (a digest, as its two word groups) from the two key states.
 -- The inner block has the same shape as the outer one.
-cpu op :: sha256 hmac step Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
-          sha256 hmac step ia ie oa oe ua ue =
-            z  = ua_i xor ua_i
-            hi = z_i + 0x80000000
-            lo = z_i + 768
-            w2 = group pick two hi z [0, 4, 5, 6]
-            w3 = group pick two z lo [0, 1, 2, 4]
-            a1, e1 = sha256 compress ia ie ua ue w2 w3
-            a2, e2 = sha256 compress oa oe a1 e1 w2 w3
-            (a2, e2)
+arch :: sha256 hmac step Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
+        sha256 hmac step ia ie oa oe ua ue =
+          z  = ua_i xor ua_i
+          hi = z_i + 0x80000000
+          lo = z_i + 768
+          w2 = group pick two hi z [0, 4, 5, 6]
+          w3 = group pick two z lo [0, 1, 2, 4]
+          a1, e1 = sha256 compress ia ie ua ue w2 w3
+          a2, e2 = sha256 compress oa oe a1 e1 w2 w3
+          (a2, e2)
 
 -- The iterations of PBKDF2 after the first: U = HMAC(U), acc = acc xor U. One loop, everything in registers.
 fn :: sha256 pbkdf2 loop Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Int => Tensor[U32 * 4] Tensor[U32 * 4]
@@ -1985,86 +1985,86 @@ fn :: sha256 absorb Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U8 * n * 64] Int Int 
           sha256 absorb a1 e1 msg (at + 1) (n - 1)
 ```
 
-### 24.4.5. Implementación interna: AES on processor operations (FIPS 197; `cpu op`, ridgunc 1.0.51)
+### 24.4.5. Implementación interna: AES on processor operations (FIPS 197; `arch ::`, ridgunc 1.0.55)
 
 Fíxate en como `crypto.ridgun` estrutura as sinaturas `fn :: ... => ...` primeiro e resolve cada caso mediante ecuacións aliñadas e chamadas de cola:
 
 ```ridgun
 -- A round, the last round, a whole block and the counter block of CTR mode are operations: each has a portable
 -- definition and a variant on the AES instructions of x86-64 (RIDGUN_CPU=2 forces the portable one).
--- A variant on four blocks per instruction (`"vaes,avx512f" by 4`) was measured slower here for the counter loop
+-- A variant on four blocks per instruction (`on x64 by 4`) was measured slower here for the counter loop
 -- (1 320 ns against 850 ns per 4 096 bytes), so the rounds have the one-block variant only.
 
-cpu op :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
-          aes round s k box =
-            t = box_(s_i)
-            r = group pick t [0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11]
-            a1 = group pick r [1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12]
-            a2 = group pick r [2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13]
-            a3 = group pick r [3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14]
-            x0 = (r_i shl 1) xor ((r_i shr 7) * 27)
-            x1 = (a1_i shl 1) xor ((a1_i shr 7) * 27)
-            m = ((x0_i xor x1_i) xor a1_i) xor (a2_i xor a3_i)
-            m_i xor k_i
-          aes round s k box on x86-64 "aes" =
-            group as u8 (cpu "aesni.aesenc" (group as u64 s) (group as u64 k))
+arch :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
+        aes round s k box =
+          t = box_(s_i)
+          r = group pick t [0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11]
+          a1 = group pick r [1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12]
+          a2 = group pick r [2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13]
+          a3 = group pick r [3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14]
+          x0 = (r_i shl 1) xor ((r_i shr 7) * 27)
+          x1 = (a1_i shl 1) xor ((a1_i shr 7) * 27)
+          m = ((x0_i xor x1_i) xor a1_i) xor (a2_i xor a3_i)
+          m_i xor k_i
+        aes round s k box on x64 =
+          group as u8 (cpu aesenc (group as u64 s) (group as u64 k))
 
-cpu op :: aes last round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
-          aes last round s k box =
-            t = box_(s_i)
-            r = group pick t [0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11]
-            r_i xor k_i
-          aes last round s k box on x86-64 "aes" =
-            group as u8 (cpu "aesni.aesenclast" (group as u64 s) (group as u64 k))
+arch :: aes last round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
+        aes last round s k box =
+          t = box_(s_i)
+          r = group pick t [0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11]
+          r_i xor k_i
+        aes last round s k box on x64 =
+          group as u8 (cpu aesenclast (group as u64 s) (group as u64 k))
 
-cpu op :: aes128 encrypt block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
-          aes128 encrypt block p keys box =
-            k0 = keys_(0,)
-            s0 = p_i xor k0_i
-            s1 = aes round s0 keys_(1,) box
-            s2 = aes round s1 keys_(2,) box
-            s3 = aes round s2 keys_(3,) box
-            s4 = aes round s3 keys_(4,) box
-            s5 = aes round s4 keys_(5,) box
-            s6 = aes round s5 keys_(6,) box
-            s7 = aes round s6 keys_(7,) box
-            s8 = aes round s7 keys_(8,) box
-            s9 = aes round s8 keys_(9,) box
-            aes last round s9 keys_(10,) box
+arch :: aes128 encrypt block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
+        aes128 encrypt block p keys box =
+          k0 = keys_(0,)
+          s0 = p_i xor k0_i
+          s1 = aes round s0 keys_(1,) box
+          s2 = aes round s1 keys_(2,) box
+          s3 = aes round s2 keys_(3,) box
+          s4 = aes round s3 keys_(4,) box
+          s5 = aes round s4 keys_(5,) box
+          s6 = aes round s5 keys_(6,) box
+          s7 = aes round s6 keys_(7,) box
+          s8 = aes round s7 keys_(8,) box
+          s9 = aes round s8 keys_(9,) box
+          aes last round s9 keys_(10,) box
 
-cpu op :: aes256 encrypt block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
-          aes256 encrypt block p keys box =
-            k0 = keys_(0,)
-            s0 = p_i xor k0_i
-            s1 = aes round s0 keys_(1,) box
-            s2 = aes round s1 keys_(2,) box
-            s3 = aes round s2 keys_(3,) box
-            s4 = aes round s3 keys_(4,) box
-            s5 = aes round s4 keys_(5,) box
-            s6 = aes round s5 keys_(6,) box
-            s7 = aes round s6 keys_(7,) box
-            s8 = aes round s7 keys_(8,) box
-            s9 = aes round s8 keys_(9,) box
-            s10 = aes round s9 keys_(10,) box
-            s11 = aes round s10 keys_(11,) box
-            s12 = aes round s11 keys_(12,) box
-            s13 = aes round s12 keys_(13,) box
-            aes last round s13 keys_(14,) box
+arch :: aes256 encrypt block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
+        aes256 encrypt block p keys box =
+          k0 = keys_(0,)
+          s0 = p_i xor k0_i
+          s1 = aes round s0 keys_(1,) box
+          s2 = aes round s1 keys_(2,) box
+          s3 = aes round s2 keys_(3,) box
+          s4 = aes round s3 keys_(4,) box
+          s5 = aes round s4 keys_(5,) box
+          s6 = aes round s5 keys_(6,) box
+          s7 = aes round s6 keys_(7,) box
+          s8 = aes round s7 keys_(8,) box
+          s9 = aes round s8 keys_(9,) box
+          s10 = aes round s9 keys_(10,) box
+          s11 = aes round s10 keys_(11,) box
+          s12 = aes round s11 keys_(12,) box
+          s13 = aes round s12 keys_(13,) box
+          aes last round s13 keys_(14,) box
 
 -- The counter block of CTR mode: the first 12 bytes of `iv` and the 32-bit counter `n`, big-endian (the last 4 bytes of `iv` are 0).
-cpu op :: aes128 ctr block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int => Tensor[U8 * 16]
-          aes128 ctr block iv keys box n =
-            z = group as u32 iv
-            c = z_i + n
-            b = group as u8 c
-            aes128 encrypt block (group pick two iv b [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 31, 30, 29, 28]) keys box
+arch :: aes128 ctr block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int => Tensor[U8 * 16]
+        aes128 ctr block iv keys box n =
+          z = group as u32 iv
+          c = z_i + n
+          b = group as u8 c
+          aes128 encrypt block (group pick two iv b [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 31, 30, 29, 28]) keys box
 
-cpu op :: aes256 ctr block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int => Tensor[U8 * 16]
-          aes256 ctr block iv keys box n =
-            z = group as u32 iv
-            c = z_i + n
-            b = group as u8 c
-            aes256 encrypt block (group pick two iv b [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 31, 30, 29, 28]) keys box
+arch :: aes256 ctr block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int => Tensor[U8 * 16]
+        aes256 ctr block iv keys box n =
+          z = group as u32 iv
+          c = z_i + n
+          b = group as u8 c
+          aes256 encrypt block (group pick two iv b [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 31, 30, 29, 28]) keys box
 
 -- E(K, nonce || ctr + at) for the rows `at` on: one loop, the block in registers.
 fn :: aes128 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int Int Int => Tensor[U8 * n * 16]
@@ -2097,11 +2097,12 @@ fn :: aes box fill Tensor[U8] Int Int Bool => Tensor[U8]
           box_(p1) = (q4 xor (aes rotl8 q4 1) xor (aes rotl8 q4 2) xor (aes rotl8 q4 3) xor (aes rotl8 q4 4)) xor 99
           aes box fill box p1 q4 False
 
-fn :: aes make box => Tensor[U8]
-      aes make box =
-        box = Tensor[U8 * 256]
-        box_(0) = 99
-        aes box fill box 1 1 True
+-- Built once for the whole program (`idem ::`, ridgunc 1.0.54); nobody writes in it.
+idem :: aes make box => Tensor[U8]
+        aes make box =
+          box = Tensor[U8 * 256]
+          box_(0) = 99
+          aes box fill box 1 1 True
 
 -- The key schedule (FIPS 197 §5.2) for a key of `nk` words (4 or 8): byte i of word w at keys_(w / 4, (w % 4) * 4 + i).
 fn :: aes key byte Tensor[U8] Int Int => Int
