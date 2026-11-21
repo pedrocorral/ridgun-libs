@@ -11,7 +11,7 @@ affects: [FR-CRYPTO-003, FR-CRYPTO-006, FR-CRYPTO-007, TS-CRYPTO-007, ADR-0014, 
 **Asked by the compiler team and ordered by the user on 2026-11-21.**
 
 ## Context
-- ridgunc 1.0.51 has processor operations (`cpu op`): an operation on small tensors with a portable definition in Ridgun and variants on instructions of the processor. The compiler team asks libs to write SHA-256 and AES with them, so that the runtime can drop its SHA-256.
+- ridgunc has processor operations (`arch ::` since 1.0.52; `cpu op` in 1.0.51, when this was written): an operation on small tensors with a portable definition in Ridgun and variants on instructions of the processor. The compiler team asks libs to write SHA-256 and AES with them, so that the runtime can drop its SHA-256.
 - Measured on a Ryzen 7 8845HS with ridgunc 1.0.51:
 
 | | Before | Now | Portable definition |
@@ -40,6 +40,10 @@ Option 2.
 - AES-128 and AES-256: a round, the last round, a block and the counter block of CTR mode are operations; the key stream is one loop over the rows of a table. The S-box is computed, not typed. The four-blocks-per-instruction variant is not used: it measured slower in the counter loop (1 320 ns against 850 ns per 4 096 bytes).
 - `codec` and `json` no longer use the runtime's SHA-256 to make a single raw byte: they use a one-byte tensor.
 - HMAC-SHA-256 of general messages stays on the runtime's SHA-256 for now.
+
+## Update of the same day: ridgunc 1.0.55
+- The declaration is `arch ::`, a variant is written `on x64` and an instruction `cpu aesenc`, without quotes. `crypto.ridgun` is migrated.
+- `idem ::` (1.0.54) declares a function whose body runs once: the S-box of AES and the first state of SHA-256 are built once for the whole program. AES-128-GCM of 64 bytes goes from about 30 µs to about 16 µs.
 
 ## Consequences
 - The runtime's SHA-256 cannot be removed yet: `crypto` (short messages and HMAC) and `ai` (`sha256 str`) still call it. What the compiler must give first is written in `/tmp/ridgun-compiler/2026-11-19/libs-pendiente.md` (entry of 2026-11-21).

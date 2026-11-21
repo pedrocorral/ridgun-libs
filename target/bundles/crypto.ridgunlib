@@ -455,273 +455,273 @@ fn :: md5 bytes String => String
 fn :: md5 hex String => String
       md5 hex msg    =  bytes to hex str (md5 bytes msg)
 
--- ── SHA-256 on processor operations (FIPS 180-4; `cpu op`, ridgunc 1.0.51) ──
+-- ── SHA-256 on processor operations (FIPS 180-4; `arch ::`, ridgunc 1.0.55) ──
 -- A round, four rounds, the message schedule and a whole block are operations: each has a portable definition
 -- and a variant on the SHA instructions of x86-64, and the program picks one when it starts (RIDGUN_CPU=2
 -- forces the portable one). The 64 constants are written inside `sha256 compress`, so no table is built per call.
 
 -- One round of SHA-256 on single words (groups of one element): the new `a` and the new `e`.
-cpu op :: sha256 round Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] => Tensor[U32 * 1] Tensor[U32 * 1]
-          sha256 round a b c d e f g h wk =
-            s1 = ((e_i rotr 6) xor (e_i rotr 11)) xor (e_i rotr 25)
-            ch = (e_i and f_i) xor ((e_i xor 0xFFFFFFFF) and g_i)
-            t1 = ((h_i + s1_i) + ch_i) + wk_i
-            s0 = ((a_i rotr 2) xor (a_i rotr 13)) xor (a_i rotr 22)
-            mj = ((a_i and b_i) xor (a_i and c_i)) xor (b_i and c_i)
-            (t1_i + (s0_i + mj_i), d_i + t1_i)
+arch :: sha256 round Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] Tensor[U32 * 1] => Tensor[U32 * 1] Tensor[U32 * 1]
+        sha256 round a b c d e f g h wk =
+          s1 = ((e_i rotr 6) xor (e_i rotr 11)) xor (e_i rotr 25)
+          ch = (e_i and f_i) xor ((e_i xor 0xFFFFFFFF) and g_i)
+          t1 = ((h_i + s1_i) + ch_i) + wk_i
+          s0 = ((a_i rotr 2) xor (a_i rotr 13)) xor (a_i rotr 22)
+          mj = ((a_i and b_i) xor (a_i and c_i)) xor (b_i and c_i)
+          (t1_i + (s0_i + mj_i), d_i + t1_i)
 
 -- Four rounds: the state is two groups, a b c d and e f g h; `wk` is four message words plus their constants.
-cpu op :: sha256 rounds Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
-          sha256 rounds abcd efgh wk =
-            a = group pick abcd [0]
-            b = group pick abcd [1]
-            c = group pick abcd [2]
-            d = group pick abcd [3]
-            e = group pick efgh [0]
-            f = group pick efgh [1]
-            g = group pick efgh [2]
-            h = group pick efgh [3]
-            a1, e1 = sha256 round a b c d e f g h (group pick wk [0])
-            a2, e2 = sha256 round a1 a b c e1 e f g (group pick wk [1])
-            a3, e3 = sha256 round a2 a1 a b e2 e1 e f (group pick wk [2])
-            a4, e4 = sha256 round a3 a2 a1 a e3 e2 e1 e (group pick wk [3])
-            (group pick two (group pick two a4 a3 [0, 1]) (group pick two a2 a1 [0, 1]) [0, 1, 2, 3], group pick two (group pick two e4 e3 [0, 1]) (group pick two e2 e1 [0, 1]) [0, 1, 2, 3])
-          sha256 rounds abcd efgh wk on x86-64 "sha" =
-            s0 = group pick two abcd efgh [5, 4, 1, 0]
-            s1 = group pick two abcd efgh [7, 6, 3, 2]
-            t1 = cpu "sha256rnds2" s1 s0 wk
-            t0 = cpu "sha256rnds2" s0 t1 (group pick wk [2, 3, 2, 3])
-            (group pick two t0 t1 [3, 2, 7, 6], group pick two t0 t1 [1, 0, 5, 4])
+arch :: sha256 rounds Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
+        sha256 rounds abcd efgh wk =
+          a = group pick abcd [0]
+          b = group pick abcd [1]
+          c = group pick abcd [2]
+          d = group pick abcd [3]
+          e = group pick efgh [0]
+          f = group pick efgh [1]
+          g = group pick efgh [2]
+          h = group pick efgh [3]
+          a1, e1 = sha256 round a b c d e f g h (group pick wk [0])
+          a2, e2 = sha256 round a1 a b c e1 e f g (group pick wk [1])
+          a3, e3 = sha256 round a2 a1 a b e2 e1 e f (group pick wk [2])
+          a4, e4 = sha256 round a3 a2 a1 a e3 e2 e1 e (group pick wk [3])
+          (group pick two (group pick two a4 a3 [0, 1]) (group pick two a2 a1 [0, 1]) [0, 1, 2, 3], group pick two (group pick two e4 e3 [0, 1]) (group pick two e2 e1 [0, 1]) [0, 1, 2, 3])
+        sha256 rounds abcd efgh wk on x64 =
+          s0 = group pick two abcd efgh [5, 4, 1, 0]
+          s1 = group pick two abcd efgh [7, 6, 3, 2]
+          t1 = cpu sha256rnds2 s1 s0 wk
+          t0 = cpu sha256rnds2 s0 t1 (group pick wk [2, 3, 2, 3])
+          (group pick two t0 t1 [3, 2, 7, 6], group pick two t0 t1 [1, 0, 5, 4])
 
 -- The next four words of the message schedule from the last sixteen.
-cpu op :: sha256 schedule Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4]
-          sha256 schedule w0 w1 w2 w3 =
-            x = group pick two w0 w1 [1, 2, 3, 4]
-            y = group pick two w2 w3 [1, 2, 3, 4]
-            p = (w0_i + (((x_i rotr 7) xor (x_i rotr 18)) xor (x_i shr 3))) + y_i
-            u = group pick w3 [2, 3]
-            pl = group pick p [0, 1]
-            lo = pl_i + (((u_i rotr 17) xor (u_i rotr 19)) xor (u_i shr 10))
-            ph = group pick p [2, 3]
-            hi = ph_i + (((lo_i rotr 17) xor (lo_i rotr 19)) xor (lo_i shr 10))
-            group pick two lo hi [0, 1, 2, 3]
-          sha256 schedule w0 w1 w2 w3 on x86-64 "sha" =
-            m1 = cpu "sha256msg1" w0 w1
-            y = group pick two w2 w3 [1, 2, 3, 4]
-            cpu "sha256msg2" (m1_i + y_i) w3
+arch :: sha256 schedule Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4]
+        sha256 schedule w0 w1 w2 w3 =
+          x = group pick two w0 w1 [1, 2, 3, 4]
+          y = group pick two w2 w3 [1, 2, 3, 4]
+          p = (w0_i + (((x_i rotr 7) xor (x_i rotr 18)) xor (x_i shr 3))) + y_i
+          u = group pick w3 [2, 3]
+          pl = group pick p [0, 1]
+          lo = pl_i + (((u_i rotr 17) xor (u_i rotr 19)) xor (u_i shr 10))
+          ph = group pick p [2, 3]
+          hi = ph_i + (((lo_i rotr 17) xor (lo_i rotr 19)) xor (lo_i shr 10))
+          group pick two lo hi [0, 1, 2, 3]
+        sha256 schedule w0 w1 w2 w3 on x64 =
+          m1 = cpu sha256msg1 w0 w1
+          y = group pick two w2 w3 [1, 2, 3, 4]
+          cpu sha256msg2 (m1_i + y_i) w3
 
 -- The 64 rounds on a block given as its 16 words (four groups), with the 64 constants written here, and the
 -- state added at the end (FIPS 180-4 §6.2.2).
-cpu op :: sha256 compress Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
-          sha256 compress abcd efgh w0 w1 w2 w3 =
-            w4 = sha256 schedule w0 w1 w2 w3
-            w5 = sha256 schedule w1 w2 w3 w4
-            w6 = sha256 schedule w2 w3 w4 w5
-            w7 = sha256 schedule w3 w4 w5 w6
-            w8 = sha256 schedule w4 w5 w6 w7
-            w9 = sha256 schedule w5 w6 w7 w8
-            w10 = sha256 schedule w6 w7 w8 w9
-            w11 = sha256 schedule w7 w8 w9 w10
-            w12 = sha256 schedule w8 w9 w10 w11
-            w13 = sha256 schedule w9 w10 w11 w12
-            w14 = sha256 schedule w10 w11 w12 w13
-            w15 = sha256 schedule w11 w12 w13 w14
-            p0a = group pick w0 [0]
-            q0a = p0a_i + 0x428a2f98
-            p0b = group pick w0 [1]
-            q0b = p0b_i + 0x71374491
-            p0c = group pick w0 [2]
-            q0c = p0c_i + 0xb5c0fbcf
-            p0d = group pick w0 [3]
-            q0d = p0d_i + 0xe9b5dba5
-            x0 = group pick two (group pick two q0a q0b [0, 1]) (group pick two q0c q0d [0, 1]) [0, 1, 2, 3]
-            a0, e0 = sha256 rounds abcd efgh x0
-            p1a = group pick w1 [0]
-            q1a = p1a_i + 0x3956c25b
-            p1b = group pick w1 [1]
-            q1b = p1b_i + 0x59f111f1
-            p1c = group pick w1 [2]
-            q1c = p1c_i + 0x923f82a4
-            p1d = group pick w1 [3]
-            q1d = p1d_i + 0xab1c5ed5
-            x1 = group pick two (group pick two q1a q1b [0, 1]) (group pick two q1c q1d [0, 1]) [0, 1, 2, 3]
-            a1, e1 = sha256 rounds a0 e0 x1
-            p2a = group pick w2 [0]
-            q2a = p2a_i + 0xd807aa98
-            p2b = group pick w2 [1]
-            q2b = p2b_i + 0x12835b01
-            p2c = group pick w2 [2]
-            q2c = p2c_i + 0x243185be
-            p2d = group pick w2 [3]
-            q2d = p2d_i + 0x550c7dc3
-            x2 = group pick two (group pick two q2a q2b [0, 1]) (group pick two q2c q2d [0, 1]) [0, 1, 2, 3]
-            a2, e2 = sha256 rounds a1 e1 x2
-            p3a = group pick w3 [0]
-            q3a = p3a_i + 0x72be5d74
-            p3b = group pick w3 [1]
-            q3b = p3b_i + 0x80deb1fe
-            p3c = group pick w3 [2]
-            q3c = p3c_i + 0x9bdc06a7
-            p3d = group pick w3 [3]
-            q3d = p3d_i + 0xc19bf174
-            x3 = group pick two (group pick two q3a q3b [0, 1]) (group pick two q3c q3d [0, 1]) [0, 1, 2, 3]
-            a3, e3 = sha256 rounds a2 e2 x3
-            p4a = group pick w4 [0]
-            q4a = p4a_i + 0xe49b69c1
-            p4b = group pick w4 [1]
-            q4b = p4b_i + 0xefbe4786
-            p4c = group pick w4 [2]
-            q4c = p4c_i + 0x0fc19dc6
-            p4d = group pick w4 [3]
-            q4d = p4d_i + 0x240ca1cc
-            x4 = group pick two (group pick two q4a q4b [0, 1]) (group pick two q4c q4d [0, 1]) [0, 1, 2, 3]
-            a4, e4 = sha256 rounds a3 e3 x4
-            p5a = group pick w5 [0]
-            q5a = p5a_i + 0x2de92c6f
-            p5b = group pick w5 [1]
-            q5b = p5b_i + 0x4a7484aa
-            p5c = group pick w5 [2]
-            q5c = p5c_i + 0x5cb0a9dc
-            p5d = group pick w5 [3]
-            q5d = p5d_i + 0x76f988da
-            x5 = group pick two (group pick two q5a q5b [0, 1]) (group pick two q5c q5d [0, 1]) [0, 1, 2, 3]
-            a5, e5 = sha256 rounds a4 e4 x5
-            p6a = group pick w6 [0]
-            q6a = p6a_i + 0x983e5152
-            p6b = group pick w6 [1]
-            q6b = p6b_i + 0xa831c66d
-            p6c = group pick w6 [2]
-            q6c = p6c_i + 0xb00327c8
-            p6d = group pick w6 [3]
-            q6d = p6d_i + 0xbf597fc7
-            x6 = group pick two (group pick two q6a q6b [0, 1]) (group pick two q6c q6d [0, 1]) [0, 1, 2, 3]
-            a6, e6 = sha256 rounds a5 e5 x6
-            p7a = group pick w7 [0]
-            q7a = p7a_i + 0xc6e00bf3
-            p7b = group pick w7 [1]
-            q7b = p7b_i + 0xd5a79147
-            p7c = group pick w7 [2]
-            q7c = p7c_i + 0x06ca6351
-            p7d = group pick w7 [3]
-            q7d = p7d_i + 0x14292967
-            x7 = group pick two (group pick two q7a q7b [0, 1]) (group pick two q7c q7d [0, 1]) [0, 1, 2, 3]
-            a7, e7 = sha256 rounds a6 e6 x7
-            p8a = group pick w8 [0]
-            q8a = p8a_i + 0x27b70a85
-            p8b = group pick w8 [1]
-            q8b = p8b_i + 0x2e1b2138
-            p8c = group pick w8 [2]
-            q8c = p8c_i + 0x4d2c6dfc
-            p8d = group pick w8 [3]
-            q8d = p8d_i + 0x53380d13
-            x8 = group pick two (group pick two q8a q8b [0, 1]) (group pick two q8c q8d [0, 1]) [0, 1, 2, 3]
-            a8, e8 = sha256 rounds a7 e7 x8
-            p9a = group pick w9 [0]
-            q9a = p9a_i + 0x650a7354
-            p9b = group pick w9 [1]
-            q9b = p9b_i + 0x766a0abb
-            p9c = group pick w9 [2]
-            q9c = p9c_i + 0x81c2c92e
-            p9d = group pick w9 [3]
-            q9d = p9d_i + 0x92722c85
-            x9 = group pick two (group pick two q9a q9b [0, 1]) (group pick two q9c q9d [0, 1]) [0, 1, 2, 3]
-            a9, e9 = sha256 rounds a8 e8 x9
-            p10a = group pick w10 [0]
-            q10a = p10a_i + 0xa2bfe8a1
-            p10b = group pick w10 [1]
-            q10b = p10b_i + 0xa81a664b
-            p10c = group pick w10 [2]
-            q10c = p10c_i + 0xc24b8b70
-            p10d = group pick w10 [3]
-            q10d = p10d_i + 0xc76c51a3
-            x10 = group pick two (group pick two q10a q10b [0, 1]) (group pick two q10c q10d [0, 1]) [0, 1, 2, 3]
-            a10, e10 = sha256 rounds a9 e9 x10
-            p11a = group pick w11 [0]
-            q11a = p11a_i + 0xd192e819
-            p11b = group pick w11 [1]
-            q11b = p11b_i + 0xd6990624
-            p11c = group pick w11 [2]
-            q11c = p11c_i + 0xf40e3585
-            p11d = group pick w11 [3]
-            q11d = p11d_i + 0x106aa070
-            x11 = group pick two (group pick two q11a q11b [0, 1]) (group pick two q11c q11d [0, 1]) [0, 1, 2, 3]
-            a11, e11 = sha256 rounds a10 e10 x11
-            p12a = group pick w12 [0]
-            q12a = p12a_i + 0x19a4c116
-            p12b = group pick w12 [1]
-            q12b = p12b_i + 0x1e376c08
-            p12c = group pick w12 [2]
-            q12c = p12c_i + 0x2748774c
-            p12d = group pick w12 [3]
-            q12d = p12d_i + 0x34b0bcb5
-            x12 = group pick two (group pick two q12a q12b [0, 1]) (group pick two q12c q12d [0, 1]) [0, 1, 2, 3]
-            a12, e12 = sha256 rounds a11 e11 x12
-            p13a = group pick w13 [0]
-            q13a = p13a_i + 0x391c0cb3
-            p13b = group pick w13 [1]
-            q13b = p13b_i + 0x4ed8aa4a
-            p13c = group pick w13 [2]
-            q13c = p13c_i + 0x5b9cca4f
-            p13d = group pick w13 [3]
-            q13d = p13d_i + 0x682e6ff3
-            x13 = group pick two (group pick two q13a q13b [0, 1]) (group pick two q13c q13d [0, 1]) [0, 1, 2, 3]
-            a13, e13 = sha256 rounds a12 e12 x13
-            p14a = group pick w14 [0]
-            q14a = p14a_i + 0x748f82ee
-            p14b = group pick w14 [1]
-            q14b = p14b_i + 0x78a5636f
-            p14c = group pick w14 [2]
-            q14c = p14c_i + 0x84c87814
-            p14d = group pick w14 [3]
-            q14d = p14d_i + 0x8cc70208
-            x14 = group pick two (group pick two q14a q14b [0, 1]) (group pick two q14c q14d [0, 1]) [0, 1, 2, 3]
-            a14, e14 = sha256 rounds a13 e13 x14
-            p15a = group pick w15 [0]
-            q15a = p15a_i + 0x90befffa
-            p15b = group pick w15 [1]
-            q15b = p15b_i + 0xa4506ceb
-            p15c = group pick w15 [2]
-            q15c = p15c_i + 0xbef9a3f7
-            p15d = group pick w15 [3]
-            q15d = p15d_i + 0xc67178f2
-            x15 = group pick two (group pick two q15a q15b [0, 1]) (group pick two q15c q15d [0, 1]) [0, 1, 2, 3]
-            a15, e15 = sha256 rounds a14 e14 x15
-            (abcd_i + a15_i, efgh_i + e15_i)
+arch :: sha256 compress Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
+        sha256 compress abcd efgh w0 w1 w2 w3 =
+          w4 = sha256 schedule w0 w1 w2 w3
+          w5 = sha256 schedule w1 w2 w3 w4
+          w6 = sha256 schedule w2 w3 w4 w5
+          w7 = sha256 schedule w3 w4 w5 w6
+          w8 = sha256 schedule w4 w5 w6 w7
+          w9 = sha256 schedule w5 w6 w7 w8
+          w10 = sha256 schedule w6 w7 w8 w9
+          w11 = sha256 schedule w7 w8 w9 w10
+          w12 = sha256 schedule w8 w9 w10 w11
+          w13 = sha256 schedule w9 w10 w11 w12
+          w14 = sha256 schedule w10 w11 w12 w13
+          w15 = sha256 schedule w11 w12 w13 w14
+          p0a = group pick w0 [0]
+          q0a = p0a_i + 0x428a2f98
+          p0b = group pick w0 [1]
+          q0b = p0b_i + 0x71374491
+          p0c = group pick w0 [2]
+          q0c = p0c_i + 0xb5c0fbcf
+          p0d = group pick w0 [3]
+          q0d = p0d_i + 0xe9b5dba5
+          x0 = group pick two (group pick two q0a q0b [0, 1]) (group pick two q0c q0d [0, 1]) [0, 1, 2, 3]
+          a0, e0 = sha256 rounds abcd efgh x0
+          p1a = group pick w1 [0]
+          q1a = p1a_i + 0x3956c25b
+          p1b = group pick w1 [1]
+          q1b = p1b_i + 0x59f111f1
+          p1c = group pick w1 [2]
+          q1c = p1c_i + 0x923f82a4
+          p1d = group pick w1 [3]
+          q1d = p1d_i + 0xab1c5ed5
+          x1 = group pick two (group pick two q1a q1b [0, 1]) (group pick two q1c q1d [0, 1]) [0, 1, 2, 3]
+          a1, e1 = sha256 rounds a0 e0 x1
+          p2a = group pick w2 [0]
+          q2a = p2a_i + 0xd807aa98
+          p2b = group pick w2 [1]
+          q2b = p2b_i + 0x12835b01
+          p2c = group pick w2 [2]
+          q2c = p2c_i + 0x243185be
+          p2d = group pick w2 [3]
+          q2d = p2d_i + 0x550c7dc3
+          x2 = group pick two (group pick two q2a q2b [0, 1]) (group pick two q2c q2d [0, 1]) [0, 1, 2, 3]
+          a2, e2 = sha256 rounds a1 e1 x2
+          p3a = group pick w3 [0]
+          q3a = p3a_i + 0x72be5d74
+          p3b = group pick w3 [1]
+          q3b = p3b_i + 0x80deb1fe
+          p3c = group pick w3 [2]
+          q3c = p3c_i + 0x9bdc06a7
+          p3d = group pick w3 [3]
+          q3d = p3d_i + 0xc19bf174
+          x3 = group pick two (group pick two q3a q3b [0, 1]) (group pick two q3c q3d [0, 1]) [0, 1, 2, 3]
+          a3, e3 = sha256 rounds a2 e2 x3
+          p4a = group pick w4 [0]
+          q4a = p4a_i + 0xe49b69c1
+          p4b = group pick w4 [1]
+          q4b = p4b_i + 0xefbe4786
+          p4c = group pick w4 [2]
+          q4c = p4c_i + 0x0fc19dc6
+          p4d = group pick w4 [3]
+          q4d = p4d_i + 0x240ca1cc
+          x4 = group pick two (group pick two q4a q4b [0, 1]) (group pick two q4c q4d [0, 1]) [0, 1, 2, 3]
+          a4, e4 = sha256 rounds a3 e3 x4
+          p5a = group pick w5 [0]
+          q5a = p5a_i + 0x2de92c6f
+          p5b = group pick w5 [1]
+          q5b = p5b_i + 0x4a7484aa
+          p5c = group pick w5 [2]
+          q5c = p5c_i + 0x5cb0a9dc
+          p5d = group pick w5 [3]
+          q5d = p5d_i + 0x76f988da
+          x5 = group pick two (group pick two q5a q5b [0, 1]) (group pick two q5c q5d [0, 1]) [0, 1, 2, 3]
+          a5, e5 = sha256 rounds a4 e4 x5
+          p6a = group pick w6 [0]
+          q6a = p6a_i + 0x983e5152
+          p6b = group pick w6 [1]
+          q6b = p6b_i + 0xa831c66d
+          p6c = group pick w6 [2]
+          q6c = p6c_i + 0xb00327c8
+          p6d = group pick w6 [3]
+          q6d = p6d_i + 0xbf597fc7
+          x6 = group pick two (group pick two q6a q6b [0, 1]) (group pick two q6c q6d [0, 1]) [0, 1, 2, 3]
+          a6, e6 = sha256 rounds a5 e5 x6
+          p7a = group pick w7 [0]
+          q7a = p7a_i + 0xc6e00bf3
+          p7b = group pick w7 [1]
+          q7b = p7b_i + 0xd5a79147
+          p7c = group pick w7 [2]
+          q7c = p7c_i + 0x06ca6351
+          p7d = group pick w7 [3]
+          q7d = p7d_i + 0x14292967
+          x7 = group pick two (group pick two q7a q7b [0, 1]) (group pick two q7c q7d [0, 1]) [0, 1, 2, 3]
+          a7, e7 = sha256 rounds a6 e6 x7
+          p8a = group pick w8 [0]
+          q8a = p8a_i + 0x27b70a85
+          p8b = group pick w8 [1]
+          q8b = p8b_i + 0x2e1b2138
+          p8c = group pick w8 [2]
+          q8c = p8c_i + 0x4d2c6dfc
+          p8d = group pick w8 [3]
+          q8d = p8d_i + 0x53380d13
+          x8 = group pick two (group pick two q8a q8b [0, 1]) (group pick two q8c q8d [0, 1]) [0, 1, 2, 3]
+          a8, e8 = sha256 rounds a7 e7 x8
+          p9a = group pick w9 [0]
+          q9a = p9a_i + 0x650a7354
+          p9b = group pick w9 [1]
+          q9b = p9b_i + 0x766a0abb
+          p9c = group pick w9 [2]
+          q9c = p9c_i + 0x81c2c92e
+          p9d = group pick w9 [3]
+          q9d = p9d_i + 0x92722c85
+          x9 = group pick two (group pick two q9a q9b [0, 1]) (group pick two q9c q9d [0, 1]) [0, 1, 2, 3]
+          a9, e9 = sha256 rounds a8 e8 x9
+          p10a = group pick w10 [0]
+          q10a = p10a_i + 0xa2bfe8a1
+          p10b = group pick w10 [1]
+          q10b = p10b_i + 0xa81a664b
+          p10c = group pick w10 [2]
+          q10c = p10c_i + 0xc24b8b70
+          p10d = group pick w10 [3]
+          q10d = p10d_i + 0xc76c51a3
+          x10 = group pick two (group pick two q10a q10b [0, 1]) (group pick two q10c q10d [0, 1]) [0, 1, 2, 3]
+          a10, e10 = sha256 rounds a9 e9 x10
+          p11a = group pick w11 [0]
+          q11a = p11a_i + 0xd192e819
+          p11b = group pick w11 [1]
+          q11b = p11b_i + 0xd6990624
+          p11c = group pick w11 [2]
+          q11c = p11c_i + 0xf40e3585
+          p11d = group pick w11 [3]
+          q11d = p11d_i + 0x106aa070
+          x11 = group pick two (group pick two q11a q11b [0, 1]) (group pick two q11c q11d [0, 1]) [0, 1, 2, 3]
+          a11, e11 = sha256 rounds a10 e10 x11
+          p12a = group pick w12 [0]
+          q12a = p12a_i + 0x19a4c116
+          p12b = group pick w12 [1]
+          q12b = p12b_i + 0x1e376c08
+          p12c = group pick w12 [2]
+          q12c = p12c_i + 0x2748774c
+          p12d = group pick w12 [3]
+          q12d = p12d_i + 0x34b0bcb5
+          x12 = group pick two (group pick two q12a q12b [0, 1]) (group pick two q12c q12d [0, 1]) [0, 1, 2, 3]
+          a12, e12 = sha256 rounds a11 e11 x12
+          p13a = group pick w13 [0]
+          q13a = p13a_i + 0x391c0cb3
+          p13b = group pick w13 [1]
+          q13b = p13b_i + 0x4ed8aa4a
+          p13c = group pick w13 [2]
+          q13c = p13c_i + 0x5b9cca4f
+          p13d = group pick w13 [3]
+          q13d = p13d_i + 0x682e6ff3
+          x13 = group pick two (group pick two q13a q13b [0, 1]) (group pick two q13c q13d [0, 1]) [0, 1, 2, 3]
+          a13, e13 = sha256 rounds a12 e12 x13
+          p14a = group pick w14 [0]
+          q14a = p14a_i + 0x748f82ee
+          p14b = group pick w14 [1]
+          q14b = p14b_i + 0x78a5636f
+          p14c = group pick w14 [2]
+          q14c = p14c_i + 0x84c87814
+          p14d = group pick w14 [3]
+          q14d = p14d_i + 0x8cc70208
+          x14 = group pick two (group pick two q14a q14b [0, 1]) (group pick two q14c q14d [0, 1]) [0, 1, 2, 3]
+          a14, e14 = sha256 rounds a13 e13 x14
+          p15a = group pick w15 [0]
+          q15a = p15a_i + 0x90befffa
+          p15b = group pick w15 [1]
+          q15b = p15b_i + 0xa4506ceb
+          p15c = group pick w15 [2]
+          q15c = p15c_i + 0xbef9a3f7
+          p15d = group pick w15 [3]
+          q15d = p15d_i + 0xc67178f2
+          x15 = group pick two (group pick two q15a q15b [0, 1]) (group pick two q15c q15d [0, 1]) [0, 1, 2, 3]
+          a15, e15 = sha256 rounds a14 e14 x15
+          (abcd_i + a15_i, efgh_i + e15_i)
 
 -- One block of 64 bytes: its words are read big-endian.
-cpu op :: sha256 block Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U8 * 64] => Tensor[U32 * 4] Tensor[U32 * 4]
-          sha256 block abcd efgh m =
-            w0 = group as u32 (group pick m [3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12])
-            w1 = group as u32 (group pick m [19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28])
-            w2 = group as u32 (group pick m [35, 34, 33, 32, 39, 38, 37, 36, 43, 42, 41, 40, 47, 46, 45, 44])
-            w3 = group as u32 (group pick m [51, 50, 49, 48, 55, 54, 53, 52, 59, 58, 57, 56, 63, 62, 61, 60])
-            a1, e1 = sha256 compress abcd efgh w0 w1 w2 w3
-            (a1, e1)
+arch :: sha256 block Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U8 * 64] => Tensor[U32 * 4] Tensor[U32 * 4]
+        sha256 block abcd efgh m =
+          w0 = group as u32 (group pick m [3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12])
+          w1 = group as u32 (group pick m [19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28])
+          w2 = group as u32 (group pick m [35, 34, 33, 32, 39, 38, 37, 36, 43, 42, 41, 40, 47, 46, 45, 44])
+          w3 = group as u32 (group pick m [51, 50, 49, 48, 55, 54, 53, 52, 59, 58, 57, 56, 63, 62, 61, 60])
+          a1, e1 = sha256 compress abcd efgh w0 w1 w2 w3
+          (a1, e1)
 
 -- The outer hash of HMAC-SHA-256 from the outer key state and the inner digest (two word groups):
 -- the block is digest || 0x80 || zeros || 768 bits.
-cpu op :: sha256 hmac outer Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
-          sha256 hmac outer oa oe na ne =
-            z  = na_i xor na_i
-            hi = z_i + 0x80000000
-            lo = z_i + 768
-            w2 = group pick two hi z [0, 4, 5, 6]
-            w3 = group pick two z lo [0, 1, 2, 4]
-            a2, e2 = sha256 compress oa oe na ne w2 w3
-            (a2, e2)
+arch :: sha256 hmac outer Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
+        sha256 hmac outer oa oe na ne =
+          z  = na_i xor na_i
+          hi = z_i + 0x80000000
+          lo = z_i + 768
+          w2 = group pick two hi z [0, 4, 5, 6]
+          w3 = group pick two z lo [0, 1, 2, 4]
+          a2, e2 = sha256 compress oa oe na ne w2 w3
+          (a2, e2)
 
 -- HMAC-SHA-256 of a 32-byte message (a digest, as its two word groups) from the two key states.
 -- The inner block has the same shape as the outer one.
-cpu op :: sha256 hmac step Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
-          sha256 hmac step ia ie oa oe ua ue =
-            z  = ua_i xor ua_i
-            hi = z_i + 0x80000000
-            lo = z_i + 768
-            w2 = group pick two hi z [0, 4, 5, 6]
-            w3 = group pick two z lo [0, 1, 2, 4]
-            a1, e1 = sha256 compress ia ie ua ue w2 w3
-            a2, e2 = sha256 compress oa oe a1 e1 w2 w3
-            (a2, e2)
+arch :: sha256 hmac step Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4]
+        sha256 hmac step ia ie oa oe ua ue =
+          z  = ua_i xor ua_i
+          hi = z_i + 0x80000000
+          lo = z_i + 768
+          w2 = group pick two hi z [0, 4, 5, 6]
+          w3 = group pick two z lo [0, 1, 2, 4]
+          a1, e1 = sha256 compress ia ie ua ue w2 w3
+          a2, e2 = sha256 compress oa oe a1 e1 w2 w3
+          (a2, e2)
 
 -- The iterations of PBKDF2 after the first: U = HMAC(U), acc = acc xor U. One loop, everything in registers.
 fn :: sha256 pbkdf2 loop Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Int => Tensor[U32 * 4] Tensor[U32 * 4]
@@ -801,11 +801,11 @@ fn :: sha256 group4 Int Int Int Int => Tensor[U32]
         g
 
 
-fn :: sha256 iv a => Tensor[U32]
-      sha256 iv a =  sha256 group4 0x6a09e667 0xbb67ae85 0x3c6ef372 0xa54ff53a
+idem :: sha256 iv a => Tensor[U32]
+        sha256 iv a =  sha256 group4 0x6a09e667 0xbb67ae85 0x3c6ef372 0xa54ff53a
 
-fn :: sha256 iv e => Tensor[U32]
-      sha256 iv e =  sha256 group4 0x510e527f 0x9b05688c 0x1f83d9ab 0x5be0cd19
+idem :: sha256 iv e => Tensor[U32]
+        sha256 iv e =  sha256 group4 0x510e527f 0x9b05688c 0x1f83d9ab 0x5be0cd19
 
 fn :: sha256 blocks of Int => Int
       sha256 blocks of n =  (n + 9 + 63) / 64
@@ -3048,82 +3048,82 @@ fn :: x25519 public key String => String
 -- FR-CRYPTO-006: FIPS 197 AES-128 & NIST SP 800-38D AES-128-GCM
 -- ============================================================
 
--- ── AES on processor operations (FIPS 197; `cpu op`, ridgunc 1.0.51) ──
+-- ── AES on processor operations (FIPS 197; `arch ::`, ridgunc 1.0.55) ──
 -- A round, the last round, a whole block and the counter block of CTR mode are operations: each has a portable
 -- definition and a variant on the AES instructions of x86-64 (RIDGUN_CPU=2 forces the portable one).
--- A variant on four blocks per instruction (`"vaes,avx512f" by 4`) was measured slower here for the counter loop
+-- A variant on four blocks per instruction (`on x64 by 4`) was measured slower here for the counter loop
 -- (1 320 ns against 850 ns per 4 096 bytes), so the rounds have the one-block variant only.
 
-cpu op :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
-          aes round s k box =
-            t = box_(s_i)
-            r = group pick t [0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11]
-            a1 = group pick r [1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12]
-            a2 = group pick r [2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13]
-            a3 = group pick r [3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14]
-            x0 = (r_i shl 1) xor ((r_i shr 7) * 27)
-            x1 = (a1_i shl 1) xor ((a1_i shr 7) * 27)
-            m = ((x0_i xor x1_i) xor a1_i) xor (a2_i xor a3_i)
-            m_i xor k_i
-          aes round s k box on x86-64 "aes" =
-            group as u8 (cpu "aesni.aesenc" (group as u64 s) (group as u64 k))
+arch :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
+        aes round s k box =
+          t = box_(s_i)
+          r = group pick t [0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11]
+          a1 = group pick r [1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12]
+          a2 = group pick r [2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13]
+          a3 = group pick r [3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14]
+          x0 = (r_i shl 1) xor ((r_i shr 7) * 27)
+          x1 = (a1_i shl 1) xor ((a1_i shr 7) * 27)
+          m = ((x0_i xor x1_i) xor a1_i) xor (a2_i xor a3_i)
+          m_i xor k_i
+        aes round s k box on x64 =
+          group as u8 (cpu aesenc (group as u64 s) (group as u64 k))
 
-cpu op :: aes last round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
-          aes last round s k box =
-            t = box_(s_i)
-            r = group pick t [0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11]
-            r_i xor k_i
-          aes last round s k box on x86-64 "aes" =
-            group as u8 (cpu "aesni.aesenclast" (group as u64 s) (group as u64 k))
+arch :: aes last round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
+        aes last round s k box =
+          t = box_(s_i)
+          r = group pick t [0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11]
+          r_i xor k_i
+        aes last round s k box on x64 =
+          group as u8 (cpu aesenclast (group as u64 s) (group as u64 k))
 
-cpu op :: aes128 encrypt block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
-          aes128 encrypt block p keys box =
-            k0 = keys_(0,)
-            s0 = p_i xor k0_i
-            s1 = aes round s0 keys_(1,) box
-            s2 = aes round s1 keys_(2,) box
-            s3 = aes round s2 keys_(3,) box
-            s4 = aes round s3 keys_(4,) box
-            s5 = aes round s4 keys_(5,) box
-            s6 = aes round s5 keys_(6,) box
-            s7 = aes round s6 keys_(7,) box
-            s8 = aes round s7 keys_(8,) box
-            s9 = aes round s8 keys_(9,) box
-            aes last round s9 keys_(10,) box
+arch :: aes128 encrypt block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
+        aes128 encrypt block p keys box =
+          k0 = keys_(0,)
+          s0 = p_i xor k0_i
+          s1 = aes round s0 keys_(1,) box
+          s2 = aes round s1 keys_(2,) box
+          s3 = aes round s2 keys_(3,) box
+          s4 = aes round s3 keys_(4,) box
+          s5 = aes round s4 keys_(5,) box
+          s6 = aes round s5 keys_(6,) box
+          s7 = aes round s6 keys_(7,) box
+          s8 = aes round s7 keys_(8,) box
+          s9 = aes round s8 keys_(9,) box
+          aes last round s9 keys_(10,) box
 
-cpu op :: aes256 encrypt block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
-          aes256 encrypt block p keys box =
-            k0 = keys_(0,)
-            s0 = p_i xor k0_i
-            s1 = aes round s0 keys_(1,) box
-            s2 = aes round s1 keys_(2,) box
-            s3 = aes round s2 keys_(3,) box
-            s4 = aes round s3 keys_(4,) box
-            s5 = aes round s4 keys_(5,) box
-            s6 = aes round s5 keys_(6,) box
-            s7 = aes round s6 keys_(7,) box
-            s8 = aes round s7 keys_(8,) box
-            s9 = aes round s8 keys_(9,) box
-            s10 = aes round s9 keys_(10,) box
-            s11 = aes round s10 keys_(11,) box
-            s12 = aes round s11 keys_(12,) box
-            s13 = aes round s12 keys_(13,) box
-            aes last round s13 keys_(14,) box
+arch :: aes256 encrypt block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
+        aes256 encrypt block p keys box =
+          k0 = keys_(0,)
+          s0 = p_i xor k0_i
+          s1 = aes round s0 keys_(1,) box
+          s2 = aes round s1 keys_(2,) box
+          s3 = aes round s2 keys_(3,) box
+          s4 = aes round s3 keys_(4,) box
+          s5 = aes round s4 keys_(5,) box
+          s6 = aes round s5 keys_(6,) box
+          s7 = aes round s6 keys_(7,) box
+          s8 = aes round s7 keys_(8,) box
+          s9 = aes round s8 keys_(9,) box
+          s10 = aes round s9 keys_(10,) box
+          s11 = aes round s10 keys_(11,) box
+          s12 = aes round s11 keys_(12,) box
+          s13 = aes round s12 keys_(13,) box
+          aes last round s13 keys_(14,) box
 
 -- The counter block of CTR mode: the first 12 bytes of `iv` and the 32-bit counter `n`, big-endian (the last 4 bytes of `iv` are 0).
-cpu op :: aes128 ctr block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int => Tensor[U8 * 16]
-          aes128 ctr block iv keys box n =
-            z = group as u32 iv
-            c = z_i + n
-            b = group as u8 c
-            aes128 encrypt block (group pick two iv b [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 31, 30, 29, 28]) keys box
+arch :: aes128 ctr block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int => Tensor[U8 * 16]
+        aes128 ctr block iv keys box n =
+          z = group as u32 iv
+          c = z_i + n
+          b = group as u8 c
+          aes128 encrypt block (group pick two iv b [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 31, 30, 29, 28]) keys box
 
-cpu op :: aes256 ctr block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int => Tensor[U8 * 16]
-          aes256 ctr block iv keys box n =
-            z = group as u32 iv
-            c = z_i + n
-            b = group as u8 c
-            aes256 encrypt block (group pick two iv b [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 31, 30, 29, 28]) keys box
+arch :: aes256 ctr block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int => Tensor[U8 * 16]
+        aes256 ctr block iv keys box n =
+          z = group as u32 iv
+          c = z_i + n
+          b = group as u8 c
+          aes256 encrypt block (group pick two iv b [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 31, 30, 29, 28]) keys box
 
 -- E(K, nonce || ctr + at) for the rows `at` on: one loop, the block in registers.
 fn :: aes128 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int Int Int => Tensor[U8 * n * 16]
@@ -3156,11 +3156,12 @@ fn :: aes box fill Tensor[U8] Int Int Bool => Tensor[U8]
           box_(p1) = (q4 xor (aes rotl8 q4 1) xor (aes rotl8 q4 2) xor (aes rotl8 q4 3) xor (aes rotl8 q4 4)) xor 99
           aes box fill box p1 q4 False
 
-fn :: aes make box => Tensor[U8]
-      aes make box =
-        box = Tensor[U8 * 256]
-        box_(0) = 99
-        aes box fill box 1 1 True
+-- Built once for the whole program (`idem ::`, ridgunc 1.0.54); nobody writes in it.
+idem :: aes make box => Tensor[U8]
+        aes make box =
+          box = Tensor[U8 * 256]
+          box_(0) = 99
+          aes box fill box 1 1 True
 
 
 -- The key schedule (FIPS 197 §5.2) for a key of `nk` words (4 or 8): byte i of word w at keys_(w / 4, (w % 4) * 4 + i).

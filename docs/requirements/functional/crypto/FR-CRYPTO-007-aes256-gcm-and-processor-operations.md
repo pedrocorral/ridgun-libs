@@ -15,7 +15,7 @@ tests: [TS-CRYPTO-007]
 The `crypto` lib SHALL provide AES-256 block encryption and AES-256-GCM next to AES-128, and SHALL give the same result for SHA-256, PBKDF2-HMAC-SHA-256 and AES whether the program uses the SHA and AES instructions of the processor or the portable definitions.
 
 ## Rationale
-The compiler no longer carries any cipher or hash: since ridgunc 1.0.51 a lib writes them as processor operations (`cpu op`), each with a portable definition (asked of libs on 2026-11-21, `cpu-op-para-libs.md`). AES-256 was asked for in the same note. A program must not depend on which processor it runs on.
+The compiler no longer carries any cipher or hash: since ridgunc 1.0.51 a lib writes them as processor operations (`arch ::`), each with a portable definition (asked of libs on 2026-11-21, `cpu-op-para-libs.md`). AES-256 was asked for in the same note. A program must not depend on which processor it runs on.
 
 ## Acceptance criteria
 - AC1: Given a 32-byte key and a 16-byte block, when `aes256 block` runs, then the result is the block of FIPS 197 Appendix C.3; a key or a block of another length gives `""`.
