@@ -2,7 +2,7 @@
 id: FR-POSIX-005
 title: Wait until one of many descriptors is ready
 type: functional
-status: draft
+status: approved
 priority: must
 domain: POSIX
 depends_on: [FR-POSIX-001]

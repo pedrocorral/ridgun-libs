@@ -2,7 +2,7 @@
 id: FR-NETAGENT-001
 title: Serve many connections in one loop without waiting for any of them
 type: functional
-status: draft
+status: approved
 priority: must
 domain: NETAGENT
 depends_on: [FR-SOCK-004, FR-POSIX-005]

@@ -1,12 +1,14 @@
 ---
 id: ADR-0015
 title: pool and net_agent are rebuilt from the programs that need them
-status: proposed
+status: accepted
 date: 2026-11-21
 supersedes: []
 affects: [FR-POOL-001, FR-NETAGENT-001, FR-POSIX-005, FR-AGENT-001, API-POOL-001, API-NETAGENT-001, API-AGENT-001, DM-Pool, DM-NetAgent, src/main/ridgun/lib/pool.ridgun, src/main/ridgun/lib/net_agent.ridgun, src/main/ridgun/lib/posix.ridgun, src/test/ridgun/test agent.ridgun, docs/book]
 ---
 # ADR-0015 — `pool` and `net_agent` are rebuilt from the programs that need them
+
+**Accepted by the user on 2026-11-21**, together with `FR-POOL-001`, `FR-NETAGENT-001` and `FR-POSIX-005`. The API contracts and data models stay in draft until the code confirms their signatures.
 
 ## Context
 - `pool` and `net_agent` are specified inside `FR-AGENT-001`. `pool` routes a message by key over a list of agents. `net_agent` pairs one descriptor with one agent and writes each reply in one go.
