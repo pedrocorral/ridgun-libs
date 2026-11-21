@@ -13,7 +13,7 @@ Pure-Ridgun standard and system library suite. Every lib compiles to portable Ri
 | Lib | Source | Bundle (`target/bundles/`) | Domain | Summary |
 |---|---|---|---|---|
 | **`socket`** | `src/main/ridgun/lib/socket.ridgun` | `socket.ridgunlib` | `SOCK` | High-level `Socket` ADT (`TCP`, `UDP`, `AF_UNIX`, framing, line I/O, CIDR, `/etc/hosts` + RFC 1035 UDP port 53 DNS resolution, polling) and Solstice `RGF-001` descriptor-based kernel socket API (`sys resolve ipv4`, `sys tcp listen`, `sys tcp listen reuseport`, `sys unix listen`, `sys accept`, `sys tcp connect`, `sys unix connect`, `sys send`, `sys recv`, `sys shutdown write`). |
-| **`crypto`** | `src/main/ridgun/lib/crypto.ridgun` | `crypto.ridgunlib` | `CRYPTO` | Raw byte/bitwise primitives (`RGF-019`), FIPS 180-4 SHA-256, RFC 2104 HMAC-SHA-256, constant-time equality (`ct equal`), 100% in-process RFC 8018 PBKDF2-HMAC-SHA-256, 5-argument RFC 9106 Argon2id (`argon2id hash`, `argon2id verify`), and RFC 8439 ChaCha20-Poly1305 AEAD (`aead seal`, `aead open`). |
+| **`crypto`** | `src/main/ridgun/lib/crypto.ridgun` | `crypto.ridgunlib` | `CRYPTO` | Raw byte and bitwise primitives (`RGF-019`); SHA-256, SHA-384, SHA-512, SHA-1 and MD5; HMAC, HKDF and PBKDF2-HMAC-SHA-256; constant-time equality (`ct equal`); ChaCha20-Poly1305 (`aead seal`, `aead open`), AES-128-GCM and AES-256-GCM; X25519; Ed25519 and Minisign; ECDH and ECDSA on P-256 and P-384; RSA PKCS#1 v1.5 and PSS verification; X.509 parsing; and the `argon2id` lib, offered again by `crypto`. SHA-256, PBKDF2 and AES run on processor operations (`cpu op`), with a portable definition for every processor. |
 | **`argon2id`** | `src/main/ridgun/lib/argon2id.ridgun` | `argon2id.ridgunlib` | `CRYPTO` | 100% in-process pure-Ridgun RFC 9106 Argon2id PHC password hashing over native `Tensor[U64 * 8 * 16]` blocks, RFC 7693 Blake2b, OWASP parameter presets, pepper/associated-data context hashing, key derivation (`argon2id derive key`), and rehash detection (`argon2id needs rehash`). |
 | **`posix`** | `src/main/ridgun/lib/posix.ridgun` | `posix.ridgunlib` | `POSIX` | 2-layer Platform Abstraction Layer (`SysOs`, `SysArch`), normalized open/poll/signal constants, `PollStatus` (`wait fd`), `ProcStatus`, monotonic/wall clocks (`RGF-017`), signal watchers (`RGF-018`), CSPRNG (`sys random bytes`), and `RG-010` filesystem/process wrappers. |
 | **`io`** | `src/main/ridgun/lib/io.ridgun` | `io.ridgunlib` | `IO` | Extensible `IoError` and `IoResult` ADTs, deadline-aware descriptor reads/writes (`io read with timeout`, `read fd … max … timeout …`, `write fd … data … timeout …`), timeout-bounded command execution (`exec with timeout`), line streams, and file metadata predicates. |
@@ -55,8 +55,8 @@ Pure-Ridgun standard and system library suite. Every lib compiles to portable Ri
 
 ## Requirements & Toolchain
 
-- **Compiler**: `ridgunc` 1.0.44 or later (pure-Ridgun self-hosted compiler)
-- **Build & Test Runner**: `stable` 1.0.44 or later (`build.ridgun`)
+- **Compiler**: `ridgunc` 1.0.51 or later (pure-Ridgun self-hosted compiler)
+- **Build & Test Runner**: `stable` 1.0.51 or later (`build.ridgun`)
 - **Supported Targets**: `Linux` (`X86_64`, `Arm64`) with cross-platform PAL dispatch (`Linux | MacOS | Windows`)
 
 ---
