@@ -52,6 +52,7 @@
  "ex.mail.parse": "Tolkning av flerradiga SMTP-svar (`smtp parse response`)",
  "ex.mail.rejects": "Header-injektion och ogiltiga adresser avvisas vid rendering",
  "ex.net_agent.datapath": "Datavägen över en riktig TCP-anslutning: `conn poll step`, agentens svar och `reactor sweep` vid stängning",
+ "ex.net_agent.slowpeer": "Ett svar större än socketens buffertar och en motpart som inte läser (`conn write timeout ms`)",
  "ex.pool.routing": "Dirigering efter nyckel (`pool ask shard`): samma nyckel, samma agent; nycklar i tur och ordning, agenter i tur och ordning; utsändning och stopp",
  "ex.posix.bridge": "Kärnbryggan: avkodning av avslutningsstatus (`ProcExited`, `ProcSignal`), `AT_FDCWD` och inga literala systemanrop i lib:arna",
  "ex.posix.durable": "Varaktiga filoperationer: `posix fsync`, `posix fdatasync`, `posix ftruncate`, exklusiva lås och `posix pread`",

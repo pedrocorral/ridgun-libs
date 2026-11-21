@@ -52,6 +52,7 @@
  "ex.mail.parse": "Análise de respostas SMTP de varias liñas (`smtp parse response`)",
  "ex.mail.rejects": "Inxección de cabeceiras e enderezos non válidos rexeitados ao renderizar",
  "ex.net_agent.datapath": "O camiño de datos sobre unha conexión TCP real: `conn poll step`, a resposta do axente e `reactor sweep` ao pechar",
+ "ex.net_agent.slowpeer": "Unha resposta maior ca os búferes do socket e un par que non le (`conn write timeout ms`)",
  "ex.pool.routing": "Reparto por chave (`pool ask shard`): mesma chave, mesmo axente; chaves por quenda, axentes por quenda; difusión e parada",
  "ex.posix.bridge": "A ponte co kernel: decodificación do estado de saída (`ProcExited`, `ProcSignal`), `AT_FDCWD` e ningunha chamada ao sistema literal nas libs",
  "ex.posix.durable": "Operacións duradeiras sobre ficheiros: `posix fsync`, `posix fdatasync`, `posix ftruncate`, bloqueos exclusivos e `posix pread`",

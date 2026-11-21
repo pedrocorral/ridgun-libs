@@ -52,6 +52,7 @@
  "ex.mail.parse": "Parsing Multi-Line SMTP Replies (`smtp parse response`)",
  "ex.mail.rejects": "Header Injection and Invalid Addresses Rejected When Rendering",
  "ex.net_agent.datapath": "The Data Path over a Real TCP Connection: `conn poll step`, the Agent's Reply, and `reactor sweep` on Close",
+ "ex.net_agent.slowpeer": "A Reply Larger than the Socket Buffers, and a Peer That Does Not Read (`conn write timeout ms`)",
  "ex.pool.routing": "Routing by Key (`pool ask shard`): Same Key, Same Agent; Keys in Turn, Agents in Turn; Broadcast and Shutdown",
  "ex.posix.bridge": "The Kernel Bridge: Exit-Status Decoding (`ProcExited`, `ProcSignal`), `AT_FDCWD`, and No Literal System Calls in the Libs",
  "ex.posix.durable": "Durable File Operations: `posix fsync`, `posix fdatasync`, `posix ftruncate`, Exclusive Locks, and `posix pread`",

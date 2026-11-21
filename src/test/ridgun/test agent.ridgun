@@ -11,6 +11,7 @@ import list
 import pool
 import net_agent
 import socket
+import str
 
 fn :: ag sum ints [Int]    => Int
       ag sum ints []       =  0
@@ -114,6 +115,67 @@ fn :: test net agent data path => ()
         sys poll sfd 1 500 -> closed_ev
         agent list len (reactor sweep [slot]) 0 -> assert int equals 0 "reactor sweep drops a connection closed by the peer"
         is agent alive ag -> assert false "the agent stops when its connection closes"
+        sys close lfd
+        ()
+
+-- An agent whose reply to "big" is 4 MiB and to anything else 16 MiB.
+fn :: ag big reply CounterState String => CounterState String
+      ag big reply st msg =
+        | msg == "big" = (st, str repeat "y" 4194304)
+        | otherwise    = (st, str repeat "z" 16777216)
+
+-- A client that reads `want` bytes from `fd`; the reply is the number of bytes it read.
+fn :: ag read count Int Int => Int
+      ag read count fd want =  ag read loop fd want 0
+
+fn :: ag read loop Int Int Int => Int
+      ag read loop fd want got =
+        | got >= want = got
+        | otherwise   = ag read more fd want got (sock recv data (sys recv fd 65536 2000))
+
+fn :: ag read more Int Int Int String => Int
+      ag read more fd want got chunk =
+        | (str len chunk) == 0 = got
+        | otherwise            = ag read loop fd want (got + (str len chunk))
+
+-- A reply larger than the socket buffers: whole when the peer reads, and a peer that does not
+-- read is closed after `conn write timeout ms` instead of holding the reactor.
+-- @tests TS-AGENT-001
+fn :: test net agent large reply and slow peer => ()
+      test net agent large reply and slow peer =
+        conn write timeout ms -> assert int equals 1000 "a step waits at most 1000 ms for a peer to take a reply"
+        l_res = sys tcp listen "127.0.0.1" 0 16
+        lfd   = sock fd l_res
+        port  = sys local port lfd
+
+        c1    = sock fd (sys tcp connect "127.0.0.1" port 500)
+        s1    = sock accept fd (sys accept lfd 500)
+        ag1   = agent (ag big reply) (CounterState 0)
+        slot1 = ConnSlot s1 ag1
+        rd    = agent (ag read count)
+        send c1 4194304 to rd
+        q1    = sys send c1 "big" 500
+        sock rc q1 -> assert int equals 0 "client asks for the 4 MiB reply"
+        str len (step until reply slot1 c1 50) -> assert int equals (5 + 4194304) "a 4 MiB reply is written whole while the peer reads"
+        receive from rd -> assert int equals 4194304 "the peer reads the 4 MiB"
+        stop rd
+        is agent alive ag1 -> assert true "the agent of the reading peer keeps running"
+        reactor shutdown [slot1]
+        sys close c1
+
+        c2    = sock fd (sys tcp connect "127.0.0.1" port 500)
+        s2    = sock accept fd (sys accept lfd 500)
+        ag2   = agent (ag big reply) (CounterState 0)
+        slot2 = ConnSlot s2 ag2
+        q2    = sys send c2 "huge" 500
+        sock rc q2 -> assert int equals 0 "client asks for the 16 MiB reply and does not read it"
+        t0    = sys time ms
+        step until reply slot2 c2 50 -> assert str eq "closed" "a peer that does not read is closed, not served a cut reply"
+        took  = (sys time ms) - t0
+        took < 5000 -> assert true "the step returns after the write timeout instead of blocking"
+        is agent alive ag2 -> assert false "the agent of the closed connection is stopped"
+        agent list len (reactor sweep []) 0 -> assert int equals 0 "an empty table stays empty"
+        sys close c2
         sys close lfd
         ()
 
@@ -265,6 +327,7 @@ fn :: main => ()
         test spec combinators pool and net agent
         test pool routing by key
         test net agent data path
+        test net agent large reply and slow peer
         test agent lifecycle and counter
         test log and kv agents
         echo "=== All agent tests (including RG-066) passed ==="

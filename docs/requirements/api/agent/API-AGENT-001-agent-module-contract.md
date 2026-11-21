@@ -39,6 +39,8 @@ auth: none
   - `conn handle event Int Agent Int => StepOutcome`
   - `conn feed payload Int Agent String => StepOutcome`
   - `conn drain outbound Int Agent Option => StepOutcome`
+  - `conn write timeout ms => Int` (1000: the longest a step waits for a peer to take a reply)
+  - `conn after write Int Agent String (Int Int) => StepOutcome` (the slot is kept when the whole reply was sent; otherwise the connection is closed)
   - `reactor sweep [ConnSlot] => [ConnSlot]`
   - `reactor shutdown [ConnSlot] => ()`
 - Lifecycle & Messaging Operations:

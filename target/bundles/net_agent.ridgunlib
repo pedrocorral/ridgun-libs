@@ -9,6 +9,8 @@
 
 module :: net agent
 
+import socket
+
 type ConnSlot = ConnSlot Int Agent
 
 type StepOutcome = ConnKeep ConnSlot String | ConnClosed
@@ -58,14 +60,30 @@ fn :: conn feed payload Int Agent String => StepOutcome
 fn :: conn cast str A => String
       conn cast str x =  x
 
+-- The longest a step waits for a peer to take a reply (milliseconds).
 -- @implements FR-AGENT-001
 -- @implements API-AGENT-001
+fn :: conn write timeout ms => Int
+      conn write timeout ms =  1000
+
+-- @implements FR-AGENT-001
+-- @implements API-AGENT-001
+-- @mitigates VUL-INPUT-001
 fn :: conn drain outbound Int Agent Option => StepOutcome
       conn drain outbound fd ag None = ConnKeep (ConnSlot fd ag) ""
       conn drain outbound fd ag (Some resp) =
         resp conn cast str -> s
-        sys write fd fd s -> ()
-        ConnKeep (ConnSlot fd ag) s
+        conn after write fd ag s (sys send fd s (conn write timeout ms))
+
+-- The reply is written whole or the connection is closed: a peer that does not read
+-- cannot hold the reactor longer than `conn write timeout ms`, and never gets a cut reply.
+fn :: conn after write Int Agent String (Int Int) => StepOutcome
+      conn after write fd ag s (rc, sent) =
+        | rc == 0 and sent == (str len s) = ConnKeep (ConnSlot fd ag) s
+        | otherwise =
+          sys close fd -> ()
+          stop ag
+          ConnClosed
 
 -- Sweep an entire connection table, pruning closed connections and keeping active ones
 -- @implements FR-AGENT-001

@@ -40,7 +40,7 @@ En `ridgun-libs`, **`net_agent`** es una **lib** de primera clase ubicada en `sr
 
 ### 32.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/net_agent.ridgun`
 
-A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/net_agent.ridgun` (`2` tipos, `0` operadores y `8` funciones):
+A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/net_agent.ridgun` (`2` tipos, `0` operadores y `10` funciones):
 
 **Tipos algebraicos y registros (`type`) de `net_agent`:**
 
@@ -55,10 +55,12 @@ type StepOutcome = ConnKeep ConnSlot String | ConnClosed
 | `2` | `fn :: conn handle event Int Agent Int` | `StepOutcome` |
 | `3` | `fn :: conn feed payload Int Agent String` | `StepOutcome` |
 | `4` | `fn :: conn cast str A` | `String` |
-| `5` | `fn :: conn drain outbound Int Agent Option` | `StepOutcome` |
-| `6` | `fn :: reactor sweep [ConnSlot]` | `[ConnSlot]` |
-| `7` | `fn :: reactor sweep next StepOutcome [ConnSlot]` | `[ConnSlot]` |
-| `8` | `fn :: reactor shutdown [ConnSlot]` | `()` |
+| `5` | `fn :: conn write timeout ms` | `Int` |
+| `6` | `fn :: conn drain outbound Int Agent Option` | `StepOutcome` |
+| `7` | `fn :: conn after write Int Agent String (Int Int)` | `StepOutcome` |
+| `8` | `fn :: reactor sweep [ConnSlot]` | `[ConnSlot]` |
+| `9` | `fn :: reactor sweep next StepOutcome [ConnSlot]` | `[ConnSlot]` |
+| `10` | `fn :: reactor shutdown [ConnSlot]` | `()` |
 
 ---
 
@@ -316,6 +318,50 @@ fn :: test net agent data path => ()
         ()
 ```
 
+### 32.3.8. Ejemplo 8: Una respuesta mayor que los búferes del socket y un par que no lee (`conn write timeout ms`)
+
+En este ejemplo práctico exploramos de forma exhaustiva cómo se comporta `net_agent` en este bloque funcional, incluyendo entradas estándar, combinaciones de parámetros y valores frontera:
+
+```ridgun
+fn :: test net agent large reply and slow peer => ()
+      test net agent large reply and slow peer =
+        conn write timeout ms -> assert int equals 1000 "a step waits at most 1000 ms for a peer to take a reply"
+        l_res = sys tcp listen "127.0.0.1" 0 16
+        lfd   = sock fd l_res
+        port  = sys local port lfd
+
+        c1    = sock fd (sys tcp connect "127.0.0.1" port 500)
+        s1    = sock accept fd (sys accept lfd 500)
+        ag1   = agent (ag big reply) (CounterState 0)
+        slot1 = ConnSlot s1 ag1
+        rd    = agent (ag read count)
+        send c1 4194304 to rd
+        q1    = sys send c1 "big" 500
+        sock rc q1 -> assert int equals 0 "client asks for the 4 MiB reply"
+        str len (step until reply slot1 c1 50) -> assert int equals (5 + 4194304) "a 4 MiB reply is written whole while the peer reads"
+        receive from rd -> assert int equals 4194304 "the peer reads the 4 MiB"
+        stop rd
+        is agent alive ag1 -> assert true "the agent of the reading peer keeps running"
+        reactor shutdown [slot1]
+        sys close c1
+
+        c2    = sock fd (sys tcp connect "127.0.0.1" port 500)
+        s2    = sock accept fd (sys accept lfd 500)
+        ag2   = agent (ag big reply) (CounterState 0)
+        slot2 = ConnSlot s2 ag2
+        q2    = sys send c2 "huge" 500
+        sock rc q2 -> assert int equals 0 "client asks for the 16 MiB reply and does not read it"
+        t0    = sys time ms
+        step until reply slot2 c2 50 -> assert str eq "closed" "a peer that does not read is closed, not served a cut reply"
+        took  = (sys time ms) - t0
+        took < 5000 -> assert true "the step returns after the write timeout instead of blocking"
+        is agent alive ag2 -> assert false "the agent of the closed connection is stopped"
+        agent list len (reactor sweep []) 0 -> assert int equals 0 "an empty table stays empty"
+        sys close c2
+        sys close lfd
+        ()
+```
+
 ---
 
 ## 32.4. Bajo el capó: cómo está construida `net_agent` en Ridgun puro (`src/main/ridgun/lib/net_agent.ridgun`)
@@ -372,12 +418,25 @@ fn :: conn feed payload Int Agent String => StepOutcome
 fn :: conn cast str A => String
       conn cast str x =  x
 
+-- The longest a step waits for a peer to take a reply (milliseconds).
+fn :: conn write timeout ms => Int
+      conn write timeout ms =  1000
+
 fn :: conn drain outbound Int Agent Option => StepOutcome
       conn drain outbound fd ag None = ConnKeep (ConnSlot fd ag) ""
       conn drain outbound fd ag (Some resp) =
         resp conn cast str -> s
-        sys write fd fd s -> ()
-        ConnKeep (ConnSlot fd ag) s
+        conn after write fd ag s (sys send fd s (conn write timeout ms))
+
+-- The reply is written whole or the connection is closed: a peer that does not read
+-- cannot hold the reactor longer than `conn write timeout ms`, and never gets a cut reply.
+fn :: conn after write Int Agent String (Int Int) => StepOutcome
+      conn after write fd ag s (rc, sent) =
+        | rc == 0 and sent == (str len s) = ConnKeep (ConnSlot fd ag) s
+        | otherwise =
+          sys close fd -> ()
+          stop ag
+          ConnClosed
 ```
 
 ### 32.4.2. Implementación interna: Reactor Sweep and Shutdown

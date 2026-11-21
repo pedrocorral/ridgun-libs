@@ -52,6 +52,7 @@
  "ex.mail.parse": "Lerro anitzeko SMTP erantzunen analisia (`smtp parse response`)",
  "ex.mail.rejects": "Errendatzean ukatutako goiburu-injekzioa eta helbide baliogabeak",
  "ex.net_agent.datapath": "Datuen bidea benetako TCP konexio baten gainean: `conn poll step`, agentearen erantzuna eta `reactor sweep` ixtean",
+ "ex.net_agent.slowpeer": "Socketaren bufferrak baino erantzun handiagoa eta irakurtzen ez duen parekoa (`conn write timeout ms`)",
  "ex.pool.routing": "Gako bidezko bideratzea (`pool ask shard`): gako bera, agente bera; gakoak txandaka, agenteak txandaka; hedapena eta geldialdia",
  "ex.posix.bridge": "Kernelerako zubia: irteera-egoeraren deskodetzea (`ProcExited`, `ProcSignal`), `AT_FDCWD` eta sistema-dei literalik ez lib-etan",
  "ex.posix.durable": "Fitxategi-eragiketa iraunkorrak: `posix fsync`, `posix fdatasync`, `posix ftruncate`, blokeo esklusiboak eta `posix pread`",
