@@ -9,7 +9,7 @@ affects: [FR-SOCK-004, API-SOCK-001, FR-POSIX-002, FR-POSIX-004, ADR-0007, src/m
 # ADR-0013 — On x86-64, socket and posix use the runtime's net and file operations
 
 ## Context
-ridgunc 1.0.5 added socket operations to the runtime (`net connect`, `net listen`, `net accept`, `net send`, `net recv into`, `net shutdown`, `net option`, `net local port`, `net peer ip`, `net resolve`; FR-VM-003 of the compiler). ridgunc 1.0.3 added `remove file`, `remove dir` and `rename path`. They return a count or a negative Linux errno, and they exist on x86-64 for Linux and Windows. They do not exist on ARM64 yet.
+ridgunc 1.0.5 added socket operations to the runtime (`net connect`, `net listen`, `net accept`, `net send`, `net recv into`, `net shutdown`, `net option`, `net local port`, `net peer ip`, `net resolve`; requirement VM-003 of the compiler). ridgunc 1.0.3 added `remove file`, `remove dir` and `rename path`. They return a count or a negative Linux errno, and they exist on x86-64 for Linux and Windows. They do not exist on ARM64 yet.
 ADR-0007 sends every kernel call through the `posix` syscall bridge (`sys call (nr …)`).
 
 ## Options considered
