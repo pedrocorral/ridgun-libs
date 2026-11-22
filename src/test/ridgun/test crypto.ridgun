@@ -980,6 +980,7 @@ fn :: test aead on every length => ()
       test aead on every length =
         box chain 0 1100 "" -> assert str eq "1b3fc4c9a9a8b1e3ab1082134de8b6b7c37535854b743775a372f83db414adb7" "the sealed messages of every length from 0 to 1100 bytes are Python's"
         box chain 2030 2070 "" -> assert str eq "e31bca9e28f42c079aa7828d6e8bf779c192411bba8c680d11a8f2beccd87be8" "and of every length from 2030 to 2070"
+        box chain 2040 2600 "" -> assert str eq "01af020cdb98a353d3f3356918987ff17c831330ad27013f966041bc8f25fc6b" "and of every length from 2040 to 2600: with 32 lanes of Poly1305, every count of blocks left over, 0 to 31"
         box chain 4000 4130 "" -> assert str eq "e30c3e03ce5113f7c3d5cb73fb7e52c393a384fe9b30ae5e3834b5b13a5c1e95" "and of every length from 4000 to 4130 (around a page)"
         sha256 hex (ref box 4064) -> assert str eq "e3c4ab69608b4296dbaac45bef4249e21f14df04ccef21d102d38078008ac2f5" "a page of 4 064 bytes"
         sha256 hex (ref box 4096) -> assert str eq "87dcc4cde8236e096cc05b14b3db2a7a34d74da7f8d03d9d8d91b60f79c4d89c" "4 096 bytes"
@@ -996,6 +997,7 @@ fn :: test aead on every length => ()
         -- every length: the box is cipher + tag made from the public parts, it opens to the message, the message is untouched
         wrong lens 0 1100 0 -> assert int equals 0 "every length from 0 to 1100 seals to its parts and opens to the message"
         wrong lens 4060 4100 0 -> assert int equals 0 "and from 4060 to 4100"
+        wrong lens 2040 2600 0 -> assert int equals 0 "and from 2040 to 2600"
         len is wrong 65535 -> assert int equals 0 "and 65 535"
         len is wrong 1048577 -> assert int equals 0 "and one megabyte and a byte"
         same bytes (ref box 777) (ref box 777) -> assert true "sealing twice gives the same box"

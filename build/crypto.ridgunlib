@@ -1570,7 +1570,7 @@ fn :: poly1305 blocks loop Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int Int =>
         | otherwise = poly1305 blocks loop (poly1305 step h r msg off) r msg (off + 16) n
 
 -- Poly1305 on n lanes, `k` steps in one loop: h = (h + block) * p, with the block of lane l read at byte lx_(l) + at of `msg`.
--- h and p are 5 limbs of 26 bits (one tensor per limb); s1..s4 = 5 * p1..p4. `at` moves 16 n bytes on at each step.
+-- h and p are 5 limbs of 26 bits (one tensor per limb); s1..s4 = 5 * p1..p4. `at` moves 512 bytes on at each step: this one is for 32 lanes.
 fn :: poly1305 lanes loop Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U8] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
       poly1305 lanes loop h0 h1 h2 h3 h4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 at k =
         | k <= 0 = (h0, h1, h2, h3, h4)
@@ -1600,6 +1600,42 @@ fn :: poly1305 lanes loop Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor
           g3 = e3_i and 0x3FFFFFF
           g4 = e4_i and 0x3FFFFFF
           poly1305 lanes loop g0 g1 g2 g3 g4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 (at + 512) (k - 1)
+
+-- The same loop for 8 lanes: `at` moves 128 bytes on at each step.
+fn :: poly1305 lanes loop short Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U8] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
+      poly1305 lanes loop short h0 h1 h2 h3 h4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 at k =
+        | k <= 0 = (h0, h1, h2, h3, h4)
+        | otherwise =
+          t0 = (((msg_(lx_i + at) as U64) + ((msg_((lx_i + at) + 1) as U64) shl 8)) + ((msg_((lx_i + at) + 2) as U64) shl 16)) + ((msg_((lx_i + at) + 3) as U64) shl 24)
+          t1 = (((msg_((lx_i + at) + 4) as U64) + ((msg_((lx_i + at) + 5) as U64) shl 8)) + ((msg_((lx_i + at) + 6) as U64) shl 16)) + ((msg_((lx_i + at) + 7) as U64) shl 24)
+          t2 = (((msg_((lx_i + at) + 8) as U64) + ((msg_((lx_i + at) + 9) as U64) shl 8)) + ((msg_((lx_i + at) + 10) as U64) shl 16)) + ((msg_((lx_i + at) + 11) as U64) shl 24)
+          t3 = (((msg_((lx_i + at) + 12) as U64) + ((msg_((lx_i + at) + 13) as U64) shl 8)) + ((msg_((lx_i + at) + 14) as U64) shl 16)) + ((msg_((lx_i + at) + 15) as U64) shl 24)
+          a0 = h0_i + (t0_i and 0x3FFFFFF)
+          a1 = h1_i + (((t0_i shr 26) or (t1_i shl 6)) and 0x3FFFFFF)
+          a2 = h2_i + (((t1_i shr 20) or (t2_i shl 12)) and 0x3FFFFFF)
+          a3 = h3_i + (((t2_i shr 14) or (t3_i shl 18)) and 0x3FFFFFF)
+          a4 = h4_i + ((t3_i shr 8) + 16777216)
+          d0 = ((((a0_i * p0_i) + (a1_i * s4_i)) + (a2_i * s3_i)) + (a3_i * s2_i)) + (a4_i * s1_i)
+          d1 = ((((a0_i * p1_i) + (a1_i * p0_i)) + (a2_i * s4_i)) + (a3_i * s3_i)) + (a4_i * s2_i)
+          d2 = ((((a0_i * p2_i) + (a1_i * p1_i)) + (a2_i * p0_i)) + (a3_i * s4_i)) + (a4_i * s3_i)
+          d3 = ((((a0_i * p3_i) + (a1_i * p2_i)) + (a2_i * p1_i)) + (a3_i * p0_i)) + (a4_i * s4_i)
+          d4 = ((((a0_i * p4_i) + (a1_i * p3_i)) + (a2_i * p2_i)) + (a3_i * p1_i)) + (a4_i * p0_i)
+          e1 = d1_i + (d0_i shr 26)
+          e2 = d2_i + (e1_i shr 26)
+          e3 = d3_i + (e2_i shr 26)
+          e4 = d4_i + (e3_i shr 26)
+          f0 = (d0_i and 0x3FFFFFF) + ((e4_i shr 26) * 5)
+          g0 = f0_i and 0x3FFFFFF
+          g1 = (e1_i and 0x3FFFFFF) + (f0_i shr 26)
+          g2 = e2_i and 0x3FFFFFF
+          g3 = e3_i and 0x3FFFFFF
+          g4 = e4_i and 0x3FFFFFF
+          poly1305 lanes loop short g0 g1 g2 g3 g4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 (at + 128) (k - 1)
+
+-- The loop of the lane count `ln`: 8 or 32.
+fn :: poly1305 lanes run Int Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U8] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
+      poly1305 lanes run 8 h0 h1 h2 h3 h4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 at k =  poly1305 lanes loop short h0 h1 h2 h3 h4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 at k
+      poly1305 lanes run _ h0 h1 h2 h3 h4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 at k =  poly1305 lanes loop h0 h1 h2 h3 h4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 at k
 
 -- a * b mod 2^130 - 5 on 5 limbs of 26 bits; the result goes to `out` at limb `o`.
 fn :: poly1305 mul into Tensor[Int * m] Int Tensor[Int * k] Int Tensor[Int * j] Int => Int
@@ -1667,37 +1703,102 @@ fn :: poly1305 lane powers Tensor[U64 * n] Tensor[Int * m] Int Int Int Int => Te
           t_(l) = f * pw_((5 * ((n - l) - 1)) + k)
           poly1305 lane powers t pw k f (l + 1) n
 
--- h = the state after the `steps * 32` blocks of `msg` from byte `off` on, 32 blocks at a time:
--- lane l takes blocks l, l + 32, ...; every step multiplies by r^32 and the last one by r^(32 - l),
--- so the sum of the lanes is the same value as block-by-block (RFC 8439 §2.5.1).
-fn :: poly1305 lanes Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int Int => Tensor[Int * 5]
-      poly1305 lanes h r msg off steps =
-        pw = poly1305 powers (Tensor[Int * 160]) r 1 32
-        h0 = Tensor[U64 * 32]
-        h1 = Tensor[U64 * 32]
-        h2 = Tensor[U64 * 32]
-        h3 = Tensor[U64 * 32]
-        h4 = Tensor[U64 * 32]
-        h0_(0) = h_(0)
-        h1_(0) = h_(1)
-        h2_(0) = h_(2)
-        h3_(0) = h_(3)
-        h4_(0) = h_(4)
-        lx = poly1305 lane starts (Tensor[U64 * 32]) 0 0 32
-        m0, m1, m2, m3, m4 = poly1305 lanes loop h0 h1 h2 h3 h4 msg lx (Tensor[U64 * 32] with pw_(155)) (Tensor[U64 * 32] with pw_(156)) (Tensor[U64 * 32] with pw_(157)) (Tensor[U64 * 32] with pw_(158)) (Tensor[U64 * 32] with pw_(159)) (Tensor[U64 * 32] with (5 * pw_(156))) (Tensor[U64 * 32] with (5 * pw_(157))) (Tensor[U64 * 32] with (5 * pw_(158))) (Tensor[U64 * 32] with (5 * pw_(159))) off (steps - 1)
-        q0 = poly1305 lane powers (Tensor[U64 * 32]) pw 0 1 0 32
-        q1 = poly1305 lane powers (Tensor[U64 * 32]) pw 1 1 0 32
-        q2 = poly1305 lane powers (Tensor[U64 * 32]) pw 2 1 0 32
-        q3 = poly1305 lane powers (Tensor[U64 * 32]) pw 3 1 0 32
-        q4 = poly1305 lane powers (Tensor[U64 * 32]) pw 4 1 0 32
-        u1 = poly1305 lane powers (Tensor[U64 * 32]) pw 1 5 0 32
-        u2 = poly1305 lane powers (Tensor[U64 * 32]) pw 2 5 0 32
-        u3 = poly1305 lane powers (Tensor[U64 * 32]) pw 3 5 0 32
-        u4 = poly1305 lane powers (Tensor[U64 * 32]) pw 4 5 0 32
-        f0, f1, f2, f3, f4 = poly1305 lanes loop m0 m1 m2 m3 m4 msg lx q0 q1 q2 q3 q4 u1 u2 u3 u4 (off + (512 * (steps - 1))) 1
+-- Lane l >= `first` starts at block l - first, the lanes before it at block 0 (they are cleared afterwards):
+-- the offsets of the first, partial step.
+fn :: poly1305 lane first starts Tensor[U64 * n] Int Int Int => Tensor[U64 * n]
+      poly1305 lane first starts t first l n =
+        | l >= n     = t
+        | l <= first =
+          t_(l) = 0
+          poly1305 lane first starts t first (l + 1) n
+        | otherwise  =
+          t_(l) = 16 * (l - first)
+          poly1305 lane first starts t first (l + 1) n
+
+-- Lanes `l` to `top - 1` of `t` set to 0.
+fn :: poly1305 clear lanes Tensor[U64 * n] Int Int => Tensor[U64 * n]
+      poly1305 clear lanes t l top =
+        | l >= top  = t
+        | otherwise =
+          t_(l) = 0
+          poly1305 clear lanes t (l + 1) top
+
+fn :: poly1305 cleared (Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]) Int => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
+      poly1305 cleared (a0, a1, a2, a3, a4) top =
+        (poly1305 clear lanes a0 0 top, poly1305 clear lanes a1 0 top, poly1305 clear lanes a2 0 top, poly1305 clear lanes a3 0 top, poly1305 clear lanes a4 0 top)
+
+-- The first step when `m` blocks do not fill a step (0 < m < ln): those m blocks go to the last m lanes, which
+-- then hold one block more than the others; the lanes before them took no block and are set to 0.
+-- With m = 0 there is no such step and the state comes back as it was.
+fn :: poly1305 lanes first Int Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U8] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
+      poly1305 lanes first ln h0 h1 h2 h3 h4 msg p0 p1 p2 p3 p4 s1 s2 s3 s4 off m =
+        | m <= 0    = (h0, h1, h2, h3, h4)
+        | otherwise = poly1305 cleared (poly1305 lanes run ln h0 h1 h2 h3 h4 msg (poly1305 lane first starts (Tensor[U64 * ln]) (ln - m) 0 ln) p0 p1 p2 p3 p4 s1 s2 s3 s4 off 1) (ln - m)
+
+-- h = the state after the `blocks` blocks of 16 bytes of `msg` from byte `off` on, on `ln` lanes (8 or 32) and
+-- with blocks >= ln. Lane l takes one block of every ln; every step multiplies by r^ln and the last one by
+-- r^(ln - l), so the sum of the lanes is the same value as block by block (RFC 8439 §2.5.1).
+-- When the blocks do not fill the steps, the m that are left over go first, in a step of their own on the last
+-- m lanes (`poly1305 lanes first`): a step costs about as much as 3 blocks taken one by one (measured by Vonkeep,
+-- 2026-11-22), so no block is left to the block-by-block path.
+fn :: poly1305 lanes Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int Int Int => Tensor[Int * 5]
+      poly1305 lanes h r msg off blocks ln =
+        steps = blocks / ln
+        m     = blocks % ln
+        first = (ln - m) % ln
+        top   = 5 * (ln - 1)
+        pw = poly1305 powers (Tensor[Int * (5 * ln)]) r 1 ln
+        h0 = Tensor[U64 * ln]
+        h1 = Tensor[U64 * ln]
+        h2 = Tensor[U64 * ln]
+        h3 = Tensor[U64 * ln]
+        h4 = Tensor[U64 * ln]
+        h0_(first) = h_(0)
+        h1_(first) = h_(1)
+        h2_(first) = h_(2)
+        h3_(first) = h_(3)
+        h4_(first) = h_(4)
+        lx = poly1305 lane starts (Tensor[U64 * ln]) 0 0 ln
+        p0 = Tensor[U64 * ln] with pw_(top)
+        p1 = Tensor[U64 * ln] with pw_(top + 1)
+        p2 = Tensor[U64 * ln] with pw_(top + 2)
+        p3 = Tensor[U64 * ln] with pw_(top + 3)
+        p4 = Tensor[U64 * ln] with pw_(top + 4)
+        s1 = Tensor[U64 * ln] with (5 * pw_(top + 1))
+        s2 = Tensor[U64 * ln] with (5 * pw_(top + 2))
+        s3 = Tensor[U64 * ln] with (5 * pw_(top + 3))
+        s4 = Tensor[U64 * ln] with (5 * pw_(top + 4))
+        a0, a1, a2, a3, a4 = poly1305 lanes first ln h0 h1 h2 h3 h4 msg p0 p1 p2 p3 p4 s1 s2 s3 s4 off m
+        m0, m1, m2, m3, m4 = poly1305 lanes run ln a0 a1 a2 a3 a4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 (off + (16 * m)) (steps - 1)
+        q0 = poly1305 lane powers (Tensor[U64 * ln]) pw 0 1 0 ln
+        q1 = poly1305 lane powers (Tensor[U64 * ln]) pw 1 1 0 ln
+        q2 = poly1305 lane powers (Tensor[U64 * ln]) pw 2 1 0 ln
+        q3 = poly1305 lane powers (Tensor[U64 * ln]) pw 3 1 0 ln
+        q4 = poly1305 lane powers (Tensor[U64 * ln]) pw 4 1 0 ln
+        u1 = poly1305 lane powers (Tensor[U64 * ln]) pw 1 5 0 ln
+        u2 = poly1305 lane powers (Tensor[U64 * ln]) pw 2 5 0 ln
+        u3 = poly1305 lane powers (Tensor[U64 * ln]) pw 3 5 0 ln
+        u4 = poly1305 lane powers (Tensor[U64 * ln]) pw 4 5 0 ln
+        f0, f1, f2, f3, f4 = poly1305 lanes run ln m0 m1 m2 m3 m4 msg lx q0 q1 q2 q3 q4 u1 u2 u3 u4 ((off + (16 * m)) + ((16 * ln) * (steps - 1))) 1
         out = Tensor[Int * 5]
         poly1305 carry into (tensor sum f0) (tensor sum f1) (tensor sum f2) (tensor sum f3) (tensor sum f4) out 0
         out
+
+-- How many lanes for a message of `clen` bytes (figures of Vonkeep, 2026-11-22): 32 from 2048 bytes on, 8 from
+-- 768 bytes on, and none (block by block) under that. 0 means no lanes.
+fn :: poly1305 lane count Int => Int
+      poly1305 lane count clen =
+        | clen >= 2048 = 32
+        | clen >= 768  = 8
+        | otherwise    = 0
+
+-- How many of the `blocks` the lanes take: all of them when 6 or more are left over after the whole steps
+-- (they go in the first, partial step), and only the whole steps when fewer are (those few go block by block).
+fn :: poly1305 lane blocks Int Int => Int
+      poly1305 lane blocks blocks ln =
+        | ln == 0            = 0
+        | (blocks % ln) >= 6 = blocks
+        | otherwise          = blocks - (blocks % ln)
 
 fn :: c pick Bool Int Int => Int
       c pick use_a a   b   =
@@ -1776,7 +1877,7 @@ fn :: c put le64 Tensor[U8] Int Int => Int
         c put le32 t o1 (n / 4294967296)
 
 -- The MAC of RFC 8439 §2.8 over aad || pad16 || ct || pad16 || le64(len aad) || le64(len ct).
--- The ciphertext is read in place: 32 blocks at a time while at least 4 steps remain, then block by block;
+-- The ciphertext is read in place, on lanes from 768 bytes on (`poly1305 lane count`), else block by block;
 -- only the padded aad, the last partial block and the lengths are copied (to small buffers).
 fn :: poly1305 aead mac Tensor[U8] Tensor[U8] Tensor[U8] => Tensor[U8]
       poly1305 aead mac otk        aad_b      ct_b       =
@@ -1787,14 +1888,12 @@ fn :: poly1305 aead mac Tensor[U8] Tensor[U8] Tensor[U8] => Tensor[U8]
         c copy bytes abuf 0 aad_b 0 alen
         h1    = poly1305 blocks loop (Tensor[Int * 5]) r abuf 0 (alen + (pad16 len alen))
         full  = (clen shr 4) shl 4
-        steps = clen shr 9
+        ln    = poly1305 lane count clen
+        lb    = poly1305 lane blocks (clen shr 4) ln
         h2    =
-          | steps >= 4 = poly1305 lanes h1 r ct_b 0 steps
-          | otherwise  = h1
-        done  =
-          | steps >= 4 = steps shl 9
-          | otherwise  = 0
-        h3    = poly1305 blocks loop h2 r ct_b done full
+          | lb > 0    = poly1305 lanes h1 r ct_b 0 lb ln
+          | otherwise = h1
+        h3    = poly1305 blocks loop h2 r ct_b (lb shl 4) full
         tail  = Tensor[U8 * 32]
         c copy bytes tail 0 ct_b full (clen - full)
         tlen  =
