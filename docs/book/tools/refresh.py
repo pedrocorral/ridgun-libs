@@ -109,6 +109,8 @@ def regen_examples(ls,lib,lang,nn):
         while not ch[z].startswith('```'): z+=1
         code=ch[a+1:z]; head=code[0].rstrip() if code else ''
         if any(head.startswith(d) for d in drops): continue
+        if head in RENAMED_TESTS.get(lib,{}):
+            head=RENAMED_TESTS[lib][head]
         if head in tf and head.startswith('fn :: test'):
             shown.add(head)
             if intro is None:

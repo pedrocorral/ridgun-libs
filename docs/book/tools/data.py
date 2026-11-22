@@ -17,8 +17,7 @@ INTERNALS={
  'ws':[('sec','Byte Helpers'),('sec','Tensor[U8] Byte Helpers'),('sec','Base64 for the RFC 6455 Handshake'),('sec','RFC 6455 XOR Masking & Frame Encoding / Decoding')],
  'posix':[('sec','Poll & Process Status ADTs'),('sec','Path Safety Validation'),('sec','RG-010 Filesystem & Process Operations'),('sec','Durable File Sync, Truncate, Lock & Positional Read'),('sec','Ridgun v0.9.5 Target OS / Arch & Process Probe Helpers')],
  'pool':[('sec','Worker pool (FR-POOL-001 AC1 to AC7)'),('sec','Routing by key over a list of agents')],
- 'net_agent':[('rng','One Step of a Connection: Poll, Pass to the Agent, Write the Reply','type ConnSlot','fn :: conn after write'),
-         ('rng','Reactor Sweep and Shutdown','fn :: reactor sweep ','fn :: reactor shutdown')],
+ 'net_agent':[('sec','Accepting (AC1, AC2)'),('sec','Reading, sending and the limits (AC3, AC5, AC6, AC7, AC8)'),('sec','One turn (AC9)'),('sec','Stop (AC11)')],
  'hash':[('rng','SipRound on 32-Bit Halves: One Message Word per Turn','fn :: hs byte','fn :: siphash13 loop'),
          ('rng','Public API: `siphash13`, the Plain-Ridgun Reference, and Random Keys','fn :: siphash13 start','fn :: hs key of')],
  'hashmap':[('sec','Hash'),('sec','Slots'),('sec','Table')],
@@ -39,7 +38,7 @@ NEW_EXAMPLES={
  'jwt':[('bytes','fn :: test jwt bytes and utf8 round trip '),('vectors','fn :: test jwt standard vectors ')],
  'ws':[('large','fn :: test ws large frame round trip ')],
  'pool':[('routing','fn :: test pool routing by key '),('jobs','fn :: test pool takes jobs and refuses when full '),('limits','fn :: test pool size limits '),('edges','fn :: test pool routing edge cases ')],
- 'net_agent':[('datapath','fn :: test net agent data path '),('slowpeer','fn :: test net agent large reply and slow peer ')],
+ 'net_agent':[('accept','fn :: test reactor accepts and refuses '),('messages','fn :: test reactor input messages and state '),('slow','fn :: test reactor output and the peer that does not read '),('limits','fn :: test reactor time limits '),('wait','fn :: test reactor waits on everything at once '),('stop','fn :: test reactor stop ')],
  'hash':[('vectors','fn :: test siphash13 vectors '),('native','fn :: test native matches reference ')],
  'hashmap':[('basics','fn :: test hashmap basics '),('add','fn :: test hashmap add '),('keys','fn :: test hashmap unusual keys '),('records','fn :: test hashmap record values '),('growth','fn :: test hashmap growth ')],
  'tls':[('rfc8448','fn :: test rfc8448 vectors '),('prf','fn :: test tls12 prf and hello '),('chain','fn :: test chain verification '),('local','fn :: test local handshakes '),('failures','fn :: test local failures '),('live','fn :: test live servers ')],
@@ -172,7 +171,7 @@ FAMILIES_REPLACE={
           ('kv','`new kv agent / agent kv put / agent kv get / agent kv delete / agent kv has / agent kv count / agent kv keys / agent kv clear`')],
  'pool':[('start','`pool start / pool capacity / pool busy / pool idle`'),('submit','`pool submit / pool refused`'),('collect','`pool done fd / pool collect`'),('tagged','`pool tagged`'),('drainw','`pool drain`'),
          ('pool','`pool of / pool size / pool is empty / pool agents`'),('shard','`pool ask shard / pool ask shard or`'),('broadcast','`pool broadcast`'),('drain','`pool drain all / pool drain ready`'),('shutdown','`pool shutdown`')],
- 'net_agent':[('slot','`ConnSlot / StepOutcome`'),('step','`conn poll step`'),('sweep','`reactor sweep`'),('shutdown','`reactor shutdown`')],
+ 'net_agent':[('config','`ReactorConfig / reactor defaults / reactor with ...`'),('loop','`reactor start / reactor turn / reactor stop`'),('turnleft','`reactor arrived / reactor ready / reactor left`'),('conn','`reactor input / reactor take / reactor send / reactor close after send / reactor peer`'),('state','`reactor state / reactor set state`'),('each','`ConnStep / reactor each`'),('stats','`ReactorStats / reactor stats`')],
 }
 # One row replaced: old code cell -> (new code cell, string key or None to keep the old purpose)
 FAMILY_ROW={
@@ -221,9 +220,77 @@ RENAME['pool']=dict(RENAME['agent']); RENAME['net_agent']=dict(RENAME['agent'])
 # Examples that leave a chapter: start of the first line of their code
 DROP_EXAMPLES={
  'pool':['fn :: test spec combinators pool and net agent ','fn :: test agent lifecycle and counter ','fn :: test log and kv agents '],
+ 'net_agent':['import agent','fn :: test spec combinators pool and net agent ','fn :: test agent lifecycle and counter ','fn :: test log and kv agents ','fn :: test net agent data path ','fn :: test net agent large reply and slow peer '],
+}
+# Test functions that changed their name: the example that showed the old one now shows the new one
+RENAMED_TESTS={
+ 'agent':{'fn :: test spec combinators pool and net agent => ()':'fn :: test spec combinators and pool routing => ()'},
 }
 # New code for the hand-written examples 1 and 2 of a chapter that already exists
 HAND_OVERRIDE={
+ 'net_agent':{1:'''import socket
+import net_agent
+
+fn :: fin de linea String Int => Int
+      fin de linea s      i   =
+        | i >= (str len s)        = 0 - 1
+        | (str char at s i) == 10 = i
+        | otherwise               = fin de linea s (i + 1)
+
+-- El estado de cada conexión es cuántas líneas ha enviado.
+fn :: responder Int String => ConnStep Int
+      responder n   entrada =  linea vista n entrada (fin de linea entrada 0)
+
+fn :: linea vista Int String  Int => ConnStep Int
+      linea vista n   entrada fin =
+        | fin < 0   = ConnStep n 0 "" False
+        | otherwise = ConnStep (n + 1) (fin + 1) ("eco " + (str slice entrada 0 fin) + "\\n") False
+
+fn :: primero ((Reactor Int) [Int]) => Reactor Int
+      primero (r, _)                =  r
+
+-- Cada vuelta espera como mucho 100 ms a que pase algo, y después responde a quien tenga una línea completa.
+fn :: servir (Reactor Int) Int     => ReactorStats
+      servir r             vueltas =
+        | vueltas <= 0 = reactor stop r 1000
+        | otherwise    = servir (reactor each (primero (reactor turn r [] 100)) 0 (responder)) (vueltas - 1)
+
+fn :: main => ()
+      main =
+        r = reactor start (sock fd (sys tcp listen "127.0.0.1" 0 64)) (reactor defaults)
+        echo (accepted_count (servir r 10))
+''',2:'''import socket
+import net_agent
+
+-- Límites estrictos: 100 conexiones, 4 KB de entrada y 1 MB de salida por conexión,
+-- 5 s para el primer mensaje y 60 s de inactividad.
+fn :: limites => ReactorConfig
+      limites =
+        c1 = reactor with max conns (reactor defaults) 100
+        c2 = reactor with input limit c1 4096
+        c3 = reactor with output limit c2 1048576
+        c4 = reactor with first message limit c3 5000
+        reactor with idle limit c4 60000
+
+-- A cada conexión nueva se le encola un saludo y se marca para cerrar cuando se haya enviado.
+fn :: saludar (Reactor Int) [Int]      => Reactor Int
+      saludar r             []         =  r
+      saludar r             (id:resto) =  saludar (reactor close after send (reactor send r id ("hola " + (reactor peer r id) + "\\n")) id) resto
+
+fn :: tras la vuelta ((Reactor Int) [Int]) => Reactor Int
+      tras la vuelta (r, _)                =  saludar r (reactor arrived r)
+
+fn :: una vuelta (Reactor Int) => Reactor Int
+      una vuelta r             =  tras la vuelta (reactor turn r [] 100)
+
+fn :: main => ()
+      main =
+        r0 = reactor start (sock fd (sys tcp listen "127.0.0.1" 0 64)) (limites)
+        r1 = una vuelta (una vuelta r0)
+        s  = reactor stats r1
+        echo "abiertas {open_count s}, rechazadas {refused_count s}, cerradas por un límite {dropped_count s}"
+        echo (accepted_count (reactor stop r1 500))
+'''},
  'pool':{1:'''import pool
 
 fn :: doblar Int Int => Int Int

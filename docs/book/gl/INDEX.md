@@ -34,7 +34,7 @@
 | `29-lib-ws-protocolo-websocket-rfc6455.md` | Capítulo 29: A lib `ws` — Handshake WebSocket RFC 6455, Framing de 16/64 bits e Enmascarado XOR | Aprender e usar a lib `ws` (`WS`) en proxectos Ridgun |
 | `30-lib-agent-concorrencia-de-actores.md` | Capítulo 30: A lib `agent` — Concorrencia Nativa de Actores (`agent`, `send`, `receive`), Combinadores de Petición-Resposta e Axentes Contador, Bitácora e Chave-Valor | Aprender e usar a lib `agent` (`AGENT`) en proxectos Ridgun |
 | `31-lib-pool-pool-acoutado-de-axentes-traballadores.md` | Capítulo 31: A lib `pool` — Pool Acoutado de Axentes Traballadores e Reparto por Chave | Aprender e usar a lib `pool` (`AGENT`) en proxectos Ridgun |
-| `32-lib-net-agent-un-axente-por-conexion-e-reactor.md` | Capítulo 32: A lib `net_agent` — Un Axente por Conexión: Sondaxe Non Bloqueante e Varrido do Reactor | Aprender e usar a lib `net_agent` (`AGENT`) en proxectos Ridgun |
+| `32-lib-net-agent-moitas-conexions-nun-so-bucle.md` | Capítulo 32: A lib `net_agent` — Moitas conexións nun só bucle que non agarda por ningunha | Aprender e usar a lib `net_agent` (`AGENT`) en proxectos Ridgun |
 | `33-lib-ai-axentes-ia-ferramentas-streaming-rag-e-mcp.md` | Capítulo 33: A lib `ai` — Axentes de IA, Tool Calling, Streaming SSE, ReAct Acoutado, Gardarraís, Mini-RAG e MCP | Aprender e usar a lib `ai` (`AI`) en proxectos Ridgun |
 | `34-lib-locale-datos-cldr-plurais-datas-e-numeros.md` | Capítulo 34: A lib `locale` — Regras de Plurais CLDR, Formato UTC de Datas e Números e Autónimos | Aprender e usar a lib `locale` (`LOCALE`) en proxectos Ridgun |
 | `35-lib-hash-hashing-con-chave-siphash.md` | Capítulo 35: A lib `hash` — Hashing con Chave SipHash-1-3 para Táboas Hash | Aprender e usar a lib `hash` (`HASH`) en proxectos Ridgun |

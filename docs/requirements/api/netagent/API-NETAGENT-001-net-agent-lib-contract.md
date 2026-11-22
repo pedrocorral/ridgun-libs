@@ -12,7 +12,7 @@ auth: none
 - Configuration:
   - `type ReactorConfig = max_conn_count: Int, max_accept_count: Int, input_limit_bytes: Int, output_limit_bytes: Int, first_message_limit_ms: Int, idle_limit_ms: Int`
   - `reactor defaults => ReactorConfig`: 1 024 connections, 64 accepted per turn, 64 MB of input, 64 MB of output, no limit for the first message, no idle limit
-  - `reactor with max conns ReactorConfig Int => ReactorConfig`, and one `reactor with ...` per field
+  - `reactor with max conns`, `reactor with max accepts`, `reactor with input limit`, `reactor with output limit`, `reactor with first message limit`, `reactor with idle limit`: each `ReactorConfig Int => ReactorConfig`
 - The loop:
   - `type Reactor S` (fields private, see `DM-NetAgent`)
   - `reactor start Int ReactorConfig => Reactor S`: the `fd` of a listening socket
@@ -51,4 +51,5 @@ auth: none
 - No operation waits for a peer: `reactor turn` is the only one that waits, and it waits for all descriptors at once (`FR-POSIX-005`).
 - An operation on an id that is not in the table changes nothing.
 - A limit of `0` in `first_message_limit_ms` or `idle_limit_ms` means no limit.
-- `ConnSlot`, `StepOutcome`, `conn poll step`, `reactor sweep` and `reactor shutdown` of today leave the lib when this contract is implemented (`ADR-0015`).
+- A connection marked to close is closed in order: when its output is sent only its sending side is shut, what the peer still sends is thrown away, and the socket is closed when the peer closes or after one second. The peer loses no output.
+- `ConnSlot`, `StepOutcome`, `conn poll step`, `reactor sweep` and `reactor shutdown` left the lib with this contract (`ADR-0015`).

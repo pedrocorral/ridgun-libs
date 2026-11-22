@@ -25,17 +25,7 @@ auth: none
   - `agent drain ready Agent => [B]`
   - `agent stop all [Agent] => ()`
 - Agent pools (`pool.ridgun`): see `API-POOL-001`.
-- Per-Connection Stateful Agent Reactor (`net_agent.ridgun`):
-  - `type ConnSlot = ConnSlot Int Agent`
-  - `type StepOutcome = ConnKeep ConnSlot String | ConnClosed`
-  - `conn poll step ConnSlot => StepOutcome`
-  - `conn handle event Int Agent Int => StepOutcome`
-  - `conn feed payload Int Agent String => StepOutcome`
-  - `conn drain outbound Int Agent Option => StepOutcome`
-  - `conn write timeout ms => Int` (1000: the longest a step waits for a peer to take a reply)
-  - `conn after write Int Agent String (Int Int) => StepOutcome` (the slot is kept when the whole reply was sent; otherwise the connection is closed)
-  - `reactor sweep [ConnSlot] => [ConnSlot]`
-  - `reactor shutdown [ConnSlot] => ()`
+- The connection reactor (`net_agent.ridgun`): see `API-NETAGENT-001`.
 - Lifecycle & Messaging Operations:
   - `is agent alive (Agent A B) => Bool`
   - `agent status (Agent A B) => AgentStatus`

@@ -9,7 +9,7 @@ automated_in: [src/test/ridgun/test agent.ridgun]
 # TS-AGENT-001 — Verify Native Agent lifecycle, timeout-bounded messaging, batch dispatch, and stateful Counter, Log, and Key-Value agents
 
 ## Preconditions / fixtures
-- Pure-Ridgun `agent`, `list`, `pool`, `net_agent`, and `test` modules (`src/main/ridgun/lib/agent.ridgun`, `src/main/ridgun/lib/list.ridgun`, `src/main/ridgun/lib/pool.ridgun`, `src/main/ridgun/lib/net_agent.ridgun`, `src/main/ridgun/lib/test.ridgun`).
+- Pure-Ridgun `agent`, `list`, `pool` and `test` modules (`src/main/ridgun/lib/agent.ridgun`, `src/main/ridgun/lib/list.ridgun`, `src/main/ridgun/lib/pool.ridgun`, `src/main/ridgun/lib/net_agent.ridgun`, `src/main/ridgun/lib/test.ridgun`).
 - The `socket` module and the loopback interface (`127.0.0.1`), for a real TCP connection in step 7.
 
 ## Steps / inputs
@@ -19,15 +19,15 @@ automated_in: [src/test/ridgun/test agent.ridgun]
 4. Spawn a log agent via `new log agent "\n"`; call `log append` with `"alpha"`, `"beta"`, `"gamma"`, verify `log read` returns `"alpha\nbeta\ngamma"`, verify `log clear` resets the buffer, and stop the agent.
 5. Import both `agent` and `list` in the same test module (`RG-066`), spawn a key-value store agent via `new kv agent`, test `agent kv put`, `agent kv get`, `agent kv has`, `agent kv count`, `agent kv keys`, `agent kv delete`, and `agent kv clear` alongside `list kv put`, `list kv get`, and `list kv keys`, and stop the agent.
 6. Moved to `TS-POOL-001` step 9.
-7. Open a loopback TCP connection (`sys tcp listen` on port 0, `sys tcp connect`, `sys accept`) and pair the accepted descriptor with an echo agent in a `ConnSlot`; verify `conn poll step` with no data keeps the slot and writes nothing; send `ping` and then `pong` from the client and verify the replies `echo:1:ping` and `echo:2:pong` reach the client; verify `reactor sweep` keeps the live slot; close the client and verify `reactor sweep` drops the slot and the agent is stopped.
-8. Over loopback TCP, make the agent reply with 4 MiB while a second agent reads from the client descriptor: verify the step writes the whole reply and the reader counts 4 MiB. Then make the agent reply with 16 MiB to a client that does not read: verify the step returns `ConnClosed` in less than 5 s, and that the agent is stopped.
+7. Moved to `TS-NETAGENT-001`.
+8. Moved to `TS-NETAGENT-001`.
 
 ## Expected results (map to acceptance criteria)
 - AC1 → Lifecycle predicates and status formatters accurately reflect running and stopped states.
 - AC2 → Synchronous, non-blocking, timeout-bounded, batch, and relay messaging helpers return expected `AgentReply` values and handle stopped agents safely.
 - AC3 → Counter, Log, and Key-Value stateful agents (`agent kv *`) maintain isolated state across sequential messages, support reset/clear operations, and coexist cleanly with `import list` (`RG-066`).
 - AC4 → `TS-POOL-001`.
-- AC5 → Over a real connection, `conn poll step` passes the data to the agent and writes its reply, the agent keeps its state between messages, and a connection closed by the peer leaves the table with its agent stopped. A reply larger than the socket buffers arrives whole when the peer reads, and a peer that does not read is closed after `conn write timeout ms` without holding the reactor.
+- AC5 → `TS-NETAGENT-001`.
 
 ## Not covered here (to avoid duplication)
 - OS-level process signals (covered in `TS-POSIX-002`).

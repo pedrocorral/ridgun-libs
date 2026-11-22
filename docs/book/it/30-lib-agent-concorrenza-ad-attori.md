@@ -168,8 +168,8 @@ fn :: consultar almacen kv => String Int
 In questo esempio pratico esploriamo in modo esaustivo come si comporta `agent` in questo blocco funzionale, inclusi input standard, combinazioni di parametri e valori di frontiera:
 
 ```ridgun
-fn :: test spec combinators pool and net agent => ()
-      test spec combinators pool and net agent =
+fn :: test spec combinators and pool routing => ()
+      test spec combinators and pool routing =
         w1 = agent (ag double worker)
         agent ask w1 21 -> assert int equals 42 "agent ask 21 -> 42"
         mb = agent map batch w1 [3, 5, 7]
@@ -199,18 +199,6 @@ fn :: test spec combinators pool and net agent => ()
         pool shutdown pl
         is agent alive s0 -> assert false "pool s0 stopped"
         is agent alive s1 -> assert false "pool s1 stopped"
-
-        ca = agent (ag echo conn step) (CounterState 0)
-        cb = agent (ag echo conn step) (CounterState 0)
-        s_eof = conn feed payload (0 - 1) ca ""
-        s_err = conn handle event (0 - 1) cb 8
-        kept  = reactor sweep next s_eof (reactor sweep next s_err [])
-        agent list len kept 0 -> assert int equals 0 "reactor sweep next prunes closed slots"
-        is agent alive ca -> assert false "ca stopped on EOF"
-        is agent alive cb -> assert false "cb stopped on POLLERR"
-        cc = agent (ag echo conn step) (CounterState 0)
-        reactor shutdown [ConnSlot (0 - 1) cc]
-        assert false (is agent alive cc) "cc stopped on reactor shutdown"
 ```
 
 ### 30.3.4. Esempio 4: Ciclo di vita degli agenti (`is agent alive`, `agent status`, `stop agent`) e agente contatore con stato isolato (`new counter agent`)

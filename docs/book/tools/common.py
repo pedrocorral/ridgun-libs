@@ -11,7 +11,6 @@ def lib_of(path):
     return 'net_agent' if n=='net' else n
 def src_of(lib): return open(SRC+lib+'.ridgun').read()
 def test_path(lib):
-    if lib=='net_agent': lib='agent'          # net_agent is tested in the suite of agent
     for c in (f'test {lib}.ridgun', f'test {lib.replace("_"," ")}.ridgun'):
         if os.path.exists(TST+c): return TST+c
     return None

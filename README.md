@@ -35,7 +35,7 @@ Pure-Ridgun standard and system library suite. Every lib compiles to portable Ri
 | **`mail`** | `src/main/ridgun/lib/mail.ridgun` | `mail.ridgunlib` | `MAIL` | RFC 5322 message building and rendering (`mail message`, `mail with html`, `mail add to`, `mail render`), RFC 2047 header encoding, address validation, and SMTP delivery with STARTTLS/TLS and authentication (`smtp config`, `smtp with tls`, `smtp with auth`, `smtp send`). |
 | **`agent`** | `src/main/ridgun/lib/agent.ridgun` | `agent.ridgunlib` | `AGENT` | Native actor concurrency (`agent`, `send ... to`, `receive from`, `try receive from`, `stop`), key-value actor store, token-bucket rate limiter, and supervision helpers. |
 | **`pool`** | `src/main/ridgun/lib/pool.ridgun` | `pool.ridgunlib` | `POOL` | Bounded pool of worker agents, each with its own state: a job goes to an idle worker or is refused, and the caller is told when a job ends without polling. Also routing by key over a list of agents. |
-| **`net_agent`** | `src/main/ridgun/lib/net_agent.ridgun` | `net_agent.ridgunlib` | `AGENT` | One agent per connection: non-blocking polling of each descriptor and a reactor sweep over a table of connections. |
+| **`net_agent`** | `src/main/ridgun/lib/net_agent.ridgun` | `net_agent.ridgunlib` | `NETAGENT` | Connection reactor: many connections in one loop that waits for none of them. An input buffer, an output queue and a state per connection, limits on all of them, one wait on every descriptor, and an orderly close. |
 | **`tensor`** | `src/main/ridgun/lib/tensor.ridgun` | `tensor.ridgunlib` | `TENSOR` | Multi-dimensional `Tensor[...]` views, slicing, elementwise reductions, and `BlaMka` 64-bit tensor primitives. |
 | **`fmt`** | `src/main/ridgun/lib/fmt.ridgun` | `fmt.ridgunlib` | `FMT` | Configurable canonical 2D tabular Ridgun source formatter (`FmtConfig`) and multi-target syntax highlighter (`FmtPlain`, `FmtTty`, `FmtTrueColor`, `FmtHtmlInline`, `FmtHtmlCss`, `FmtMarkdown`, `FmtPango`, `FmtLatex`, `FmtRtf`). |
 | **`json`** | `src/main/ridgun/lib/json.ridgun` | `json.ridgunlib` | `JSON` | Recursive RFC 8259 `JsonVal` AST parser (`json parse`), compact/pretty serializer (`json stringify`, `json pretty`), and dot-path queries (`json get path`, `json get str`, `json get int`, `json get bool`). |
@@ -72,7 +72,7 @@ stable format
 # 2. Type-check and statically analyze all 38 libs
 stable check
 
-# 3. Run all 36 automated test suites in src/test/ridgun/
+# 3. Run all 38 automated test suites in src/test/ridgun/
 stable test
 
 # 4. Build all .ridgunlib bundles into target/bundles/
@@ -81,7 +81,7 @@ stable bundle
 
 Expected output from `stable check` and `stable test`:
 - `Checked 38 module(s) — 0 errors.`
-- `Passed 37/37 test suite(s) — 0 failures.`
+- `Passed 38/38 test suite(s) — 0 failures.`
 
 ---
 

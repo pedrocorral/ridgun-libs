@@ -2,12 +2,12 @@
 id: FR-NETAGENT-001
 title: Serve many connections in one loop without waiting for any of them
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: NETAGENT
 depends_on: [FR-SOCK-004, FR-POSIX-005]
 related: [API-NETAGENT-001, DM-NetAgent, ADR-0015, FR-POOL-001, VUL-INFRA-002, VUL-INPUT-001]
-tests: []
+tests: [TS-NETAGENT-001]
 ---
 # FR-NETAGENT-001 — Serve many connections in one loop without waiting for any of them
 
@@ -15,7 +15,7 @@ tests: []
 The `net_agent` lib SHALL keep a table of connections and, in each turn of one loop, accept new ones, read what has arrived, give the application the input of each connection and send its queued output, never waiting for one connection while another has work.
 
 ## Rationale
-Eterval (`server.ridgun`, its ADR-0011) and Vonkeep (`gate.ridgun`) each wrote this loop by hand: a table of connections, an input buffer and an output buffer per connection, limits, and a close for the client that does not read. The `net_agent` lib of today has none of that: each read is taken as a whole message, a reply is sent in one go, and there are no limits. No program uses it.
+Eterval (`server.ridgun`, its ADR-0011) and Vonkeep (`gate.ridgun`) each wrote this loop by hand: a table of connections, an input buffer and an output buffer per connection, limits, and a close for the client that does not read. The `net_agent` lib before this requirement had none of that: each read was taken as a whole message, a reply was sent in one go, and there were no limits. No program used it.
 
 ## Acceptance criteria
 - AC1: Given a listening socket with connections pending, when a turn runs, then it accepts those pending without waiting, at most a set number per turn (64 by default), and each one enters the table with an id of its own (from 1) and the address of its peer.
@@ -24,7 +24,7 @@ Eterval (`server.ridgun`, its ADR-0011) and Vonkeep (`gate.ridgun`) each wrote t
 - AC4: Given the input buffer of a connection, when the application takes the complete messages it finds there, then the bytes it did not take stay in the buffer and are offered again, with what arrives later, in a later turn. A message that arrives in several reads is seen whole once.
 - AC5: Given output queued for a connection, when a turn runs, then it sends what the peer takes without waiting, keeps the rest queued, and the bytes leave in the order they were queued.
 - AC6: Given a peer that stops reading, when its queued output passes the output limit (64 MB by default), then that connection is closed and no other connection is delayed.
-- AC7: Given a connection marked to close, when its queued output has been sent, then it is closed, and nothing more is read from it meanwhile.
+- AC7: Given a connection marked to close, when its queued output has been sent, then it is closed, and nothing more is read from it meanwhile. The close is orderly: the peer sees the end after the last byte and loses none of the output, also when it had sent bytes that were never read.
 - AC8: Given a limit for the first complete message and a limit of idle time, when a connection passes either one, then it is closed.
 - AC9: Given a turn in which nothing happened, when the loop waits, then it sleeps until a connection, the listening socket or a descriptor the caller added (a signal descriptor, the descriptor of a worker pool) has something, or until its time limit ends: one wait on all of them, not a busy loop.
 - AC10: Given a state of the application for each connection, when the application handles a connection, then it gets the state it left there the time before, and the state is released when the connection closes.

@@ -643,4 +643,4 @@ fn :: pool shutdown AgentPool       => ()
 
 ---
 
-I **Kapitel 32** går vi vidare och utforskar lib:en **`net_agent`** på djupet (Lib:en `net_agent` — En Agent per Anslutning: Icke-blockerande Avfrågning och Reaktorsvep).
+I **Kapitel 32** går vi vidare och utforskar lib:en **`net_agent`** på djupet (Lib:en `net_agent` — Många anslutningar i en enda slinga som inte väntar på någon).

@@ -37,4 +37,5 @@ related: [FR-NETAGENT-001, API-NETAGENT-001, ADR-0015]
 - A descriptor is closed exactly once, when its connection leaves the table.
 
 ## Lifecycle
-- A connection enters the table when it is accepted; it leaves when its peer closes, when it passes a limit, when it was marked to close and its output is sent, or when the reactor stops.
+- A connection enters the table when it is accepted; it leaves when its peer closes, when it passes a limit, when it was marked to close, its output is sent and its peer has closed (or one second has passed), or when the reactor stops.
+- In the code the fields of a connection carry the prefix `cn_` and those of the reactor `rx_` (`cn_in` is `input_buf`, `cn_out` is `output_buf`, `cn_closing` is `is_closing`, `cn_active` is `last_active_ms`).

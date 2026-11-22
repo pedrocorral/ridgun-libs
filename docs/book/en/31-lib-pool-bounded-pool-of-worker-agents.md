@@ -643,4 +643,4 @@ fn :: pool shutdown AgentPool       => ()
 
 ---
 
-In **Chapter 32**, we will explore the **`net_agent`** lib in full depth (The `net_agent` Lib — One Agent per Connection: Non-Blocking Polling and Reactor Sweep).
+In **Chapter 32**, we will explore the **`net_agent`** lib in full depth (The `net_agent` Lib — Many Connections in One Loop That Waits for None).

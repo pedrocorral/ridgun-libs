@@ -643,4 +643,4 @@ fn :: pool shutdown AgentPool       => ()
 
 ---
 
-No **Capítulo 32** pasaremos a explorar en profundidade a lib **`net_agent`** (A lib `net_agent` — Un Axente por Conexión: Sondaxe Non Bloqueante e Varrido do Reactor).
+No **Capítulo 32** pasaremos a explorar en profundidade a lib **`net_agent`** (A lib `net_agent` — Moitas conexións nun só bucle que non agarda por ningunha).

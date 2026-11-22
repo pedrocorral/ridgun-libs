@@ -643,4 +643,4 @@ fn :: pool shutdown AgentPool       => ()
 
 ---
 
-**32. kapituluan** **`net_agent`** lib-a sakonki esploratuko dugu (`net_agent` lib-a — Agente bat Konexio bakoitzeko: Zundaketa Ez-blokeatzailea eta Erreaktorearen Ekorketa).
+**32. kapituluan** **`net_agent`** lib-a sakonki esploratuko dugu (`net_agent` lib-a — Konexio asko begizta bakar batean, bakar baten zain egon gabe).

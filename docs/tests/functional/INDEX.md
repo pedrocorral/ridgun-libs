@@ -38,3 +38,4 @@ Read this when: working in a domain.
 | `tls/` | Test specifications for `TLS` (`FR-TLS-001`) | Testing `tls.ridgun` |
 | `mail/` | Test specifications for `MAIL` (`FR-MAIL-001`) | Testing `mail.ridgun` |
 | `pool/` | Test specifications for `POOL` (`FR-POOL-001`) | Testing `pool.ridgun` |
+| `netagent/` | Test specifications for `NETAGENT` (`FR-NETAGENT-001`) | Testing `net_agent.ridgun` |
