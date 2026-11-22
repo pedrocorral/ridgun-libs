@@ -36,4 +36,5 @@ Option 3.
 - Tests to update: `TS-POOL-001` and `TS-NETAGENT-001` are written from the acceptance criteria once the requirements are approved; the steps 6 to 8 of `TS-AGENT-001` move to them.
 - Code to update: `pool.ridgun`, `net_agent.ridgun`, `posix.ridgun`. `ConnSlot`, `conn poll step`, `reactor sweep` and `reactor shutdown` leave `net_agent`.
 - Proof: Solstice's worker pool moves onto `pool`, and Eterval's loop onto `net_agent`. Each lib is done when its program passes its own tests on it.
+- Done on 2026-11-22: Solstice runs its workers on `pool` (its commit `1929a9f`; 31/31 suites, and 3 000 requests against a real server) and Eterval runs its loop on `net_agent` (its commit `d05639a`; 8/8 suites, the server one over real sockets). `FR-POSIX-005`, `FR-POOL-001` and `FR-NETAGENT-001` are implemented.
 - The book: chapters 31 and 32 are regenerated from the new code.
