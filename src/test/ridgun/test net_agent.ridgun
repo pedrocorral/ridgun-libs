@@ -1,0 +1,439 @@
+-- ============================================================
+-- src/test/ridgun/test net_agent.ridgun
+-- Automated tests for the connection reactor (NETAGENT), over real TCP sockets on 127.0.0.1
+-- @tests TS-NETAGENT-001
+-- ============================================================
+
+import test
+import posix
+import socket
+import pool
+import net_agent
+
+fn :: na same [Int]  [Int]  => Bool
+      na same []     []     =  True
+      na same (a:ar) (b:br) =  (a == b) and (na same ar br)
+      na same _      _      =  False
+
+fn :: na count [Int]    Int => Int
+      na count []       n   =  n
+      na count (_:rest) n   =  na count rest (n + 1)
+
+-- A reactor whose connections keep an Int as their state.
+fn :: na start Int ReactorConfig => Reactor Int
+      na start fd  cfg           =  reactor start fd cfg
+
+fn :: na first ((Reactor Int) [Int]) => Reactor Int
+      na first (r, _)                =  r
+
+fn :: na second ((Reactor Int) [Int]) => [Int]
+      na second (_, xs)               =  xs
+
+-- One turn with no descriptors of the caller.
+fn :: na turn (Reactor Int) Int => Reactor Int
+      na turn r             ms  =  na first (reactor turn r [] ms)
+
+-- `n` turns of at most `ms` each.
+fn :: na turns (Reactor Int) Int Int => Reactor Int
+      na turns r             n   ms  =
+        | n <= 0    = r
+        | otherwise = na turns (na turn r ms) (n - 1) ms
+
+fn :: na listen => Int
+      na listen =  sock fd (sys tcp listen "127.0.0.1" 0 64)
+
+fn :: na client Int => Int
+      na client lfd =  sock fd (sys tcp connect "127.0.0.1" (sys local port lfd) 500)
+
+fn :: na recv text (Int String) => String
+      na recv text (rc, data)   =  data
+
+fn :: na recv rc (Int String) => Int
+      na recv rc (rc, data)   =  rc
+
+-- What the client can read within `ms`.
+fn :: na read Int Int => String
+      na read cfd ms  =  na recv text (sys recv cfd 65536 ms)
+
+-- A text of `n` bytes that is not the same byte everywhere.
+fn :: na text fill Tensor[U8] Int Int => Tensor[U8]
+      na text fill t          i   n   =
+        | i >= n    = t
+        | otherwise =
+          t_(i) = 97 + ((i * 7) % 26)
+          na text fill t (i + 1) n
+
+fn :: na text Int => String
+      na text n   =  tensor to str (na text fill (Tensor[U8 * n]) 0 n)
+
+-- Turns of the reactor while the client reads, until the client has `want` bytes, its side is closed or the
+-- tries end. Answers the reactor and what the client read.
+fn :: na pump (Reactor Int) Int Int Int String => (Reactor Int) String
+      na pump r             cfd want tries got   =
+        | (str len got) >= want = (r, got)
+        | tries <= 0            = (r, got)
+        | otherwise             = na pump more (na turn r 20) cfd want tries got
+
+fn :: na pump more (Reactor Int) Int Int Int String => (Reactor Int) String
+      na pump more r             cfd want tries got   =  na pump got r cfd want tries got (sys recv cfd 262144 20)
+
+fn :: na pump got (Reactor Int) Int Int Int String (Int String) => (Reactor Int) String
+      na pump got r             cfd want tries got    (rc, data)   =
+        | rc == (0 - 1) = (r, got)
+        | otherwise     = na pump r cfd want (tries - 1) (got + data)
+
+fn :: na pumped r ((Reactor Int) String) => Reactor Int
+      na pumped r (r, _)                   =  r
+
+fn :: na pumped text ((Reactor Int) String) => String
+      na pumped text (_, s)                   =  s
+
+-- Where the first line feed is, or -1.
+fn :: na line end String Int => Int
+      na line end s      i   =
+        | i >= (str len s)            = 0 - 1
+        | (str char at s i) == 10     = i
+        | otherwise                   = na line end s (i + 1)
+
+-- A protocol of lines: each whole line is answered with its number and its text; "quit" closes after the answer.
+-- The state is how many lines the connection has sent.
+fn :: na line step Int String => ConnStep Int
+      na line step n   input  =  na line found n input (na line end input 0)
+
+fn :: na line found Int String Int => ConnStep Int
+      na line found n   input  at  =
+        | at < 0                              = ConnStep n 0 "" False
+        | (str slice input 0 at) == "quit"    = ConnStep (n + 1) (at + 1) "bye\n" True
+        | otherwise                           = ConnStep (n + 1) (at + 1) ((int to str (n + 1)) + ":" + (str slice input 0 at) + "\n") False
+
+-- @tests TS-NETAGENT-001
+fn :: test reactor accepts and refuses => ()
+      test reactor accepts and refuses =
+        d = reactor defaults
+        max_conn_count d -> assert int equals 1024 "defaults: 1 024 connections"
+        max_accept_count d -> assert int equals 64 "64 accepted in a turn"
+        input_limit_bytes d -> assert int equals 67108864 "64 MB of input"
+        output_limit_bytes d -> assert int equals 67108864 "64 MB of output"
+        first_message_limit_ms d -> assert int equals 0 "no limit for the first message"
+        idle_limit_ms d -> assert int equals 0 "no idle limit"
+        max_conn_count (reactor with max conns d 0) -> assert int equals 1 "a table holds at least one connection"
+
+        lfd = na listen
+        r0  = na start lfd (reactor with max accepts (reactor with max conns d 2) 2)
+        e0  = na turn r0 20
+        na count (reactor arrived e0) 0 -> assert int equals 0 "nobody connected: nothing arrived"
+        open_count (reactor stats e0) -> assert int equals 0 "and the table is empty"
+
+        c1 = na client lfd
+        c2 = na client lfd
+        c3 = na client lfd
+        r1 = na turn r0 500
+        na same (reactor arrived r1) [1, 2] -> assert true "AC1: three are pending and a turn accepts two, with ids from 1"
+        reactor peer r1 1 -> assert str eq "127.0.0.1" "AC1: the address of the peer"
+        reactor peer r1 99 -> assert str eq "" "an id that is not in the table has no peer"
+        open_count (reactor stats r1) -> assert int equals 2 "AC12: two open"
+        accepted_count (reactor stats r1) -> assert int equals 2 "AC12: two accepted"
+        r2 = na turn r1 500
+        na count (reactor arrived r2) 0 -> assert int equals 0 "AC2: the table is full, the third does not enter"
+        refused_count (reactor stats r2) -> assert int equals 1 "AC2: and it is counted as refused"
+        open_count (reactor stats r2) -> assert int equals 2 "AC2: the two in the table are still there"
+        na recv rc (sys recv c3 16 500) -> assert int equals (0 - 1) "AC2: the refused client sees its connection closed"
+
+        posix close c1
+        r3 = na turn r2 500
+        na same (reactor left r3) [1] -> assert true "AC3: a connection closed by its peer leaves the table"
+        open_count (reactor stats r3) -> assert int equals 1 "one open"
+        c4 = na client lfd
+        r4 = na turn r3 500
+        na same (reactor arrived r4) [3] -> assert true "AC1: an id is never given again: the next one is 3"
+        na count (reactor left r4) 0 -> assert int equals 0 "what left is of the last turn only"
+        accepted_count (reactor stats r4) -> assert int equals 3 "three accepted in all"
+        dropped_count (reactor stats r4) -> assert int equals 0 "none closed for a limit"
+        st = reactor stop r4 200
+        open_count st -> assert int equals 0 "after the stop nothing is open"
+        posix close c2
+        posix close c3
+        posix close c4 -> ()
+
+-- @tests TS-NETAGENT-001
+fn :: test reactor input messages and state => ()
+      test reactor input messages and state =
+        lfd = na listen
+        r0  = na start lfd (reactor defaults)
+        c1  = na client lfd
+        r1  = na turn r0 500
+        na same (reactor arrived r1) [1] -> assert true "one connection"
+        na count (reactor ready r1) 0 -> assert int equals 0 "it has sent nothing: not ready"
+        sock rc (sys send c1 "hel" 500) -> assert int equals 0 "the client sends a part"
+        r2  = na turn r1 500
+        na same (reactor ready r2) [1] -> assert true "AC3: its bytes are in the input"
+        reactor input r2 1 -> assert str eq "hel" "AC3: the input"
+        r3  = reactor take r2 1 0
+        reactor input r3 1 -> assert str eq "hel" "AC4: nothing taken, the bytes stay"
+        sock rc (sys send c1 "lo\nwor" 500) -> assert int equals 0 "the rest of the message and the start of another"
+        r4  = na turn r3 500
+        reactor input r4 1 -> assert str eq "hello\nwor" "AC4: a message that came in two reads is whole, once"
+        r5  = reactor take r4 1 6
+        reactor input r5 1 -> assert str eq "wor" "AC4: the message is taken and the rest stays"
+        r6  = na turn r5 30
+        reactor input r6 1 -> assert str eq "wor" "AC4: and it is still there a turn later"
+        sock rc (sys send c1 "ld\n" 500) -> assert int equals 0 "the end of the second message"
+        r7  = na turn r6 500
+        reactor input r7 1 -> assert str eq "world\n" "AC4: offered again with what arrived later"
+        r8  = reactor take r7 1 100
+        reactor input r8 1 -> assert str eq "" "taking more than there is takes it all"
+        reactor input r8 77 -> assert str eq "" "an id that is not in the table has no input"
+
+        -- AC10: the state of each connection
+        reactor state r8 1 5 -> assert int equals 5 "AC10: no state left yet: the default"
+        r9  = reactor set state r8 1 41
+        reactor state r9 1 5 -> assert int equals 41 "AC10: the state that was left"
+        c2  = na client lfd
+        r10 = na turn r9 500
+        reactor state r10 2 5 -> assert int equals 5 "AC10: another connection has its own"
+        reactor state r10 1 5 -> assert int equals 41 "AC10: and the first one keeps its state"
+        open_count (reactor stats (reactor set state r10 99 1)) -> assert int equals 2 "an operation on an id that is not there changes nothing"
+
+        -- reactor each: a protocol of lines
+        l0  = na start (na listen) (reactor defaults)
+        d1  = na client (rx_fd l0)
+        d2  = na client (rx_fd l0)
+        l1  = na turn l0 500
+        sock rc (sys send d1 "a\nb\npart" 500) -> assert int equals 0 "two lines and a part"
+        sock rc (sys send d2 "x\n" 500) -> assert int equals 0 "the other client, one line"
+        l2  = reactor each (na turns l1 2 100) 0 (na line step)
+        reactor input l2 1 -> assert str eq "b\npart" "each: one call for each connection, it took one line"
+        reactor state l2 1 0 -> assert int equals 1 "each: the state it left"
+        l3  = reactor each l2 0 (na line step)
+        reactor input l3 1 -> assert str eq "part" "each: the second line; the part stays"
+        reactor state l3 1 0 -> assert int equals 2 "each: its state after two lines"
+        reactor state l3 2 0 -> assert int equals 1 "each: the other connection has its own count"
+        l4  = reactor each l3 0 (na line step)
+        reactor state l4 1 0 -> assert int equals 2 "each: no whole line, nothing changes"
+        p1  = na pump l4 d1 8 40 ""
+        na pumped text p1 -> assert str eq "1:a\n2:b\n" "AC5: the answers leave in the order they were queued"
+        p2  = na pump (na pumped r p1) d2 4 40 ""
+        na pumped text p2 -> assert str eq "1:x\n" "each connection gets its own answer"
+        sock rc (sys send d1 "ial\nquit\n" 500) -> assert int equals 0 "the rest of the line, and quit"
+        l5  = reactor each (na turns (na pumped r p2) 2 100) 0 (na line step)
+        l6  = reactor each l5 0 (na line step)
+        p3  = na pump l6 d1 11 40 ""
+        na pumped text p3 -> assert str eq "3:partial\nbye\n" "the line that came in two parts is answered once, whole"
+        l7  = na turns (na pumped r p3) 3 50
+        na recv rc (sys recv d1 16 500) -> assert int equals (0 - 1) "AC7: after the answer to quit the client sees the end"
+        open_count (reactor stats l7) -> assert int equals 2 "the reactor waits for the client to close its side"
+        posix close d1
+        l8  = na turns l7 3 50
+        open_count (reactor stats l8) -> assert int equals 1 "AC7: and then the connection leaves the table"
+        dropped_count (reactor stats l8) -> assert int equals 0 "not counted as closed for a limit"
+        reactor stop l8 100
+        reactor stop r10 100
+        posix close c1
+        posix close c2
+        posix close d2 -> ()
+
+-- @tests TS-NETAGENT-001
+fn :: test reactor output and the peer that does not read => ()
+      test reactor output and the peer that does not read =
+        lfd  = na listen
+        r0   = na start lfd (reactor with output limit (reactor defaults) 3000000)
+        slow = na client lfd
+        fast = na client lfd
+        r1   = na turn r0 500
+        na same (reactor arrived r1) [1, 2] -> assert true "two connections"
+        big  = na text 2000000
+        r2   = reactor send (reactor send r1 2 "one") 2 "two"
+        p0   = na pump r2 fast 6 40 ""
+        na pumped text p0 -> assert str eq "onetwo" "AC5: what was queued leaves in its order"
+
+        -- AC5: a reply larger than the socket takes at once goes out over several turns, whole
+        r3   = reactor send (na pumped r p0) 2 big
+        p1   = na pump r3 fast 2000000 4000 ""
+        str len (na pumped text p1) -> assert int equals 2000000 "AC5: two million bytes arrive"
+        (na pumped text p1) == big -> assert true "AC5: and they are the bytes that were queued"
+
+        -- AC6: the peer that does not read does not delay the others
+        r4   = reactor send (na pumped r p1) 1 big
+        t0   = sys monotonic ms
+        r5   = na turns r4 5 20
+        (sys monotonic ms) - t0 < 1500 -> assert true "AC6: five turns with a peer that does not read do not wait for it"
+        open_count (reactor stats r5) -> assert int equals 2 "under the limit it stays, with its output queued"
+        r6   = reactor send r5 2 "still here"
+        p2   = na pump r6 fast 10 40 ""
+        na pumped text p2 -> assert str eq "still here" "AC6: the other connection is served meanwhile"
+        r7   = reactor send (na pumped r p2) 1 (big + big + big + big + big + big)
+        r8   = na turns r7 3 20
+        na same (reactor left r8) [] -> assert true "left is of the last turn"
+        dropped_count (reactor stats r8) -> assert int equals 1 "AC6: past the output limit the connection is closed and counted"
+        open_count (reactor stats r8) -> assert int equals 1 "AC6: and only that one"
+        r9   = reactor send r8 2 "after"
+        p3   = na pump r9 fast 5 40 ""
+        na pumped text p3 -> assert str eq "after" "the other connection goes on"
+
+        -- AC7: marked to close: its output is sent first, and nothing more is read from it
+        c3   = na client lfd
+        r10  = na turn (na pumped r p3) 500
+        na same (reactor arrived r10) [3] -> assert true "a third connection"
+        r11  = reactor close after send (reactor send r10 3 (na text 1500000)) 3
+        sock rc (sys send c3 "ignored" 500) -> assert int equals 0 "the client sends after it was marked"
+        r12  = na turns r11 3 20
+        reactor input r12 3 -> assert str eq "" "AC7: nothing is read from a connection marked to close"
+        p4   = na pump r12 c3 1500000 4000 ""
+        str len (na pumped text p4) -> assert int equals 1500000 "AC7: its queued output is sent whole"
+        r13a = na turns (na pumped r p4) 3 50
+        na recv rc (sys recv c3 16 500) -> assert int equals (0 - 1) "AC7: and then the client sees the end, with nothing lost"
+        posix close c3
+        r13  = na turns r13a 3 50
+        open_count (reactor stats r13) -> assert int equals 1 "it left the table"
+        dropped_count (reactor stats r13) -> assert int equals 1 "and was not counted as closed for a limit"
+
+        -- a client that never closes its side: the reactor closes it after waiting one second
+        c5   = na client lfd
+        r14  = na turn r13 500
+        r15  = reactor close after send (reactor send r14 4 "end") 4
+        r16  = na turns r15 3 50
+        na read c5 500 -> assert str eq "end" "the last output arrives"
+        open_count (reactor stats r16) -> assert int equals 2 "the client has not closed: the connection waits"
+        r17  = na turns r16 14 100
+        open_count (reactor stats r17) -> assert int equals 1 "AC7: after one second the reactor closes it anyway"
+
+        -- AC3: the input limit
+        l2   = na start (na listen) (reactor with input limit (reactor defaults) 1000)
+        c4   = na client (rx_fd l2)
+        l3   = na turn l2 500
+        sock rc (sys send c4 (na text 5000) 500) -> assert int equals 0 "five thousand bytes into a limit of one thousand"
+        l4   = na turns l3 2 100
+        dropped_count (reactor stats l4) -> assert int equals 1 "AC3: past the input limit the connection is closed and counted"
+        open_count (reactor stats l4) -> assert int equals 0 "and leaves the table"
+        reactor stop l4 100
+        reactor stop r17 100
+        posix close slow
+        posix close fast
+        posix close c4
+        posix close c5 -> ()
+
+-- @tests TS-NETAGENT-001
+fn :: test reactor time limits => ()
+      test reactor time limits =
+        lfd = na listen
+        r0  = na start lfd (reactor with first message limit (reactor defaults) 150)
+        c1  = na client lfd
+        c2  = na client lfd
+        r1  = na turn r0 500
+        sock rc (sys send c2 "msg\n" 500) -> assert int equals 0 "the second sends its first message"
+        r2  = reactor take (na turn r1 500) 2 4
+        r3  = na turns r2 6 60
+        dropped_count (reactor stats r3) -> assert int equals 1 "AC8: the one that sent no whole message in 150 ms is closed"
+        open_count (reactor stats r3) -> assert int equals 1 "AC8: the one whose message was taken stays"
+        na recv rc (sys recv c1 16 500) -> assert int equals (0 - 1) "the silent client sees the close"
+        reactor stop r3 100
+
+        l0  = na start (na listen) (reactor with idle limit (reactor defaults) 150)
+        d1  = na client (rx_fd l0)
+        l1  = na turn l0 500
+        sock rc (sys send d1 "hi" 500) -> assert int equals 0 "it sends"
+        l2  = na turns l1 2 40
+        open_count (reactor stats l2) -> assert int equals 1 "AC8: active within the idle limit: it stays"
+        l3  = na turns l2 6 60
+        dropped_count (reactor stats l3) -> assert int equals 1 "AC8: silent for longer than the idle limit: closed"
+        open_count (reactor stats l3) -> assert int equals 0 "and gone from the table"
+        reactor stop l3 100
+        posix close c1
+        posix close c2
+        posix close d1 -> ()
+
+fn :: na slow double Int Int => Int Int
+      na slow double st  job =  (st + 1, job * 2)
+
+-- @tests TS-NETAGENT-001
+fn :: test reactor waits on everything at once => ()
+      test reactor waits on everything at once =
+        lfd = na listen
+        r0  = na start lfd (reactor defaults)
+        pp  = posix pipe
+        pr  = tuple3 r pp
+        pw  = tuple3 w pp
+
+        -- AC9: nothing happens: the turn sleeps for its limit and answers nothing
+        t0  = sys monotonic ms
+        a0  = reactor turn r0 [pr] 120
+        t1  = sys monotonic ms
+        na count (na second a0) 0 -> assert int equals 0 "AC9: nothing ready"
+        (t1 - t0) >= 100 -> assert true "AC9: the turn slept for its limit, it did not spin"
+        (t1 - t0) < 1500 -> assert true "and not much longer"
+
+        -- a descriptor of the caller wakes it
+        posix write pw "x" -> assert int equals 1 "a byte in the pipe"
+        t2  = sys monotonic ms
+        a1  = reactor turn (na first a0) [pr] 5000
+        na same (na second a1) [pr] -> assert true "AC9: the descriptor of the caller is named as ready"
+        (sys monotonic ms) - t2 < 1000 -> assert true "AC9: and the turn returned at once, not after 5 s"
+
+        -- a connection wakes it
+        c1  = na client lfd
+        t3  = sys monotonic ms
+        a2  = reactor turn (na first a1) [] 5000
+        na same (reactor arrived (na first a2)) [1] -> assert true "AC9: a new connection wakes the turn"
+        (sys monotonic ms) - t3 < 1000 -> assert true "at once"
+        sock rc (sys send c1 "data" 500) -> assert int equals 0 "the client sends"
+        t4  = sys monotonic ms
+        a3  = reactor turn (na first a2) [] 5000
+        reactor input (na first a3) 1 -> assert str eq "data" "AC9: bytes on a connection wake the turn"
+        (sys monotonic ms) - t4 < 1000 -> assert true "at once"
+
+        -- the descriptor of a worker pool
+        p0  = pool start 1 (na slow double) 0
+        k, p1 = pool submit p0 21 ""
+        a4  = reactor turn (na first a3) [pool done fd p1] 5000
+        na same (na second a4) [pool done fd p1] -> assert true "AC9: the turn waits on the descriptor of a worker pool and names it when a job ends"
+        done, p2 = pool drain p1 1000
+        reactor stop (na first a4) 100
+        posix close pr
+        posix close pw
+        posix close c1 -> ()
+
+-- @tests TS-NETAGENT-001
+fn :: test reactor stop => ()
+      test reactor stop =
+        lfd  = na listen
+        port = sys local port lfd
+        r0   = na start lfd (reactor defaults)
+        c1   = na client lfd
+        c2   = na client lfd
+        r1   = na turn r0 500
+        r2   = reactor send (reactor send r1 1 "last words one") 2 "last words two"
+        st   = reactor stop r2 1000
+        open_count st -> assert int equals 0 "AC11: after the stop nothing is open"
+        accepted_count st -> assert int equals 2 "AC12: the counters at the end"
+        na read c1 500 -> assert str eq "last words one" "AC11: the queued output was sent before closing"
+        na read c2 500 -> assert str eq "last words two" "AC11: to each connection"
+        na recv rc (sys recv c1 16 500) -> assert int equals (0 - 1) "AC11: and the connections are closed"
+        sock rc (sys tcp connect "127.0.0.1" port 300) != 0 -> assert true "AC11: the listening socket is closed: nobody can connect"
+
+        -- a peer that does not read does not hold the stop longer than its time
+        l0   = na start (na listen) (reactor defaults)
+        d1   = na client (rx_fd l0)
+        l1   = reactor send (na turn l0 500) 1 (na text 3000000)
+        t0   = sys monotonic ms
+        s2   = reactor stop l1 300
+        (sys monotonic ms) - t0 < 2000 -> assert true "AC11: the stop ends at its time limit"
+        open_count s2 -> assert int equals 0 "and everything is closed"
+        posix close c1
+        posix close c2
+        posix close d1 -> ()
+
+fn :: tuple3 r (Int Int Int) => Int
+      tuple3 r (_, r, _)     =  r
+
+fn :: tuple3 w (Int Int Int) => Int
+      tuple3 w (_, _, w)     =  w
+
+fn :: main => ()
+      main =
+        test reactor accepts and refuses
+        test reactor input messages and state
+        test reactor output and the peer that does not read
+        test reactor time limits
+        test reactor waits on everything at once
+        test reactor stop
+        echo "[PASS] test_net_agent: TS-NETAGENT-001 passed"

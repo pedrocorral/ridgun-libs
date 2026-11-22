@@ -1,112 +1,449 @@
 -- ============================================================
 -- src/main/ridgun/lib/net_agent.ridgun
--- Pure-Ridgun Per-Connection Stateful Agent Reactor Library (AGENT)
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
--- @implements DM-Agent
+-- Many connections served in one loop that never waits for one of them (NETAGENT)
+-- @implements FR-NETAGENT-001
+-- @implements API-NETAGENT-001
+-- @implements DM-NetAgent
+-- @mitigates VUL-INFRA-002
 -- @mitigates VUL-INPUT-001
 -- ============================================================
 
 module :: net agent
 
+import posix
 import socket
 
-type ConnSlot = ConnSlot Int Agent
+-- The limits of a reactor. A time limit of 0 is no limit.
+type ReactorConfig = max_conn_count: Int, max_accept_count: Int, input_limit_bytes: Int, output_limit_bytes: Int, first_message_limit_ms: Int, idle_limit_ms: Int
 
-type StepOutcome = ConnKeep ConnSlot String | ConnClosed
+-- The counters of a reactor at one moment.
+type ReactorStats = open_count: Int, accepted_count: Int, refused_count: Int, dropped_count: Int
 
--- Poll a single connection fd (non-blocking, timeout = 0) and route incoming data to its Agent
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
-fn :: conn poll step ConnSlot         => StepOutcome
-      conn poll step (ConnSlot fd ag) =
-        sys poll fd 1 0 -> ev
-        conn handle event fd ag ev
+-- One connection of the table (DM-NetAgent: conn_id, fd, peer_ip, input_buf, output_buf, is_closing, last_active_ms).
+-- cn_since: when it was accepted. cn_first: the application has taken bytes from it at least once.
+-- cn_done: its output is all sent and its sending side is shut; it only waits for the peer to close.
+-- cn_state: the state the application left, none or one.
+type ReactorConn S = cn_id: Int, cn_fd: Int, cn_peer: String, cn_in: String, cn_out: String, cn_closing: Bool, cn_since: Int, cn_active: Int, cn_first: Bool, cn_done: Bool, cn_state: [S]
 
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
-fn :: conn handle event Int Agent Int => StepOutcome
-      conn handle event fd ag ev
-        | ev < 0 =
-          -- Poll error: close descriptor and stop agent
-          sys close fd
-          stop ag
-          ConnClosed
-        | ev >= 8 =
-          -- POLLERR (8) or POLLHUP (16): peer disconnected
-          sys close fd
-          stop ag
-          ConnClosed
-        | ev == 0 =
-          -- No new bytes to read; check if the agent has a queued async reply
-      conn drain outbound fd ag (try receive from ag)
-        | otherwise =
-          -- POLLIN (1): read frame and forward to the connection's stateful agent
-          payload = sys read fd fd 65536
-          conn feed payload fd ag payload
+-- The reactor: the listening socket (-1 once stopped), the limits, the table, the next id, what the last turn
+-- brought and took away, and the counters.
+type Reactor S = rx_fd: Int, rx_cfg: ReactorConfig, rx_conns: [(ReactorConn S)], rx_next: Int, rx_arrived: [Int], rx_left: [Int], rx_accepted: Int, rx_refused: Int, rx_dropped: Int
 
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
-fn :: conn feed payload Int Agent String => StepOutcome
-      conn feed payload fd ag "" =
-        -- EOF on socket: close descriptor and stop agent deterministically
-        sys close fd -> ()
-        stop ag
-        ConnClosed
-      conn feed payload fd ag data =
-        send data to ag
-        conn drain outbound fd ag (try receive from ag)
+-- What the application answers for one connection: its next state, how many bytes of the input it took,
+-- the output to queue, and whether to close once that output is sent.
+type ConnStep S = ConnStep S Int String Bool
 
-fn :: conn cast str A => String
-      conn cast str x =  x
+-- ── Limits ───────────────────────────────────────────────────
 
--- The longest a step waits for a peer to take a reply (milliseconds).
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
-fn :: conn write timeout ms => Int
-      conn write timeout ms =  1000
+fn :: rx at least Int Int => Int
+      rx at least v   lo  =
+        | v < lo    = lo
+        | otherwise = v
 
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
--- @mitigates VUL-INPUT-001
-fn :: conn drain outbound Int Agent Option => StepOutcome
-      conn drain outbound fd ag None = ConnKeep (ConnSlot fd ag) ""
-      conn drain outbound fd ag (Some resp) =
-        resp conn cast str -> s
-        conn after write fd ag s (sys send fd s (conn write timeout ms))
+fn :: rx at most Int Int => Int
+      rx at most v   hi  =
+        | v > hi    = hi
+        | otherwise = v
 
--- The reply is written whole or the connection is closed: a peer that does not read
--- cannot hold the reactor longer than `conn write timeout ms`, and never gets a cut reply.
-fn :: conn after write Int Agent String (Int Int) => StepOutcome
-      conn after write fd ag s (rc, sent) =
-        | rc == 0 and sent == (str len s) = ConnKeep (ConnSlot fd ag) s
-        | otherwise =
-          sys close fd -> ()
-          stop ag
-          ConnClosed
+-- 1 024 connections, 64 accepted in a turn, 64 MB of input and of output for each connection, no time limits.
+fn :: reactor defaults => ReactorConfig
+      reactor defaults =  ReactorConfig 1024 64 67108864 67108864 0 0
 
--- Sweep an entire connection table, pruning closed connections and keeping active ones
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
-fn :: reactor sweep [ConnSlot]  => [ConnSlot]
-      reactor sweep []          =  []
-      reactor sweep (slot:rest) =
-        slot conn poll step -> outcome
-        rest reactor sweep -> kept
-        reactor sweep next outcome kept
+fn :: reactor with max conns ReactorConfig Int => ReactorConfig
+      reactor with max conns c             n   =  c with max_conn_count = (rx at least n 1)
 
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
-fn :: reactor sweep next StepOutcome       [ConnSlot] => [ConnSlot]
-      reactor sweep next ConnClosed        kept       =  kept
-      reactor sweep next (ConnKeep slot _) kept       =  [slot] :: kept
+fn :: reactor with max accepts ReactorConfig Int => ReactorConfig
+      reactor with max accepts c             n   =  c with max_accept_count = (rx at least n 1)
 
--- Gracefully close all sockets and stop all connection agents on server shutdown
--- @implements FR-AGENT-001
--- @implements API-AGENT-001
-fn :: reactor shutdown [ConnSlot] => ()
-      reactor shutdown []         =  ()
-      reactor shutdown ((ConnSlot fd ag):rest) =
-        sys close fd -> ()
-        stop ag
-        reactor shutdown rest
+fn :: reactor with input limit ReactorConfig Int => ReactorConfig
+      reactor with input limit c             n   =  c with input_limit_bytes = (rx at least n 1)
+
+fn :: reactor with output limit ReactorConfig Int => ReactorConfig
+      reactor with output limit c             n   =  c with output_limit_bytes = (rx at least n 1)
+
+fn :: reactor with first message limit ReactorConfig Int => ReactorConfig
+      reactor with first message limit c             ms  =  c with first_message_limit_ms = (rx at least ms 0)
+
+fn :: reactor with idle limit ReactorConfig Int => ReactorConfig
+      reactor with idle limit c             ms  =  c with idle_limit_ms = (rx at least ms 0)
+
+-- ── Small helpers over the table ─────────────────────────────
+
+fn :: rx has [Int]    Int => Bool
+      rx has []       _   =  False
+      rx has (x:rest) v   =
+        | x == v    = True
+        | otherwise = rx has rest v
+
+fn :: rx count [(ReactorConn S)] Int => Int
+      rx count []                n   =  n
+      rx count (_:rest)          n   =  rx count rest (n + 1)
+
+fn :: rx first or [S]   S => S
+      rx first or []    d =  d
+      rx first or (s:_) _ =  s
+
+-- The descriptors to wait on for reading: the connections that are not closing, and those that only wait
+-- for their peer to close (what they send is thrown away, and the end of the peer is seen).
+fn :: rx read fds [(ReactorConn S)] => [Int]
+      rx read fds []                =  []
+      rx read fds (c:rest)          =
+        | (cn_closing c) and (not (cn_done c)) = rx read fds rest
+        | otherwise                            = [cn_fd c] :: (rx read fds rest)
+
+-- The descriptors to wait on for writing: the connections with output queued.
+fn :: rx write fds [(ReactorConn S)] => [Int]
+      rx write fds []                =  []
+      rx write fds (c:rest)          =
+        | (str len (cn_out c)) == 0 = rx write fds rest
+        | otherwise                 = [cn_fd c] :: (rx write fds rest)
+
+fn :: rx listen fds Int => [Int]
+      rx listen fds fd  =
+        | fd < 0    = []
+        | otherwise = [fd]
+
+-- Those of `extra` that are in `ready`, in the order of `extra`.
+fn :: rx pick ready [Int]    [Int] => [Int]
+      rx pick ready []       ready =  []
+      rx pick ready (x:rest) ready =
+        | rx has ready x = [x] :: (rx pick ready rest ready)
+        | otherwise      = rx pick ready rest ready
+
+-- ── Start ────────────────────────────────────────────────────
+
+-- A reactor on the listening socket `fd`, with an empty table.
+-- @implements FR-NETAGENT-001
+-- @implements API-NETAGENT-001
+fn :: reactor start Int ReactorConfig => Reactor S
+      reactor start fd  cfg           =  Reactor fd cfg [] 1 [] [] 0 0 0
+
+-- ── Accepting (AC1, AC2) ─────────────────────────────────────
+
+-- The table is full: the new connection is closed at once and counted.
+fn :: rx refuse (Reactor S) Int => Reactor S
+      rx refuse r           fd  =
+        closed = posix close fd
+        r with rx_refused = (rx_refused r) + 1
+
+fn :: rx admit (Reactor S) Int String Int => Reactor S
+      rx admit r           fd  ip     now =
+        r with rx_conns = (rx_conns r) :: [ReactorConn (rx_next r) fd ip "" "" False now now False False []], rx_next = (rx_next r) + 1, rx_arrived = (rx_arrived r) :: [rx_next r], rx_accepted = (rx_accepted r) + 1
+
+fn :: rx accept one (Reactor S) Int Int (Int Int String) => Reactor S
+      rx accept one r           now left (rc, fd, ip)    =
+        | rc != 0                                                  = r
+        | (rx count (rx_conns r) 0) >= (max_conn_count (rx_cfg r)) = rx accept some (rx refuse r fd) now (left - 1)
+        | otherwise                                                = rx accept some (rx admit r fd ip now) now (left - 1)
+
+-- Accepts those that are pending, without waiting, at most `left` of them.
+fn :: rx accept some (Reactor S) Int Int => Reactor S
+      rx accept some r           now left =
+        | left <= 0 = r
+        | otherwise = rx accept one r now left (sys accept (rx_fd r) 0)
+
+fn :: rx accept all (Reactor S) WaitMany Int => Reactor S
+      rx accept all r           w        now =
+        | (rx_fd r) < 0                      = r
+        | not (rx has (wm_read w) (rx_fd r)) = r
+        | otherwise                          = rx accept some r now (max_accept_count (rx_cfg r))
+
+-- ── Reading, sending and the limits (AC3, AC5, AC6, AC7, AC8) ──
+-- Each step answers a kind with the connection: 0 it stays, 1 it leaves (its peer closed, it failed, or it
+-- was marked to close and its output is sent), 2 it leaves for passing a limit.
+
+fn :: rx read got (ReactorConn S) Int (Int String) => Int (ReactorConn S)
+      rx read got c               now (rc, data)   =
+        | rc == 0       = (0, c with cn_in = (cn_in c) + data, cn_active = now)
+        | rc == (0 - 2) = (0, c)
+        | otherwise     = (1, c)
+
+-- A connection that only waits for its peer to close: what arrives is thrown away; the end of the peer ends it.
+fn :: rx drain got (ReactorConn S) (Int String) => Int (ReactorConn S)
+      rx drain got c               (rc, data)   =
+        | rc == 0       = (0, c)
+        | rc == (0 - 2) = (0, c)
+        | otherwise     = (1, c)
+
+-- What has arrived is added to the input, without waiting. A closing connection is not read.
+fn :: rx read step (ReactorConn S) WaitMany Int => Int (ReactorConn S)
+      rx read step c               w        now =
+        | not (rx has (wm_read w) (cn_fd c)) = (0, c)
+        | cn_done c                          = rx drain got c (sys recv (cn_fd c) 65536 0)
+        | cn_closing c                       = (0, c)
+        | otherwise                          = rx read got c now (sys recv (cn_fd c) 65536 0)
+
+fn :: rx write got (ReactorConn S) Int (Int Int) => Int (ReactorConn S)
+      rx write got c               now (rc, sent) =
+        | rc == 0                    = (0, c with cn_out = "", cn_active = now)
+        | rc == (0 - 2) and sent > 0 = (0, c with cn_out = (str slice (cn_out c) sent (str len (cn_out c))), cn_active = now)
+        | rc == (0 - 2)              = (0, c)
+        | otherwise                  = (1, c)
+
+-- The peer is sent what it takes now; the rest stays queued, in its order.
+fn :: rx write step (Int (ReactorConn S)) WaitMany Int => Int (ReactorConn S)
+      rx write step (kind, c)             w        now =
+        | kind != 0                           = (kind, c)
+        | (str len (cn_out c)) == 0           = (0, c)
+        | not (rx has (wm_write w) (cn_fd c)) = (0, c)
+        | otherwise                           = rx write got c now (sys send (cn_fd c) (cn_out c) 0)
+
+fn :: rx over Int   Int   => Bool
+      rx over limit spent =  (limit > 0) and (spent > limit)
+
+-- How long a connection whose output is all sent waits for its peer to close before it is closed anyway.
+fn :: rx linger ms => Int
+      rx linger ms =  1000
+
+-- The output of a closing connection is all sent: its sending side is shut, so the peer sees the end after the
+-- last byte. The connection is not closed yet: closing a socket that still holds bytes the peer sent makes the
+-- kernel cut the connection, and the peer can lose output it had not read.
+fn :: rx shut sending (ReactorConn S) Int Int => Int (ReactorConn S)
+      rx shut sending c               now _   =  (0, c with cn_done = True, cn_active = now)
+
+fn :: rx after io ReactorConfig (Int (ReactorConn S)) Int => Int (ReactorConn S)
+      rx after io cfg           (kind, c)             now =
+        | kind != 0                                                                        = (kind, c)
+        | (cn_done c) and ((now - (cn_active c)) > (rx linger ms))                         = (1, c)
+        | cn_done c                                                                        = (0, c)
+        | (cn_closing c) and ((str len (cn_out c)) == 0)                                   = rx shut sending c now (sys shutdown write (cn_fd c))
+        | (str len (cn_in c)) > (input_limit_bytes cfg)                                    = (2, c)
+        | (str len (cn_out c)) > (output_limit_bytes cfg)                                  = (2, c)
+        | (not (cn_first c)) and (rx over (first_message_limit_ms cfg) (now - (cn_since c))) = (2, c)
+        | rx over (idle_limit_ms cfg) (now - (cn_active c))                                = (2, c)
+        | otherwise                                                                        = (0, c)
+
+fn :: rx serve one ReactorConfig (ReactorConn S) WaitMany Int => Int (ReactorConn S)
+      rx serve one cfg           c               w        now =
+        | rx has (wm_failed w) (cn_fd c) = (1, c)
+        | otherwise                      = rx after io cfg (rx write step (rx read step c w now) w now) now
+
+fn :: rx serve each ReactorConfig [(ReactorConn S)] WaitMany Int => [Int (ReactorConn S)]
+      rx serve each cfg           []                w        now =  []
+      rx serve each cfg           (c:rest)          w        now =  [rx serve one cfg c w now] :: (rx serve each cfg rest w now)
+
+-- The connections that stay.
+fn :: rx kept [Int (ReactorConn S)] => [(ReactorConn S)]
+      rx kept []                    =  []
+      rx kept ((kind, c):rest)      =
+        | kind == 0 = [c] :: (rx kept rest)
+        | otherwise = rx kept rest
+
+-- The ids of the connections that leave; each one is closed here, once.
+fn :: rx gone [Int (ReactorConn S)] => [Int]
+      rx gone []                    =  []
+      rx gone ((kind, c):rest)      =
+        | kind == 0 = rx gone rest
+        | otherwise = rx gone closed c (posix close (cn_fd c)) rest
+
+fn :: rx gone closed (ReactorConn S) Int [Int (ReactorConn S)] => [Int]
+      rx gone closed c               _   rest                  =  [cn_id c] :: (rx gone rest)
+
+fn :: rx limit count [Int (ReactorConn S)] Int => Int
+      rx limit count []                    n   =  n
+      rx limit count ((kind, c):rest)      n   =
+        | kind == 2 = rx limit count rest (n + 1)
+        | otherwise = rx limit count rest n
+
+fn :: rx serve done (Reactor S) [Int (ReactorConn S)] => Reactor S
+      rx serve done r           served                =
+        r with rx_conns = (rx kept served), rx_left = (rx gone served), rx_dropped = (rx_dropped r) + (rx limit count served 0)
+
+-- ── One turn (AC9) ───────────────────────────────────────────
+
+-- One turn of the loop. It waits at most `timeout_ms` for the listening socket, every connection and the
+-- descriptors of the caller in `extra` (a signal descriptor, the descriptor of a worker pool): one wait on all
+-- of them. Then it accepts, reads, sends and applies the limits, without waiting for any connection.
+-- The answer is the reactor to use from now on and the descriptors of `extra` that are ready.
+-- @implements FR-NETAGENT-001
+-- @implements API-NETAGENT-001
+-- @mitigates VUL-INFRA-002
+fn :: reactor turn (Reactor S) [Int] Int        => (Reactor S) [Int]
+      reactor turn r           extra timeout_ms =
+        w   = posix wait many ((rx listen fds (rx_fd r)) :: ((rx read fds (rx_conns r)) :: extra)) (rx write fds (rx_conns r)) timeout_ms
+        now = sys monotonic ms
+        r1  = rx accept all (r with rx_arrived = [], rx_left = []) w now
+        r2  = rx serve done r1 (rx serve each (rx_cfg r1) (rx_conns r1) w now)
+        (r2, rx pick ready extra (wm_read w))
+
+-- ── What a turn left ─────────────────────────────────────────
+
+-- The ids of the connections that entered the table in the last turn.
+-- @implements API-NETAGENT-001
+fn :: reactor arrived (Reactor S) => [Int]
+      reactor arrived r           =  rx_arrived r
+
+-- The ids of the connections closed in the last turn.
+-- @implements API-NETAGENT-001
+fn :: reactor left (Reactor S) => [Int]
+      reactor left r           =  rx_left r
+
+fn :: rx ready ids [(ReactorConn S)] => [Int]
+      rx ready ids []                =  []
+      rx ready ids (c:rest)          =
+        | (cn_closing c) or ((str len (cn_in c)) == 0) = rx ready ids rest
+        | otherwise                                    = [cn_id c] :: (rx ready ids rest)
+
+-- The ids of the connections with input the application has not taken.
+-- @implements API-NETAGENT-001
+fn :: reactor ready (Reactor S) => [Int]
+      reactor ready r           =  rx ready ids (rx_conns r)
+
+-- ── One connection (AC4, AC10) ───────────────────────────────
+
+fn :: rx input of [(ReactorConn S)] Int => String
+      rx input of []                _   =  ""
+      rx input of (c:rest)          id  =
+        | (cn_id c) == id = cn_in c
+        | otherwise       = rx input of rest id
+
+-- The input of the connection that the application has not taken; "" when the id is not in the table.
+-- @implements API-NETAGENT-001
+fn :: reactor input (Reactor S) Int => String
+      reactor input r           id  =  rx input of (rx_conns r) id
+
+fn :: rx peer of [(ReactorConn S)] Int => String
+      rx peer of []                _   =  ""
+      rx peer of (c:rest)          id  =
+        | (cn_id c) == id = cn_peer c
+        | otherwise       = rx peer of rest id
+
+-- The address of the peer, as the accept gave it; "" when the id is not in the table.
+-- @implements API-NETAGENT-001
+fn :: reactor peer (Reactor S) Int => String
+      reactor peer r           id  =  rx peer of (rx_conns r) id
+
+-- The connection without the first `n` bytes of its input.
+fn :: rx taken (ReactorConn S) Int => ReactorConn S
+      rx taken c               n   =
+        | n <= 0    = c
+        | otherwise = c with cn_in = (str slice (cn_in c) (rx at most n (str len (cn_in c))) (str len (cn_in c))), cn_first = True
+
+fn :: rx take in [(ReactorConn S)] Int Int => [(ReactorConn S)]
+      rx take in []                _   _   =  []
+      rx take in (c:rest)          id  n   =
+        | (cn_id c) == id = [rx taken c n] :: rest
+        | otherwise       = [c] :: (rx take in rest id n)
+
+-- Drops the first `n` bytes of the input of the connection: the messages the application found whole.
+-- What it did not take stays and is offered again, with what arrives later.
+-- @implements FR-NETAGENT-001
+-- @implements API-NETAGENT-001
+fn :: reactor take (Reactor S) Int Int => Reactor S
+      reactor take r           id  n   =  r with rx_conns = (rx take in (rx_conns r) id n)
+
+fn :: rx send in [(ReactorConn S)] Int String => [(ReactorConn S)]
+      rx send in []                _   _      =  []
+      rx send in (c:rest)          id  data   =
+        | (cn_id c) == id = [c with cn_out = (cn_out c) + data] :: rest
+        | otherwise       = [c] :: (rx send in rest id data)
+
+-- Adds `data` to the output queued for the connection. Nothing is sent here: the turns send it.
+-- @implements FR-NETAGENT-001
+-- @implements API-NETAGENT-001
+fn :: reactor send (Reactor S) Int String => Reactor S
+      reactor send r           id  data   =  r with rx_conns = (rx send in (rx_conns r) id data)
+
+fn :: rx closing in [(ReactorConn S)] Int => [(ReactorConn S)]
+      rx closing in []                _   =  []
+      rx closing in (c:rest)          id  =
+        | (cn_id c) == id = [c with cn_closing = True] :: rest
+        | otherwise       = [c] :: (rx closing in rest id)
+
+-- Marks the connection to close: nothing more is read from it, and it is closed when its output is sent.
+-- @implements FR-NETAGENT-001
+-- @implements API-NETAGENT-001
+fn :: reactor close after send (Reactor S) Int => Reactor S
+      reactor close after send r           id  =  r with rx_conns = (rx closing in (rx_conns r) id)
+
+fn :: rx state of [(ReactorConn S)] Int S => S
+      rx state of []                _   d =  d
+      rx state of (c:rest)          id  d =
+        | (cn_id c) == id = rx first or (cn_state c) d
+        | otherwise       = rx state of rest id d
+
+-- The state the application left in the connection, or `d` when it left none or the id is not in the table.
+-- @implements API-NETAGENT-001
+fn :: reactor state (Reactor S) Int S => S
+      reactor state r           id  d =  rx state of (rx_conns r) id d
+
+fn :: rx set state in [(ReactorConn S)] Int S => [(ReactorConn S)]
+      rx set state in []                _   _ =  []
+      rx set state in (c:rest)          id  s =
+        | (cn_id c) == id = [c with cn_state = [s]] :: rest
+        | otherwise       = [c] :: (rx set state in rest id s)
+
+-- Leaves a state in the connection. It is released when the connection leaves the table.
+-- @implements API-NETAGENT-001
+fn :: reactor set state (Reactor S) Int S => Reactor S
+      reactor set state r           id  s =  r with rx_conns = (rx set state in (rx_conns r) id s)
+
+-- ── The simple case: each connection on its own ──────────────
+
+fn :: rx stepped (ReactorConn S) (ConnStep S)                => ReactorConn S
+      rx stepped c               (ConnStep s taken out close) =
+        t = rx taken c taken
+        t with cn_state = [s], cn_out = (cn_out c) + out, cn_closing = close
+
+fn :: rx each conn [(ReactorConn S)] S  (S String => ConnStep S) => [(ReactorConn S)]
+      rx each conn []                s0 f                        =  []
+      rx each conn (c:rest)          s0 f                        =
+        | (cn_closing c) or ((str len (cn_in c)) == 0) = [c] :: (rx each conn rest s0 f)
+        | otherwise                                    = [rx stepped c (f (rx first or (cn_state c) s0) (cn_in c))] :: (rx each conn rest s0 f)
+
+-- Calls `f` once for every connection with input: with the state it left there (or `s0` the first time) and its
+-- input. The answer of `f` says the next state, how many bytes it took, what to queue and whether to close.
+-- @implements FR-NETAGENT-001
+-- @implements API-NETAGENT-001
+fn :: reactor each (Reactor S) S  (S String => ConnStep S) => Reactor S
+      reactor each r           s0 f                        =  r with rx_conns = (rx each conn (rx_conns r) s0 f)
+
+-- ── Counters (AC12) ──────────────────────────────────────────
+
+-- Connections open now, accepted since the start, refused because the table was full, and closed for passing a limit.
+-- @implements FR-NETAGENT-001
+-- @implements API-NETAGENT-001
+fn :: reactor stats (Reactor S) => ReactorStats
+      reactor stats r           =  ReactorStats (rx count (rx_conns r) 0) (rx_accepted r) (rx_refused r) (rx_dropped r)
+
+-- ── Stop (AC11) ──────────────────────────────────────────────
+
+fn :: rx all closing [(ReactorConn S)] => [(ReactorConn S)]
+      rx all closing []                =  []
+      rx all closing (c:rest)          =  [c with cn_closing = True] :: (rx all closing rest)
+
+fn :: rx close fds [(ReactorConn S)] Int => Int
+      rx close fds []                n   =  n
+      rx close fds (c:rest)          n   =  rx close fds rest (n + (rx at most (posix close (cn_fd c)) 0) + 1)
+
+fn :: rx stop listening (Reactor S) => Reactor S
+      rx stop listening r           =
+        | (rx_fd r) < 0 = r
+        | otherwise     = rx stopped listening r (posix close (rx_fd r))
+
+fn :: rx stopped listening (Reactor S) Int => Reactor S
+      rx stopped listening r           _   =  r with rx_fd = (0 - 1)
+
+fn :: rx turn only ((Reactor S) [Int]) => Reactor S
+      rx turn only (r, _)              =  r
+
+fn :: rx stop end (Reactor S) => ReactorStats
+      rx stop end r           =
+        n = rx close fds (rx_conns r) 0
+        ReactorStats 0 (rx_accepted r) (rx_refused r) (rx_dropped r)
+
+-- Turns that only send, until nothing is queued or the time ends.
+fn :: rx stop flush (Reactor S) Int      => ReactorStats
+      rx stop flush r           deadline =
+        | (rx count (rx_conns r) 0) == 0 = rx stop end r
+        | (sys monotonic ms) >= deadline = rx stop end r
+        | otherwise                      = rx stop flush (rx turn only (reactor turn r [] (rx at most (deadline - (sys monotonic ms)) 50))) deadline
+
+-- Stops the reactor: no more connections are accepted, the queued output is sent for at most `timeout_ms`,
+-- and every connection and the listening socket are closed. The answer is the counters at the end.
+-- @implements FR-NETAGENT-001
+-- @implements API-NETAGENT-001
+fn :: reactor stop (Reactor S) Int        => ReactorStats
+      reactor stop r           timeout_ms =
+        s = rx stop listening r
+        rx stop flush (s with rx_conns = (rx all closing (rx_conns s))) ((sys monotonic ms) + (rx at least timeout_ms 0))
