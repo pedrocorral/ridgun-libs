@@ -244,10 +244,7 @@ fn :: byte slice String Int   Int     => String
           | end_idx < st = st
           | end_idx > slen = slen
           | otherwise = end_idx
-        n    = en - st
-        out  = Tensor[U8 * n]
-        c copy bytes out 0 (tensor from str s) st n
-        tensor to str out
+        str slice s st en
 
 -- ── SHA-1 (FIPS 180-4 §6.1) ─────────────────────────────────
 -- For protocols that require it (RFC 6455 WebSocket handshake, Git object ids).
@@ -1464,11 +1461,15 @@ fn :: chacha page Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * 
         o15 = w15_i + s15_i
         (o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15)
 
+-- The bytes `from` to `to` (not included) of `t`, as a new tensor. One copy per step, none byte by byte.
+fn :: c bytes part Tensor[U8] Int Int => Tensor[U8]
+      c bytes part t from to =  tensor from str (str slice (tensor to str t) from to)
+
 -- The first `n` bytes of `stream` (the key stream is made in whole blocks).
 fn :: c first bytes Tensor[U8] Int Int => Tensor[U8]
       c first bytes stream have n =
         | have == n = stream
-        | otherwise = tensor from str (byte slice (tensor to str stream) 0 n)
+        | otherwise = c bytes part stream 0 n
 
 -- The first `n` bytes (at most 1 MiB) of the key stream from block `ctr` on: all the blocks at once,
 -- then the 16 word tensors side by side and their bytes (ridgunc 1.0.40).
@@ -1804,6 +1805,12 @@ fn :: poly1305 aead mac Tensor[U8] Tensor[U8] Tensor[U8] => Tensor[U8]
         h_fin = poly1305 blocks loop h3 r tail 0 (tlen + 16)
         poly1305 finalize h_fin otk
 
+-- The key stream of one AEAD message of `n` bytes, in one call (RFC 8439 §2.8): block 0, whose first 32 bytes
+-- are the one-time key of Poly1305, and then the blocks from 1 on that cover the message. Whole blocks, so
+-- nothing is cut here: the message's part is the bytes 64 to 64 + n.
+fn :: aead key stream Tensor[U8] Tensor[U8] Int => Tensor[U8]
+      aead key stream key_bs nonce_bs n =  chacha20 key stream key_bs nonce_bs 0 (64 + (((n + 63) / 64) * 64))
+
 -- @implements FR-CRYPTO-004
 -- @implements API-CRYPTO-001
 -- @mitigates VUL-AUTHN-001
@@ -1812,18 +1819,16 @@ fn :: aead seal String String String String => String
       aead seal key nonce aad plaintext =
         | (str len key) != 32 or (str len nonce) != 12 = ""
         | otherwise                                    =
-          key_bs   = tensor from str key
-          nonce_bs = tensor from str nonce
-          otk      = chacha20 block key_bs nonce_bs 0
-          ct_bs    = chacha20 bitxor key_bs nonce_bs 1 (tensor from str plaintext)
-          tag_bs   = poly1305 aead mac otk (tensor from str aad) ct_bs
+          ks     = aead key stream (tensor from str key) (tensor from str nonce) (str len plaintext)
+          ct_bs  = c bitxor bytes (tensor from str plaintext) (c bytes part ks 64 (64 + (str len plaintext)))
+          tag_bs = poly1305 aead mac ks (tensor from str aad) ct_bs
           (tensor to str ct_bs) + (tensor to str tag_bs)
 
-fn :: decrypt verified aead Bool Tensor[U8] Tensor[U8] Tensor[U8] => Int String
-      decrypt verified aead False _          _          _          =  (0 - 12, "")
-      decrypt verified aead True  key_bs     nonce_bs   ct_bs      =
-        chacha20 bitxor key_bs nonce_bs 1 ct_bs -> pt_bs
-        (0, tensor to str pt_bs)
+-- The plaintext only when the tag was right: `ks` is the key stream of `aead key stream`.
+fn :: decrypt verified aead Bool Tensor[U8] Tensor[U8] => Int String
+      decrypt verified aead False _          _          =  (0 - 12, "")
+      decrypt verified aead True  ks         ct_bs      =
+        (0, tensor to str (c bitxor bytes ct_bs (c bytes part ks 64 (64 + (c u8 len ct_bs)))))
 
 -- @implements FR-CRYPTO-004
 -- @implements API-CRYPTO-001
@@ -1837,12 +1842,10 @@ fn :: aead open String String String String => Int String
           ct_len    = total_len - 16
           ct_str    = byte slice ciphertext_and_tag 0 ct_len
           tag_str   = byte slice ciphertext_and_tag ct_len total_len
-          key_bs    = tensor from str key
-          nonce_bs  = tensor from str nonce
           ct_bs     = tensor from str ct_str
-          otk       = chacha20 block key_bs nonce_bs 0
-          exp_tag   = tensor to str (poly1305 aead mac otk (tensor from str aad) ct_bs)
-          decrypt verified aead (ct equal tag_str exp_tag) key_bs nonce_bs ct_bs
+          ks        = aead key stream (tensor from str key) (tensor from str nonce) ct_len
+          exp_tag   = tensor to str (poly1305 aead mac ks (tensor from str aad) ct_bs)
+          decrypt verified aead (ct equal tag_str exp_tag) ks ct_bs
 -- ── FIPS 180-4 SHA-512 (`sha512 bytes`, `sha512 hex`) ────────
 
 fn :: sha512 k hex0 => String
