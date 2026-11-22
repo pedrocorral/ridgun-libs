@@ -5,11 +5,13 @@
 -- @tests TS-POSIX-002
 -- @tests TS-POSIX-003
 -- @tests TS-POSIX-004
+-- @tests TS-POSIX-005
 -- ============================================================
 
 import test
 import posix
 import io
+import socket
 
 fn :: is poll timeout PollStatus  => Bool
       is poll timeout PollTimeout =  True
@@ -423,6 +425,176 @@ fn :: test posix kernel bridge => ()
         posix close rfd
         assert equals (posix close wfd) 0 "close bridge pipe"
 
+-- ── TS-POSIX-005: waiting on many descriptors at once ──────
+fn :: wm count [Int]    Int => Int
+      wm count []       n   =  n
+      wm count (_:rest) n   =  wm count rest (n + 1)
+
+fn :: wm same [Int]  [Int]  => Bool
+      wm same []     []     =  True
+      wm same (a:ar) (b:br) =  (a == b) and (wm same ar br)
+      wm same _      _      =  False
+
+fn :: wm has [Int]    Int => Bool
+      wm has []       _   =  False
+      wm has (x:rest) v   =  (x == v) or (wm has rest v)
+
+-- `n` pipes: the read ends and the write ends, in the order they were made.
+fn :: wm pipes Int [Int] [Int] => [Int] [Int]
+      wm pipes n   rs    ws    =
+        | n <= 0    = (rs, ws)
+        | otherwise = wm pipes more (posix pipe) n rs ws
+
+fn :: wm pipes more (Int Int Int) Int [Int] [Int] => [Int] [Int]
+      wm pipes more (rc, r, w)    n   rs    ws    =  wm pipes (n - 1) (rs :: [r]) (ws :: [w])
+
+-- One byte into every second descriptor of the list (the 1st, 3rd, ...); returns how many were written.
+fn :: wm write odd [Int]    Int Int => Int
+      wm write odd []       i   n   =  n
+      wm write odd (w:rest) i   n   =
+        | (i % 2) == 0 = wm write odd rest (i + 1) (n + (posix write w "x"))
+        | otherwise    = wm write odd rest (i + 1) n
+
+-- Every second element of the list, from the first.
+fn :: wm odd [Int]    Int => [Int]
+      wm odd []       i   =  []
+      wm odd (x:rest) i   =
+        | (i % 2) == 0 = [x] :: (wm odd rest (i + 1))
+        | otherwise    = wm odd rest (i + 1)
+
+fn :: wm take [Int]    Int => [Int]
+      wm take []       n   =  []
+      wm take (x:rest) n   =
+        | n <= 0    = []
+        | otherwise = [x] :: (wm take rest (n - 1))
+
+fn :: wm close all [Int]    => ()
+      wm close all []       =  ()
+      wm close all (x:rest) =
+        posix close x
+        wm close all rest
+
+-- @tests TS-POSIX-005
+fn :: test posix wait on many descriptors => ()
+      test posix wait on many descriptors =
+        -- AC2: nothing to wait for
+        t0 = sys monotonic ms
+        e0 = posix wait many [] [] 60
+        t1 = sys monotonic ms
+        wm count (wm_read e0) 0 -> assert equals 0 "no descriptors: nothing to read"
+        wm count (wm_write e0) 0 -> assert equals 0 "nothing to write"
+        wm count (wm_failed e0) 0 -> assert equals 0 "nothing failed"
+        (t1 - t0) >= 50 -> assert true "with both lists empty it waits for the time limit"
+        (t1 - t0) < 2000 -> assert true "and not much longer"
+
+        pa = posix pipe
+        pb = posix pipe
+        pc = posix pipe
+        ra = tuple3 rfd pa
+        wa = tuple3 wfd pa
+        rb = tuple3 rfd pb
+        wb = tuple3 wfd pb
+        rc = tuple3 rfd pc
+        wc = tuple3 wfd pc
+        t2 = sys monotonic ms
+        e1 = posix wait many [ra, rb, rc] [] 0
+        wm count (wm_read e1) 0 -> assert equals 0 "three empty pipes, limit 0: none is ready"
+        e2 = posix wait many [ra, rb, rc] [] 60
+        t3 = sys monotonic ms
+        wm count (wm_read e2) 0 -> assert equals 0 "three empty pipes, 60 ms: none is ready"
+        (t3 - t2) >= 50 -> assert true "the call waited for the limit"
+        e3 = posix wait many [ra] [] (0 - 5)
+        wm count (wm_read e3) 0 -> assert equals 0 "a limit under 0 answers at once"
+
+        -- AC1: every ready descriptor is named, in the order given, and nothing is read
+        posix write wb "bb" -> assert equals 2 "write to the second pipe"
+        posix write wc "c" -> assert equals 1 "write to the third pipe"
+        t4 = sys monotonic ms
+        e4 = posix wait many [ra, rb, rc] [] 5000
+        t5 = sys monotonic ms
+        wm same (wm_read e4) [rb, rc] -> assert true "the two pipes with bytes are named, in the order given"
+        (t5 - t4) < 1000 -> assert true "and the call returns at once, not after the 5 s limit"
+        wm count (wm_failed e4) 0 -> assert equals 0 "nothing failed"
+        e5 = posix wait many [rc, ra, rb] [] 0
+        wm same (wm_read e5) [rc, rb] -> assert true "the order of the answer is the order of the call"
+        posix read rb 16 -> assert equals "bb" "the wait read nothing: the bytes are still there"
+        e6 = posix wait many [ra, rb, rc] [] 0
+        wm same (wm_read e6) [rc] -> assert true "after reading the second pipe only the third is ready"
+
+        -- to write, and a descriptor in both lists
+        e7 = posix wait many [ra] [wa, wb] 0
+        wm same (wm_write e7) [wa, wb] -> assert true "the write ends of pipes with room are ready to write"
+        wm count (wm_read e7) 0 -> assert equals 0 "and the empty pipe is not ready to read"
+        e8 = posix wait many [rc, wa] [wa, rc] 0
+        wm same (wm_read e8) [rc] -> assert true "a descriptor in both lists: the read end is ready to read"
+        wm same (wm_write e8) [wa] -> assert true "and the write end is ready to write"
+
+        -- AC3: closed, not a descriptor, under 0, other end gone
+        pd = posix pipe
+        rd = tuple3 rfd pd
+        wd = tuple3 wfd pd
+        posix close rd
+        e9 = posix wait many [rd, rc, 999999, 0 - 1, ra] [wd, wa] 0
+        wm same (wm_failed e9) [rd, 999999, 0 - 1, wd] -> assert true "the closed descriptor, the one that is none, the one under 0 and the write end whose reader is gone are named as failed"
+        wm same (wm_read e9) [rc] -> assert true "and the others are still answered: to read"
+        wm same (wm_write e9) [wa] -> assert true "and to write"
+        e10 = posix wait many [rd] [rd] 0
+        wm same (wm_failed e10) [rd] -> assert true "a failed descriptor in both lists is named once"
+        posix close wa
+        e11 = posix wait many [ra] [] 0
+        wm same (wm_read e11) [ra] -> assert true "a pipe whose writer closed is ready to read (its end)"
+        wm count (wm_failed e11) 0 -> assert equals 0 "and not failed"
+
+        -- AC4: a listening socket, a signal descriptor and connected sockets in one call
+        l_res = sys tcp listen "127.0.0.1" 0 16
+        lfd   = sock fd l_res
+        sw    = sys signal watch [sig usr1]
+        sfd   = pair snd sw
+        pair fst sw -> assert equals 0 "signal watch"
+        e12 = posix wait many [lfd, sfd, rc] [] 0
+        wm same (wm_read e12) [rc] -> assert true "nobody connected, no signal: only the pipe is ready"
+        cfd   = sock fd (sys tcp connect "127.0.0.1" (sys local port lfd) 500)
+        e13 = posix wait many [lfd, sfd] [] 2000
+        wm same (wm_read e13) [lfd] -> assert true "a client connected: the listening socket is ready"
+        afd   = sock accept fd (sys accept lfd 500)
+        sys kill (sys getpid) (sig usr1) -> assert equals 0 "send the signal"
+        e14 = posix wait many [lfd, sfd, afd] [cfd] 2000
+        wm same (wm_read e14) [sfd] -> assert true "the signal descriptor is ready; the listener and the idle connection are not"
+        wm same (wm_write e14) [cfd] -> assert true "and the client socket is ready to write"
+        pair fst (sys send cfd "hi" 500) -> assert equals 0 "the client sends"
+        e15 = posix wait many [lfd, afd] [] 2000
+        wm same (wm_read e15) [afd] -> assert true "the connection with bytes is ready"
+        posix close cfd
+        e16 = posix wait many [afd] [] 2000
+        wm same (wm_read e16) [afd] -> assert true "and it stays ready when the client closes"
+        posix close afd
+        posix close lfd
+        posix close sfd
+
+        -- AC5: 1 024 entries in one call: 400 pipes, their read ends (and 224 of them again) and their write ends
+        many = wm pipes 400 [] []
+        rs   = pair fst many
+        ws   = pair snd many
+        wm count rs 0 -> assert equals 400 "400 pipes"
+        wm write odd ws 0 0 -> assert equals 200 "a byte into every second pipe"
+        ins  = rs :: (wm take rs 224)
+        wm count ins 0 -> assert equals 624 "624 entries to read"
+        e17  = posix wait many ins ws 0
+        wm count (wm_failed e17) 0 -> assert equals 0 "1 024 entries: none failed"
+        wm same (wm_read e17) ((wm odd rs 0) :: (wm take (wm odd rs 0) 112)) -> assert true "the 200 pipes with a byte are named, and the 112 of them given twice are named twice"
+        wm same (wm_write e17) ws -> assert true "and all 400 write ends are ready"
+        wm close all rs
+        wm close all ws
+        e18  = posix wait many rs ws 0
+        wm count (wm_failed e18) 0 -> assert equals 800 "after closing them all 800 are named as failed"
+
+        posix close ra
+        posix close rb
+        posix close wb
+        posix close rc
+        posix close wc
+        posix close wd -> ()
+
 fn :: main => ()
       main =
         test posix constants descriptors and poll
@@ -430,4 +602,5 @@ fn :: main => ()
         test posix fork pipe dup2 execve waitpid
         test posix durable file ops
         test posix kernel bridge
-        echo "[PASS] test_posix: TS-POSIX-001, TS-POSIX-002, TS-POSIX-003 and TS-POSIX-004 passed"
+        test posix wait on many descriptors
+        echo "[PASS] test_posix: TS-POSIX-001, TS-POSIX-002, TS-POSIX-003, TS-POSIX-004 and TS-POSIX-005 passed"

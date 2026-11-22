@@ -18,6 +18,7 @@ auth: none
   - `o rdonly => Int` (`0`), `o wronly => Int` (`1`), `o rdwr => Int` (`2`), `o creat => Int` (`64`), `o trunc => Int` (`512`), `o append => Int` (`1024`), `o nonblock => Int` (`2048`), `o cloexec => Int` (`524288`)
 - Descriptor, Poll, Pipe, Process & Signal Functions:
   - `wait fd Int Int Int => PollStatus` (`wait fd fd events timeout_ms`)
+  - `type WaitMany = wm_read: [Int], wm_write: [Int], wm_failed: [Int]` and `posix wait many [Int] [Int] Int => WaitMany` (`posix wait many to_read to_write limit_ms`, `FR-POSIX-005`): one `ppoll` for the whole set. It names the descriptors ready to read, those ready to write and those that failed (closed, not a descriptor, in error, or a descriptor to write whose other end is gone), each in the order given. A limit of `0` or under answers at once; with both lists empty it only waits. A signal that ends the wait early gives an empty answer. It reads and writes nothing.
   - `posix open String Int Int => Int`, `posix close Int => Int`, `posix read Int Int => String`, `posix write Int String => Int`
   - `posix pipe => Int Int Int` (`(status, read_fd, write_fd)`), `posix pipe cloexec => Int Int Int`, `posix pipe flags Int => Int Int Int`
   - `posix dup2 Int Int => Int` (`dup3`; `dup2 fd fd` returns `fd` when open)

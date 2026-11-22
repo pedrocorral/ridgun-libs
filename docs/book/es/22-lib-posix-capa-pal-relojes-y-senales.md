@@ -46,13 +46,14 @@ En `ridgun-libs`, **`posix`** es una **lib** de primera clase ubicada en `src/ma
 
 ### 22.2.2. Catálogo exhaustivo de tipos y firmas en `src/main/ridgun/lib/posix.ridgun`
 
-A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/posix.ridgun` (`2` tipos, `0` operadores y `161` funciones):
+A continuación tienes el inventario completo de tipos algebraicos (`type`), operadores (`op ::`) y firmas de funciones (`fn ::`) definidos en `src/main/ridgun/lib/posix.ridgun` (`3` tipos, `0` operadores y `175` funciones):
 
 **Tipos algebraicos y registros (`type`) de `posix`:**
 
 ```ridgun
 type PollStatus = PollReady Int | PollTimeout | PollError Int
 type ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int
+type WaitMany = wm_read: [Int], wm_write: [Int], wm_failed: [Int]
 ```
 
 | # | Función / Firma (`fn ::`) | Tipo de Retorno |
@@ -148,76 +149,90 @@ type ProcStatus = ProcExited Int | ProcTimedOut Int | ProcSignal Int
 | `89` | `fn :: sys monotonic ns` | `Int` |
 | `90` | `fn :: map poll rc Int` | `PollStatus` |
 | `91` | `fn :: wait fd Int Int Int` | `PollStatus` |
-| `92` | `fn :: posix open String Int Int` | `Int` |
-| `93` | `fn :: posix close Int` | `Int` |
-| `94` | `fn :: posix read Int Int` | `String` |
-| `95` | `fn :: posix write Int String` | `Int` |
-| `96` | `fn :: posix kill Int Int` | `Int` |
-| `97` | `fn :: wnohang` | `Int` |
-| `98` | `fn :: wuntraced` | `Int` |
-| `99` | `fn :: pack pipe fds Int Int Int` | `Int Int Int` |
-| `100` | `fn :: posix pipe flags Int` | `Int Int Int` |
-| `101` | `fn :: posix pipe` | `Int Int Int` |
-| `102` | `fn :: posix pipe cloexec` | `Int Int Int` |
-| `103` | `fn :: posix dup2 Int Int` | `Int` |
-| `104` | `fn :: px dup same Int Int` | `Int` |
-| `105` | `fn :: posix fork` | `Int` |
-| `106` | `fn :: posix exit Int` | `Int` |
-| `107` | `fn :: posix execve String [String] [String]` | `Int` |
-| `108` | `fn :: posix waitpid Int Int` | `Int Int` |
-| `109` | `fn :: px wait4 retry Int Tensor[U8] Int` | `Int` |
-| `110` | `fn :: px wait4 again Int Tensor[U8] Int Int` | `Int` |
-| `111` | `fn :: px wait4 result Int Int` | `Int Int` |
-| `112` | `fn :: waitpid decode sig Int Int` | `ProcStatus` |
-| `113` | `fn :: waitpid decode status Int` | `ProcStatus` |
-| `114` | `fn :: posix mkdir String` | `Bool` |
-| `115` | `fn :: posix chmod String Int` | `Bool` |
-| `116` | `fn :: posix chdir String` | `Bool` |
-| `117` | `fn :: px unlinkat path String Int` | `Int` |
-| `118` | `fn :: px path pair sys Int Tensor[U8] Tensor[U8]` | `Int` |
-| `119` | `fn :: px path pair call Int String String` | `Int` |
-| `120` | `fn :: px use pal files` | `Bool` |
-| `121` | `fn :: posix mkdir all String Int` | `Int` |
-| `122` | `fn :: px mkdir step String Int Int Int Int` | `Int` |
-| `123` | `fn :: px mkdir rc Int` | `Int` |
-| `124` | `fn :: sys rmdir String` | `Bool` |
-| `125` | `fn :: sys unlink String` | `Bool` |
-| `126` | `fn :: sys rename String String` | `Bool` |
-| `127` | `fn :: sys symlink String String` | `Bool` |
-| `128` | `fn :: sys readlink String` | `String` |
-| `129` | `fn :: valid signal list [Int]` | `Bool` |
-| `130` | `fn :: valid signal rest [Int]` | `Bool` |
-| `131` | `fn :: px bit shift Int` | `Int` |
-| `132` | `fn :: px sig mask [Int]` | `Int` |
-| `133` | `fn :: px finish sig watch Int` | `Int Int` |
-| `134` | `fn :: sys signal watch [Int]` | `Int Int` |
-| `135` | `fn :: px finish sig read Int Tensor[U8]` | `Int Int` |
-| `136` | `fn :: px wait sig after poll Int Int` | `Int Int` |
-| `137` | `fn :: sys signal wait Int Int` | `Int Int` |
-| `138` | `fn :: posix notify signal Int Int` | `Int` |
-| `139` | `fn :: px no bytes` | `Tensor[U8]` |
-| `140` | `fn :: px getrandom tensor Int` | `Int Tensor[U8]` |
-| `141` | `fn :: px getrandom got Int Tensor[U8] Int` | `Int Tensor[U8]` |
-| `142` | `fn :: px getrandom join String (Int Tensor[U8])` | `Int Tensor[U8]` |
-| `143` | `fn :: px random as str (Int Tensor[U8])` | `Int String` |
-| `144` | `fn :: sys random bytes Int` | `Int String` |
-| `145` | `fn :: sys random tensor Int` | `Int Tensor[U8]` |
-| `146` | `fn :: path separator SysOs` | `String` |
-| `147` | `fn :: null device for SysOs` | `String` |
-| `148` | `fn :: null device` | `String` |
-| `149` | `fn :: process exists Int` | `Bool` |
-| `150` | `fn :: posix fdatasync Int` | `Int` |
-| `151` | `fn :: posix fsync Int` | `Int` |
-| `152` | `fn :: posix ftruncate Int Int` | `Int` |
-| `153` | `fn :: px close keep rc Int Int` | `Int` |
-| `154` | `fn :: px fsync opened dir Int` | `Int` |
-| `155` | `fn :: posix sync dir String` | `Int` |
-| `156` | `fn :: posix lock exclusive Int` | `Int` |
-| `157` | `fn :: posix unlock Int` | `Int` |
-| `158` | `fn :: posix pread max` | `Int` |
-| `159` | `fn :: px pread result Int Tensor[U8] Int` | `Int String` |
-| `160` | `fn :: px pread into Int Int Int` | `Int String` |
-| `161` | `fn :: posix pread Int Int Int` | `Int String` |
+| `92` | `fn :: nr ppoll` | `Int` |
+| `93` | `fn :: px list count [Int] Int` | `Int` |
+| `94` | `fn :: px wait fill Tensor[U8] [Int] Int Int` | `Int` |
+| `95` | `fn :: px wait found Tensor[U8] Int` | `Int` |
+| `96` | `fn :: px wait kind Int Int Int Int` | `Int` |
+| `97` | `fn :: px wait pick [Int] Tensor[U8] Int Int Int Int` | `[Int]` |
+| `98` | `fn :: px list has [Int] Int` | `Bool` |
+| `99` | `fn :: px list add new [Int] [Int]` | `[Int]` |
+| `100` | `fn :: px wait all failed [Int] [Int]` | `WaitMany` |
+| `101` | `fn :: px wait answer [Int] [Int] Tensor[U8] Int Int` | `WaitMany` |
+| `102` | `fn :: px wait run [Int] [Int] Int Int Int Tensor[U8] Tensor[U8]` | `WaitMany` |
+| `103` | `fn :: px wait sized [Int] [Int] Int Int Int` | `WaitMany` |
+| `104` | `fn :: px wait limit Int` | `Int` |
+| `105` | `fn :: posix wait many [Int] [Int] Int` | `WaitMany` |
+| `106` | `fn :: posix open String Int Int` | `Int` |
+| `107` | `fn :: posix close Int` | `Int` |
+| `108` | `fn :: posix read Int Int` | `String` |
+| `109` | `fn :: posix write Int String` | `Int` |
+| `110` | `fn :: posix kill Int Int` | `Int` |
+| `111` | `fn :: wnohang` | `Int` |
+| `112` | `fn :: wuntraced` | `Int` |
+| `113` | `fn :: pack pipe fds Int Int Int` | `Int Int Int` |
+| `114` | `fn :: posix pipe flags Int` | `Int Int Int` |
+| `115` | `fn :: posix pipe` | `Int Int Int` |
+| `116` | `fn :: posix pipe cloexec` | `Int Int Int` |
+| `117` | `fn :: posix dup2 Int Int` | `Int` |
+| `118` | `fn :: px dup same Int Int` | `Int` |
+| `119` | `fn :: posix fork` | `Int` |
+| `120` | `fn :: posix exit Int` | `Int` |
+| `121` | `fn :: posix execve String [String] [String]` | `Int` |
+| `122` | `fn :: posix waitpid Int Int` | `Int Int` |
+| `123` | `fn :: px wait4 retry Int Tensor[U8] Int` | `Int` |
+| `124` | `fn :: px wait4 again Int Tensor[U8] Int Int` | `Int` |
+| `125` | `fn :: px wait4 result Int Int` | `Int Int` |
+| `126` | `fn :: waitpid decode sig Int Int` | `ProcStatus` |
+| `127` | `fn :: waitpid decode status Int` | `ProcStatus` |
+| `128` | `fn :: posix mkdir String` | `Bool` |
+| `129` | `fn :: posix chmod String Int` | `Bool` |
+| `130` | `fn :: posix chdir String` | `Bool` |
+| `131` | `fn :: px unlinkat path String Int` | `Int` |
+| `132` | `fn :: px path pair sys Int Tensor[U8] Tensor[U8]` | `Int` |
+| `133` | `fn :: px path pair call Int String String` | `Int` |
+| `134` | `fn :: px use pal files` | `Bool` |
+| `135` | `fn :: posix mkdir all String Int` | `Int` |
+| `136` | `fn :: px mkdir step String Int Int Int Int` | `Int` |
+| `137` | `fn :: px mkdir rc Int` | `Int` |
+| `138` | `fn :: sys rmdir String` | `Bool` |
+| `139` | `fn :: sys unlink String` | `Bool` |
+| `140` | `fn :: sys rename String String` | `Bool` |
+| `141` | `fn :: sys symlink String String` | `Bool` |
+| `142` | `fn :: sys readlink String` | `String` |
+| `143` | `fn :: valid signal list [Int]` | `Bool` |
+| `144` | `fn :: valid signal rest [Int]` | `Bool` |
+| `145` | `fn :: px bit shift Int` | `Int` |
+| `146` | `fn :: px sig mask [Int]` | `Int` |
+| `147` | `fn :: px finish sig watch Int` | `Int Int` |
+| `148` | `fn :: sys signal watch [Int]` | `Int Int` |
+| `149` | `fn :: px finish sig read Int Tensor[U8]` | `Int Int` |
+| `150` | `fn :: px wait sig after poll Int Int` | `Int Int` |
+| `151` | `fn :: sys signal wait Int Int` | `Int Int` |
+| `152` | `fn :: posix notify signal Int Int` | `Int` |
+| `153` | `fn :: px no bytes` | `Tensor[U8]` |
+| `154` | `fn :: px getrandom tensor Int` | `Int Tensor[U8]` |
+| `155` | `fn :: px getrandom got Int Tensor[U8] Int` | `Int Tensor[U8]` |
+| `156` | `fn :: px getrandom join String (Int Tensor[U8])` | `Int Tensor[U8]` |
+| `157` | `fn :: px random as str (Int Tensor[U8])` | `Int String` |
+| `158` | `fn :: sys random bytes Int` | `Int String` |
+| `159` | `fn :: sys random tensor Int` | `Int Tensor[U8]` |
+| `160` | `fn :: path separator SysOs` | `String` |
+| `161` | `fn :: null device for SysOs` | `String` |
+| `162` | `fn :: null device` | `String` |
+| `163` | `fn :: process exists Int` | `Bool` |
+| `164` | `fn :: posix fdatasync Int` | `Int` |
+| `165` | `fn :: posix fsync Int` | `Int` |
+| `166` | `fn :: posix ftruncate Int Int` | `Int` |
+| `167` | `fn :: px close keep rc Int Int` | `Int` |
+| `168` | `fn :: px fsync opened dir Int` | `Int` |
+| `169` | `fn :: posix sync dir String` | `Int` |
+| `170` | `fn :: posix lock exclusive Int` | `Int` |
+| `171` | `fn :: posix unlock Int` | `Int` |
+| `172` | `fn :: posix pread max` | `Int` |
+| `173` | `fn :: px pread result Int Tensor[U8] Int` | `Int String` |
+| `174` | `fn :: px pread into Int Int Int` | `Int String` |
+| `175` | `fn :: posix pread Int Int Int` | `Int String` |
 
 ---
 

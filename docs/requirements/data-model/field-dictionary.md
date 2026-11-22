@@ -36,6 +36,9 @@ Conventions: `snake_case`; ids end in `_id`; timestamps end in `_at` (UTC ISO-86
 | can_write | Bool | Whether the socket send half is open (`SHUT_WR` not set) | SOCK | `socket.ridgun` |
 | readable | Bool | Poll readiness flag indicating bytes or connections are ready to read | SOCK | `socket.ridgun`, `posix.ridgun` |
 | writable | Bool | Poll readiness flag indicating the descriptor can accept writes | SOCK | `socket.ridgun`, `posix.ridgun` |
+| wm_read | [Int] | The descriptors `posix wait many` found ready to read, in the order given | POSIX | `posix.ridgun` |
+| wm_write | [Int] | The descriptors `posix wait many` found ready to write, in the order given | POSIX | `posix.ridgun` |
+| wm_failed | [Int] | The descriptors `posix wait many` found closed, invalid or in error, once each | POSIX | `posix.ridgun` |
 | has_error | Bool | Poll readiness flag indicating the descriptor is closed or in error state | SOCK | `socket.ridgun`, `posix.ridgun` |
 | status_code | Int | Solstice negative error code or `0` on success (`0`, `-1`..`-12`, `-99`) | SOCK | `socket.ridgun`, `crypto.ridgun`, `posix.ridgun`, `io.ridgun` |
 | m_cost | Int | Argon2 memory cost in KiB (`>= 8 * lanes`) | CRYPTO | `argon2id.ridgun`, `crypto.ridgun` |

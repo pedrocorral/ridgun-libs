@@ -6,3 +6,4 @@
 | `TS-POSIX-002-filesystem-clocks-signals-and-random.md` | `TS-POSIX-002` | Verify POSIX filesystem operations, monotonic and wall clocks, signal watching, and CSPRNG random bytes | unit | automated |
 | `TS-POSIX-003-durable-file-sync-truncate-lock-and-positional-read.md` | `TS-POSIX-003` | Verify durable file sync, truncate, directory sync, exclusive lock and positional read | unit | automated |
 | `TS-POSIX-004-per-architecture-kernel-bridge-for-all-libs.md` | `TS-POSIX-004` | Verify every lib kernel call goes through the posix per-architecture bridge | unit | automated |
+| `TS-POSIX-005-wait-on-many-descriptors.md` | `TS-POSIX-005` | Verify the wait on many descriptors at once | unit | automated |

@@ -378,6 +378,108 @@ fn :: wait fd Int Int    Int        => PollStatus
         | timeout_ms < (0 - 1) = PollError 22
         | otherwise            = map poll rc (sys poll fd events timeout_ms)
 
+-- ── Waiting on many descriptors at once (FR-POSIX-005) ──────
+-- One `ppoll` call for the whole set: an entry of 8 bytes for each descriptor (the descriptor, the events
+-- asked for, the events found), the descriptors to read first and then those to write.
+
+-- What `posix wait many` found: the descriptors ready to read, those ready to write and those that failed
+-- (closed, not a descriptor, in error, or with the other end gone for a descriptor to write), each in the
+-- order it was given.
+type WaitMany = wm_read: [Int], wm_write: [Int], wm_failed: [Int]
+
+fn :: nr ppoll => Int
+      nr ppoll =  px nr 271 73
+
+fn :: px list count [Int]    Int => Int
+      px list count []       n   =  n
+      px list count (_:rest) n   =  px list count rest (n + 1)
+
+-- An entry for each descriptor of the list from byte `at` on, asking for the events `ev`; returns the next byte.
+fn :: px wait fill Tensor[U8] [Int]     Int Int => Int
+      px wait fill set        []        ev  at  =  at
+      px wait fill set        (fd:rest) ev  at  =
+        set_(at)     = fd and 255
+        set_(at + 1) = (fd shr 8) and 255
+        set_(at + 2) = (fd shr 16) and 255
+        set_(at + 3) = (fd shr 24) and 255
+        set_(at + 4) = ev
+        set_(at + 5) = 0
+        set_(at + 6) = 0
+        set_(at + 7) = 0
+        px wait fill set rest ev (at + 8)
+
+-- The events found for entry `i`.
+fn :: px wait found Tensor[U8] Int => Int
+      px wait found set        i   =  set_((8 * i) + 6) + (set_((8 * i) + 7) * 256)
+
+-- 0: nothing. 1: ready. 2: failed. `ok` are the events that make it ready, `bad` those that make it failed.
+-- A descriptor under 0 is never looked at by the kernel: it is failed.
+fn :: px wait kind Int Int Int Int => Int
+      px wait kind fd  got ok  bad =
+        | fd < 0               = 2
+        | (got and bad) != 0   = 2
+        | (got and ok) != 0    = 1
+        | otherwise            = 0
+
+-- The descriptors of the list (entries from `i` on) whose kind is `want`.
+fn :: px wait pick [Int]     Tensor[U8] Int Int Int Int => [Int]
+      px wait pick []        set        i   ok  bad want =  []
+      px wait pick (fd:rest) set        i   ok  bad want =
+        | (px wait kind fd (px wait found set i) ok bad) == want = [fd] :: (px wait pick rest set (i + 1) ok bad want)
+        | otherwise                                             = px wait pick rest set (i + 1) ok bad want
+
+fn :: px list has [Int]    Int => Bool
+      px list has []       _   =  False
+      px list has (x:rest) v   =
+        | x == v    = True
+        | otherwise = px list has rest v
+
+-- `more` after `first`, without the ones `first` already has.
+fn :: px list add new [Int] [Int]    => [Int]
+      px list add new first []       =  first
+      px list add new first (x:rest) =
+        | px list has first x = px list add new first rest
+        | otherwise           = px list add new (first :: [x]) rest
+
+-- Every descriptor of both lists, once: the answer when the wait itself fails.
+fn :: px wait all failed [Int] [Int] => WaitMany
+      px wait all failed ins   outs  =  WaitMany [] [] (px list add new (px list add new [] ins) outs)
+
+-- To read: ready with something to read or with the other end closed (POLLIN 1, POLLHUP 16);
+-- failed with POLLERR 8 or POLLNVAL 32. To write: ready with POLLOUT 4; failed with POLLERR, POLLHUP or POLLNVAL.
+fn :: px wait answer [Int] [Int] Tensor[U8] Int Int => WaitMany
+      px wait answer ins   outs  set        n   rc  =
+        | rc == (0 - 4) = WaitMany [] [] []
+        | rc < 0        = px wait all failed ins outs
+        | otherwise     = WaitMany (px wait pick ins set 0 17 40 1) (px wait pick outs set n 4 56 1) (px list add new (px wait pick ins set 0 17 40 2) (px wait pick outs set n 4 56 2))
+
+fn :: px wait run [Int] [Int] Int Int Int Tensor[U8] Tensor[U8] => WaitMany
+      px wait run ins   outs  ms  n   m   set        ts         =
+        px wait fill set ins 1 0
+        px wait fill set outs 4 (8 * n)
+        px put u64 le ts 0 (ms / 1000)
+        px put u64 le ts 8 ((ms % 1000) * 1000000)
+        px wait answer ins outs set n (sys call (nr ppoll) set (n + m) ts 0 8 0)
+
+fn :: px wait sized [Int] [Int] Int Int Int => WaitMany
+      px wait sized ins   outs  ms  n   m   =  px wait run ins outs ms n m (Tensor[U8 * ((8 * (n + m)) + 8)]) (Tensor[U8 * 16])
+
+fn :: px wait limit Int => Int
+      px wait limit ms  =
+        | ms < 0    = 0
+        | otherwise = ms
+
+-- Waits until at least one descriptor of `ins` can be read or one of `outs` can be written, or until `ms`
+-- milliseconds have passed, and says which ones are ready and which ones failed. It reads and writes nothing.
+-- With both lists empty it only waits. A limit of 0 (or under 0) answers at once. A descriptor may be in both
+-- lists. If a signal ends the wait early the answer is empty, as when the time ends: the caller waits again.
+-- If the kernel refuses the whole set (more entries than the process may have descriptors), every descriptor
+-- is answered as failed.
+-- @implements FR-POSIX-005
+-- @implements API-POSIX-001
+fn :: posix wait many [Int] [Int] Int => WaitMany
+      posix wait many ins   outs  ms  =  px wait sized ins outs (px wait limit ms) (px list count ins 0) (px list count outs 0)
+
 -- @implements FR-POSIX-001
 -- @implements API-POSIX-001
 fn :: posix open String Int   Int  => Int

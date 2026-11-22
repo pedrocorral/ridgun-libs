@@ -52,8 +52,8 @@ Jarraian duzu `src/main/ridgun/lib/pool.ridgun` fitxategian definitutako mota al
 
 ```ridgun
 type PoolMsg S J R = PoolMsg (S J => (S, R)) Int Int J
-type PoolSlot S J R = ps_agent: (Agent (PoolMsg S J R) R), ps_busy: Bool, ps_index: Int, ps_tag: String, ps_s: [S], ps_j: [J], ps_r: [R]
-type WorkerPool S J R = wp_fn: (S J => (S, R)), wp_slots: [(PoolSlot S J R)], wp_done_r: Int, wp_done_w: Int, wp_refused: Int, wp_open: Bool, wp_s: [S], wp_j: [J], wp_r: [R]
+type PoolSlot S J R = ps_agent: (Agent (PoolMsg S J R) R), ps_busy: Bool, ps_index: Int, ps_tag: String
+type WorkerPool S J R = wp_fn: (S J => (S, R)), wp_slots: [(PoolSlot S J R)], wp_done_r: Int, wp_done_w: Int, wp_refused: Int, wp_open: Bool
 type PoolDone R = PoolDone Int String R
 type AgentPool = Pool Int [Agent]
 ```
@@ -353,13 +353,10 @@ module :: pool
 type PoolMsg S J R = PoolMsg (S J => (S, R)) Int Int J
 
 -- One worker: its agent, whether it runs a job, its number and the tag of that job.
--- ps_s, ps_j, ps_r are always empty: ridgunc 1.0.51 only counts a type parameter that is the type of a field
--- or of a list field, and here S, J and R appear only inside the agent's type.
-type PoolSlot S J R = ps_agent: (Agent (PoolMsg S J R) R), ps_busy: Bool, ps_index: Int, ps_tag: String, ps_s: [S], ps_j: [J], ps_r: [R]
+type PoolSlot S J R = ps_agent: (Agent (PoolMsg S J R) R), ps_busy: Bool, ps_index: Int, ps_tag: String
 
 -- wp_done_r / wp_done_w: the pipe the workers report on. wp_open: False once the pool is drained.
--- wp_s, wp_j, wp_r are always empty, for the same reason as in PoolSlot.
-type WorkerPool S J R = wp_fn: (S J => (S, R)), wp_slots: [(PoolSlot S J R)], wp_done_r: Int, wp_done_w: Int, wp_refused: Int, wp_open: Bool, wp_s: [S], wp_j: [J], wp_r: [R]
+type WorkerPool S J R = wp_fn: (S J => (S, R)), wp_slots: [(PoolSlot S J R)], wp_done_r: Int, wp_done_w: Int, wp_refused: Int, wp_open: Bool
 
 -- A job that ended: the worker that ran it, its tag and its result.
 type PoolDone R = PoolDone Int String R
@@ -375,7 +372,7 @@ fn :: pool run S (PoolMsg S J R) => S R
 fn :: pool new slots S Int Int => [PoolSlot S J R]
       pool new slots s0 i n =
         | i >= n    = []
-        | otherwise = [PoolSlot (agent (pool run) s0) False i "" [] [] []] :: (pool new slots s0 (i + 1) n)
+        | otherwise = [PoolSlot (agent (pool run) s0) False i ""] :: (pool new slots s0 (i + 1) n)
 
 fn :: pool clamp workers Int => Int
       pool clamp workers n =
@@ -385,8 +382,8 @@ fn :: pool clamp workers Int => Int
 
 fn :: pool started (S J => (S, R)) S Int (Int Int Int) => WorkerPool S J R
       pool started f s0 n (rc, r, w) =
-        | rc != 0   = WorkerPool f [] (0 - 1) (0 - 1) 0 False [] [] []
-        | otherwise = WorkerPool f (pool new slots s0 0 n) r w 0 True [] [] []
+        | rc != 0   = WorkerPool f [] (0 - 1) (0 - 1) 0 False
+        | otherwise = WorkerPool f (pool new slots s0 0 n) r w 0 True
 
 -- A pool of `n` workers (1 to 64) that run `f`, each starting from the state `s0`.
 fn :: pool start Int (S J => (S, R)) S => WorkerPool S J R

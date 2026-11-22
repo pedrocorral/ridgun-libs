@@ -2,12 +2,12 @@
 id: FR-POSIX-005
 title: Wait until one of many descriptors is ready
 type: functional
-status: approved
+status: implemented
 priority: must
 domain: POSIX
 depends_on: [FR-POSIX-001]
 related: [API-POSIX-001, FR-NETAGENT-001, FR-POOL-001, VUL-INFRA-002]
-tests: []
+tests: [TS-POSIX-005]
 ---
 # FR-POSIX-005 — Wait until one of many descriptors is ready
 
