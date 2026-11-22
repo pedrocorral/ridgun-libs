@@ -813,6 +813,303 @@ fn :: test md5 rfc1321 vectors => ()
         md5 hex "12345678901234567890123456789012345678901234567890123456789012345678901234567890" -> assert str eq "57edf4a22be3c955ac49da2e2107b67a" "MD5 80 digits"
         bytes to hex str (md5 bytes "abc") -> assert str eq (md5 hex "abc") "md5 bytes matches md5 hex"
 
+-- ── byte slice, ChaCha20 key stream and AEAD on every length (TS-CRYPTO-003, TS-CRYPTO-004) ──
+-- The expected values of the chains come from Python's `cryptography` (ChaCha20Poly1305 and ChaCha20):
+--   msg(n)    = bytes(((i * 131) + 7) % 256 for i in range(n))            -- `sha msg n` here
+--   key       = sha256(b"aead test key").digest()
+--   nonce(n)  = sha256(("aead nonce " + str(n)).encode()).digest()[:12]
+--   box(n)    = ChaCha20Poly1305(key).encrypt(nonce(n), msg(n), msg(n % 64))
+--   stream(n) = ChaCha20 with counter n % 5 and nonce(n) over n zero bytes
+--   a chain   = acc = sha256(acc.encode() + item(n)).hexdigest() for each n, from acc = ""
+-- `stable test` runs all of it twice: on the instructions of the processor and on the portable definitions.
+
+fn :: ref key Int => String
+      ref key _   =  sha256 bytes "aead test key"
+
+fn :: ref nonce Int => String
+      ref nonce n   =  str slice (sha256 bytes ("aead nonce " + (int to str n))) 0 12
+
+fn :: ref box Int => String
+      ref box n   =  aead seal (ref key 0) (ref nonce n) (sha msg (n % 64)) (sha msg n)
+
+fn :: ref stream Int Int => String
+      ref stream n   ctr =  tensor to str (chacha20 key stream (tensor from str (ref key 0)) (tensor from str (ref nonce n)) ctr n)
+
+fn :: box chain Int Int String => String
+      box chain n to acc
+        | n > to    = acc
+        | otherwise = box chain (n + 1) to (sha256 hex (acc + (ref box n)))
+
+fn :: stream chain Int Int String => String
+      stream chain n to acc
+        | n > to    = acc
+        | otherwise = stream chain (n + 1) to (sha256 hex (acc + (ref stream n (n % 5))))
+
+fn :: bad if Bool  => Int
+      bad if True  =  0
+      bad if False =  1
+
+-- True when the `n` bytes of `got` are the bytes of `src` from `at` on. Read one by one: no slicing function is used.
+fn :: bytes are Tensor[U8] Tensor[U8] Int Int Int => Bool
+      bytes are src got at i n =
+        | i >= n                  = True
+        | got_(i) != src_(at + i) = False
+        | otherwise               = bytes are src got at (i + 1) n
+
+fn :: same bytes String String => Bool
+      same bytes a b =
+        | (str len a) != (str len b) = False
+        | otherwise                  = bytes are (tensor from str a) (tensor from str b) 0 0 (str len a)
+
+-- Every byte value twice: 0..255 and then 255..0.
+fn :: every byte fill Tensor[U8] Int => Tensor[U8]
+      every byte fill t i =
+        | i >= 512  = t
+        | i < 256   =
+          t_(i) = i
+          every byte fill t (i + 1)
+        | otherwise =
+          t_(i) = 511 - i
+          every byte fill t (i + 1)
+
+fn :: clamp to Int Int Int => Int
+      clamp to v lo hi =
+        | v < lo    = lo
+        | v > hi    = hi
+        | otherwise = v
+
+-- 0 when `byte slice s st en` is exactly the bytes that the limits name, after bringing them inside the text.
+fn :: cut is wrong Tensor[U8] String Int Int => Int
+      cut is wrong src s st en =
+        got = byte slice s st en
+        a   = clamp to st 0 512
+        b   = clamp to en a 512
+        bad if (((str len got) == (b - a)) and (bytes are src (tensor from str got) a 0 (str len got)))
+
+fn :: wrong cut ends Tensor[U8] String Int Int Int => Int
+      wrong cut ends src s st en bad =
+        | en > 515  = bad
+        | otherwise = wrong cut ends src s st (en + 1) (bad + (cut is wrong src s st en))
+
+fn :: wrong cut starts Tensor[U8] String Int Int => Int
+      wrong cut starts src s st bad =
+        | st > 515  = bad
+        | otherwise = wrong cut starts src s (st + 1) (wrong cut ends src s st (0 - 3) bad)
+
+-- @tests TS-CRYPTO-003
+fn :: test byte slice on every cut => ()
+      test byte slice on every cut =
+        src = every byte fill (Tensor[U8 * 512]) 0
+        s   = tensor to str src
+        str len s -> assert int equals 512 "the text has every byte value twice"
+        -- the checker itself: it must see a cut that is one byte off
+        bad if (bytes are src (tensor from str (byte slice s 1 5)) 2 0 4) -> assert int equals 1 "the checker sees a cut that starts one byte late"
+        bad if (bytes are src (tensor from str (byte slice s 1 5)) 1 0 4) -> assert int equals 0 "and accepts the right one"
+        -- 519 starts by 519 ends, from 3 before the text to 3 after it: 269 361 cuts
+        wrong cut starts src s (0 - 3) 0 -> assert int equals 0 "byte slice gives the right bytes for every start and end, inside and outside a text with all 256 byte values"
+        same bytes s (tensor to str src) -> assert true "the text is unchanged after 269 361 cuts"
+        byte slice s 0 512 -> assert str eq s "the whole text"
+        str len (byte slice s 200 200) -> assert int equals 0 "an empty cut"
+        str len (byte slice s 300 200) -> assert int equals 0 "an end before the start gives nothing"
+        str len (byte slice "" 0 10) -> assert int equals 0 "a cut of nothing"
+        str len (byte slice s (0 - 1000000) 1000000) -> assert int equals 512 "limits far outside give the whole text"
+        -- a megabyte
+        big = sha msg 1048576
+        sha256 hex (byte slice big 1 1048575) -> assert str eq "5ded825b53673a662c9d6a33abfcdcadcf9517e54f285a93890435290edd6c53" "a megabyte without its first and last byte is Python's"
+        sha256 hex big -> assert str eq "b7f7ba5ce5463b3c84a283f779d7a652cbf99122de5923ba51627607ff1497d5" "and the megabyte is unchanged"
+
+-- The 64-byte blocks `ctr` to `ctr + left - 1`, one after another, each from its own call.
+fn :: stream blocks Tensor[U8] Tensor[U8] Int Int String => String
+      stream blocks kb nb ctr left acc =
+        | left <= 0 = acc
+        | otherwise = stream blocks kb nb (ctr + 1) (left - 1) (acc + (tensor to str (chacha20 block kb nb ctr)))
+
+-- How many lengths from `n` to `to` give a key stream that is not the start of its blocks made one by one.
+fn :: stream not blocks Tensor[U8] Tensor[U8] Int Int Int => Int
+      stream not blocks kb nb n to bad =
+        | n > to    = bad
+        | otherwise = stream not blocks kb nb (n + 1) to (bad + (stream differs kb nb n (chacha20 key stream kb nb 9 n)))
+
+fn :: stream differs Tensor[U8] Tensor[U8] Int Tensor[U8] => Int
+      stream differs kb nb n got =
+        bad if (((c u8 len got) == n) and (bytes are (tensor from str (stream blocks kb nb 9 ((n + 63) / 64) "")) got 0 0 n))
+
+-- @tests TS-CRYPTO-004
+fn :: test chacha20 key stream on every length => ()
+      test chacha20 key stream on every length =
+        stream chain 0 700 "" -> assert str eq "7acc6b7c127e3c1b39f46ce23c7fbb5de7f4200eb3d1fb37eb72b352599e9926" "the key streams of every length from 0 to 700 bytes are Python's"
+        sha256 hex (ref stream 4064 3) -> assert str eq "a23e4420b114cbf21c0af7898f2d6ef468206ee61f5575edb47c3367543a2f06" "and of 4 064 bytes (a page of Vonkeep)"
+        sha256 hex (ref stream 4096 3) -> assert str eq "e45b52ecdedb9b7b0646443ef6fa46ce81be1f79c90f9e431fb8ce92041fe0f1" "of 4 096 bytes"
+        sha256 hex (ref stream 65535 3) -> assert str eq "4332bd4c450c060bbc41785c0584f1ce3eeefb9b5db1e8f01630e26240445540" "of 65 535 bytes"
+        sha256 hex (ref stream 1048576 3) -> assert str eq "2babef817df174d198ddfdc8ef32466b75de91913a275fdde6e000acc3ef1f56" "of one megabyte"
+        sha256 hex (ref stream 1048577 3) -> assert str eq "4973cc6cb05df6c1ee964282e689a7c05cc735a0a15505f7c00e4aa4a4fab29b" "of one megabyte and a byte"
+        sha256 hex (ref stream 1048640 3) -> assert str eq "a662f94eeaee62b68355ecbf16ad6d96b3f57af486b70e5b5496b55a81a836fd" "of one megabyte and a block"
+        sha256 hex (ref stream 2100000 3) -> assert str eq "da0e816b761891e673e120cb442c5a6ddbb41ba38ae131714db884c9a3e086da" "of 2 100 000 bytes"
+        kb = tensor from str (ref key 0)
+        nb = tensor from str (ref nonce 1)
+        stream not blocks kb nb 0 400 0 -> assert int equals 0 "every length from 0 to 400 is the start of the same blocks made one by one"
+        stream differs kb nb 100 (chacha20 key stream kb nb 10 100) -> assert int equals 1 "the checker sees a key stream of another counter"
+        c u8 len (chacha20 key stream kb nb 0 0) -> assert int equals 0 "no bytes asked, none given"
+        c u8 len (chacha20 block kb nb 7) -> assert int equals 64 "a block is 64 bytes"
+
+-- 0 when the length `n` seals to what its parts give, opens to the message, and leaves the message as it was.
+fn :: len is wrong Int => Int
+      len is wrong n   =
+        k    = ref key 0
+        nc   = ref nonce n
+        aad  = sha msg (n % 64)
+        m    = sha msg n
+        box  = aead seal k nc aad m
+        kb   = tensor from str k
+        nb   = tensor from str nc
+        ct   = chacha20 bitxor kb nb 1 (tensor from str m)
+        tag  = poly1305 aead mac (chacha20 block kb nb 0) (tensor from str aad) ct
+        back = aead open k nc aad box
+        (bad if ((str len box) == (n + 16))) + (bad if (same bytes box ((tensor to str ct) + (tensor to str tag)))) + (bad if ((aead rc back) == 0)) + (bad if (same bytes (aead pt back) m)) + (bad if (same bytes m (sha msg n)))
+
+fn :: wrong lens Int Int Int => Int
+      wrong lens n to bad =
+        | n > to    = bad
+        | otherwise = wrong lens (n + 1) to (bad + (len is wrong n))
+
+fn :: ref box of Int Int => String
+      ref box of n   alen =  aead seal (ref key 0) (ref nonce alen) (sha msg alen) (sha msg n)
+
+-- @tests TS-CRYPTO-004
+fn :: test aead on every length => ()
+      test aead on every length =
+        box chain 0 1100 "" -> assert str eq "1b3fc4c9a9a8b1e3ab1082134de8b6b7c37535854b743775a372f83db414adb7" "the sealed messages of every length from 0 to 1100 bytes are Python's"
+        box chain 2030 2070 "" -> assert str eq "e31bca9e28f42c079aa7828d6e8bf779c192411bba8c680d11a8f2beccd87be8" "and of every length from 2030 to 2070"
+        box chain 4000 4130 "" -> assert str eq "e30c3e03ce5113f7c3d5cb73fb7e52c393a384fe9b30ae5e3834b5b13a5c1e95" "and of every length from 4000 to 4130 (around a page)"
+        sha256 hex (ref box 4064) -> assert str eq "e3c4ab69608b4296dbaac45bef4249e21f14df04ccef21d102d38078008ac2f5" "a page of 4 064 bytes"
+        sha256 hex (ref box 4096) -> assert str eq "87dcc4cde8236e096cc05b14b3db2a7a34d74da7f8d03d9d8d91b60f79c4d89c" "4 096 bytes"
+        sha256 hex (ref box 65535) -> assert str eq "e30023c91ee992e82e0f7cf554ad8a7c839f4ec72cb530d9340c50b25c377184" "65 535 bytes"
+        sha256 hex (ref box 65536) -> assert str eq "b7e0495a42f9991e371b8534e7b5283c55889507f913ac4f793854c59d52edf2" "65 536 bytes"
+        sha256 hex (ref box 1048576) -> assert str eq "9ede2ea55843576090d4b486b2331611dc8207f936c0904080a64e2576afef53" "one megabyte"
+        sha256 hex (ref box 1048577) -> assert str eq "1245362301646b9cc5ae58f0da378213eaf3aedf90cc1b823940360492d95c37" "one megabyte and a byte"
+        sha256 hex (ref box 1048640) -> assert str eq "9fb06aa64881d1dd1f55ed4d7a94cd5dfe5008ed507ba07696568f9cd215954b" "one megabyte and a block"
+        sha256 hex (ref box 2100000) -> assert str eq "40521393912c43ccc01127ac63d6865ff4bac02745c3779643271231651c4cc8" "2 100 000 bytes"
+        -- long additional data: it goes through Poly1305 block by block
+        sha256 hex (ref box of 300 1000) -> assert str eq "a8339b426d1969b2fd9443ba98bf74ecdb9967c012fe9ca0e0aa382f6bcff608" "300 bytes with 1 000 bytes of additional data"
+        sha256 hex (ref box of 300 5000) -> assert str eq "0a07a5038a32535b77551deb3e4ba453f6280db873d75131d840511e85e2ceb1" "300 bytes with 5 000 bytes of additional data"
+        sha256 hex (aead seal (ref key 0) (ref nonce 7) (sha msg 700) "") -> assert str eq "35b22f239271d84deaa19ee6e6e64d42f4fefc92f4903b37a76886c7722ccc18" "no message and 700 bytes of additional data"
+        -- every length: the box is cipher + tag made from the public parts, it opens to the message, the message is untouched
+        wrong lens 0 1100 0 -> assert int equals 0 "every length from 0 to 1100 seals to its parts and opens to the message"
+        wrong lens 4060 4100 0 -> assert int equals 0 "and from 4060 to 4100"
+        len is wrong 65535 -> assert int equals 0 "and 65 535"
+        len is wrong 1048577 -> assert int equals 0 "and one megabyte and a byte"
+        same bytes (ref box 777) (ref box 777) -> assert true "sealing twice gives the same box"
+        same bytes (ref box 777) (ref box 778) -> assert false "another length and nonce gives another box"
+
+fn :: flip bit String Int Int => String
+      flip bit s      p   b   =
+        t = tensor from str s
+        t_(p) = t_(p) xor (1 shl b)
+        tensor to str t
+
+-- 1 when an open that had to be refused as a forgery was not: anything but -12 and no text.
+fn :: accepted (Int String) => Int
+      accepted (rc, pt)     =
+        | (rc == (0 - 12)) and ((str len pt) == 0) = 0
+        | otherwise                                = 1
+
+-- How many of the changes of one bit of the box are still accepted.
+fn :: accepted box flips String String String String Int Int Int => Int
+      accepted box flips k nc aad box p b acc =
+        | p >= (str len box) = acc
+        | b >= 8             = accepted box flips k nc aad box (p + 1) 0 acc
+        | otherwise          = accepted box flips k nc aad box p (b + 1) (acc + (accepted (aead open k nc aad (flip bit box p b))))
+
+fn :: open with flip Int String String String String Int Int => Int String
+      open with flip 0 k nc aad box p b =  aead open (flip bit k p b) nc aad box
+      open with flip 1 k nc aad box p b =  aead open k (flip bit nc p b) aad box
+      open with flip _ k nc aad box p b =  aead open k nc (flip bit aad p b) box
+
+-- How many changes of one bit of the key (which = 0), the nonce (1) or the additional data (2) are still accepted.
+fn :: accepted part flips Int String String String String Int Int Int Int => Int
+      accepted part flips which k nc aad box p b top acc =
+        | p >= top  = acc
+        | b >= 8    = accepted part flips which k nc aad box (p + 1) 0 top acc
+        | otherwise = accepted part flips which k nc aad box p (b + 1) top (acc + (accepted (open with flip which k nc aad box p b)))
+
+-- The flips of every bit of the box of a message of `n` bytes, plus those of its key, nonce and additional data.
+fn :: accepted changes Int => Int
+      accepted changes n   =
+        k   = ref key 0
+        nc  = ref nonce n
+        aad = sha msg 20
+        box = aead seal k nc aad (sha msg n)
+        (accepted box flips k nc aad box 0 0 0) + (accepted part flips 0 k nc aad box 0 0 32 0) + (accepted part flips 1 k nc aad box 0 0 12 0) + (accepted part flips 2 k nc aad box 0 0 20 0)
+
+fn :: cut is accepted (Int String) Int => Int
+      cut is accepted (rc, pt)     n   =
+        | (n < 16) and (rc == (0 - 7)) and ((str len pt) == 0)   = 0
+        | (n >= 16) and (rc == (0 - 12)) and ((str len pt) == 0) = 0
+        | otherwise                                             = 1
+
+-- How many of the boxes cut to their first 0, 1, 2 ... bytes are not refused as they must.
+fn :: accepted cuts String String String String Int Int => Int
+      accepted cuts k nc aad box n acc =
+        | n >= (str len box) = acc
+        | otherwise          = accepted cuts k nc aad box (n + 1) (acc + (cut is accepted (aead open k nc aad (str slice box 0 n)) n))
+
+-- How many keys of a wrong size (0 to 40 bytes, not 32) seal something or open with anything but -7.
+fn :: accepted key sizes String String Int Int => Int
+      accepted key sizes nc box n acc =
+        | n > 40    = acc
+        | n == 32   = accepted key sizes nc box (n + 1) acc
+        | otherwise = accepted key sizes nc box (n + 1) (acc + (bad if ((str len (aead seal (sha msg n) nc "" "m")) == 0)) + (bad if ((aead rc (aead open (sha msg n) nc "" box)) == (0 - 7))) + (bad if ((str len (aead pt (aead open (sha msg n) nc "" box))) == 0)))
+
+-- The same for nonces of 0 to 24 bytes, not 12.
+fn :: accepted nonce sizes String String Int Int => Int
+      accepted nonce sizes k box n acc =
+        | n > 24    = acc
+        | n == 12   = accepted nonce sizes k box (n + 1) acc
+        | otherwise = accepted nonce sizes k box (n + 1) (acc + (bad if ((str len (aead seal k (sha msg n) "" "m")) == 0)) + (bad if ((aead rc (aead open k (sha msg n) "" box)) == (0 - 7))) + (bad if ((str len (aead pt (aead open k (sha msg n) "" box))) == 0)))
+
+-- @tests TS-CRYPTO-004
+fn :: test aead refuses every change => ()
+      test aead refuses every change =
+        k   = ref key 0
+        nc  = ref nonce 100
+        aad = sha msg 20
+        m   = sha msg 100
+        box = aead seal k nc aad m
+        -- the checker itself: the untouched box is accepted, so `accepted` can see an accepted one
+        accepted (aead open k nc aad box) -> assert int equals 1 "the checker sees an accepted box"
+        same bytes (aead pt (aead open k nc aad box)) m -> assert true "and the untouched box opens to the message"
+        -- one bit changed anywhere: box, key, nonce or additional data. Sizes around a block of Poly1305 (16),
+        -- of ChaCha20 (64) and with the lanes of Poly1305 (600 bytes and more)
+        accepted changes 0 -> assert int equals 0 "no change of one bit is accepted for an empty message (128 + 256 + 96 + 160 changes)"
+        accepted changes 1 -> assert int equals 0 "for 1 byte"
+        accepted changes 15 -> assert int equals 0 "for 15 bytes"
+        accepted changes 16 -> assert int equals 0 "for 16 bytes"
+        accepted changes 17 -> assert int equals 0 "for 17 bytes"
+        accepted changes 63 -> assert int equals 0 "for 63 bytes"
+        accepted changes 64 -> assert int equals 0 "for 64 bytes"
+        accepted changes 65 -> assert int equals 0 "for 65 bytes"
+        accepted changes 200 -> assert int equals 0 "for 200 bytes"
+        accepted changes 600 -> assert int equals 0 "for 600 bytes (4 928 changes of the box alone)"
+        accepted changes 1111 -> assert int equals 0 "for 1 111 bytes"
+        -- cut short, made longer
+        accepted cuts k nc aad box 0 0 -> assert int equals 0 "a box cut to any of its first 0 to 115 bytes is refused: -7 under 16 bytes, -12 from there on"
+        accepted (aead open k nc aad (box + "x")) -> assert int equals 0 "a box with one more byte is refused"
+        accepted (aead open k nc aad ("x" + box)) -> assert int equals 0 "and with one byte before it"
+        accepted (aead open k nc (aad + "x") box) -> assert int equals 0 "additional data one byte longer"
+        accepted (aead open k nc (str slice aad 0 19) box) -> assert int equals 0 "and one byte shorter"
+        accepted (aead open k nc "" box) -> assert int equals 0 "and none at all"
+        accepted (aead open k (ref nonce 101) aad box) -> assert int equals 0 "another nonce"
+        accepted (aead open (sha256 bytes "another key") nc aad box) -> assert int equals 0 "another key"
+        accepted (aead open k nc aad (ref box 100)) -> assert int equals 0 "the box of the same message sealed with other additional data"
+        -- sizes that are not a key or a nonce
+        accepted key sizes nc box 0 0 -> assert int equals 0 "a key of 0 to 40 bytes that is not 32 seals nothing and opens with -7"
+        accepted nonce sizes k box 0 0 -> assert int equals 0 "a nonce of 0 to 24 bytes that is not 12 seals nothing and opens with -7"
+        aead rc (aead open k nc aad "123456789012345") -> assert int equals (0 - 7) "15 bytes are not a box"
+        -- nothing was changed in place
+        same bytes box (aead seal k nc aad m) -> assert true "the box is the same after 20 000 opens"
+        same bytes m (sha msg 100) -> assert true "and so is the message"
+        same bytes k (sha256 bytes "aead test key") -> assert true "and the key"
+
 fn :: main => ()
       main =
         test rgf019 bytes and bitops -> ()
@@ -823,6 +1120,10 @@ fn :: main => ()
         test md5 rfc1321 vectors -> ()
         test argon2id five arg and perf -> ()
         test rfc8439 chacha20 poly1305 aead -> ()
+        test byte slice on every cut -> ()
+        test chacha20 key stream on every length -> ()
+        test aead on every length -> ()
+        test aead refuses every change -> ()
         test sha512 fips vectors -> ()
         test ed25519 rfc8032 vectors and negatives -> ()
         test minisign roundtrip and tamper -> ()

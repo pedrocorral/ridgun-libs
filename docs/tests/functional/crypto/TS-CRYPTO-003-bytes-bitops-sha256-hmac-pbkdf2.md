@@ -16,6 +16,7 @@ automated_in: [src/test/ridgun/test crypto.ridgun]
 2. Test `sha256_bytes "abc"` (`ba7816bf...`, 32 raw bytes), `sha256_hex "abc"`, `hmac_sha256 "Jefe" "what do ya want for nothing?"` (RFC 4231 vector `5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843`), and `ct_equal` on equal, same-length differing, and different-length strings.
 3. Test `sha1 hex` and `sha1 bytes` against FIPS 180-4 (`""`, `"abc"`, 448-bit, 896-bit, one million `a`) and hashlib values for 55, 56 and 64 bytes, bytes `0..255` and the quick-brown-fox sentence.
 4. Test `pbkdf2_hmac_sha256 "password" "salt" 1 32` (`120fb6cf...`) and `pbkdf2_hmac_sha256 "password" "salt" 4096 32` (`c5e478d5...`) against RFC 6070 vectors.
+5. `test byte slice on every cut`: over a text of 512 bytes that holds every byte value twice, `byte slice` with every start and every end from 3 before the text to 3 after it (269 361 cuts). Each result is compared byte by byte with the source, read without any slicing function. Then the limits far outside, the empty cuts, and one megabyte without its first and last byte against Python's digest. The checker is checked first: it must refuse a cut that starts one byte late.
 
 ## Expected results (map to acceptance criteria)
 - AC1 → All 256 byte values have length `1` and round-trip cleanly (including `[0, 7, 128, 200, 255, 192, 245]`); out-of-range values wrap modulo 256; all `RGF-019` 32-bit bitwise identities match.
@@ -23,6 +24,7 @@ automated_in: [src/test/ridgun/test crypto.ridgun]
 - AC3 → `pbkdf2_hmac_sha256` matches RFC 6070 test vectors for `c=1` and `c=4096`.
 - AC4 → `sha1 hex` and `sha1 bytes` match every vector; `sha1 bytes` is 20 bytes.
 - AC5 → `md5 hex` matches the seven vectors of RFC 1321 A.5; `md5 bytes` agrees with it.
+- AC1 → `byte slice` gives exactly the bytes its limits name for every start and end, and leaves the text as it was (step 5).
 
 ## Not covered here (to avoid duplication)
 - see `TS-CRYPTO-004` for 5-arg `argon2id_hash`/`argon2id_verify` and RFC 8439 ChaCha20-Poly1305 `aead_seal`/`aead_open`.
