@@ -1,7 +1,7 @@
 ---
 id: API-NETAGENT-001
 title: Public lib contract for net_agent (net_agent.ridgunlib)
-status: draft
+status: approved
 implements: [FR-NETAGENT-001]
 auth: none
 ---

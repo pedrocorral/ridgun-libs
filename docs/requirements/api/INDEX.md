@@ -38,4 +38,4 @@ Read this when: implementing or consuming a lib's public interface. Skip when: i
 | `tls/` | Public API contract for `tls.ridgun` (`API-TLS-001`) | Consuming or editing `tls` |
 | `mail/` | Public API contract for `mail.ridgun` (`API-MAIL-001`) | Consuming or editing `mail` |
 | `pool/` | Public API contract for `pool.ridgun` (`API-POOL-001`, draft) | Consuming or editing `pool` |
-| `netagent/` | Public API contract for `net_agent.ridgun` (`API-NETAGENT-001`, draft) | Consuming or editing `net_agent` |
+| `netagent/` | Public API contract for `net_agent.ridgun` (`API-NETAGENT-001`, approved) | Consuming or editing `net_agent` |

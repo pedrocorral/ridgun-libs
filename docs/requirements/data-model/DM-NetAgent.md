@@ -1,7 +1,7 @@
 ---
 id: DM-NetAgent
 title: Reactor, its configuration and its table of connections
-status: draft
+status: approved
 related: [FR-NETAGENT-001, API-NETAGENT-001, ADR-0015]
 ---
 # DM-NetAgent — Reactor, its configuration and its table of connections
