@@ -26,6 +26,7 @@ This is the pool Solstice wrote by hand in its HTTP server (Solstice ADR-0014): 
 - AC6: Given several jobs in flight, when they end in any order, then every result is returned exactly once and with its own job: a result never reaches another job.
 - AC7: Given jobs in flight, when the pool is drained with a time limit, then it accepts no more jobs, waits for those in flight for at most that time, returns their results, stops every worker and closes its descriptors.
 - AC8: Given a list of agents and a key, when a message is routed by key (`pool ask shard`), then it reaches agent `abs(key) % n`, the same key always reaches the same agent, a negative key is valid, `pool broadcast` reaches every agent, `pool drain all` returns the replies that are ready without blocking, and `pool shutdown` stops every agent. (Moved from `FR-AGENT-001` AC4; no program uses it today.)
+- AC9: Given a pool with room for a set number of jobs to wait, when a job arrives and every worker is busy, then the job waits instead of being refused, the call still returns at once, and the job goes to the first worker that ends, in the order the jobs came. When that room is full the job is refused. A pool has no such room unless the caller asks for it, and a drain also runs the jobs that wait, until its time ends.
 
 ## Actors & permissions
 - Any Ridgun program or lib importing `pool`.

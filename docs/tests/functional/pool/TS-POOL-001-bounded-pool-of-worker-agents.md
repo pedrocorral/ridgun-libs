@@ -23,10 +23,12 @@ automated_in: [src/test/ridgun/test pool.ridgun]
 7. Submit two jobs and drain with 2 000 ms: both results come back, `pool busy` is 0, and a job submitted afterwards is refused.
 8. `pool start 0` gives a pool of 1 worker and `pool start 100` one of 64.
 9. Routing by key over a list of agents: keys 0, 1, 2, 3, 7 (twice) and -2 on three counter agents; `pool drain all` with nothing ready; `pool broadcast`; a list of one agent; `pool shutdown`; `pool ask shard or` on an empty list gives its default; `pool size` of `Pool 5 [a, b]` is 2.
+10. `test pool jobs that wait for a worker`: a pool as it starts refuses the job that finds every worker busy. With room for 2 and 2 workers, five jobs: two run, two wait (answer `-2`), the fifth is refused, the calls take no time, a job that waits holds no worker, and `pool submit` still refuses. The four end, each once, with their tags. With one worker and room for 3, four jobs run in the order they came and a drain waits for them. A drain of 100 ms with jobs of 300 ms ends on time and does not run those that still wait.
 
 ## Expected results (map to acceptance criteria)
 - AC1 → steps 1 and 5. AC2 → step 1. AC3 → step 3. AC4 → step 2. AC5 → step 6. AC6 → steps 3 and 4. AC7 → step 7. AC8 → step 9.
 - Constraints (1 to 64 workers) → step 8.
+- AC9 → step 10.
 
 ## Not covered here (to avoid duplication)
 - The agents themselves (`TS-AGENT-001`).

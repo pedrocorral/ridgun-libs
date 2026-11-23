@@ -149,6 +149,8 @@ Conventions: `snake_case`; ids end in `_id`; timestamps end in `_at` (UTC ISO-86
 | job_tag | String | Label the caller gives a job (for example a client address); `""` for none | POOL | `pool.ridgun` |
 | done_fd | Int | Descriptor of a pool that is readable when a job has ended | POOL | `pool.ridgun`, `net_agent.ridgun` |
 | refused_count | Int | Jobs or connections refused because the limit was reached | POOL | `pool.ridgun`, `net_agent.ridgun` |
+| wait_max | Int | How many jobs may wait for a worker of a pool when all are busy (`0`: none) | POOL | `pool.ridgun` |
+| waiting_count | Int | Jobs that wait for a worker of a pool | POOL | `pool.ridgun` |
 | conn_id | Int | Identifier of a connection in a reactor (from `1`, never reused) | NETAGENT | `net_agent.ridgun` |
 | peer_ip | String | Address of the peer of a connection | NETAGENT | `net_agent.ridgun` |
 | input_buf | String | Bytes read from a connection that the application has not taken yet | NETAGENT | `net_agent.ridgun` |

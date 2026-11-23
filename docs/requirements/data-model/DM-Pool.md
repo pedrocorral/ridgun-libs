@@ -15,6 +15,8 @@ related: [FR-POOL-001, API-POOL-001, ADR-0015, DM-Agent]
 | busy_count | Int | `0 .. worker_count` | Workers running a job |
 | done_fd | Int | `>= 0` while the pool runs | Read end of the pipe a worker writes its `slot_index` to when its job ends |
 | refused_count | Int | `>= 0` | Jobs refused since the start |
+| wait_max | Int | `>= 0` | How many jobs may wait for a worker; `0` by default |
+| waiting_count | Int | `0 .. wait_max` | Jobs that wait for a worker, in the order they came |
 
 ## Relations
 - Each worker is a stateful agent of `DM-Agent`. Its state has the type the caller chose and the pool never reads it.

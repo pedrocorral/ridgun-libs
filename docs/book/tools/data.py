@@ -37,7 +37,7 @@ NEW_EXAMPLES={
  'linalg':[('sqrt','fn :: test sqrt and exp ')],
  'jwt':[('bytes','fn :: test jwt bytes and utf8 round trip '),('vectors','fn :: test jwt standard vectors ')],
  'ws':[('large','fn :: test ws large frame round trip ')],
- 'pool':[('routing','fn :: test pool routing by key '),('jobs','fn :: test pool takes jobs and refuses when full '),('limits','fn :: test pool size limits '),('edges','fn :: test pool routing edge cases ')],
+ 'pool':[('routing','fn :: test pool routing by key '),('jobs','fn :: test pool takes jobs and refuses when full '),('waiting','fn :: test pool jobs that wait for a worker '),('limits','fn :: test pool size limits '),('edges','fn :: test pool routing edge cases ')],
  'net_agent':[('accept','fn :: test reactor accepts and refuses '),('messages','fn :: test reactor input messages and state '),('slow','fn :: test reactor output and the peer that does not read '),('limits','fn :: test reactor time limits '),('wait','fn :: test reactor waits on everything at once '),('stop','fn :: test reactor stop ')],
  'hash':[('vectors','fn :: test siphash13 vectors '),('native','fn :: test native matches reference ')],
  'hashmap':[('basics','fn :: test hashmap basics '),('add','fn :: test hashmap add '),('keys','fn :: test hashmap unusual keys '),('records','fn :: test hashmap record values '),('growth','fn :: test hashmap growth ')],
@@ -169,7 +169,7 @@ FAMILIES_REPLACE={
  'agent':[('ask','`agent ask / agent try ask / ask int / ask str / ask int with timeout / ask str with timeout`'),('batch','`agent send batch / agent map batch / agent receive count / agent drain ready / relay int / relay str`'),
           ('life','`is agent alive / agent status / stop agent / agent stop all`'),('counter','`new counter agent / counter add / counter get / counter reset`'),('log','`new log agent / log append / log read / log clear`'),
           ('kv','`new kv agent / agent kv put / agent kv get / agent kv delete / agent kv has / agent kv count / agent kv keys / agent kv clear`')],
- 'pool':[('start','`pool start / pool capacity / pool busy / pool idle`'),('submit','`pool submit / pool refused`'),('collect','`pool done fd / pool collect`'),('tagged','`pool tagged`'),('drainw','`pool drain`'),
+ 'pool':[('start','`pool start / pool capacity / pool busy / pool idle`'),('submit','`pool submit / pool refused`'),('wait','`pool with waiting / pool submit or wait / pool waiting`'),('collect','`pool done fd / pool collect`'),('tagged','`pool tagged`'),('drainw','`pool drain`'),
          ('pool','`pool of / pool size / pool is empty / pool agents`'),('shard','`pool ask shard / pool ask shard or`'),('broadcast','`pool broadcast`'),('drain','`pool drain all / pool drain ready`'),('shutdown','`pool shutdown`')],
  'net_agent':[('config','`ReactorConfig / reactor defaults / reactor with ...`'),('loop','`reactor start / reactor turn / reactor stop`'),('turnleft','`reactor arrived / reactor ready / reactor left`'),('conn','`reactor input / reactor take / reactor send / reactor close after send / reactor peer`'),('state','`reactor state / reactor set state`'),('each','`ConnStep / reactor each`'),('stats','`ReactorStats / reactor stats`')],
 }

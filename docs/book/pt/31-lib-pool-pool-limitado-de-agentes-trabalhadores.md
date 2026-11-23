@@ -35,6 +35,7 @@ No `ridgun-libs`, **`pool`** é uma **lib** de primeira classe localizada em `sr
 |---|---|
 | `pool start / pool capacity / pool busy / pool idle` | Inicia um pool de 1 a 64 trabalhadores com uma função trabalhadora e um estado inicial; o seu tamanho e quantos estão ocupados ou livres |
 | `pool submit / pool refused` | Entrega um trabalho a um trabalhador livre, ou devolve `-1` de imediato quando todos estão ocupados; o número de trabalhos recusados |
+| `pool with waiting / pool submit or wait / pool waiting` | Deixa um trabalho à espera quando todos os trabalhadores estão ocupados, até um limite; passa para o primeiro trabalhador que termina |
 | `pool done fd / pool collect` | Um descritor que fica legível quando um trabalho termina, e os resultados dos trabalhos terminados, cada um exatamente uma vez |
 | `pool tagged` | Quantos trabalhadores ocupados retêm uma etiqueta, para que um cliente não os ocupe todos |
 | `pool drain` | Não aceita mais trabalhos, espera pelos que estão em curso e faz parar os trabalhadores |
@@ -46,14 +47,15 @@ No `ridgun-libs`, **`pool`** é uma **lib** de primeira classe localizada em `sr
 
 ### 31.2.2. Catálogo exaustivo de tipos e assinaturas em `src/main/ridgun/lib/pool.ridgun`
 
-Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/pool.ridgun` (`5` tipos, `0` operadores e `52` funções):
+Abaixo encontra-se o inventário completo de tipos algébricos (`type`), operadores (`op ::`) e assinaturas de funções (`fn ::`) definidos em `src/main/ridgun/lib/pool.ridgun` (`6` tipos, `0` operadores e `61` funções):
 
 **Tipos algébricos e registos (`type`) da `pool`:**
 
 ```ridgun
 type PoolMsg S J R = PoolMsg (S J => (S, R)) Int Int J
 type PoolSlot S J R = ps_agent: (Agent (PoolMsg S J R) R), ps_busy: Bool, ps_index: Int, ps_tag: String
-type WorkerPool S J R = wp_fn: (S J => (S, R)), wp_slots: [(PoolSlot S J R)], wp_done_r: Int, wp_done_w: Int, wp_refused: Int, wp_open: Bool
+type PoolWait J = PoolWait J String
+type WorkerPool S J R = wp_fn: (S J => (S, R)), wp_slots: [(PoolSlot S J R)], wp_done_r: Int, wp_done_w: Int, wp_refused: Int, wp_open: Bool, wp_waiting: [(PoolWait J)], wp_wait_max: Int
 type PoolDone R = PoolDone Int String R
 type AgentPool = Pool Int [Agent]
 ```
@@ -79,39 +81,48 @@ type AgentPool = Pool Int [Agent]
 | `17` | `fn :: pool handed (PoolSlot S J R) (PoolMsg S J R) String` | `PoolSlot S J R` |
 | `18` | `fn :: pool submit to (WorkerPool S J R) J String Int` | `Int (WorkerPool S J R)` |
 | `19` | `fn :: pool submit (WorkerPool S J R) J String` | `Int (WorkerPool S J R)` |
-| `20` | `fn :: pool is ready PollStatus` | `Bool` |
-| `21` | `fn :: pool take [(PoolSlot S J R)] Int [(PoolSlot S J R)] [(PoolDone R)]` | `[PoolSlot S J R] [PoolDone R]` |
-| `22` | `fn :: pool take all [(PoolSlot S J R)] String Int [(PoolDone R)]` | `[PoolSlot S J R] [PoolDone R]` |
-| `23` | `fn :: pool take next ([(PoolSlot S J R)] [(PoolDone R)]) String Int` | `[PoolSlot S J R] [PoolDone R]` |
-| `24` | `fn :: pool collected (WorkerPool S J R) ([(PoolSlot S J R)] [(PoolDone R)])` | `[PoolDone R] (WorkerPool S J R)` |
-| `25` | `fn :: pool collect (WorkerPool S J R) Int` | `[PoolDone R] (WorkerPool S J R)` |
-| `26` | `fn :: pool stop slots [(PoolSlot S J R)]` | `()` |
-| `27` | `fn :: pool closed (WorkerPool S J R) [(PoolDone R)]` | `[PoolDone R] (WorkerPool S J R)` |
-| `28` | `fn :: pool drain until (WorkerPool S J R) Int [(PoolDone R)]` | `[PoolDone R] (WorkerPool S J R)` |
-| `29` | `fn :: pool drain more ([(PoolDone R)] (WorkerPool S J R)) Int [(PoolDone R)]` | `[PoolDone R] (WorkerPool S J R)` |
-| `30` | `fn :: pool drain (WorkerPool S J R) Int` | `[PoolDone R] (WorkerPool S J R)` |
-| `31` | `fn :: pool count [Agent] Int` | `Int` |
-| `32` | `fn :: pool of [Agent]` | `AgentPool` |
-| `33` | `fn :: pool size AgentPool` | `Int` |
-| `34` | `fn :: pool is empty AgentPool` | `Bool` |
-| `35` | `fn :: pool agents AgentPool` | `[Agent]` |
-| `36` | `fn :: pool get agent [Agent] Int` | `Agent` |
-| `37` | `fn :: pool abs Int` | `Int` |
-| `38` | `fn :: pool ask shard AgentPool Int A` | `B` |
-| `39` | `fn :: pool ask at [Agent] Int Int A` | `B` |
-| `40` | `fn :: pool stop empty A` | `B` |
-| `41` | `fn :: pool ask shard or AgentPool Int A B` | `B` |
-| `42` | `fn :: pool ask at or [Agent] Int Int A B` | `B` |
-| `43` | `fn :: pool broadcast AgentPool A` | `()` |
-| `44` | `fn :: pool send one Agent A` | `()` |
-| `45` | `fn :: pool broadcast list [Agent] A` | `()` |
-| `46` | `fn :: pool drain ready Agent` | `[B]` |
-| `47` | `fn :: pool drain ready loop Agent [B]` | `[B]` |
-| `48` | `fn :: pool drain step Agent Option [B]` | `[B]` |
-| `49` | `fn :: pool drain all AgentPool` | `[B]` |
-| `50` | `fn :: pool drain list [Agent] [B]` | `[B]` |
-| `51` | `fn :: pool stop list [Agent]` | `()` |
-| `52` | `fn :: pool shutdown AgentPool` | `()` |
+| `20` | `fn :: pool wait count [(PoolWait J)] Int` | `Int` |
+| `21` | `fn :: pool waiting (WorkerPool S J R)` | `Int` |
+| `22` | `fn :: pool with waiting (WorkerPool S J R) Int` | `WorkerPool S J R` |
+| `23` | `fn :: pool wait or refuse (WorkerPool S J R) J String` | `Int (WorkerPool S J R)` |
+| `24` | `fn :: pool submit or wait to (WorkerPool S J R) J String Int` | `Int (WorkerPool S J R)` |
+| `25` | `fn :: pool submit or wait (WorkerPool S J R) J String` | `Int (WorkerPool S J R)` |
+| `26` | `fn :: pool second (Int (WorkerPool S J R))` | `WorkerPool S J R` |
+| `27` | `fn :: pool feed (WorkerPool S J R)` | `WorkerPool S J R` |
+| `28` | `fn :: pool feed from (WorkerPool S J R) [(PoolWait J)] Int` | `WorkerPool S J R` |
+| `29` | `fn :: pool is ready PollStatus` | `Bool` |
+| `30` | `fn :: pool take [(PoolSlot S J R)] Int [(PoolSlot S J R)] [(PoolDone R)]` | `[PoolSlot S J R] [PoolDone R]` |
+| `31` | `fn :: pool take all [(PoolSlot S J R)] String Int [(PoolDone R)]` | `[PoolSlot S J R] [PoolDone R]` |
+| `32` | `fn :: pool take next ([(PoolSlot S J R)] [(PoolDone R)]) String Int` | `[PoolSlot S J R] [PoolDone R]` |
+| `33` | `fn :: pool collected (WorkerPool S J R) ([(PoolSlot S J R)] [(PoolDone R)])` | `[PoolDone R] (WorkerPool S J R)` |
+| `34` | `fn :: pool collect (WorkerPool S J R) Int` | `[PoolDone R] (WorkerPool S J R)` |
+| `35` | `fn :: pool stop slots [(PoolSlot S J R)]` | `()` |
+| `36` | `fn :: pool closed (WorkerPool S J R) [(PoolDone R)]` | `[PoolDone R] (WorkerPool S J R)` |
+| `37` | `fn :: pool drain until (WorkerPool S J R) Int [(PoolDone R)]` | `[PoolDone R] (WorkerPool S J R)` |
+| `38` | `fn :: pool drain more ([(PoolDone R)] (WorkerPool S J R)) Int [(PoolDone R)]` | `[PoolDone R] (WorkerPool S J R)` |
+| `39` | `fn :: pool drain (WorkerPool S J R) Int` | `[PoolDone R] (WorkerPool S J R)` |
+| `40` | `fn :: pool count [Agent] Int` | `Int` |
+| `41` | `fn :: pool of [Agent]` | `AgentPool` |
+| `42` | `fn :: pool size AgentPool` | `Int` |
+| `43` | `fn :: pool is empty AgentPool` | `Bool` |
+| `44` | `fn :: pool agents AgentPool` | `[Agent]` |
+| `45` | `fn :: pool get agent [Agent] Int` | `Agent` |
+| `46` | `fn :: pool abs Int` | `Int` |
+| `47` | `fn :: pool ask shard AgentPool Int A` | `B` |
+| `48` | `fn :: pool ask at [Agent] Int Int A` | `B` |
+| `49` | `fn :: pool stop empty A` | `B` |
+| `50` | `fn :: pool ask shard or AgentPool Int A B` | `B` |
+| `51` | `fn :: pool ask at or [Agent] Int Int A B` | `B` |
+| `52` | `fn :: pool broadcast AgentPool A` | `()` |
+| `53` | `fn :: pool send one Agent A` | `()` |
+| `54` | `fn :: pool broadcast list [Agent] A` | `()` |
+| `55` | `fn :: pool drain ready Agent` | `[B]` |
+| `56` | `fn :: pool drain ready loop Agent [B]` | `[B]` |
+| `57` | `fn :: pool drain step Agent Option [B]` | `[B]` |
+| `58` | `fn :: pool drain all AgentPool` | `[B]` |
+| `59` | `fn :: pool drain list [Agent] [B]` | `[B]` |
+| `60` | `fn :: pool stop list [Agent]` | `()` |
+| `61` | `fn :: pool shutdown AgentPool` | `()` |
 
 ---
 
@@ -332,6 +343,81 @@ fn :: test pool routing edge cases => ()
         ()
 ```
 
+### 31.3.8. Exemplo 8: Trabalhos que esperam por um trabalhador, até um limite, e correm pela ordem de chegada
+
+Neste exemplo prático exploramos de forma exaustiva como a `pool` se comporta neste bloco funcional, incluindo entradas padrão, combinações de parâmetros e valores limite:
+
+```ridgun
+fn :: test pool jobs that wait for a worker => ()
+      test pool jobs that wait for a worker =
+        n0 = pool start 1 (tw work) 0
+        pool waiting n0 -> assert int equals 0 "a new pool has no job waiting"
+        ka, n1 = pool submit or wait n0 100 ""
+        kb, n2 = pool submit or wait n1 100 ""
+        ka -> assert int equals 0 "with an idle worker the job goes to it"
+        kb -> assert int equals (0 - 1) "a pool as it starts lets no job wait: the second is refused"
+        pool refused n2 -> assert int equals 1 "and counted"
+        dn, n3 = pool drain n2 2000
+        pd count dn 0 -> assert int equals 1 "the one job ran"
+        pool waiting (pool with waiting n0 (0 - 5)) -> assert int equals 0 "room under 0 is no room"
+
+        p0 = pool with waiting (pool start 2 (tw work) 0) 2
+        k1, p1 = pool submit or wait p0 100 "a"
+        k2, p2 = pool submit or wait p1 110 "a"
+        t0 = sys monotonic ms
+        k3, p3 = pool submit or wait p2 120 "b"
+        k4, p4 = pool submit or wait p3 130 "b"
+        k5, p5 = pool submit or wait p4 140 "c"
+        ((sys monotonic ms) - t0) < 100 -> assert true "waiting or refusing takes no time: the call never waits"
+        k1 -> assert int equals 0 "the first job goes to worker 0"
+        k2 -> assert int equals 1 "the second to worker 1"
+        k3 -> assert int equals (0 - 2) "every worker is busy: the third waits"
+        k4 -> assert int equals (0 - 2) "and the fourth"
+        k5 -> assert int equals (0 - 1) "there is room for two: the fifth is refused"
+        pool waiting p5 -> assert int equals 2 "two jobs wait"
+        pool busy p5 -> assert int equals 2 "two run"
+        pool refused p5 -> assert int equals 1 "one was refused"
+        pool tagged p5 "b" -> assert int equals 0 "a job that waits holds no worker"
+        k6, p6 = pool submit p5 150 "d"
+        k6 -> assert int equals (0 - 1) "pool submit never lets a job wait"
+        pool waiting p6 -> assert int equals 2 "and the two that wait are still there"
+        got, p7 = collect all p6 4 40 []
+        pd count got 0 -> assert int equals 4 "the two that ran and the two that waited all end"
+        pd ms sum got 0 -> assert int equals 460 "each of the four ran once: 100 + 110 + 120 + 130"
+        pd tagged got "b" 0 -> assert int equals 2 "the jobs that waited keep their tag"
+        pool waiting p7 -> assert int equals 0 "nothing waits any more"
+        pool busy p7 -> assert int equals 0 "and nothing runs"
+        k7, p8 = pool submit or wait p7 20 ""
+        k7 >= 0 -> assert true "with idle workers again a job goes straight to one"
+        d7, p9 = pool drain p8 2000
+        pd count d7 0 -> assert int equals 1 "it ends"
+
+        -- the order: with one worker the jobs that wait run in the order they came
+        o0 = pool with waiting (pool start 1 (tw work) 0) 3
+        j1, o1 = pool submit or wait o0 30 "first"
+        j2, o2 = pool submit or wait o1 30 "second"
+        j3, o3 = pool submit or wait o2 30 "third"
+        j4, o4 = pool submit or wait o3 30 "fourth"
+        od, o5 = pool drain o4 3000
+        pd count od 0 -> assert int equals 4 "a drain waits for the jobs that wait too"
+        pd results sum od 0 -> assert int equals 120006 "the worker did them one after another: 30000 x 4 + 0 + 1 + 2 + 3"
+        pd tagged od "fourth" 0 -> assert int equals 1 "the last one ran"
+        pool waiting o5 -> assert int equals 0 "nothing waits in a drained pool"
+        j5, o6 = pool submit or wait o5 10 ""
+        j5 -> assert int equals (0 - 1) "a drained pool refuses, it does not let a job wait"
+
+        -- a drain that runs out of time does not run the jobs that still wait
+        s0 = pool with waiting (pool start 1 (tw work) 0) 3
+        x1, s1 = pool submit or wait s0 300 ""
+        x2, s2 = pool submit or wait s1 300 ""
+        x3, s3 = pool submit or wait s2 300 ""
+        t1 = sys monotonic ms
+        sd, s4 = pool drain s3 100
+        ((sys monotonic ms) - t1) < 1500 -> assert true "the drain ends at its time limit"
+        (pd count sd 0) < 3 -> assert true "and the jobs that still waited were not run"
+        pool waiting s4 -> assert int equals 0 "they wait no more"
+```
+
 ---
 
 ## 31.4. Debaixo do capô: como a `pool` é construída em Ridgun puro (`src/main/ridgun/lib/pool.ridgun`)
@@ -355,8 +441,12 @@ type PoolMsg S J R = PoolMsg (S J => (S, R)) Int Int J
 -- One worker: its agent, whether it runs a job, its number and the tag of that job.
 type PoolSlot S J R = ps_agent: (Agent (PoolMsg S J R) R), ps_busy: Bool, ps_index: Int, ps_tag: String
 
+-- A job that waits for a worker, with its tag.
+type PoolWait J = PoolWait J String
+
 -- wp_done_r / wp_done_w: the pipe the workers report on. wp_open: False once the pool is drained.
-type WorkerPool S J R = wp_fn: (S J => (S, R)), wp_slots: [(PoolSlot S J R)], wp_done_r: Int, wp_done_w: Int, wp_refused: Int, wp_open: Bool
+-- wp_waiting: the jobs that wait for a worker, in the order they came. wp_wait_max: how many may wait (0: none).
+type WorkerPool S J R = wp_fn: (S J => (S, R)), wp_slots: [(PoolSlot S J R)], wp_done_r: Int, wp_done_w: Int, wp_refused: Int, wp_open: Bool, wp_waiting: [(PoolWait J)], wp_wait_max: Int
 
 -- A job that ended: the worker that ran it, its tag and its result.
 type PoolDone R = PoolDone Int String R
@@ -382,8 +472,8 @@ fn :: pool clamp workers Int => Int
 
 fn :: pool started (S J => (S, R)) S Int (Int Int Int) => WorkerPool S J R
       pool started f s0 n (rc, r, w) =
-        | rc != 0   = WorkerPool f [] (0 - 1) (0 - 1) 0 False
-        | otherwise = WorkerPool f (pool new slots s0 0 n) r w 0 True
+        | rc != 0   = WorkerPool f [] (0 - 1) (0 - 1) 0 False [] 0
+        | otherwise = WorkerPool f (pool new slots s0 0 n) r w 0 True [] 0
 
 -- A pool of `n` workers (1 to 64) that run `f`, each starting from the state `s0`.
 fn :: pool start Int (S J => (S, R)) S => WorkerPool S J R
@@ -455,65 +545,6 @@ fn :: pool submit (WorkerPool S J R) J String => Int (WorkerPool S J R)
       pool submit p job tag =
         | not (wp_open p) = (0 - 1, p with wp_refused = ((wp_refused p) + 1))
         | otherwise       = pool submit to p job tag (pool first idle (wp_slots p))
-
-fn :: pool is ready PollStatus    => Bool
-      pool is ready (PollReady _) =  True
-      pool is ready _             =  False
-
--- Frees worker `k` and takes its result, which is ready: its byte is in the pipe.
-fn :: pool take [(PoolSlot S J R)] Int [(PoolSlot S J R)] [(PoolDone R)] => [PoolSlot S J R] [PoolDone R]
-      pool take []       _ kept got =  (kept, got)
-      pool take (s:rest) k kept got =
-        | (ps_index s) == k and (ps_busy s) = pool take rest k (kept :: [s with ps_busy = False, ps_tag = ""]) (got :: [PoolDone k (ps_tag s) (receive from (ps_agent s))])
-        | otherwise                         = pool take rest k (kept :: [s]) got
-
-fn :: pool take all [(PoolSlot S J R)] String Int [(PoolDone R)] => [PoolSlot S J R] [PoolDone R]
-      pool take all slots bytes i got =
-        | i >= (str len bytes) = (slots, got)
-        | otherwise            = pool take next (pool take slots ((str char at bytes i) - 1) [] got) bytes i
-
-fn :: pool take next ([(PoolSlot S J R)] [(PoolDone R)]) String Int => [PoolSlot S J R] [PoolDone R]
-      pool take next (slots, got) bytes i =  pool take all slots bytes (i + 1) got
-
-fn :: pool collected (WorkerPool S J R) ([(PoolSlot S J R)] [(PoolDone R)]) => [PoolDone R] (WorkerPool S J R)
-      pool collected p (slots, got) =  (got, p with wp_slots = slots)
-
--- The jobs that have ended, each exactly once, and the pool to use from now on.
--- Waits at most `timeout_ms` for the first one (0: does not wait).
-fn :: pool collect (WorkerPool S J R) Int => [PoolDone R] (WorkerPool S J R)
-      pool collect p timeout_ms =
-        | (pool busy p) == 0                                           = ([], p)
-        | pool is ready (wait fd (wp_done_r p) (poll in) timeout_ms)   = pool collected p (pool take all (wp_slots p) (posix read (wp_done_r p) 256) 0 [])
-        | otherwise                                                    = ([], p)
-
-fn :: pool stop slots [(PoolSlot S J R)] => ()
-      pool stop slots []       =  ()
-      pool stop slots (s:rest) =
-        stop (ps_agent s)
-        pool stop slots rest
-
-fn :: pool closed (WorkerPool S J R) [(PoolDone R)] => [PoolDone R] (WorkerPool S J R)
-      pool closed p got =
-        pool stop slots (wp_slots p)
-        posix close (wp_done_r p) -> ()
-        posix close (wp_done_w p) -> ()
-        (got, p with wp_slots = [], wp_done_r = (0 - 1), wp_done_w = (0 - 1), wp_open = False)
-
-fn :: pool drain until (WorkerPool S J R) Int [(PoolDone R)] => [PoolDone R] (WorkerPool S J R)
-      pool drain until p deadline got =
-        | (pool busy p) == 0 or (sys monotonic ms) >= deadline = pool closed p got
-        | otherwise                                            = pool drain more (pool collect p (deadline - (sys monotonic ms))) deadline got
-
-fn :: pool drain more ([(PoolDone R)] (WorkerPool S J R)) Int [(PoolDone R)] => [PoolDone R] (WorkerPool S J R)
-      pool drain more (more, p) deadline got =  pool drain until p deadline (got :: more)
-
--- Takes no more jobs, waits at most `timeout_ms` for the ones in flight, stops every worker and closes
--- the pipe. The answer is the results of those jobs and the drained pool.
--- The result comes first in every pair: ridgunc 1.0.55 in strict mode refuses an output that starts with `(`.
-fn :: pool drain (WorkerPool S J R) Int => [PoolDone R] (WorkerPool S J R)
-      pool drain p timeout_ms =
-        | not (wp_open p) = ([], p)
-        | otherwise       = pool drain until (p with wp_open = False) ((sys monotonic ms) + timeout_ms) []
 ```
 
 ### 31.4.2. Implementação interna: Routing by key over a list of agents (FR-POOL-001 AC8)

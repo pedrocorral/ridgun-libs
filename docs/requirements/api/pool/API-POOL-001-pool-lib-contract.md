@@ -21,6 +21,9 @@ auth: none
   - `pool done fd (WorkerPool S J R) => Int`: the descriptor that is readable when a job has ended
   - `pool collect (WorkerPool S J R) Int => [PoolDone R] (WorkerPool S J R)`: `timeout_ms` to wait for the first job to end (`0`: do not wait)
   - `pool refused (WorkerPool S J R) => Int`: jobs refused since the start
+  - `pool with waiting (WorkerPool S J R) Int => WorkerPool S J R`: room for `wait_max` jobs to wait when every worker is busy (a pool starts with `0`)
+  - `pool submit or wait (WorkerPool S J R) J String => Int (WorkerPool S J R)`: as `pool submit` with an idle worker; with every worker busy the job waits if there is room (the answer is `-2`) or is refused (`-1`). It never waits itself. The jobs that wait go to the workers as they end, in the order they came
+  - `pool waiting (WorkerPool S J R) => Int`: the `waiting_count`
   - `pool drain (WorkerPool S J R) Int => [PoolDone R] (WorkerPool S J R)`: `timeout_ms` to wait for the jobs in flight; then every worker is stopped
 - Routing by key over a list of agents (`FR-POOL-001` AC8):
   - `type AgentPool = Pool Int [Agent]`
@@ -49,7 +52,8 @@ auth: none
 - The caller uses the pool an operation returns and does not keep the old one.
 - One thread, the caller's, talks to the workers (`FR-POOL-001`, Constraints).
 - `pool start` with fewer than 1 worker starts 1; with more than 64, 64.
-- After `pool drain` the pool takes no jobs: `pool submit` answers `-1`.
+- After `pool drain` the pool takes no jobs: `pool submit` and `pool submit or wait` answer `-1`.
+- `pool submit` never lets a job wait. `pool drain` also runs the jobs that wait, until its time ends; one that still waits then is not run.
 - A worker function is passed by its name in parentheses: `pool start 3 (my work) 0`.
 - `pool submit`, `pool collect` and `pool drain` answer a pair: the result first, the pool second (`k, p1 = pool submit p0 job ""`). ridgunc 1.0.55 in strict mode refuses an output that starts with a type in parentheses.
 - As a parameter a pool is written with its three types in parentheses: `(WorkerPool Int Int Int)`; a list of results, `[(PoolDone Int)]`.
