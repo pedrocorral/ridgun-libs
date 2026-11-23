@@ -191,9 +191,86 @@ fn :: test pool routing edge cases => ()
         pool shutdown two
         ()
 
+-- The ms of each job that ended, added up (a result is ms * 1000 + the jobs its worker did before).
+fn :: pd ms sum [(PoolDone Int)] Int => Int
+      pd ms sum []                n   =  n
+      pd ms sum (d:rest)          n   =  pd ms sum rest (n + ((pd result d) / 1000))
+
+-- AC9: a job may wait for a worker, up to a number of jobs; past it the job is refused.
+-- @tests TS-POOL-001
+fn :: test pool jobs that wait for a worker => ()
+      test pool jobs that wait for a worker =
+        n0 = pool start 1 (tw work) 0
+        pool waiting n0 -> assert int equals 0 "a new pool has no job waiting"
+        ka, n1 = pool submit or wait n0 100 ""
+        kb, n2 = pool submit or wait n1 100 ""
+        ka -> assert int equals 0 "with an idle worker the job goes to it"
+        kb -> assert int equals (0 - 1) "a pool as it starts lets no job wait: the second is refused"
+        pool refused n2 -> assert int equals 1 "and counted"
+        dn, n3 = pool drain n2 2000
+        pd count dn 0 -> assert int equals 1 "the one job ran"
+        pool waiting (pool with waiting n0 (0 - 5)) -> assert int equals 0 "room under 0 is no room"
+
+        p0 = pool with waiting (pool start 2 (tw work) 0) 2
+        k1, p1 = pool submit or wait p0 100 "a"
+        k2, p2 = pool submit or wait p1 110 "a"
+        t0 = sys monotonic ms
+        k3, p3 = pool submit or wait p2 120 "b"
+        k4, p4 = pool submit or wait p3 130 "b"
+        k5, p5 = pool submit or wait p4 140 "c"
+        ((sys monotonic ms) - t0) < 100 -> assert true "waiting or refusing takes no time: the call never waits"
+        k1 -> assert int equals 0 "the first job goes to worker 0"
+        k2 -> assert int equals 1 "the second to worker 1"
+        k3 -> assert int equals (0 - 2) "every worker is busy: the third waits"
+        k4 -> assert int equals (0 - 2) "and the fourth"
+        k5 -> assert int equals (0 - 1) "there is room for two: the fifth is refused"
+        pool waiting p5 -> assert int equals 2 "two jobs wait"
+        pool busy p5 -> assert int equals 2 "two run"
+        pool refused p5 -> assert int equals 1 "one was refused"
+        pool tagged p5 "b" -> assert int equals 0 "a job that waits holds no worker"
+        k6, p6 = pool submit p5 150 "d"
+        k6 -> assert int equals (0 - 1) "pool submit never lets a job wait"
+        pool waiting p6 -> assert int equals 2 "and the two that wait are still there"
+        got, p7 = collect all p6 4 40 []
+        pd count got 0 -> assert int equals 4 "the two that ran and the two that waited all end"
+        pd ms sum got 0 -> assert int equals 460 "each of the four ran once: 100 + 110 + 120 + 130"
+        pd tagged got "b" 0 -> assert int equals 2 "the jobs that waited keep their tag"
+        pool waiting p7 -> assert int equals 0 "nothing waits any more"
+        pool busy p7 -> assert int equals 0 "and nothing runs"
+        k7, p8 = pool submit or wait p7 20 ""
+        k7 >= 0 -> assert true "with idle workers again a job goes straight to one"
+        d7, p9 = pool drain p8 2000
+        pd count d7 0 -> assert int equals 1 "it ends"
+
+        -- the order: with one worker the jobs that wait run in the order they came
+        o0 = pool with waiting (pool start 1 (tw work) 0) 3
+        j1, o1 = pool submit or wait o0 30 "first"
+        j2, o2 = pool submit or wait o1 30 "second"
+        j3, o3 = pool submit or wait o2 30 "third"
+        j4, o4 = pool submit or wait o3 30 "fourth"
+        od, o5 = pool drain o4 3000
+        pd count od 0 -> assert int equals 4 "a drain waits for the jobs that wait too"
+        pd results sum od 0 -> assert int equals 120006 "the worker did them one after another: 30000 x 4 + 0 + 1 + 2 + 3"
+        pd tagged od "fourth" 0 -> assert int equals 1 "the last one ran"
+        pool waiting o5 -> assert int equals 0 "nothing waits in a drained pool"
+        j5, o6 = pool submit or wait o5 10 ""
+        j5 -> assert int equals (0 - 1) "a drained pool refuses, it does not let a job wait"
+
+        -- a drain that runs out of time does not run the jobs that still wait
+        s0 = pool with waiting (pool start 1 (tw work) 0) 3
+        x1, s1 = pool submit or wait s0 300 ""
+        x2, s2 = pool submit or wait s1 300 ""
+        x3, s3 = pool submit or wait s2 300 ""
+        t1 = sys monotonic ms
+        sd, s4 = pool drain s3 100
+        ((sys monotonic ms) - t1) < 1500 -> assert true "the drain ends at its time limit"
+        (pd count sd 0) < 3 -> assert true "and the jobs that still waited were not run"
+        pool waiting s4 -> assert int equals 0 "they wait no more"
+
 fn :: main => ()
       main =
         test pool takes jobs and refuses when full
+        test pool jobs that wait for a worker
         test pool size limits
         test pool routing by key
         test pool routing edge cases

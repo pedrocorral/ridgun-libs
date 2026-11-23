@@ -22,8 +22,12 @@ type PoolMsg S J R = PoolMsg (S J => (S, R)) Int Int J
 -- One worker: its agent, whether it runs a job, its number and the tag of that job.
 type PoolSlot S J R = ps_agent: (Agent (PoolMsg S J R) R), ps_busy: Bool, ps_index: Int, ps_tag: String
 
+-- A job that waits for a worker, with its tag.
+type PoolWait J = PoolWait J String
+
 -- wp_done_r / wp_done_w: the pipe the workers report on. wp_open: False once the pool is drained.
-type WorkerPool S J R = wp_fn: (S J => (S, R)), wp_slots: [(PoolSlot S J R)], wp_done_r: Int, wp_done_w: Int, wp_refused: Int, wp_open: Bool
+-- wp_waiting: the jobs that wait for a worker, in the order they came. wp_wait_max: how many may wait (0: none).
+type WorkerPool S J R = wp_fn: (S J => (S, R)), wp_slots: [(PoolSlot S J R)], wp_done_r: Int, wp_done_w: Int, wp_refused: Int, wp_open: Bool, wp_waiting: [(PoolWait J)], wp_wait_max: Int
 
 -- A job that ended: the worker that ran it, its tag and its result.
 type PoolDone R = PoolDone Int String R
@@ -49,8 +53,8 @@ fn :: pool clamp workers Int => Int
 
 fn :: pool started (S J => (S, R)) S Int (Int Int Int) => WorkerPool S J R
       pool started f s0 n (rc, r, w) =
-        | rc != 0   = WorkerPool f [] (0 - 1) (0 - 1) 0 False
-        | otherwise = WorkerPool f (pool new slots s0 0 n) r w 0 True
+        | rc != 0   = WorkerPool f [] (0 - 1) (0 - 1) 0 False [] 0
+        | otherwise = WorkerPool f (pool new slots s0 0 n) r w 0 True [] 0
 
 -- A pool of `n` workers (1 to 64) that run `f`, each starting from the state `s0`.
 -- @implements FR-POOL-001
@@ -141,6 +145,62 @@ fn :: pool submit (WorkerPool S J R) J String => Int (WorkerPool S J R)
         | not (wp_open p) = (0 - 1, p with wp_refused = ((wp_refused p) + 1))
         | otherwise       = pool submit to p job tag (pool first idle (wp_slots p))
 
+-- ── Jobs that wait for a worker (FR-POOL-001 AC9) ───────────
+
+fn :: pool wait count [(PoolWait J)] Int => Int
+      pool wait count []         n   =  n
+      pool wait count (_:rest)   n   =  pool wait count rest (n + 1)
+
+-- How many jobs wait for a worker.
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+fn :: pool waiting (WorkerPool S J R) => Int
+      pool waiting p =  pool wait count (wp_waiting p) 0
+
+-- The pool with room for `n` jobs to wait when every worker is busy (0, as a pool starts: none waits).
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+-- @mitigates VUL-INFRA-002
+fn :: pool with waiting (WorkerPool S J R) Int => WorkerPool S J R
+      pool with waiting p n =
+        | n < 0     = p with wp_wait_max = 0
+        | otherwise = p with wp_wait_max = n
+
+fn :: pool wait or refuse (WorkerPool S J R) J String => Int (WorkerPool S J R)
+      pool wait or refuse p job tag =
+        | (pool waiting p) < (wp_wait_max p) = (0 - 2, p with wp_waiting = ((wp_waiting p) :: [PoolWait job tag]))
+        | otherwise                          = (0 - 1, p with wp_refused = ((wp_refused p) + 1))
+
+fn :: pool submit or wait to (WorkerPool S J R) J String Int => Int (WorkerPool S J R)
+      pool submit or wait to p job tag k =
+        | k < 0     = pool wait or refuse p job tag
+        | otherwise = pool submit to p job tag k
+
+-- Gives the job to an idle worker, as `pool submit`. When every worker is busy the job waits, if there is
+-- room (`pool with waiting`), and goes to the first worker that ends, in the order the jobs came. The answer is
+-- the number of the worker, -2 when the job waits, or -1 when it was refused (no room, or the pool was drained).
+-- It never waits itself.
+-- @implements FR-POOL-001
+-- @implements API-POOL-001
+-- @mitigates VUL-INFRA-002
+fn :: pool submit or wait (WorkerPool S J R) J String => Int (WorkerPool S J R)
+      pool submit or wait p job tag =
+        | not (wp_open p) = (0 - 1, p with wp_refused = ((wp_refused p) + 1))
+        | otherwise       = pool submit or wait to p job tag (pool first idle (wp_slots p))
+
+fn :: pool second (Int (WorkerPool S J R)) => WorkerPool S J R
+      pool second (_, p)                   =  p
+
+-- Gives the waiting jobs to the idle workers, the oldest first.
+fn :: pool feed (WorkerPool S J R) => WorkerPool S J R
+      pool feed p =  pool feed from p (wp_waiting p) (pool first idle (wp_slots p))
+
+fn :: pool feed from (WorkerPool S J R) [(PoolWait J)]                Int => WorkerPool S J R
+      pool feed from p                  []                            _   =  p
+      pool feed from p                  ((PoolWait job tag):rest)     k   =
+        | k < 0     = p
+        | otherwise = pool feed (pool second (pool submit to (p with wp_waiting = rest) job tag k))
+
 fn :: pool is ready PollStatus    => Bool
       pool is ready (PollReady _) =  True
       pool is ready _             =  False
@@ -161,7 +221,7 @@ fn :: pool take next ([(PoolSlot S J R)] [(PoolDone R)]) String Int => [PoolSlot
       pool take next (slots, got) bytes i =  pool take all slots bytes (i + 1) got
 
 fn :: pool collected (WorkerPool S J R) ([(PoolSlot S J R)] [(PoolDone R)]) => [PoolDone R] (WorkerPool S J R)
-      pool collected p (slots, got) =  (got, p with wp_slots = slots)
+      pool collected p (slots, got) =  (got, pool feed (p with wp_slots = slots))
 
 -- The jobs that have ended, each exactly once, and the pool to use from now on.
 -- Waits at most `timeout_ms` for the first one (0: does not wait).
@@ -184,7 +244,7 @@ fn :: pool closed (WorkerPool S J R) [(PoolDone R)] => [PoolDone R] (WorkerPool 
         pool stop slots (wp_slots p)
         posix close (wp_done_r p) -> ()
         posix close (wp_done_w p) -> ()
-        (got, p with wp_slots = [], wp_done_r = (0 - 1), wp_done_w = (0 - 1), wp_open = False)
+        (got, p with wp_slots = [], wp_done_r = (0 - 1), wp_done_w = (0 - 1), wp_open = False, wp_waiting = [])
 
 fn :: pool drain until (WorkerPool S J R) Int [(PoolDone R)] => [PoolDone R] (WorkerPool S J R)
       pool drain until p deadline got =
@@ -194,8 +254,9 @@ fn :: pool drain until (WorkerPool S J R) Int [(PoolDone R)] => [PoolDone R] (Wo
 fn :: pool drain more ([(PoolDone R)] (WorkerPool S J R)) Int [(PoolDone R)] => [PoolDone R] (WorkerPool S J R)
       pool drain more (more, p) deadline got =  pool drain until p deadline (got :: more)
 
--- Takes no more jobs, waits at most `timeout_ms` for the ones in flight, stops every worker and closes
--- the pipe. The answer is the results of those jobs and the drained pool.
+-- Takes no more jobs, waits at most `timeout_ms` for the ones in flight and for the ones that wait (they
+-- still get a worker as the others end), stops every worker and closes the pipe. The answer is the results
+-- of those jobs and the drained pool. A job that still waits when the time ends is not run.
 -- The result comes first in every pair: ridgunc 1.0.55 in strict mode refuses an output that starts with `(`.
 -- @implements FR-POOL-001
 -- @implements API-POOL-001
