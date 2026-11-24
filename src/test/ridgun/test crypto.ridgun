@@ -1112,12 +1112,51 @@ fn :: test aead refuses every change => ()
         same bytes m (sha msg 100) -> assert true "and so is the message"
         same bytes k (sha256 bytes "aead test key") -> assert true "and the key"
 
+-- ── The processor operations, called one by one ─────────────
+-- `sha256 schedule`, `sha256 rounds`, `aes round` and `aes last round` are steps inside the hashes and the
+-- ciphers. Here each is called alone, on values that can be checked by hand: the block of "abc" of FIPS 180-4
+-- (the expected words come from a plain computation of the standard, in Python) and the example of FIPS 197
+-- Appendix B. `stable test` compares the instructions of the processor with the portable definitions.
+
+fn :: u32 same Tensor[U32] Int Int Int Int => Bool
+      u32 same t           a   b   c   d   =  (t_(0) == a) and (t_(1) == b) and (t_(2) == c) and (t_(3) == d)
+
+fn :: bytes hex Tensor[U8] => String
+      bytes hex t          =  bytes to hex str (tensor to str t)
+
+-- @tests TS-CRYPTO-007
+fn :: test processor operations one by one => ()
+      test processor operations one by one =
+        -- the message schedule: words 16 to 19 of the block of "abc" from words 0 to 15
+        w0 = sha256 group4 1633837952 0 0 0
+        z  = sha256 group4 0 0 0 0
+        w3 = sha256 group4 0 0 0 24
+        u32 same (sha256 schedule w0 z z w3) 1633837952 983040 2108187653 1610613702 -> assert true "sha256 schedule: words 16 to 19 of the block of abc"
+        u32 same (sha256 schedule z z z z) 0 0 0 0 -> assert true "sha256 schedule of zeros is zeros"
+
+        -- four rounds from the first state, with words 0 to 3 plus their constants
+        ra, re = sha256 rounds (sha256 iv a) (sha256 iv e) (sha256 group4 2750190360 1899447441 3049323471 3921009573)
+        u32 same ra 3578852966 3368241063 1516951981 1567288269 -> assert true "sha256 rounds: a, b, c, d after the first four rounds of abc"
+        u32 same re 618661968 4180228587 2026797449 4197074466 -> assert true "sha256 rounds: e, f, g, h after the first four rounds of abc"
+        u32 same (sha256 iv a) 1779033703 3144134277 1013904242 2773480762 -> assert true "the first state was not changed by the call"
+
+        -- FIPS 197 Appendix B: round 1 and the last round of the example cipher
+        box = aes make box
+        s1  = hex str to bytes "193de3bea0f4e22b9ac68d2ae9f84808"
+        k1  = hex str to bytes "a0fafe1788542cb123a339392a6c7605"
+        bytes hex (aes round s1 k1 box) -> assert str eq "a49c7ff2689f352b6b5bea43026a5049" "aes round: the state after round 1 of FIPS 197 Appendix B"
+        bytes hex s1 -> assert str eq "193de3bea0f4e22b9ac68d2ae9f84808" "the state given was not changed"
+        s10 = hex str to bytes "eb40f21e592e38848ba113e71bc342d2"
+        k10 = hex str to bytes "d014f9a8c9ee2589e13f0cc8b6630ca6"
+        bytes hex (aes last round s10 k10 box) -> assert str eq "3925841d02dc09fbdc118597196a0b32" "aes last round: the ciphertext of FIPS 197 Appendix B"
+
 fn :: main => ()
       main =
         test rgf019 bytes and bitops -> ()
         test sha256 hmac and pbkdf2 -> ()
         test sha256 and pbkdf2 on processor operations -> ()
         test aes on processor operations -> ()
+        test processor operations one by one -> ()
         test sha1 fips vectors -> ()
         test md5 rfc1321 vectors -> ()
         test argon2id five arg and perf -> ()
