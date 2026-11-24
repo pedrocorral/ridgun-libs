@@ -1,7 +1,7 @@
 ---
 id: DM-Pool
 title: Worker pool and the jobs it has in flight
-status: draft
+status: approved
 related: [FR-POOL-001, API-POOL-001, ADR-0015, DM-Agent]
 ---
 # DM-Pool — Worker pool and the jobs it has in flight

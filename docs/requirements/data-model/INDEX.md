@@ -26,5 +26,5 @@ Read this when: persistence, API schemas, migrations, or core library ADT defini
 | `DM-Locale.md` | CLDR `LocaleSpec` and `LocaleDatePatterns` model | Working on `locale.ridgun` |
 | `DM-Tls.md` | TLS client `TlsConfig`, `TlsConn`, `TlsError`, and `TlsResult` model | Working on `tls.ridgun` |
 | `DM-Mail.md` | RFC 5322 `MailMessage`, `MailResult`, `SmtpConfig`, `SmtpError`, and `SmtpResult` model | Working on `mail.ridgun` |
-| `DM-Pool.md` | Worker pool and the jobs it has in flight (draft) | Working on `pool.ridgun` |
+| `DM-Pool.md` | Worker pool and the jobs it has in flight (approved) | Working on `pool.ridgun` |
 | `DM-NetAgent.md` | Reactor, its `ReactorConfig`, its table of connections and `ReactorStats` (approved) | Working on `net_agent.ridgun` |

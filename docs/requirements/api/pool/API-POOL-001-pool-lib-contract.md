@@ -1,7 +1,7 @@
 ---
 id: API-POOL-001
 title: Public lib contract for pool (pool.ridgunlib)
-status: draft
+status: approved
 implements: [FR-POOL-001]
 auth: none
 ---
