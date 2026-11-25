@@ -55,8 +55,8 @@ Pure-Ridgun standard and system library suite. Every lib compiles to portable Ri
 
 ## Requirements & Toolchain
 
-- **Compiler**: `ridgunc` 1.0.81 or later (pure-Ridgun self-hosted compiler): SHA-256 reads a message by rows without copying it, which 1.0.81 brought.
-- **Build & Test Runner**: `stable` 1.0.81 or later (`build.ridgun`)
+- **Compiler**: `ridgunc` 1.0.86 or later (pure-Ridgun self-hosted compiler): `crypto` writes tensors in place (`a_i = a_i + b_i`, 1.0.85) and reads a message by rows without copying it (1.0.81).
+- **Build & Test Runner**: `stable` 1.0.86 or later (`build.ridgun`)
 - **Supported Targets**: `Linux` (`X86_64`, `Arm64`) with cross-platform PAL dispatch (`Linux | MacOS | Windows`)
 
 ---
