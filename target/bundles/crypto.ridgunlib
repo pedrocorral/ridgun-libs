@@ -896,18 +896,17 @@ idem :: sha256 iv e => Tensor[U32]
         sha256 iv e =  sha256 group4 0x510e527f 0x9b05688c 0x1f83d9ab 0x5be0cd19
 
 -- The full blocks of a message as the rows of a table, one row write each.
-fn :: sha256 rows Tensor[U8] String Int Int => Tensor[U8]
-      sha256 rows t s r full
-        | r >= full = t
-        | otherwise =
-          t_(r,) = tensor from str (str slice s (r * 64) ((r * 64) + 64))
-          sha256 rows t s (r + 1) full
+-- The full blocks of a message, as bytes: the loop reads them 64 at a time straight from this tensor, with no
+-- copy of each block (ridgunc 1.0.81). When the whole message is full blocks it is taken as it is.
+fn :: sha256 full bytes String Int => Tensor[U8]
+      sha256 full bytes data   full =
+        | (str len data) == (full * 64) = tensor from str data
+        | otherwise                     = tensor from str (str slice data 0 (full * 64))
 
--- The state after the `full` first blocks of `data`.
 fn :: sha256 after full String Int Tensor[U32] Tensor[U32] => Tensor[U32] Tensor[U32]
       sha256 after full data full a e =
         | full == 0 = (a, e)
-        | otherwise = sha256 absorb a e (sha256 rows (Tensor[U8 * full * 64]) data 0 full) 0 full
+        | otherwise = sha256 absorb a e (sha256 full bytes data full) 0 full
 
 -- The end block of `data` after its `full` first blocks: its last bytes, 0x80 and zeros up to 64 bytes.
 fn :: sha256 end block String Int => Tensor[U8]
@@ -3407,8 +3406,9 @@ fn :: x25519 public key String => String
 -- ── AES on processor operations (FIPS 197; `arch ::`, ridgunc 1.0.55) ──
 -- A round, the last round, a whole block and the counter block of CTR mode are operations: each has a portable
 -- definition and a variant on the AES instructions of x86-64 (RIDGUN_CPU=2 forces the portable one).
--- A variant on four blocks per instruction (`on x64 by 4`) was measured slower here for the counter loop
--- (1 320 ns against 850 ns per 4 096 bytes), so the rounds have the one-block variant only.
+-- The rounds have the one-block variant only. A variant on four blocks per instruction (`on x64 by 4`) was
+-- slower for the counter loop with ridgunc 1.0.51; the compiler team measured it no slower with 1.0.81
+-- (665 ns against 698 ns per 4 096 bytes). It has not been taken here yet.
 
 arch :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
         aes round s k box =
