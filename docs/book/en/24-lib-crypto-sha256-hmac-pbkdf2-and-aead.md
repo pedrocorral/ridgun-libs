@@ -51,7 +51,7 @@ In `ridgun-libs`, **`crypto`** is a first-class **lib** located at `src/main/rid
 
 ### 24.2.2. Exhaustive Catalog of Types and Signatures in `src/main/ridgun/lib/crypto.ridgun`
 
-Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/crypto.ridgun` (`5` types, `0` operators, and `518` functions):
+Below is the complete inventory of algebraic data types (`type`), mixfix operators (`op ::`), and function signatures (`fn ::`) defined in `src/main/ridgun/lib/crypto.ridgun` (`5` types, `0` operators, and `521` functions):
 
 **Algebraic Data Types & Records (`type`) in `crypto`:**
 
@@ -212,377 +212,380 @@ type X509Cert = tbs_der: String, issuer_der: String, subject_der: String, issuer
 | `145` | `fn :: compress block Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16]` | `Tensor[U64 * 8 * 16]` |
 | `146` | `fn :: le32 at Tensor[U8] Int` | `Int` |
 | `147` | `fn :: chacha rounds Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Int` | `()` |
-| `148` | `fn :: chacha fill counter Tensor[U32 * n] Int Int Int` | `Tensor[U32 * n]` |
-| `149` | `fn :: chacha page Tensor[U8] Tensor[U8] Int Int` | `Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]` |
-| `150` | `fn :: c bytes part Tensor[U8] Int Int` | `Tensor[U8]` |
-| `151` | `fn :: c first bytes Tensor[U8] Int Int` | `Tensor[U8]` |
-| `152` | `fn :: chacha20 key stream chunk Tensor[U8] Tensor[U8] Int Int` | `Tensor[U8]` |
-| `153` | `arch :: chacha quarter Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` |
-| `154` | `arch :: chacha double Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` |
-| `155` | `arch :: chacha one block Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Int` | `Tensor[U8 * 64]` |
-| `156` | `fn :: chacha block rows Tensor[U8 * n * 64] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Int Int Int` | `Tensor[U8 * n * 64]` |
-| `157` | `fn :: chacha key words Tensor[U8] Int` | `Tensor[U32 * 4]` |
-| `158` | `fn :: chacha nonce words Tensor[U8]` | `Tensor[U32 * 4]` |
-| `159` | `fn :: chacha20 key stream blocks Tensor[U8] Tensor[U8] Int Int` | `Tensor[U8]` |
-| `160` | `fn :: chacha20 key stream pieces Tensor[U8] Tensor[U8] Int Int` | `[String]` |
-| `161` | `fn :: chacha20 key stream Tensor[U8] Tensor[U8] Int Int` | `Tensor[U8]` |
-| `162` | `fn :: chacha20 block Tensor[U8] Tensor[U8] Int` | `Tensor[U8]` |
-| `163` | `fn :: c bitxor bytes Tensor[U8 * n] Tensor[U8 * n]` | `Tensor[U8 * n]` |
-| `164` | `fn :: chacha20 bitxor Tensor[U8] Tensor[U8] Int Tensor[U8]` | `Tensor[U8]` |
-| `165` | `fn :: poly1305 r limbs Tensor[U8]` | `Tensor[Int * 5]` |
-| `166` | `fn :: poly1305 step Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int` | `Tensor[Int * 5]` |
-| `167` | `fn :: poly1305 blocks loop Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int Int` | `Tensor[Int * 5]` |
-| `168` | `fn :: poly1305 carry into Int Int Int Int Int Tensor[Int * j] Int` | `Int` |
-| `169` | `arch :: poly1305 quad Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U8 * 64] Int Int Int Int Int Int Int Int Int` | `Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` |
-| `170` | `arch :: poly1305 quad last Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U8 * 64] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` | `Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` |
-| `171` | `fn :: poly1305 quads Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U8 * n * 64] Int Int Int Int Int Int Int Int Int Int Int` | `Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` |
-| `172` | `fn :: poly1305 quads last Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U8 * n * 64] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Int Int` | `Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` |
-| `173` | `fn :: poly1305 mul Tensor[Int * 5] Tensor[Int * 5]` | `Tensor[Int * 5]` |
-| `174` | `fn :: poly1305 quad powers Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Int` | `Tensor[U64 * 4]` |
-| `175` | `fn :: poly1305 quad start Int` | `Tensor[U64 * 4]` |
-| `176` | `fn :: poly1305 quad sum Tensor[U64 * 4]` | `Int` |
-| `177` | `fn :: poly1305 quad run Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int` | `Tensor[Int * 5]` |
-| `178` | `fn :: poly1305 quad from Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int` | `Tensor[Int * 5]` |
-| `179` | `fn :: poly1305 quad bytes Tensor[U8] Int` | `Tensor[U8]` |
-| `180` | `fn :: poly1305 quad rows Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int` | `Tensor[Int * 5]` |
-| `181` | `fn :: poly1305 quad count Int` | `Int` |
-| `182` | `fn :: c pick Bool Int Int` | `Int` |
-| `183` | `fn :: poly1305 finalize Tensor[Int * 5] Tensor[U8]` | `Tensor[U8]` |
-| `184` | `fn :: pad16 len Int` | `Int` |
-| `185` | `fn :: c put le64 Tensor[U8] Int Int` | `Int` |
-| `186` | `fn :: poly1305 aead mac Tensor[U8] Tensor[U8] Tensor[U8]` | `Tensor[U8]` |
-| `187` | `fn :: aead key stream Tensor[U8] Tensor[U8] Int` | `Tensor[U8]` |
-| `188` | `fn :: aead seal String String String String` | `String` |
-| `189` | `fn :: decrypt verified aead Bool Tensor[U8] Tensor[U8]` | `Int String` |
-| `190` | `fn :: aead open String String String String` | `Int String` |
-| `191` | `fn :: sha512 k hex0` | `String` |
-| `192` | `fn :: sha512 k hex1` | `String` |
-| `193` | `fn :: sha512 fill hex words Tensor[U64 * 160] String Int Int` | `Tensor[U64 * 160]` |
-| `194` | `fn :: sha512 init k` | `Tensor[U64 * 160]` |
-| `195` | `fn :: sha512 init h loop Tensor[U64 * 16] String Int` | `Tensor[U64 * 16]` |
-| `196` | `fn :: sha512 init h` | `Tensor[U64 * 16]` |
-| `197` | `fn :: sha512 rrot lt32 U64 U64 Int` | `U64 U64` |
-| `198` | `fn :: sha512 rshift lt32 U64 U64 Int` | `U64 U64` |
-| `199` | `fn :: sha512 big sigma0 U64 U64` | `U64 U64` |
-| `200` | `fn :: sha512 big sigma1 U64 U64` | `U64 U64` |
-| `201` | `fn :: sha512 small sigma0 U64 U64` | `U64 U64` |
-| `202` | `fn :: sha512 small sigma1 U64 U64` | `U64 U64` |
-| `203` | `fn :: sha512 vbyte String Int Int Int` | `U64` |
-| `204` | `fn :: sha512 load w fast Tensor[U64 * 160] String Int Int` | `Tensor[U64 * 160]` |
-| `205` | `fn :: sha512 load w pad Tensor[U64 * 160] String Int Int Int Int` | `Tensor[U64 * 160]` |
-| `206` | `fn :: sha512 expand w Tensor[U64 * 160] Int` | `Tensor[U64 * 160]` |
-| `207` | `fn :: sha512 copy state Tensor[U64 * 16] Tensor[U64 * 16] Int` | `Tensor[U64 * 16]` |
-| `208` | `fn :: sha512 add state Tensor[U64 * 16] Tensor[U64 * 16] Int` | `Tensor[U64 * 16]` |
-| `209` | `fn :: sha512 rounds loop Tensor[U64 * 16] Tensor[U64 * 160] Tensor[U64 * 160] Int` | `Tensor[U64 * 16]` |
-| `210` | `fn :: sha512 blocks loop Tensor[U64 * 16] Tensor[U64 * 16] Tensor[U64 * 160] Tensor[U64 * 160] String Int Int Int` | `Tensor[U64 * 16]` |
-| `211` | `fn :: sha512 state to raw CT16 Tensor[U64 * 16] Int` | `String` |
-| `212` | `fn :: sha512 bytes String` | `String` |
-| `213` | `fn :: sha512 hex String` | `String` |
-| `214` | `fn :: fe lit U64 U64 U64 U64 U64 U64 U64 U64 U64 U64` | `Tensor[U64 * 10]` |
-| `215` | `fn :: fe zero` | `Tensor[U64 * 10]` |
-| `216` | `fn :: fe one` | `Tensor[U64 * 10]` |
-| `217` | `fn :: fe d` | `Tensor[U64 * 10]` |
-| `218` | `fn :: fe d2` | `Tensor[U64 * 10]` |
-| `219` | `fn :: fe sqrt m1` | `Tensor[U64 * 10]` |
-| `220` | `fn :: fe bx` | `Tensor[U64 * 10]` |
-| `221` | `fn :: fe by` | `Tensor[U64 * 10]` |
-| `222` | `fn :: fe bt` | `Tensor[U64 * 10]` |
-| `223` | `fn :: fe carry pass Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `224` | `fn :: fe carry Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `225` | `fn :: fe add Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `226` | `fn :: fe sub Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `227` | `fn :: fe mul Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `228` | `fn :: fe sq Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `229` | `fn :: fe sq n Tensor[U64 * 10] Int` | `Tensor[U64 * 10]` |
-| `230` | `fn :: fe freeze Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `231` | `fn :: fe eq Tensor[U64 * 10] Tensor[U64 * 10]` | `Bool` |
-| `232` | `fn :: fe pow22523 Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `233` | `fn :: fe invert Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `234` | `fn :: fe to words8 Tensor[U64 * 10]` | `Tensor[U64 * 8]` |
-| `235` | `fn :: words8 to raw32 loop CT16 Tensor[U64 * 8] Int` | `String` |
-| `236` | `fn :: raw32 to words8 String` | `Tensor[U64 * 8]` |
-| `237` | `fn :: fe from raw32 String` | `Bool U64 Tensor[U64 * 10]` |
-| `238` | `fn :: ge pack Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 40]` |
-| `239` | `fn :: ge coord Tensor[U64 * 40] Int` | `Tensor[U64 * 10]` |
-| `240` | `fn :: ge zero` | `Tensor[U64 * 40]` |
-| `241` | `fn :: ge base` | `Tensor[U64 * 40]` |
-| `242` | `fn :: ge add Tensor[U64 * 40] Tensor[U64 * 40]` | `Tensor[U64 * 40]` |
-| `243` | `fn :: ge dbl Tensor[U64 * 40]` | `Tensor[U64 * 40]` |
-| `244` | `fn :: ge cselect loop Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 40] U64 Int` | `Tensor[U64 * 40]` |
-| `245` | `fn :: ge cselect Tensor[U64 * 40] Tensor[U64 * 40] U64` | `Tensor[U64 * 40]` |
-| `246` | `fn :: ge scalarmult loop Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 8] Int` | `Tensor[U64 * 40]` |
-| `247` | `fn :: ge scalarmult ct Tensor[U64 * 40] Tensor[U64 * 8]` | `Tensor[U64 * 40]` |
-| `248` | `fn :: ge to bytes Tensor[U64 * 40]` | `String` |
-| `249` | `fn :: ge finish sign Bool Bool Tensor[U64 * 10] Tensor[U64 * 10]` | `Bool Tensor[U64 * 40]` |
-| `250` | `fn :: ge decompress step2 Tensor[U64 * 10] Tensor[U64 * 10] U64` | `Bool Tensor[U64 * 40]` |
-| `251` | `fn :: ge check root Bool Bool Tensor[U64 * 10] Tensor[U64 * 10] U64` | `Bool Tensor[U64 * 40]` |
-| `252` | `fn :: ge decompress y Bool U64 Tensor[U64 * 10]` | `Bool Tensor[U64 * 40]` |
-| `253` | `fn :: ge from bytes String` | `Bool Tensor[U64 * 40]` |
-| `254` | `fn :: sc l words` | `Tensor[U64 * 8]` |
-| `255` | `fn :: sc lt l loop Tensor[U64 * 8] Tensor[U64 * 8] Int` | `Bool` |
-| `256` | `fn :: sc lt l Tensor[U64 * 8]` | `Bool` |
-| `257` | `fn :: sc sub word U64 U64` | `U64 U64` |
-| `258` | `fn :: sc sub l loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int U64` | `Tensor[U64 * 8]` |
-| `259` | `fn :: sc sub l Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
-| `260` | `fn :: sc norm l Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
-| `261` | `fn :: sc add raw loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int U64` | `Tensor[U64 * 8]` |
-| `262` | `fn :: sc add mod l Tensor[U64 * 8] Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
-| `263` | `fn :: sc zero` | `Tensor[U64 * 8]` |
-| `264` | `fn :: sc one` | `Tensor[U64 * 8]` |
-| `265` | `fn :: sc cond add bit Bool Tensor[U64 * 8] Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
-| `266` | `fn :: sc reduce byte bits Tensor[U64 * 8] Tensor[U64 * 8] U64 Int` | `Tensor[U64 * 8]` |
-| `267` | `fn :: sc reduce le64 loop Tensor[U64 * 8] Tensor[U64 * 8] String Int` | `Tensor[U64 * 8]` |
-| `268` | `fn :: sc reduce le64 String` | `Tensor[U64 * 8]` |
-| `269` | `fn :: sc mul word bits Tensor[U64 * 8] Tensor[U64 * 8] U64 Int` | `Tensor[U64 * 8]` |
-| `270` | `fn :: sc mul mod l loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int` | `Tensor[U64 * 8]` |
-| `271` | `fn :: sc muladd mod l Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
-| `272` | `fn :: ed25519 clamp scalar String` | `Tensor[U64 * 8]` |
-| `273` | `fn :: ed25519 public key String` | `String` |
-| `274` | `fn :: ed25519 sign String String` | `String` |
-| `275` | `fn :: ed25519 verify points Bool Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 8] String String String` | `Bool` |
-| `276` | `fn :: ed25519 verify scalar Bool String String String Tensor[U64 * 8]` | `Bool` |
-| `277` | `fn :: ed25519 verify String String String` | `Bool` |
-| `278` | `fn :: c is ws Int` | `Bool` |
-| `279` | `fn :: c trim start String Int Int` | `Int` |
-| `280` | `fn :: c trim end String Int Int` | `Int` |
-| `281` | `fn :: c trim String` | `String` |
-| `282` | `fn :: c starts with String String` | `Bool` |
-| `283` | `fn :: c split lines loop String Int Int Int [String]` | `[String]` |
-| `284` | `fn :: c split lines trimmed String Int` | `[String]` |
-| `285` | `fn :: c split lines String` | `[String]` |
-| `286` | `fn :: c b64 table` | `String` |
-| `287` | `fn :: c b64 ch Int` | `String` |
-| `288` | `fn :: c b64 encode loop String Int Int` | `String` |
-| `289` | `fn :: c b64 encode String` | `String` |
-| `290` | `fn :: c b64 val Int` | `Int` |
-| `291` | `fn :: c b64 quad CT16 String Int Int String Int Int Int Int` | `Bool String` |
-| `292` | `fn :: c b64 decode loop CT16 String Int Int String` | `Bool String` |
-| `293` | `fn :: c b64 decode trimmed String Int` | `Bool String` |
-| `294` | `fn :: c b64 decode String` | `Bool String` |
-| `295` | `fn :: c nth str [String] Int` | `String` |
-| `296` | `fn :: c str list len [String] Int` | `Int` |
-| `297` | `fn :: minisign encode pubkey String String` | `String` |
-| `298` | `fn :: minisign select pubkey line [String] Int` | `String` |
-| `299` | `fn :: minisign unpack pubkey Bool String` | `String String` |
-| `300` | `fn :: minisign decode pubkey String` | `String String` |
-| `301` | `fn :: minisign sign String String String String String` | `String` |
-| `302` | `fn :: minisign extract tc line String` | `String` |
-| `303` | `fn :: minisign extract tc lines [String] Int` | `String` |
-| `304` | `fn :: minisign trusted comment String` | `String` |
-| `305` | `fn :: minisign payload for alg String String` | `Bool String` |
-| `306` | `fn :: minisign check sigs Bool String String String String String String` | `Bool` |
-| `307` | `fn :: minisign verify decoded Bool String String String String String` | `Bool` |
-| `308` | `fn :: minisign verify body Bool String String String String String String` | `Bool` |
-| `309` | `fn :: minisign verify lines Bool String String String [String]` | `Bool` |
-| `310` | `fn :: minisign verify String String String` | `Bool` |
-| `311` | `fn :: sha384 init h` | `Tensor[U64 * 16]` |
-| `312` | `fn :: sha384 state to raw CT16 Tensor[U64 * 16] Int` | `String` |
-| `313` | `fn :: sha384 bytes String` | `String` |
-| `314` | `fn :: sha384 hex String` | `String` |
-| `315` | `fn :: normalize hmac384 key String` | `Tensor[U8]` |
-| `316` | `fn :: hmac sha384 String String` | `String` |
-| `317` | `fn :: c repeat byte Int Int` | `String` |
-| `318` | `fn :: hkdf extract String String` | `String` |
-| `319` | `fn :: hkdf expand loop String String Int Int String String` | `String` |
-| `320` | `fn :: hkdf expand String String Int` | `String` |
-| `321` | `fn :: hkdf extract sha384 String String` | `String` |
-| `322` | `fn :: hkdf expand sha384 loop String String Int Int String String` | `String` |
-| `323` | `fn :: hkdf expand sha384 String String Int` | `String` |
-| `324` | `fn :: hkdf expand label String String String Int` | `String` |
-| `325` | `fn :: derive secret String String String` | `String` |
-| `326` | `fn :: fe a24` | `Tensor[U64 * 10]` |
-| `327` | `fn :: fe cswap loop Tensor[U64 * 10] Tensor[U64 * 10] U64 Int` | `Tensor[U64 * 10] Tensor[U64 * 10]` |
-| `328` | `fn :: fe cswap Tensor[U64 * 10] Tensor[U64 * 10] U64` | `Tensor[U64 * 10] Tensor[U64 * 10]` |
-| `329` | `fn :: x25519 clamp scalar String` | `Tensor[U64 * 8]` |
-| `330` | `fn :: x25519 decode u String` | `Tensor[U64 * 10]` |
-| `331` | `fn :: x25519 ladder loop Tensor[U64 * 8] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] U64 Int` | `Tensor[U64 * 10] Tensor[U64 * 10]` |
-| `332` | `fn :: x25519 check non zero String` | `String` |
-| `333` | `fn :: x25519 String String` | `String` |
-| `334` | `fn :: x25519 public key String` | `String` |
-| `335` | `arch :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
-| `336` | `arch :: aes last round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
-| `337` | `arch :: aes128 encrypt block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
-| `338` | `arch :: aes256 encrypt block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
-| `339` | `arch :: aes128 ctr block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int` | `Tensor[U8 * 16]` |
-| `340` | `arch :: aes256 ctr block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int` | `Tensor[U8 * 16]` |
-| `341` | `fn :: aes128 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int Int Int` | `Tensor[U8 * n * 16]` |
-| `342` | `fn :: aes256 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int Int Int` | `Tensor[U8 * n * 16]` |
-| `343` | `fn :: aes rotl8 Int Int` | `Int` |
-| `344` | `fn :: aes box fill Tensor[U8] Int Int Bool` | `Tensor[U8]` |
-| `345` | `idem :: aes make box` | `Tensor[U8]` |
-| `346` | `fn :: aes key byte Tensor[U8] Int Int` | `Int` |
-| `347` | `fn :: aes put word Tensor[U8] Int Int Int Int Int` | `Tensor[U8]` |
-| `348` | `fn :: aes expand Tensor[U8] Tensor[U8] Int Int Int Int` | `Tensor[U8]` |
-| `349` | `fn :: aes set key Tensor[U8] String Int Int` | `Tensor[U8]` |
-| `350` | `fn :: aes128 keys Tensor[U8] String` | `Tensor[U8]` |
-| `351` | `fn :: aes256 keys Tensor[U8] String` | `Tensor[U8]` |
-| `352` | `fn :: aes iv16 String` | `Tensor[U8]` |
-| `353` | `fn :: aes128 key stream Tensor[U8] Tensor[U8] String Int Int` | `Tensor[U8]` |
-| `354` | `fn :: aes256 key stream Tensor[U8] Tensor[U8] String Int Int` | `Tensor[U8]` |
-| `355` | `fn :: aes128 block String String` | `String` |
-| `356` | `fn :: aes256 block String String` | `String` |
-| `357` | `arch :: ghash times Tensor[U64 * 2] Tensor[U64 * 2]` | `Tensor[U64 * 2]` |
-| `358` | `arch :: ghash words Tensor[U8 * 16]` | `Tensor[U64 * 2]` |
-| `359` | `arch :: ghash block bytes Tensor[U64 * 2]` | `Tensor[U8 * 16]` |
-| `360` | `arch :: ghash step Tensor[U64 * 2] Tensor[U64 * 2] Tensor[U8 * 16]` | `Tensor[U64 * 2]` |
-| `361` | `fn :: ghash rows Tensor[U64 * 2] Tensor[U64 * 2] Tensor[U8 * n * 16] Int Int` | `Tensor[U64 * 2]` |
-| `362` | `fn :: ghash padded Tensor[U8] Int` | `Tensor[U8]` |
-| `363` | `fn :: ghash absorb Tensor[U64 * 2] Tensor[U64 * 2] Tensor[U8] Int` | `Tensor[U64 * 2]` |
-| `364` | `fn :: ghash lengths Int Int` | `Tensor[U64 * 2]` |
-| `365` | `arch :: ghash last Tensor[U64 * 2] Tensor[U64 * 2] Tensor[U64 * 2]` | `Tensor[U64 * 2]` |
-| `366` | `fn :: ghash compute Tensor[U8] Tensor[U8] Tensor[U8]` | `Tensor[U8]` |
-| `367` | `fn :: aes gcm tag String String String Tensor[U8]` | `String` |
-| `368` | `fn :: aes gcm seal parts String String Tensor[U8] String String` | `String` |
-| `369` | `fn :: aes128 gcm seal String String String String` | `String` |
-| `370` | `fn :: aes128 gcm open verified Bool Tensor[U8] Tensor[U8] String Tensor[U8]` | `Int String` |
-| `371` | `fn :: aes128 gcm open String String String String` | `Int String` |
-| `372` | `fn :: aes256 gcm seal String String String String` | `String` |
-| `373` | `fn :: aes256 gcm open verified Bool Tensor[U8] Tensor[U8] String Tensor[U8]` | `Int String` |
-| `374` | `fn :: aes256 gcm open String String String String` | `Int String` |
-| `375` | `fn :: bn zero loop Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
-| `376` | `fn :: bn zero Int` | `Tensor[U64 * 260]` |
-| `377` | `fn :: bn zero520 loop Tensor[U64 * 520] Int Int` | `Tensor[U64 * 520]` |
-| `378` | `fn :: bn zero520 Int` | `Tensor[U64 * 520]` |
-| `379` | `fn :: bn clone loop Tensor[U64 * 260] Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
-| `380` | `fn :: bn clone Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `381` | `fn :: bn strip leading zeroes String Int Int` | `String` |
-| `382` | `fn :: bn from be loop Tensor[U64 * 260] String Int Int Int` | `Tensor[U64 * 260]` |
-| `383` | `fn :: bn from be String Int` | `Tensor[U64 * 260]` |
-| `384` | `fn :: bn from hex String Int` | `Tensor[U64 * 260]` |
-| `385` | `fn :: bn to be loop CT16 Tensor[U64 * 260] Int String String String String` | `String` |
-| `386` | `fn :: bn to be Tensor[U64 * 260] Int` | `String` |
-| `387` | `fn :: bn is zero loop Tensor[U64 * 260] Int Int` | `Bool` |
-| `388` | `fn :: bn is zero Tensor[U64 * 260] Int` | `Bool` |
-| `389` | `fn :: bn cmp loop Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Int` |
-| `390` | `fn :: bn cmp Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Int` |
-| `391` | `fn :: bn add raw loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int U64` | `U64` |
-| `392` | `fn :: bn sub raw loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int U64` | `U64` |
-| `393` | `fn :: bn add mod finish Bool Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `394` | `fn :: bn add mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `395` | `fn :: bn sub mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `396` | `fn :: bn mul row loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int U64` | `Tensor[U64 * 520]` |
-| `397` | `fn :: bn mul full loop Tensor[U64 * 520] Tensor[U64 * 260] Tensor[U64 * 260] Int Int` | `Tensor[U64 * 520]` |
-| `398` | `fn :: bn sub qm loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int U64` | `Tensor[U64 * 520]` |
-| `399` | `fn :: bn cmp520 offset loop Tensor[U64 * 520] Int Tensor[U64 * 260] Int` | `Int` |
-| `400` | `fn :: bn ge520 offset Tensor[U64 * 520] Int Tensor[U64 * 260] Int` | `Bool` |
-| `401` | `fn :: bn sub m while ge Tensor[U64 * 520] Int Tensor[U64 * 260] Int` | `Tensor[U64 * 520]` |
-| `402` | `fn :: bn reduce step q Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int` | `Tensor[U64 * 520]` |
-| `403` | `fn :: bn reduce loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int` | `Tensor[U64 * 520]` |
-| `404` | `fn :: bn copy520 to out Tensor[U64 * 260] Tensor[U64 * 520] Int Int` | `Tensor[U64 * 260]` |
-| `405` | `fn :: bn reduce520 Tensor[U64 * 520] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `406` | `fn :: bn mul mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `407` | `fn :: bn sq mod Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `408` | `fn :: bn mod from be String Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `409` | `fn :: bn mont loop Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int` | `Tensor[U64 * n] Tensor[U64 * n]` |
-| `410` | `fn :: bn mont carry Tensor[U64 * n] Tensor[U64 * 260] Int Int Int` | `Int` |
-| `411` | `fn :: bn mont mul BnMont Tensor[U64 * 260] Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
-| `412` | `fn :: bn mont ix Tensor[U64 * n] Int Int Int` | `Tensor[U64 * n]` |
-| `413` | `fn :: bn mont minv Int` | `Int` |
-| `414` | `fn :: bn mont pow2 BnMont Tensor[U64 * 260] Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
-| `415` | `fn :: bn mont ctx Tensor[U64 * 260] Int` | `BnMont` |
-| `416` | `fn :: bn mont mul mod BnMont Tensor[U64 * 260] Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
-| `417` | `fn :: bn mont sq BnMont Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
-| `418` | `fn :: bn mont in BnMont Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
-| `419` | `fn :: bn mont out BnMont Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
-| `420` | `fn :: bn mont pow bits Tensor[U64 * 260] BnMont Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
-| `421` | `fn :: bn mont pow bytes Tensor[U64 * 260] BnMont Tensor[U64 * 260] String Int Int` | `Tensor[U64 * 260]` |
-| `422` | `fn :: bn mont pow BnMont Tensor[U64 * 260] String` | `Tensor[U64 * 260]` |
-| `423` | `fn :: bn mod exp bits loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int Int` | `Tensor[U64 * 260]` |
-| `424` | `fn :: bn mod exp bytes loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int String Int Int` | `Tensor[U64 * 260]` |
-| `425` | `fn :: bn mod exp plain Tensor[U64 * 260] String Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `426` | `fn :: bn mod exp mont Tensor[U64 * 260] String BnMont` | `Tensor[U64 * 260]` |
-| `427` | `fn :: bn mod exp Tensor[U64 * 260] String Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `428` | `fn :: bn mod inv Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `429` | `fn :: p256 curve` | `EcCurve` |
-| `430` | `fn :: p384 curve` | `EcCurve` |
-| `431` | `fn :: ec inf point Int` | `EcPoint` |
-| `432` | `fn :: ec affine point EcCurve Tensor[U64 * 260] Tensor[U64 * 260]` | `EcPoint` |
-| `433` | `fn :: ec point on curve EcCurve Tensor[U64 * 260] Tensor[U64 * 260]` | `Bool` |
-| `434` | `fn :: ec dbl EcCurve EcPoint` | `EcPoint` |
-| `435` | `fn :: ec add diff EcCurve EcPoint Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260]` | `EcPoint` |
-| `436` | `fn :: ec add EcCurve EcPoint EcPoint` | `EcPoint` |
-| `437` | `fn :: ec to affine EcCurve EcPoint` | `Bool Tensor[U64 * 260] Tensor[U64 * 260]` |
-| `438` | `fn :: ec cselect bn loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] U64 Int Int` | `Tensor[U64 * 260]` |
-| `439` | `fn :: ec cselect point EcPoint EcPoint U64 Int` | `EcPoint` |
-| `440` | `fn :: ec scalar mul loop EcCurve EcPoint EcPoint Tensor[U64 * 260] Int` | `EcPoint` |
-| `441` | `fn :: ec scalar mul EcCurve EcPoint Tensor[U64 * 260]` | `EcPoint` |
-| `442` | `fn :: ec shamir loop EcCurve EcPoint EcPoint EcPoint EcPoint Tensor[U64 * 260] Tensor[U64 * 260] Int` | `EcPoint` |
-| `443` | `fn :: p256 public key inner EcCurve Tensor[U64 * 260]` | `String` |
-| `444` | `fn :: p256 public key String` | `String` |
-| `445` | `fn :: p256 ecdh inner EcCurve Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260]` | `String` |
-| `446` | `fn :: p256 ecdh String String` | `String` |
-| `447` | `fn :: ecdsa unpack der rs Bool Int Int Int Int Bool Int Int Int String Int` | `Bool String String` |
-| `448` | `fn :: ecdsa unpack der seq Bool Int Int String Int` | `Bool String String` |
-| `449` | `fn :: ecdsa unpack sig String Int` | `Bool String String` |
-| `450` | `fn :: ecdsa verify shamir EcCurve Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] String Int` | `Bool` |
-| `451` | `fn :: ecdsa verify curve EcCurve String String String` | `Bool` |
-| `452` | `fn :: ecdsa p256 verify String String String` | `Bool` |
-| `453` | `fn :: ecdsa p256 verify sha256 String String String` | `Bool` |
-| `454` | `fn :: ecdsa p384 verify String String String` | `Bool` |
-| `455` | `fn :: ecdsa p384 verify sha384 String String String` | `Bool` |
-| `456` | `fn :: rsa mod exp inner String String String Int` | `String` |
-| `457` | `fn :: rsa mod exp String String String` | `String` |
-| `458` | `fn :: rsa hash msg String String` | `String` |
-| `459` | `fn :: rsa digest info prefix String` | `String` |
-| `460` | `fn :: rsa verify pkcs1 inner String String String String String Int` | `Bool` |
-| `461` | `fn :: rsa verify pkcs1 String String String String String` | `Bool` |
-| `462` | `fn :: rsa mgf1 loop String String Int Int String` | `String` |
-| `463` | `fn :: rsa pss check db zeroes String Int Int` | `Bool` |
-| `464` | `fn :: rsa pss unmask db CT16 String String Int Int String` | `String` |
-| `465` | `fn :: rsa verify pss em String String String Int Int` | `Bool` |
-| `466` | `fn :: rsa verify pss inner String String String String String Int` | `Bool` |
-| `467` | `fn :: rsa verify pss String String String String String` | `Bool` |
-| `468` | `fn :: pem strip ws step Bool CT16 Int String Int Int String String String String` | `String` |
-| `469` | `fn :: pem strip ws loop CT16 String Int Int String String String String` | `String` |
-| `470` | `fn :: pem decode b64 block CT16 String` | `Bool String` |
-| `471` | `fn :: pem find sub from String String Int Int Int` | `Int` |
-| `472` | `fn :: pem decode blocks step CT16 String String String Int Int Int [String]` | `[String]` |
-| `473` | `fn :: pem decode blocks loop CT16 String String String Int Int [String]` | `[String]` |
-| `474` | `fn :: pem decode blocks String String` | `[String]` |
-| `475` | `fn :: asn1 read len bytes String Int Int Int` | `Int` |
-| `476` | `fn :: asn1 finish tlv Bool Int Int Int Int Int` | `Bool Int Int Int Int` |
-| `477` | `fn :: asn1 parse long len String Int Int Int Int` | `Bool Int Int Int Int` |
-| `478` | `fn :: asn1 parse len dispatch String Int Int Int Int` | `Bool Int Int Int Int` |
-| `479` | `fn :: asn1 parse tlv String Int` | `Bool Int Int Int Int` |
-| `480` | `fn :: x509 parse dec2 String Int` | `Int` |
-| `481` | `fn :: x509 days from civil Int Int Int` | `Int` |
-| `482` | `fn :: x509 parse time tag Int String` | `Int` |
-| `483` | `fn :: x509 parse validity inner Bool Int Int Int Int Int Int String` | `Int Int` |
-| `484` | `fn :: x509 parse validity String Int Int` | `Int Int` |
-| `485` | `fn :: x509 check cn attr Bool String Int Int Int` | `String` |
-| `486` | `fn :: x509 find cn in rdn String Int Int` | `String` |
-| `487` | `fn :: x509 parse sig alg oid String String` | `String` |
-| `488` | `fn :: x509 parse sig alg String Int Int` | `String` |
-| `489` | `fn :: x509 parse rsa spki String` | `String String String` |
-| `490` | `fn :: x509 parse ec spki String Int String` | `String String String` |
-| `491` | `fn :: x509 dispatch spki oid String String Int String` | `String String String` |
-| `492` | `fn :: x509 parse spki inner Bool String Int Int Int` | `String String String` |
-| `493` | `fn :: x509 parse spki String Int Int` | `String String String` |
-| `494` | `fn :: x509 parse san entry Bool Int Int Int Int String Int [String]` | `[String]` |
-| `495` | `fn :: x509 parse san loop String Int Int [String]` | `[String]` |
-| `496` | `fn :: x509 ext octet span String Bool Int Int Int Int` | `Int Int` |
-| `497` | `fn :: x509 dispatch ext oid String String Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
-| `498` | `fn :: x509 parse single ext inner Bool String Int Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
-| `499` | `fn :: x509 parse single ext String Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
-| `500` | `fn :: x509 parse exts step Bool String Int Int Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
-| `501` | `fn :: x509 parse exts loop String Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
-| `502` | `fn :: x509 find exts step Bool Int Int Int String Int` | `[String] Bool Int Bool` |
-| `503` | `fn :: x509 find exts in tbs String Int Int` | `[String] Bool Int Bool` |
-| `504` | `fn :: x509 empty cert` | `X509Cert` |
-| `505` | `fn :: x509 parse cert tbs Bool String Int Int Int Int Int Int Int` | `Bool X509Cert` |
-| `506` | `fn :: x509 parse cert outer Bool String Int` | `Bool X509Cert` |
-| `507` | `fn :: x509 parse cert String` | `Bool X509Cert` |
-| `508` | `fn :: x509 ascii lower char Int` | `String` |
-| `509` | `fn :: x509 to lower loop String Int Int String` | `String` |
-| `510` | `fn :: x509 to lower String` | `String` |
-| `511` | `fn :: x509 count dots loop String Int Int Int` | `Int` |
-| `512` | `fn :: x509 first dot String Int Int` | `Int` |
-| `513` | `fn :: x509 match single san inner String String` | `Bool` |
-| `514` | `fn :: x509 match single san String String` | `Bool` |
-| `515` | `fn :: x509 match san list [String] String` | `Bool` |
-| `516` | `fn :: x509 match hostname X509Cert String` | `Bool` |
-| `517` | `fn :: x509 verify signature String String String String String String` | `Bool` |
-| `518` | `fn :: x509 verify cert sig X509Cert X509Cert` | `Bool` |
+| `148` | `fn :: chacha rounds wide Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Int` | `Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]` |
+| `149` | `fn :: chacha fill counter Tensor[U32 * n] Int Int Int` | `Tensor[U32 * n]` |
+| `150` | `fn :: chacha page narrow Tensor[U8] Tensor[U8] Int Int` | `Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]` |
+| `151` | `fn :: chacha page wide Tensor[U8] Tensor[U8] Int Int` | `Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]` |
+| `152` | `fn :: chacha page Tensor[U8] Tensor[U8] Int Int` | `Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]` |
+| `153` | `fn :: c bytes part Tensor[U8] Int Int` | `Tensor[U8]` |
+| `154` | `fn :: c first bytes Tensor[U8] Int Int` | `Tensor[U8]` |
+| `155` | `fn :: chacha20 key stream chunk Tensor[U8] Tensor[U8] Int Int` | `Tensor[U8]` |
+| `156` | `arch :: chacha quarter Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` |
+| `157` | `arch :: chacha double Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` | `Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]` |
+| `158` | `arch :: chacha one block Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Int` | `Tensor[U8 * 64]` |
+| `159` | `fn :: chacha block rows Tensor[U8 * n * 64] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Int Int Int` | `Tensor[U8 * n * 64]` |
+| `160` | `fn :: chacha key words Tensor[U8] Int` | `Tensor[U32 * 4]` |
+| `161` | `fn :: chacha nonce words Tensor[U8]` | `Tensor[U32 * 4]` |
+| `162` | `fn :: chacha20 key stream blocks Tensor[U8] Tensor[U8] Int Int` | `Tensor[U8]` |
+| `163` | `fn :: chacha20 key stream pieces Tensor[U8] Tensor[U8] Int Int` | `[String]` |
+| `164` | `fn :: chacha20 key stream Tensor[U8] Tensor[U8] Int Int` | `Tensor[U8]` |
+| `165` | `fn :: chacha20 block Tensor[U8] Tensor[U8] Int` | `Tensor[U8]` |
+| `166` | `fn :: c bitxor bytes Tensor[U8 * n] Tensor[U8 * n]` | `Tensor[U8 * n]` |
+| `167` | `fn :: chacha20 bitxor Tensor[U8] Tensor[U8] Int Tensor[U8]` | `Tensor[U8]` |
+| `168` | `fn :: poly1305 r limbs Tensor[U8]` | `Tensor[Int * 5]` |
+| `169` | `fn :: poly1305 step Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int` | `Tensor[Int * 5]` |
+| `170` | `fn :: poly1305 blocks loop Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int Int` | `Tensor[Int * 5]` |
+| `171` | `fn :: poly1305 carry into Int Int Int Int Int Tensor[Int * j] Int` | `Int` |
+| `172` | `arch :: poly1305 quad Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U8 * 64] Int Int Int Int Int Int Int Int Int` | `Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` |
+| `173` | `arch :: poly1305 quad last Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U8 * 64] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` | `Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` |
+| `174` | `fn :: poly1305 quads Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U8 * n * 64] Int Int Int Int Int Int Int Int Int Int Int` | `Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` |
+| `175` | `fn :: poly1305 quads last Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U8 * n * 64] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Int Int` | `Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` |
+| `176` | `fn :: poly1305 mul Tensor[Int * 5] Tensor[Int * 5]` | `Tensor[Int * 5]` |
+| `177` | `fn :: poly1305 quad powers Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Int` | `Tensor[U64 * 4]` |
+| `178` | `fn :: poly1305 quad start Int` | `Tensor[U64 * 4]` |
+| `179` | `fn :: poly1305 quad sum Tensor[U64 * 4]` | `Int` |
+| `180` | `fn :: poly1305 quad run Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int` | `Tensor[Int * 5]` |
+| `181` | `fn :: poly1305 quad from Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int` | `Tensor[Int * 5]` |
+| `182` | `fn :: poly1305 quad bytes Tensor[U8] Int` | `Tensor[U8]` |
+| `183` | `fn :: poly1305 quad rows Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int` | `Tensor[Int * 5]` |
+| `184` | `fn :: poly1305 quad count Int` | `Int` |
+| `185` | `fn :: c pick Bool Int Int` | `Int` |
+| `186` | `fn :: poly1305 finalize Tensor[Int * 5] Tensor[U8]` | `Tensor[U8]` |
+| `187` | `fn :: pad16 len Int` | `Int` |
+| `188` | `fn :: c put le64 Tensor[U8] Int Int` | `Int` |
+| `189` | `fn :: poly1305 aead mac Tensor[U8] Tensor[U8] Tensor[U8]` | `Tensor[U8]` |
+| `190` | `fn :: aead key stream Tensor[U8] Tensor[U8] Int` | `Tensor[U8]` |
+| `191` | `fn :: aead seal String String String String` | `String` |
+| `192` | `fn :: decrypt verified aead Bool Tensor[U8] Tensor[U8]` | `Int String` |
+| `193` | `fn :: aead open String String String String` | `Int String` |
+| `194` | `fn :: sha512 k hex0` | `String` |
+| `195` | `fn :: sha512 k hex1` | `String` |
+| `196` | `fn :: sha512 fill hex words Tensor[U64 * 160] String Int Int` | `Tensor[U64 * 160]` |
+| `197` | `fn :: sha512 init k` | `Tensor[U64 * 160]` |
+| `198` | `fn :: sha512 init h loop Tensor[U64 * 16] String Int` | `Tensor[U64 * 16]` |
+| `199` | `fn :: sha512 init h` | `Tensor[U64 * 16]` |
+| `200` | `fn :: sha512 rrot lt32 U64 U64 Int` | `U64 U64` |
+| `201` | `fn :: sha512 rshift lt32 U64 U64 Int` | `U64 U64` |
+| `202` | `fn :: sha512 big sigma0 U64 U64` | `U64 U64` |
+| `203` | `fn :: sha512 big sigma1 U64 U64` | `U64 U64` |
+| `204` | `fn :: sha512 small sigma0 U64 U64` | `U64 U64` |
+| `205` | `fn :: sha512 small sigma1 U64 U64` | `U64 U64` |
+| `206` | `fn :: sha512 vbyte String Int Int Int` | `U64` |
+| `207` | `fn :: sha512 load w fast Tensor[U64 * 160] String Int Int` | `Tensor[U64 * 160]` |
+| `208` | `fn :: sha512 load w pad Tensor[U64 * 160] String Int Int Int Int` | `Tensor[U64 * 160]` |
+| `209` | `fn :: sha512 expand w Tensor[U64 * 160] Int` | `Tensor[U64 * 160]` |
+| `210` | `fn :: sha512 copy state Tensor[U64 * 16] Tensor[U64 * 16] Int` | `Tensor[U64 * 16]` |
+| `211` | `fn :: sha512 add state Tensor[U64 * 16] Tensor[U64 * 16] Int` | `Tensor[U64 * 16]` |
+| `212` | `fn :: sha512 rounds loop Tensor[U64 * 16] Tensor[U64 * 160] Tensor[U64 * 160] Int` | `Tensor[U64 * 16]` |
+| `213` | `fn :: sha512 blocks loop Tensor[U64 * 16] Tensor[U64 * 16] Tensor[U64 * 160] Tensor[U64 * 160] String Int Int Int` | `Tensor[U64 * 16]` |
+| `214` | `fn :: sha512 state to raw CT16 Tensor[U64 * 16] Int` | `String` |
+| `215` | `fn :: sha512 bytes String` | `String` |
+| `216` | `fn :: sha512 hex String` | `String` |
+| `217` | `fn :: fe lit U64 U64 U64 U64 U64 U64 U64 U64 U64 U64` | `Tensor[U64 * 10]` |
+| `218` | `fn :: fe zero` | `Tensor[U64 * 10]` |
+| `219` | `fn :: fe one` | `Tensor[U64 * 10]` |
+| `220` | `fn :: fe d` | `Tensor[U64 * 10]` |
+| `221` | `fn :: fe d2` | `Tensor[U64 * 10]` |
+| `222` | `fn :: fe sqrt m1` | `Tensor[U64 * 10]` |
+| `223` | `fn :: fe bx` | `Tensor[U64 * 10]` |
+| `224` | `fn :: fe by` | `Tensor[U64 * 10]` |
+| `225` | `fn :: fe bt` | `Tensor[U64 * 10]` |
+| `226` | `fn :: fe carry pass Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `227` | `fn :: fe carry Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `228` | `fn :: fe add Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `229` | `fn :: fe sub Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `230` | `fn :: fe mul Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `231` | `fn :: fe sq Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `232` | `fn :: fe sq n Tensor[U64 * 10] Int` | `Tensor[U64 * 10]` |
+| `233` | `fn :: fe freeze Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `234` | `fn :: fe eq Tensor[U64 * 10] Tensor[U64 * 10]` | `Bool` |
+| `235` | `fn :: fe pow22523 Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `236` | `fn :: fe invert Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `237` | `fn :: fe to words8 Tensor[U64 * 10]` | `Tensor[U64 * 8]` |
+| `238` | `fn :: words8 to raw32 loop CT16 Tensor[U64 * 8] Int` | `String` |
+| `239` | `fn :: raw32 to words8 String` | `Tensor[U64 * 8]` |
+| `240` | `fn :: fe from raw32 String` | `Bool U64 Tensor[U64 * 10]` |
+| `241` | `fn :: ge pack Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 40]` |
+| `242` | `fn :: ge coord Tensor[U64 * 40] Int` | `Tensor[U64 * 10]` |
+| `243` | `fn :: ge zero` | `Tensor[U64 * 40]` |
+| `244` | `fn :: ge base` | `Tensor[U64 * 40]` |
+| `245` | `fn :: ge add Tensor[U64 * 40] Tensor[U64 * 40]` | `Tensor[U64 * 40]` |
+| `246` | `fn :: ge dbl Tensor[U64 * 40]` | `Tensor[U64 * 40]` |
+| `247` | `fn :: ge cselect loop Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 40] U64 Int` | `Tensor[U64 * 40]` |
+| `248` | `fn :: ge cselect Tensor[U64 * 40] Tensor[U64 * 40] U64` | `Tensor[U64 * 40]` |
+| `249` | `fn :: ge scalarmult loop Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 8] Int` | `Tensor[U64 * 40]` |
+| `250` | `fn :: ge scalarmult ct Tensor[U64 * 40] Tensor[U64 * 8]` | `Tensor[U64 * 40]` |
+| `251` | `fn :: ge to bytes Tensor[U64 * 40]` | `String` |
+| `252` | `fn :: ge finish sign Bool Bool Tensor[U64 * 10] Tensor[U64 * 10]` | `Bool Tensor[U64 * 40]` |
+| `253` | `fn :: ge decompress step2 Tensor[U64 * 10] Tensor[U64 * 10] U64` | `Bool Tensor[U64 * 40]` |
+| `254` | `fn :: ge check root Bool Bool Tensor[U64 * 10] Tensor[U64 * 10] U64` | `Bool Tensor[U64 * 40]` |
+| `255` | `fn :: ge decompress y Bool U64 Tensor[U64 * 10]` | `Bool Tensor[U64 * 40]` |
+| `256` | `fn :: ge from bytes String` | `Bool Tensor[U64 * 40]` |
+| `257` | `fn :: sc l words` | `Tensor[U64 * 8]` |
+| `258` | `fn :: sc lt l loop Tensor[U64 * 8] Tensor[U64 * 8] Int` | `Bool` |
+| `259` | `fn :: sc lt l Tensor[U64 * 8]` | `Bool` |
+| `260` | `fn :: sc sub word U64 U64` | `U64 U64` |
+| `261` | `fn :: sc sub l loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int U64` | `Tensor[U64 * 8]` |
+| `262` | `fn :: sc sub l Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
+| `263` | `fn :: sc norm l Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
+| `264` | `fn :: sc add raw loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int U64` | `Tensor[U64 * 8]` |
+| `265` | `fn :: sc add mod l Tensor[U64 * 8] Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
+| `266` | `fn :: sc zero` | `Tensor[U64 * 8]` |
+| `267` | `fn :: sc one` | `Tensor[U64 * 8]` |
+| `268` | `fn :: sc cond add bit Bool Tensor[U64 * 8] Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
+| `269` | `fn :: sc reduce byte bits Tensor[U64 * 8] Tensor[U64 * 8] U64 Int` | `Tensor[U64 * 8]` |
+| `270` | `fn :: sc reduce le64 loop Tensor[U64 * 8] Tensor[U64 * 8] String Int` | `Tensor[U64 * 8]` |
+| `271` | `fn :: sc reduce le64 String` | `Tensor[U64 * 8]` |
+| `272` | `fn :: sc mul word bits Tensor[U64 * 8] Tensor[U64 * 8] U64 Int` | `Tensor[U64 * 8]` |
+| `273` | `fn :: sc mul mod l loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int` | `Tensor[U64 * 8]` |
+| `274` | `fn :: sc muladd mod l Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
+| `275` | `fn :: ed25519 clamp scalar String` | `Tensor[U64 * 8]` |
+| `276` | `fn :: ed25519 public key String` | `String` |
+| `277` | `fn :: ed25519 sign String String` | `String` |
+| `278` | `fn :: ed25519 verify points Bool Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 8] String String String` | `Bool` |
+| `279` | `fn :: ed25519 verify scalar Bool String String String Tensor[U64 * 8]` | `Bool` |
+| `280` | `fn :: ed25519 verify String String String` | `Bool` |
+| `281` | `fn :: c is ws Int` | `Bool` |
+| `282` | `fn :: c trim start String Int Int` | `Int` |
+| `283` | `fn :: c trim end String Int Int` | `Int` |
+| `284` | `fn :: c trim String` | `String` |
+| `285` | `fn :: c starts with String String` | `Bool` |
+| `286` | `fn :: c split lines loop String Int Int Int [String]` | `[String]` |
+| `287` | `fn :: c split lines trimmed String Int` | `[String]` |
+| `288` | `fn :: c split lines String` | `[String]` |
+| `289` | `fn :: c b64 table` | `String` |
+| `290` | `fn :: c b64 ch Int` | `String` |
+| `291` | `fn :: c b64 encode loop String Int Int` | `String` |
+| `292` | `fn :: c b64 encode String` | `String` |
+| `293` | `fn :: c b64 val Int` | `Int` |
+| `294` | `fn :: c b64 quad CT16 String Int Int String Int Int Int Int` | `Bool String` |
+| `295` | `fn :: c b64 decode loop CT16 String Int Int String` | `Bool String` |
+| `296` | `fn :: c b64 decode trimmed String Int` | `Bool String` |
+| `297` | `fn :: c b64 decode String` | `Bool String` |
+| `298` | `fn :: c nth str [String] Int` | `String` |
+| `299` | `fn :: c str list len [String] Int` | `Int` |
+| `300` | `fn :: minisign encode pubkey String String` | `String` |
+| `301` | `fn :: minisign select pubkey line [String] Int` | `String` |
+| `302` | `fn :: minisign unpack pubkey Bool String` | `String String` |
+| `303` | `fn :: minisign decode pubkey String` | `String String` |
+| `304` | `fn :: minisign sign String String String String String` | `String` |
+| `305` | `fn :: minisign extract tc line String` | `String` |
+| `306` | `fn :: minisign extract tc lines [String] Int` | `String` |
+| `307` | `fn :: minisign trusted comment String` | `String` |
+| `308` | `fn :: minisign payload for alg String String` | `Bool String` |
+| `309` | `fn :: minisign check sigs Bool String String String String String String` | `Bool` |
+| `310` | `fn :: minisign verify decoded Bool String String String String String` | `Bool` |
+| `311` | `fn :: minisign verify body Bool String String String String String String` | `Bool` |
+| `312` | `fn :: minisign verify lines Bool String String String [String]` | `Bool` |
+| `313` | `fn :: minisign verify String String String` | `Bool` |
+| `314` | `fn :: sha384 init h` | `Tensor[U64 * 16]` |
+| `315` | `fn :: sha384 state to raw CT16 Tensor[U64 * 16] Int` | `String` |
+| `316` | `fn :: sha384 bytes String` | `String` |
+| `317` | `fn :: sha384 hex String` | `String` |
+| `318` | `fn :: normalize hmac384 key String` | `Tensor[U8]` |
+| `319` | `fn :: hmac sha384 String String` | `String` |
+| `320` | `fn :: c repeat byte Int Int` | `String` |
+| `321` | `fn :: hkdf extract String String` | `String` |
+| `322` | `fn :: hkdf expand loop String String Int Int String String` | `String` |
+| `323` | `fn :: hkdf expand String String Int` | `String` |
+| `324` | `fn :: hkdf extract sha384 String String` | `String` |
+| `325` | `fn :: hkdf expand sha384 loop String String Int Int String String` | `String` |
+| `326` | `fn :: hkdf expand sha384 String String Int` | `String` |
+| `327` | `fn :: hkdf expand label String String String Int` | `String` |
+| `328` | `fn :: derive secret String String String` | `String` |
+| `329` | `fn :: fe a24` | `Tensor[U64 * 10]` |
+| `330` | `fn :: fe cswap loop Tensor[U64 * 10] Tensor[U64 * 10] U64 Int` | `Tensor[U64 * 10] Tensor[U64 * 10]` |
+| `331` | `fn :: fe cswap Tensor[U64 * 10] Tensor[U64 * 10] U64` | `Tensor[U64 * 10] Tensor[U64 * 10]` |
+| `332` | `fn :: x25519 clamp scalar String` | `Tensor[U64 * 8]` |
+| `333` | `fn :: x25519 decode u String` | `Tensor[U64 * 10]` |
+| `334` | `fn :: x25519 ladder loop Tensor[U64 * 8] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] U64 Int` | `Tensor[U64 * 10] Tensor[U64 * 10]` |
+| `335` | `fn :: x25519 check non zero String` | `String` |
+| `336` | `fn :: x25519 String String` | `String` |
+| `337` | `fn :: x25519 public key String` | `String` |
+| `338` | `arch :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
+| `339` | `arch :: aes last round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
+| `340` | `arch :: aes128 encrypt block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
+| `341` | `arch :: aes256 encrypt block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
+| `342` | `arch :: aes128 ctr block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int` | `Tensor[U8 * 16]` |
+| `343` | `arch :: aes256 ctr block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int` | `Tensor[U8 * 16]` |
+| `344` | `fn :: aes128 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int Int Int` | `Tensor[U8 * n * 16]` |
+| `345` | `fn :: aes256 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int Int Int` | `Tensor[U8 * n * 16]` |
+| `346` | `fn :: aes rotl8 Int Int` | `Int` |
+| `347` | `fn :: aes box fill Tensor[U8] Int Int Bool` | `Tensor[U8]` |
+| `348` | `idem :: aes make box` | `Tensor[U8]` |
+| `349` | `fn :: aes key byte Tensor[U8] Int Int` | `Int` |
+| `350` | `fn :: aes put word Tensor[U8] Int Int Int Int Int` | `Tensor[U8]` |
+| `351` | `fn :: aes expand Tensor[U8] Tensor[U8] Int Int Int Int` | `Tensor[U8]` |
+| `352` | `fn :: aes set key Tensor[U8] String Int Int` | `Tensor[U8]` |
+| `353` | `fn :: aes128 keys Tensor[U8] String` | `Tensor[U8]` |
+| `354` | `fn :: aes256 keys Tensor[U8] String` | `Tensor[U8]` |
+| `355` | `fn :: aes iv16 String` | `Tensor[U8]` |
+| `356` | `fn :: aes128 key stream Tensor[U8] Tensor[U8] String Int Int` | `Tensor[U8]` |
+| `357` | `fn :: aes256 key stream Tensor[U8] Tensor[U8] String Int Int` | `Tensor[U8]` |
+| `358` | `fn :: aes128 block String String` | `String` |
+| `359` | `fn :: aes256 block String String` | `String` |
+| `360` | `arch :: ghash times Tensor[U64 * 2] Tensor[U64 * 2]` | `Tensor[U64 * 2]` |
+| `361` | `arch :: ghash words Tensor[U8 * 16]` | `Tensor[U64 * 2]` |
+| `362` | `arch :: ghash block bytes Tensor[U64 * 2]` | `Tensor[U8 * 16]` |
+| `363` | `arch :: ghash step Tensor[U64 * 2] Tensor[U64 * 2] Tensor[U8 * 16]` | `Tensor[U64 * 2]` |
+| `364` | `fn :: ghash rows Tensor[U64 * 2] Tensor[U64 * 2] Tensor[U8 * n * 16] Int Int` | `Tensor[U64 * 2]` |
+| `365` | `fn :: ghash padded Tensor[U8] Int` | `Tensor[U8]` |
+| `366` | `fn :: ghash absorb Tensor[U64 * 2] Tensor[U64 * 2] Tensor[U8] Int` | `Tensor[U64 * 2]` |
+| `367` | `fn :: ghash lengths Int Int` | `Tensor[U64 * 2]` |
+| `368` | `arch :: ghash last Tensor[U64 * 2] Tensor[U64 * 2] Tensor[U64 * 2]` | `Tensor[U64 * 2]` |
+| `369` | `fn :: ghash compute Tensor[U8] Tensor[U8] Tensor[U8]` | `Tensor[U8]` |
+| `370` | `fn :: aes gcm tag String String String Tensor[U8]` | `String` |
+| `371` | `fn :: aes gcm seal parts String String Tensor[U8] String String` | `String` |
+| `372` | `fn :: aes128 gcm seal String String String String` | `String` |
+| `373` | `fn :: aes128 gcm open verified Bool Tensor[U8] Tensor[U8] String Tensor[U8]` | `Int String` |
+| `374` | `fn :: aes128 gcm open String String String String` | `Int String` |
+| `375` | `fn :: aes256 gcm seal String String String String` | `String` |
+| `376` | `fn :: aes256 gcm open verified Bool Tensor[U8] Tensor[U8] String Tensor[U8]` | `Int String` |
+| `377` | `fn :: aes256 gcm open String String String String` | `Int String` |
+| `378` | `fn :: bn zero loop Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
+| `379` | `fn :: bn zero Int` | `Tensor[U64 * 260]` |
+| `380` | `fn :: bn zero520 loop Tensor[U64 * 520] Int Int` | `Tensor[U64 * 520]` |
+| `381` | `fn :: bn zero520 Int` | `Tensor[U64 * 520]` |
+| `382` | `fn :: bn clone loop Tensor[U64 * 260] Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
+| `383` | `fn :: bn clone Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `384` | `fn :: bn strip leading zeroes String Int Int` | `String` |
+| `385` | `fn :: bn from be loop Tensor[U64 * 260] String Int Int Int` | `Tensor[U64 * 260]` |
+| `386` | `fn :: bn from be String Int` | `Tensor[U64 * 260]` |
+| `387` | `fn :: bn from hex String Int` | `Tensor[U64 * 260]` |
+| `388` | `fn :: bn to be loop CT16 Tensor[U64 * 260] Int String String String String` | `String` |
+| `389` | `fn :: bn to be Tensor[U64 * 260] Int` | `String` |
+| `390` | `fn :: bn is zero loop Tensor[U64 * 260] Int Int` | `Bool` |
+| `391` | `fn :: bn is zero Tensor[U64 * 260] Int` | `Bool` |
+| `392` | `fn :: bn cmp loop Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Int` |
+| `393` | `fn :: bn cmp Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Int` |
+| `394` | `fn :: bn add raw loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int U64` | `U64` |
+| `395` | `fn :: bn sub raw loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int U64` | `U64` |
+| `396` | `fn :: bn add mod finish Bool Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `397` | `fn :: bn add mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `398` | `fn :: bn sub mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `399` | `fn :: bn mul row loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int U64` | `Tensor[U64 * 520]` |
+| `400` | `fn :: bn mul full loop Tensor[U64 * 520] Tensor[U64 * 260] Tensor[U64 * 260] Int Int` | `Tensor[U64 * 520]` |
+| `401` | `fn :: bn sub qm loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int U64` | `Tensor[U64 * 520]` |
+| `402` | `fn :: bn cmp520 offset loop Tensor[U64 * 520] Int Tensor[U64 * 260] Int` | `Int` |
+| `403` | `fn :: bn ge520 offset Tensor[U64 * 520] Int Tensor[U64 * 260] Int` | `Bool` |
+| `404` | `fn :: bn sub m while ge Tensor[U64 * 520] Int Tensor[U64 * 260] Int` | `Tensor[U64 * 520]` |
+| `405` | `fn :: bn reduce step q Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int` | `Tensor[U64 * 520]` |
+| `406` | `fn :: bn reduce loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int` | `Tensor[U64 * 520]` |
+| `407` | `fn :: bn copy520 to out Tensor[U64 * 260] Tensor[U64 * 520] Int Int` | `Tensor[U64 * 260]` |
+| `408` | `fn :: bn reduce520 Tensor[U64 * 520] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `409` | `fn :: bn mul mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `410` | `fn :: bn sq mod Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `411` | `fn :: bn mod from be String Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `412` | `fn :: bn mont loop Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int` | `Tensor[U64 * n] Tensor[U64 * n]` |
+| `413` | `fn :: bn mont carry Tensor[U64 * n] Tensor[U64 * 260] Int Int Int` | `Int` |
+| `414` | `fn :: bn mont mul BnMont Tensor[U64 * 260] Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
+| `415` | `fn :: bn mont ix Tensor[U64 * n] Int Int Int` | `Tensor[U64 * n]` |
+| `416` | `fn :: bn mont minv Int` | `Int` |
+| `417` | `fn :: bn mont pow2 BnMont Tensor[U64 * 260] Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
+| `418` | `fn :: bn mont ctx Tensor[U64 * 260] Int` | `BnMont` |
+| `419` | `fn :: bn mont mul mod BnMont Tensor[U64 * 260] Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
+| `420` | `fn :: bn mont sq BnMont Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
+| `421` | `fn :: bn mont in BnMont Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
+| `422` | `fn :: bn mont out BnMont Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
+| `423` | `fn :: bn mont pow bits Tensor[U64 * 260] BnMont Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
+| `424` | `fn :: bn mont pow bytes Tensor[U64 * 260] BnMont Tensor[U64 * 260] String Int Int` | `Tensor[U64 * 260]` |
+| `425` | `fn :: bn mont pow BnMont Tensor[U64 * 260] String` | `Tensor[U64 * 260]` |
+| `426` | `fn :: bn mod exp bits loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int Int` | `Tensor[U64 * 260]` |
+| `427` | `fn :: bn mod exp bytes loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int String Int Int` | `Tensor[U64 * 260]` |
+| `428` | `fn :: bn mod exp plain Tensor[U64 * 260] String Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `429` | `fn :: bn mod exp mont Tensor[U64 * 260] String BnMont` | `Tensor[U64 * 260]` |
+| `430` | `fn :: bn mod exp Tensor[U64 * 260] String Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `431` | `fn :: bn mod inv Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `432` | `fn :: p256 curve` | `EcCurve` |
+| `433` | `fn :: p384 curve` | `EcCurve` |
+| `434` | `fn :: ec inf point Int` | `EcPoint` |
+| `435` | `fn :: ec affine point EcCurve Tensor[U64 * 260] Tensor[U64 * 260]` | `EcPoint` |
+| `436` | `fn :: ec point on curve EcCurve Tensor[U64 * 260] Tensor[U64 * 260]` | `Bool` |
+| `437` | `fn :: ec dbl EcCurve EcPoint` | `EcPoint` |
+| `438` | `fn :: ec add diff EcCurve EcPoint Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260]` | `EcPoint` |
+| `439` | `fn :: ec add EcCurve EcPoint EcPoint` | `EcPoint` |
+| `440` | `fn :: ec to affine EcCurve EcPoint` | `Bool Tensor[U64 * 260] Tensor[U64 * 260]` |
+| `441` | `fn :: ec cselect bn loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] U64 Int Int` | `Tensor[U64 * 260]` |
+| `442` | `fn :: ec cselect point EcPoint EcPoint U64 Int` | `EcPoint` |
+| `443` | `fn :: ec scalar mul loop EcCurve EcPoint EcPoint Tensor[U64 * 260] Int` | `EcPoint` |
+| `444` | `fn :: ec scalar mul EcCurve EcPoint Tensor[U64 * 260]` | `EcPoint` |
+| `445` | `fn :: ec shamir loop EcCurve EcPoint EcPoint EcPoint EcPoint Tensor[U64 * 260] Tensor[U64 * 260] Int` | `EcPoint` |
+| `446` | `fn :: p256 public key inner EcCurve Tensor[U64 * 260]` | `String` |
+| `447` | `fn :: p256 public key String` | `String` |
+| `448` | `fn :: p256 ecdh inner EcCurve Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260]` | `String` |
+| `449` | `fn :: p256 ecdh String String` | `String` |
+| `450` | `fn :: ecdsa unpack der rs Bool Int Int Int Int Bool Int Int Int String Int` | `Bool String String` |
+| `451` | `fn :: ecdsa unpack der seq Bool Int Int String Int` | `Bool String String` |
+| `452` | `fn :: ecdsa unpack sig String Int` | `Bool String String` |
+| `453` | `fn :: ecdsa verify shamir EcCurve Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] String Int` | `Bool` |
+| `454` | `fn :: ecdsa verify curve EcCurve String String String` | `Bool` |
+| `455` | `fn :: ecdsa p256 verify String String String` | `Bool` |
+| `456` | `fn :: ecdsa p256 verify sha256 String String String` | `Bool` |
+| `457` | `fn :: ecdsa p384 verify String String String` | `Bool` |
+| `458` | `fn :: ecdsa p384 verify sha384 String String String` | `Bool` |
+| `459` | `fn :: rsa mod exp inner String String String Int` | `String` |
+| `460` | `fn :: rsa mod exp String String String` | `String` |
+| `461` | `fn :: rsa hash msg String String` | `String` |
+| `462` | `fn :: rsa digest info prefix String` | `String` |
+| `463` | `fn :: rsa verify pkcs1 inner String String String String String Int` | `Bool` |
+| `464` | `fn :: rsa verify pkcs1 String String String String String` | `Bool` |
+| `465` | `fn :: rsa mgf1 loop String String Int Int String` | `String` |
+| `466` | `fn :: rsa pss check db zeroes String Int Int` | `Bool` |
+| `467` | `fn :: rsa pss unmask db CT16 String String Int Int String` | `String` |
+| `468` | `fn :: rsa verify pss em String String String Int Int` | `Bool` |
+| `469` | `fn :: rsa verify pss inner String String String String String Int` | `Bool` |
+| `470` | `fn :: rsa verify pss String String String String String` | `Bool` |
+| `471` | `fn :: pem strip ws step Bool CT16 Int String Int Int String String String String` | `String` |
+| `472` | `fn :: pem strip ws loop CT16 String Int Int String String String String` | `String` |
+| `473` | `fn :: pem decode b64 block CT16 String` | `Bool String` |
+| `474` | `fn :: pem find sub from String String Int Int Int` | `Int` |
+| `475` | `fn :: pem decode blocks step CT16 String String String Int Int Int [String]` | `[String]` |
+| `476` | `fn :: pem decode blocks loop CT16 String String String Int Int [String]` | `[String]` |
+| `477` | `fn :: pem decode blocks String String` | `[String]` |
+| `478` | `fn :: asn1 read len bytes String Int Int Int` | `Int` |
+| `479` | `fn :: asn1 finish tlv Bool Int Int Int Int Int` | `Bool Int Int Int Int` |
+| `480` | `fn :: asn1 parse long len String Int Int Int Int` | `Bool Int Int Int Int` |
+| `481` | `fn :: asn1 parse len dispatch String Int Int Int Int` | `Bool Int Int Int Int` |
+| `482` | `fn :: asn1 parse tlv String Int` | `Bool Int Int Int Int` |
+| `483` | `fn :: x509 parse dec2 String Int` | `Int` |
+| `484` | `fn :: x509 days from civil Int Int Int` | `Int` |
+| `485` | `fn :: x509 parse time tag Int String` | `Int` |
+| `486` | `fn :: x509 parse validity inner Bool Int Int Int Int Int Int String` | `Int Int` |
+| `487` | `fn :: x509 parse validity String Int Int` | `Int Int` |
+| `488` | `fn :: x509 check cn attr Bool String Int Int Int` | `String` |
+| `489` | `fn :: x509 find cn in rdn String Int Int` | `String` |
+| `490` | `fn :: x509 parse sig alg oid String String` | `String` |
+| `491` | `fn :: x509 parse sig alg String Int Int` | `String` |
+| `492` | `fn :: x509 parse rsa spki String` | `String String String` |
+| `493` | `fn :: x509 parse ec spki String Int String` | `String String String` |
+| `494` | `fn :: x509 dispatch spki oid String String Int String` | `String String String` |
+| `495` | `fn :: x509 parse spki inner Bool String Int Int Int` | `String String String` |
+| `496` | `fn :: x509 parse spki String Int Int` | `String String String` |
+| `497` | `fn :: x509 parse san entry Bool Int Int Int Int String Int [String]` | `[String]` |
+| `498` | `fn :: x509 parse san loop String Int Int [String]` | `[String]` |
+| `499` | `fn :: x509 ext octet span String Bool Int Int Int Int` | `Int Int` |
+| `500` | `fn :: x509 dispatch ext oid String String Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
+| `501` | `fn :: x509 parse single ext inner Bool String Int Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
+| `502` | `fn :: x509 parse single ext String Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
+| `503` | `fn :: x509 parse exts step Bool String Int Int Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
+| `504` | `fn :: x509 parse exts loop String Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
+| `505` | `fn :: x509 find exts step Bool Int Int Int String Int` | `[String] Bool Int Bool` |
+| `506` | `fn :: x509 find exts in tbs String Int Int` | `[String] Bool Int Bool` |
+| `507` | `fn :: x509 empty cert` | `X509Cert` |
+| `508` | `fn :: x509 parse cert tbs Bool String Int Int Int Int Int Int Int` | `Bool X509Cert` |
+| `509` | `fn :: x509 parse cert outer Bool String Int` | `Bool X509Cert` |
+| `510` | `fn :: x509 parse cert String` | `Bool X509Cert` |
+| `511` | `fn :: x509 ascii lower char Int` | `String` |
+| `512` | `fn :: x509 to lower loop String Int Int String` | `String` |
+| `513` | `fn :: x509 to lower String` | `String` |
+| `514` | `fn :: x509 count dots loop String Int Int Int` | `Int` |
+| `515` | `fn :: x509 first dot String Int Int` | `Int` |
+| `516` | `fn :: x509 match single san inner String String` | `Bool` |
+| `517` | `fn :: x509 match single san String String` | `Bool` |
+| `518` | `fn :: x509 match san list [String] String` | `Bool` |
+| `519` | `fn :: x509 match hostname X509Cert String` | `Bool` |
+| `520` | `fn :: x509 verify signature String String String String String String` | `Bool` |
+| `521` | `fn :: x509 verify cert sig X509Cert X509Cert` | `Bool` |
 
 ---
 
@@ -1569,6 +1572,80 @@ fn :: chacha rounds Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 *
           s4_i = (s4_i xor s9_i) rotl 7
           chacha rounds s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 (k - 1)
 
+-- The same rounds with a new tensor for each line, for more than 64 blocks at once. Vonkeep measured on
+-- 2026-11-25, with ridgunc 1.0.87, the rounds in place 9 to 12% slower than these from 65 536 bytes on
+-- (`chacha20 bitxor` of 65 536 bytes: 92.4 us against 82.2 us) and the same at 4 064 bytes. To be removed when the
+-- form in place is as fast on wide tensors.
+fn :: chacha rounds wide Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
+      chacha rounds wide s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 k =
+        | k <= 0 = (s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15)
+        | otherwise =
+          s0v1 = s0_i + s4_i
+          s12v1 = (s12_i xor s0v1_i) rotl 16
+          s8v1 = s8_i + s12v1_i
+          s4v1 = (s4_i xor s8v1_i) rotl 12
+          s0v2 = s0v1_i + s4v1_i
+          s12v2 = (s12v1_i xor s0v2_i) rotl 8
+          s8v2 = s8v1_i + s12v2_i
+          s4v2 = (s4v1_i xor s8v2_i) rotl 7
+          s1v1 = s1_i + s5_i
+          s13v1 = (s13_i xor s1v1_i) rotl 16
+          s9v1 = s9_i + s13v1_i
+          s5v1 = (s5_i xor s9v1_i) rotl 12
+          s1v2 = s1v1_i + s5v1_i
+          s13v2 = (s13v1_i xor s1v2_i) rotl 8
+          s9v2 = s9v1_i + s13v2_i
+          s5v2 = (s5v1_i xor s9v2_i) rotl 7
+          s2v1 = s2_i + s6_i
+          s14v1 = (s14_i xor s2v1_i) rotl 16
+          s10v1 = s10_i + s14v1_i
+          s6v1 = (s6_i xor s10v1_i) rotl 12
+          s2v2 = s2v1_i + s6v1_i
+          s14v2 = (s14v1_i xor s2v2_i) rotl 8
+          s10v2 = s10v1_i + s14v2_i
+          s6v2 = (s6v1_i xor s10v2_i) rotl 7
+          s3v1 = s3_i + s7_i
+          s15v1 = (s15_i xor s3v1_i) rotl 16
+          s11v1 = s11_i + s15v1_i
+          s7v1 = (s7_i xor s11v1_i) rotl 12
+          s3v2 = s3v1_i + s7v1_i
+          s15v2 = (s15v1_i xor s3v2_i) rotl 8
+          s11v2 = s11v1_i + s15v2_i
+          s7v2 = (s7v1_i xor s11v2_i) rotl 7
+          s0v3 = s0v2_i + s5v2_i
+          s15v3 = (s15v2_i xor s0v3_i) rotl 16
+          s10v3 = s10v2_i + s15v3_i
+          s5v3 = (s5v2_i xor s10v3_i) rotl 12
+          s0v4 = s0v3_i + s5v3_i
+          s15v4 = (s15v3_i xor s0v4_i) rotl 8
+          s10v4 = s10v3_i + s15v4_i
+          s5v4 = (s5v3_i xor s10v4_i) rotl 7
+          s1v3 = s1v2_i + s6v2_i
+          s12v3 = (s12v2_i xor s1v3_i) rotl 16
+          s11v3 = s11v2_i + s12v3_i
+          s6v3 = (s6v2_i xor s11v3_i) rotl 12
+          s1v4 = s1v3_i + s6v3_i
+          s12v4 = (s12v3_i xor s1v4_i) rotl 8
+          s11v4 = s11v3_i + s12v4_i
+          s6v4 = (s6v3_i xor s11v4_i) rotl 7
+          s2v3 = s2v2_i + s7v2_i
+          s13v3 = (s13v2_i xor s2v3_i) rotl 16
+          s8v3 = s8v2_i + s13v3_i
+          s7v3 = (s7v2_i xor s8v3_i) rotl 12
+          s2v4 = s2v3_i + s7v3_i
+          s13v4 = (s13v3_i xor s2v4_i) rotl 8
+          s8v4 = s8v3_i + s13v4_i
+          s7v4 = (s7v3_i xor s8v4_i) rotl 7
+          s3v3 = s3v2_i + s4v2_i
+          s14v3 = (s14v2_i xor s3v3_i) rotl 16
+          s9v3 = s9v2_i + s14v3_i
+          s4v3 = (s4v2_i xor s9v3_i) rotl 12
+          s3v4 = s3v3_i + s4v3_i
+          s14v4 = (s14v3_i xor s3v4_i) rotl 8
+          s9v4 = s9v3_i + s14v4_i
+          s4v4 = (s4v3_i xor s9v4_i) rotl 7
+          chacha rounds wide s0v4 s1v4 s2v4 s3v4 s4v4 s5v4 s6v4 s7v4 s8v4 s9v4 s10v4 s11v4 s12v4 s13v4 s14v4 s15v4 (k - 1)
+
 fn :: chacha fill counter Tensor[U32 * n] Int Int Int => Tensor[U32 * n]
       chacha fill counter t first i n =
         | i >= n    = t
@@ -1577,8 +1654,9 @@ fn :: chacha fill counter Tensor[U32 * n] Int Int Int => Tensor[U32 * n]
           chacha fill counter t first (i + 1) n
 
 -- The key stream of `nb` blocks from block `ctr` on, as 16 tensors of `nb` words (word w of block b is o<w>_(b)).
-fn :: chacha page Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
-      chacha page key_bs nonce_bs ctr nb =
+-- Up to 64 blocks the rounds are written in place; wider, each line makes a new tensor (`chacha rounds wide`).
+fn :: chacha page narrow Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
+      chacha page narrow key_bs nonce_bs ctr nb =
         s0 = Tensor[U32 * nb] with 1634760805
         s1 = Tensor[U32 * nb] with 857760878
         s2 = Tensor[U32 * nb] with 2036477234
@@ -1629,6 +1707,48 @@ fn :: chacha page Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * 
         w14_i = w14_i + s14_i
         w15_i = w15_i + s15_i
         (w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15)
+
+fn :: chacha page wide Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
+      chacha page wide key_bs nonce_bs ctr nb =
+        s0 = Tensor[U32 * nb] with 1634760805
+        s1 = Tensor[U32 * nb] with 857760878
+        s2 = Tensor[U32 * nb] with 2036477234
+        s3 = Tensor[U32 * nb] with 1797285236
+        s4 = Tensor[U32 * nb] with (le32 at key_bs 0)
+        s5 = Tensor[U32 * nb] with (le32 at key_bs 4)
+        s6 = Tensor[U32 * nb] with (le32 at key_bs 8)
+        s7 = Tensor[U32 * nb] with (le32 at key_bs 12)
+        s8 = Tensor[U32 * nb] with (le32 at key_bs 16)
+        s9 = Tensor[U32 * nb] with (le32 at key_bs 20)
+        s10 = Tensor[U32 * nb] with (le32 at key_bs 24)
+        s11 = Tensor[U32 * nb] with (le32 at key_bs 28)
+        s12 = chacha fill counter (Tensor[U32 * nb]) ctr 0 nb
+        s13 = Tensor[U32 * nb] with (le32 at nonce_bs 0)
+        s14 = Tensor[U32 * nb] with (le32 at nonce_bs 4)
+        s15 = Tensor[U32 * nb] with (le32 at nonce_bs 8)
+        w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15 = chacha rounds wide s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 10
+        o0 = w0_i + s0_i
+        o1 = w1_i + s1_i
+        o2 = w2_i + s2_i
+        o3 = w3_i + s3_i
+        o4 = w4_i + s4_i
+        o5 = w5_i + s5_i
+        o6 = w6_i + s6_i
+        o7 = w7_i + s7_i
+        o8 = w8_i + s8_i
+        o9 = w9_i + s9_i
+        o10 = w10_i + s10_i
+        o11 = w11_i + s11_i
+        o12 = w12_i + s12_i
+        o13 = w13_i + s13_i
+        o14 = w14_i + s14_i
+        o15 = w15_i + s15_i
+        (o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15)
+
+fn :: chacha page Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
+      chacha page key_bs nonce_bs ctr nb =
+        | nb <= 64  = chacha page narrow key_bs nonce_bs ctr nb
+        | otherwise = chacha page wide key_bs nonce_bs ctr nb
 
 -- The bytes `from` to `to` (not included) of `t`, as a new tensor. One copy per step, none byte by byte.
 fn :: c bytes part Tensor[U8] Int Int => Tensor[U8]
