@@ -1330,78 +1330,79 @@ fn :: le32 at Tensor[U8] Int => Int
       le32 at bs         off =
         bs_(off) + (bs_(off + 1) * 256) + (bs_(off + 2) * 65536) + (bs_(off + 3) * 16777216)
 
--- Ten double rounds on n blocks at once: one tensor per state word (RFC 8439 §2.3). The 16 tensors are written
--- in place (`s0_i = s0_i + s4_i` writes the elements of s0; ridgunc 1.0.85): a call makes no new tensor.
+-- Ten double rounds on n blocks at once: one tensor per state word (RFC 8439 §2.3). Each line makes a new
+-- tensor: the same rounds written in place (`s0_i = s0_i + s4_i`, ridgunc 1.0.86) were measured by Vonkeep on
+-- 2026-11-25 1.5 us slower for a call and 10% slower for each byte, so they are not used.
 -- Consecutive element-wise statements run as one loop, and the self call repeats it (requirement COMP-031 of the compiler).
-fn :: chacha rounds Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Int => ()
+fn :: chacha rounds Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
       chacha rounds s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 k =
-        | k <= 0 = ()
+        | k <= 0 = (s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15)
         | otherwise =
-          s0_i = s0_i + s4_i
-          s12_i = (s12_i xor s0_i) rotl 16
-          s8_i = s8_i + s12_i
-          s4_i = (s4_i xor s8_i) rotl 12
-          s0_i = s0_i + s4_i
-          s12_i = (s12_i xor s0_i) rotl 8
-          s8_i = s8_i + s12_i
-          s4_i = (s4_i xor s8_i) rotl 7
-          s1_i = s1_i + s5_i
-          s13_i = (s13_i xor s1_i) rotl 16
-          s9_i = s9_i + s13_i
-          s5_i = (s5_i xor s9_i) rotl 12
-          s1_i = s1_i + s5_i
-          s13_i = (s13_i xor s1_i) rotl 8
-          s9_i = s9_i + s13_i
-          s5_i = (s5_i xor s9_i) rotl 7
-          s2_i = s2_i + s6_i
-          s14_i = (s14_i xor s2_i) rotl 16
-          s10_i = s10_i + s14_i
-          s6_i = (s6_i xor s10_i) rotl 12
-          s2_i = s2_i + s6_i
-          s14_i = (s14_i xor s2_i) rotl 8
-          s10_i = s10_i + s14_i
-          s6_i = (s6_i xor s10_i) rotl 7
-          s3_i = s3_i + s7_i
-          s15_i = (s15_i xor s3_i) rotl 16
-          s11_i = s11_i + s15_i
-          s7_i = (s7_i xor s11_i) rotl 12
-          s3_i = s3_i + s7_i
-          s15_i = (s15_i xor s3_i) rotl 8
-          s11_i = s11_i + s15_i
-          s7_i = (s7_i xor s11_i) rotl 7
-          s0_i = s0_i + s5_i
-          s15_i = (s15_i xor s0_i) rotl 16
-          s10_i = s10_i + s15_i
-          s5_i = (s5_i xor s10_i) rotl 12
-          s0_i = s0_i + s5_i
-          s15_i = (s15_i xor s0_i) rotl 8
-          s10_i = s10_i + s15_i
-          s5_i = (s5_i xor s10_i) rotl 7
-          s1_i = s1_i + s6_i
-          s12_i = (s12_i xor s1_i) rotl 16
-          s11_i = s11_i + s12_i
-          s6_i = (s6_i xor s11_i) rotl 12
-          s1_i = s1_i + s6_i
-          s12_i = (s12_i xor s1_i) rotl 8
-          s11_i = s11_i + s12_i
-          s6_i = (s6_i xor s11_i) rotl 7
-          s2_i = s2_i + s7_i
-          s13_i = (s13_i xor s2_i) rotl 16
-          s8_i = s8_i + s13_i
-          s7_i = (s7_i xor s8_i) rotl 12
-          s2_i = s2_i + s7_i
-          s13_i = (s13_i xor s2_i) rotl 8
-          s8_i = s8_i + s13_i
-          s7_i = (s7_i xor s8_i) rotl 7
-          s3_i = s3_i + s4_i
-          s14_i = (s14_i xor s3_i) rotl 16
-          s9_i = s9_i + s14_i
-          s4_i = (s4_i xor s9_i) rotl 12
-          s3_i = s3_i + s4_i
-          s14_i = (s14_i xor s3_i) rotl 8
-          s9_i = s9_i + s14_i
-          s4_i = (s4_i xor s9_i) rotl 7
-          chacha rounds s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 (k - 1)
+          s0v1 = s0_i + s4_i
+          s12v1 = (s12_i xor s0v1_i) rotl 16
+          s8v1 = s8_i + s12v1_i
+          s4v1 = (s4_i xor s8v1_i) rotl 12
+          s0v2 = s0v1_i + s4v1_i
+          s12v2 = (s12v1_i xor s0v2_i) rotl 8
+          s8v2 = s8v1_i + s12v2_i
+          s4v2 = (s4v1_i xor s8v2_i) rotl 7
+          s1v1 = s1_i + s5_i
+          s13v1 = (s13_i xor s1v1_i) rotl 16
+          s9v1 = s9_i + s13v1_i
+          s5v1 = (s5_i xor s9v1_i) rotl 12
+          s1v2 = s1v1_i + s5v1_i
+          s13v2 = (s13v1_i xor s1v2_i) rotl 8
+          s9v2 = s9v1_i + s13v2_i
+          s5v2 = (s5v1_i xor s9v2_i) rotl 7
+          s2v1 = s2_i + s6_i
+          s14v1 = (s14_i xor s2v1_i) rotl 16
+          s10v1 = s10_i + s14v1_i
+          s6v1 = (s6_i xor s10v1_i) rotl 12
+          s2v2 = s2v1_i + s6v1_i
+          s14v2 = (s14v1_i xor s2v2_i) rotl 8
+          s10v2 = s10v1_i + s14v2_i
+          s6v2 = (s6v1_i xor s10v2_i) rotl 7
+          s3v1 = s3_i + s7_i
+          s15v1 = (s15_i xor s3v1_i) rotl 16
+          s11v1 = s11_i + s15v1_i
+          s7v1 = (s7_i xor s11v1_i) rotl 12
+          s3v2 = s3v1_i + s7v1_i
+          s15v2 = (s15v1_i xor s3v2_i) rotl 8
+          s11v2 = s11v1_i + s15v2_i
+          s7v2 = (s7v1_i xor s11v2_i) rotl 7
+          s0v3 = s0v2_i + s5v2_i
+          s15v3 = (s15v2_i xor s0v3_i) rotl 16
+          s10v3 = s10v2_i + s15v3_i
+          s5v3 = (s5v2_i xor s10v3_i) rotl 12
+          s0v4 = s0v3_i + s5v3_i
+          s15v4 = (s15v3_i xor s0v4_i) rotl 8
+          s10v4 = s10v3_i + s15v4_i
+          s5v4 = (s5v3_i xor s10v4_i) rotl 7
+          s1v3 = s1v2_i + s6v2_i
+          s12v3 = (s12v2_i xor s1v3_i) rotl 16
+          s11v3 = s11v2_i + s12v3_i
+          s6v3 = (s6v2_i xor s11v3_i) rotl 12
+          s1v4 = s1v3_i + s6v3_i
+          s12v4 = (s12v3_i xor s1v4_i) rotl 8
+          s11v4 = s11v3_i + s12v4_i
+          s6v4 = (s6v3_i xor s11v4_i) rotl 7
+          s2v3 = s2v2_i + s7v2_i
+          s13v3 = (s13v2_i xor s2v3_i) rotl 16
+          s8v3 = s8v2_i + s13v3_i
+          s7v3 = (s7v2_i xor s8v3_i) rotl 12
+          s2v4 = s2v3_i + s7v3_i
+          s13v4 = (s13v3_i xor s2v4_i) rotl 8
+          s8v4 = s8v3_i + s13v4_i
+          s7v4 = (s7v3_i xor s8v4_i) rotl 7
+          s3v3 = s3v2_i + s4v2_i
+          s14v3 = (s14v2_i xor s3v3_i) rotl 16
+          s9v3 = s9v2_i + s14v3_i
+          s4v3 = (s4v2_i xor s9v3_i) rotl 12
+          s3v4 = s3v3_i + s4v3_i
+          s14v4 = (s14v3_i xor s3v4_i) rotl 8
+          s9v4 = s9v3_i + s14v4_i
+          s4v4 = (s4v3_i xor s9v4_i) rotl 7
+          chacha rounds s0v4 s1v4 s2v4 s3v4 s4v4 s5v4 s6v4 s7v4 s8v4 s9v4 s10v4 s11v4 s12v4 s13v4 s14v4 s15v4 (k - 1)
 
 fn :: chacha fill counter Tensor[U32 * n] Int Int Int => Tensor[U32 * n]
       chacha fill counter t first i n =
@@ -1429,40 +1430,24 @@ fn :: chacha page Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * 
         s13 = Tensor[U32 * nb] with (le32 at nonce_bs 0)
         s14 = Tensor[U32 * nb] with (le32 at nonce_bs 4)
         s15 = Tensor[U32 * nb] with (le32 at nonce_bs 8)
-        w0 = s0_i + 0
-        w1 = s1_i + 0
-        w2 = s2_i + 0
-        w3 = s3_i + 0
-        w4 = s4_i + 0
-        w5 = s5_i + 0
-        w6 = s6_i + 0
-        w7 = s7_i + 0
-        w8 = s8_i + 0
-        w9 = s9_i + 0
-        w10 = s10_i + 0
-        w11 = s11_i + 0
-        w12 = s12_i + 0
-        w13 = s13_i + 0
-        w14 = s14_i + 0
-        w15 = s15_i + 0
-        chacha rounds w0 w1 w2 w3 w4 w5 w6 w7 w8 w9 w10 w11 w12 w13 w14 w15 10
-        w0_i = w0_i + s0_i
-        w1_i = w1_i + s1_i
-        w2_i = w2_i + s2_i
-        w3_i = w3_i + s3_i
-        w4_i = w4_i + s4_i
-        w5_i = w5_i + s5_i
-        w6_i = w6_i + s6_i
-        w7_i = w7_i + s7_i
-        w8_i = w8_i + s8_i
-        w9_i = w9_i + s9_i
-        w10_i = w10_i + s10_i
-        w11_i = w11_i + s11_i
-        w12_i = w12_i + s12_i
-        w13_i = w13_i + s13_i
-        w14_i = w14_i + s14_i
-        w15_i = w15_i + s15_i
-        (w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15)
+        w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15 = chacha rounds s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 10
+        o0 = w0_i + s0_i
+        o1 = w1_i + s1_i
+        o2 = w2_i + s2_i
+        o3 = w3_i + s3_i
+        o4 = w4_i + s4_i
+        o5 = w5_i + s5_i
+        o6 = w6_i + s6_i
+        o7 = w7_i + s7_i
+        o8 = w8_i + s8_i
+        o9 = w9_i + s9_i
+        o10 = w10_i + s10_i
+        o11 = w11_i + s11_i
+        o12 = w12_i + s12_i
+        o13 = w13_i + s13_i
+        o14 = w14_i + s14_i
+        o15 = w15_i + s15_i
+        (o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15)
 
 -- The bytes `from` to `to` (not included) of `t`, as a new tensor. One copy per step, none byte by byte.
 fn :: c bytes part Tensor[U8] Int Int => Tensor[U8]
@@ -1482,6 +1467,88 @@ fn :: chacha20 key stream chunk Tensor[U8] Tensor[U8] Int Int => Tensor[U8]
         o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15 = chacha page key_bs nonce_bs ctr nb
         c first bytes (tensor bytes (tensor interleave [o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15])) (64 * nb) n
 
+-- ── ChaCha20, one block in registers (`arch ::`, RFC 8439 §2.3) ──
+-- For short messages. The rounds on tensors above cost about 3.7 us before the first byte whatever the size
+-- (Vonkeep: 64 bytes 3.8 us, 4 096 bytes 6.2 us); here a block stays in registers and nothing is set up.
+-- The 16 words of the state are four groups of four: the constants, the two halves of the key, and the counter
+-- with the nonce. A quarter round works on the four columns at once; turning three of the groups puts the
+-- diagonals in the columns for the second half of a double round.
+
+arch :: chacha quarter Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]
+        chacha quarter a b c d =
+          a1 = a_i + b_i
+          d1 = (d_i xor a1_i) rotl 16
+          c1 = c_i + d1_i
+          b1 = (b_i xor c1_i) rotl 12
+          a2 = a1_i + b1_i
+          d2 = (d1_i xor a2_i) rotl 8
+          c2 = c1_i + d2_i
+          (a2_i + 0, (b1_i xor c2_i) rotl 7, c2_i + 0, d2_i + 0)
+
+arch :: chacha double Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] => Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]
+        chacha double a b c d =
+          a1, b1, c1, d1 = chacha quarter a b c d
+          a2, b2, c2, d2 = chacha quarter a1 (group pick b1 [1, 2, 3, 0]) (group pick c1 [2, 3, 0, 1]) (group pick d1 [3, 0, 1, 2])
+          (a2_i + 0, group pick b2 [3, 0, 1, 2], group pick c2 [2, 3, 0, 1], group pick d2 [1, 2, 3, 0])
+
+-- The 64 bytes of block `ctr`: k1 and k2 are the key, n3 the nonce in lanes 1 to 3 (lane 0 is the counter).
+arch :: chacha one block Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Int => Tensor[U8 * 64]
+        chacha one block k1 k2 n3 ctr =
+          a = group u32 [1634760805, 857760878, 2036477234, 1797285236]
+          z = n3_i xor n3_i
+          cc = z_i + ctr
+          c0 = group pick two cc z [0, 5, 6, 7]
+          d = n3_i + c0_i
+          a1, b1, c1, d1 = chacha double a k1 k2 d
+          a2, b2, c2, d2 = chacha double a1 b1 c1 d1
+          a3, b3, c3, d3 = chacha double a2 b2 c2 d2
+          a4, b4, c4, d4 = chacha double a3 b3 c3 d3
+          a5, b5, c5, d5 = chacha double a4 b4 c4 d4
+          a6, b6, c6, d6 = chacha double a5 b5 c5 d5
+          a7, b7, c7, d7 = chacha double a6 b6 c6 d6
+          a8, b8, c8, d8 = chacha double a7 b7 c7 d7
+          a9, b9, c9, d9 = chacha double a8 b8 c8 d8
+          a10, b10, c10, d10 = chacha double a9 b9 c9 d9
+          oa = group as u8 (a10_i + a_i)
+          ob = group as u8 (b10_i + k1_i)
+          oc = group as u8 (c10_i + k2_i)
+          od = group as u8 (d10_i + d_i)
+          group pick two (group pick two oa ob [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]) (group pick two oc od [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]) [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]
+
+-- The blocks `ctr + at` on, one row of 64 bytes each, written where they go.
+fn :: chacha block rows Tensor[U8 * n * 64] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Int Int Int => Tensor[U8 * n * 64]
+      chacha block rows out k1 k2 n3 ctr at left
+        | left <= 0 = out
+        | otherwise =
+          out_(at,) = chacha one block k1 k2 n3 (ctr + at)
+          chacha block rows out k1 k2 n3 ctr (at + 1) (left - 1)
+
+-- Four words of the key from byte `off`, and the nonce in lanes 1 to 3.
+fn :: chacha key words Tensor[U8] Int => Tensor[U32 * 4]
+      chacha key words key_bs off =
+        t = Tensor[U32 * 4]
+        t_(0) = le32 at key_bs off
+        t_(1) = le32 at key_bs (off + 4)
+        t_(2) = le32 at key_bs (off + 8)
+        t_(3) = le32 at key_bs (off + 12)
+        t
+
+fn :: chacha nonce words Tensor[U8] => Tensor[U32 * 4]
+      chacha nonce words nonce_bs =
+        t = Tensor[U32 * 4]
+        t_(1) = le32 at nonce_bs 0
+        t_(2) = le32 at nonce_bs 4
+        t_(3) = le32 at nonce_bs 8
+        t
+
+-- The first `n` bytes of the key stream from block `ctr` on, made block by block in registers. It gives the same
+-- bytes as `chacha20 key stream` for any `n`; that one uses it up to 512 bytes. It is its own function so that
+-- the two ways can be timed against each other at any size.
+fn :: chacha20 key stream blocks Tensor[U8] Tensor[U8] Int Int => Tensor[U8]
+      chacha20 key stream blocks key_bs nonce_bs ctr n =
+        | n <= 0    = Tensor[U8 * 0]
+        | otherwise = c first bytes (chacha block rows (Tensor[U8 * (((n + 63) / 64) * 64)]) (chacha key words key_bs 0) (chacha key words key_bs 16) (chacha nonce words nonce_bs) ctr 0 ((n + 63) / 64)) (((n + 63) / 64) * 64) n
+
 -- The pieces of the key stream of a long message, 64 KiB each (1 024 blocks), as texts.
 fn :: chacha20 key stream pieces Tensor[U8] Tensor[U8] Int Int => [String]
       chacha20 key stream pieces key_bs nonce_bs ctr n =
@@ -1496,6 +1563,7 @@ fn :: chacha20 key stream pieces Tensor[U8] Tensor[U8] Int Int => [String]
 fn :: chacha20 key stream Tensor[U8] Tensor[U8] Int Int => Tensor[U8]
       chacha20 key stream key_bs nonce_bs ctr n =
         | n <= 0     = Tensor[U8 * 0]
+        | n <= 512   = chacha20 key stream blocks key_bs nonce_bs ctr n
         | n <= 65536 = chacha20 key stream chunk key_bs nonce_bs ctr n
         | otherwise  = tensor from str (str join (chacha20 key stream pieces key_bs nonce_bs ctr n) "")
 

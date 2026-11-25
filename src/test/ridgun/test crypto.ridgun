@@ -934,6 +934,12 @@ fn :: stream differs Tensor[U8] Tensor[U8] Int Tensor[U8] => Int
       stream differs kb nb n got =
         bad if (((c u8 len got) == n) and (bytes are (tensor from str (stream blocks kb nb 9 ((n + 63) / 64) "")) got 0 0 n))
 
+-- How many lengths from `n` to `to` give other bytes block by block than the blocks made one call each.
+fn :: blocks differ Tensor[U8] Tensor[U8] Int Int Int => Int
+      blocks differ kb nb n to bad =
+        | n > to    = bad
+        | otherwise = blocks differ kb nb (n + 1) to (bad + (stream differs kb nb n (chacha20 key stream blocks kb nb 9 n)))
+
 -- @tests TS-CRYPTO-004
 fn :: test chacha20 key stream on every length => ()
       test chacha20 key stream on every length =
@@ -949,6 +955,11 @@ fn :: test chacha20 key stream on every length => ()
         nb = tensor from str (ref nonce 1)
         stream not blocks kb nb 0 400 0 -> assert int equals 0 "every length from 0 to 400 is the start of the same blocks made one by one"
         stream differs kb nb 100 (chacha20 key stream kb nb 10 100) -> assert int equals 1 "the checker sees a key stream of another counter"
+        -- the way that makes one block at a time in registers gives the same bytes at every size
+        blocks differ kb nb 0 1100 0 -> assert int equals 0 "block by block in registers: the same bytes for every length from 0 to 1100"
+        sha256 hex (tensor to str (chacha20 key stream blocks (tensor from str (ref key 0)) (tensor from str (ref nonce 4064)) 3 4064)) -> assert str eq "a23e4420b114cbf21c0af7898f2d6ef468206ee61f5575edb47c3367543a2f06" "and 4 064 bytes of it are Python's"
+        sha256 hex (tensor to str (chacha20 key stream blocks (tensor from str (ref key 0)) (tensor from str (ref nonce 65535)) 3 65535)) -> assert str eq "4332bd4c450c060bbc41785c0584f1ce3eeefb9b5db1e8f01630e26240445540" "and 65 535 bytes"
+        sha256 hex (tensor to str (chacha20 key stream blocks (tensor from str (ref key 0)) (tensor from str (ref nonce 1048577)) 3 1048577)) -> assert str eq "4973cc6cb05df6c1ee964282e689a7c05cc735a0a15505f7c00e4aa4a4fab29b" "and one megabyte and a byte"
         c u8 len (chacha20 key stream kb nb 0 0) -> assert int equals 0 "no bytes asked, none given"
         c u8 len (chacha20 block kb nb 7) -> assert int equals 64 "a block is 64 bytes"
 
