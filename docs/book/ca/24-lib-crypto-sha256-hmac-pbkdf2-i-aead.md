@@ -51,7 +51,7 @@ A `ridgun-libs`, **`crypto`** és una **lib** de primera classe situada a `src/m
 
 ### 24.2.2. Catàleg exhaustiu de tipus i signatures a `src/main/ridgun/lib/crypto.ridgun`
 
-A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/crypto.ridgun` (`5` tipus, `0` operadors i `515` funcions):
+A continuació tens l'inventari complet de tipus algebraics (`type`), operadors (`op ::`) i signatures de funcions (`fn ::`) definits a `src/main/ridgun/lib/crypto.ridgun` (`5` tipus, `0` operadors i `506` funcions):
 
 **Tipus algebraics i registres (`type`) de `crypto`:**
 
@@ -157,7 +157,7 @@ type X509Cert = tbs_der: String, issuer_der: String, subject_der: String, issuer
 | `90` | `fn :: sha256 group4 Int Int Int Int` | `Tensor[U32]` |
 | `91` | `idem :: sha256 iv a` | `Tensor[U32]` |
 | `92` | `idem :: sha256 iv e` | `Tensor[U32]` |
-| `93` | `fn :: sha256 rows Tensor[U8] String Int Int` | `Tensor[U8]` |
+| `93` | `fn :: sha256 full bytes String Int` | `Tensor[U8]` |
 | `94` | `fn :: sha256 after full String Int Tensor[U32] Tensor[U32]` | `Tensor[U32] Tensor[U32]` |
 | `95` | `fn :: sha256 end block String Int` | `Tensor[U8]` |
 | `96` | `fn :: sha256 one end Int` | `Bool` |
@@ -224,362 +224,353 @@ type X509Cert = tbs_der: String, issuer_der: String, subject_der: String, issuer
 | `157` | `fn :: poly1305 r limbs Tensor[U8]` | `Tensor[Int * 5]` |
 | `158` | `fn :: poly1305 step Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int` | `Tensor[Int * 5]` |
 | `159` | `fn :: poly1305 blocks loop Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int Int` | `Tensor[Int * 5]` |
-| `160` | `fn :: poly1305 lanes loop Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U8] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int` | `Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]` |
-| `161` | `fn :: poly1305 lanes loop short Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U8] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int` | `Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]` |
-| `162` | `fn :: poly1305 carry into Int Int Int Int Int Tensor[Int * j] Int` | `Int` |
-| `163` | `fn :: poly1305 lane starts Tensor[U64 * n] Int Int Int` | `Tensor[U64 * n]` |
-| `164` | `fn :: poly1305 clear lanes Tensor[U64 * n] Int Int` | `Tensor[U64 * n]` |
-| `165` | `fn :: poly1305 cleared (Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]) Int` | `Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]` |
-| `166` | `fn :: poly1305 lanes mul Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int` | `Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]` |
-| `167` | `fn :: poly1305 five times Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]` | `Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]` |
-| `168` | `fn :: poly1305 lane mask fill Tensor[U64 * n] Int Int Int Int` | `Tensor[U64 * n]` |
-| `169` | `idem :: poly1305 lane mask Int Int Int` | `Tensor[U64]` |
-| `170` | `idem :: poly1305 lane offsets Int` | `Tensor[U64]` |
-| `171` | `fn :: poly1305 lane first fill Tensor[U64 * n] Int Int Int` | `Tensor[U64 * n]` |
-| `172` | `idem :: poly1305 lane first offsets Int Int` | `Tensor[U64]` |
-| `173` | `fn :: poly1305 powers step wide Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int` | `Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]` |
-| `174` | `fn :: poly1305 powers wide Tensor[Int * 5]` | `Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]` |
-| `175` | `fn :: poly1305 lanes first wide Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U8] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int` | `Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]` |
-| `176` | `fn :: poly1305 lanes wide Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int Int` | `Tensor[Int * 5]` |
-| `177` | `fn :: poly1305 powers step narrow Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int` | `Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]` |
-| `178` | `fn :: poly1305 powers narrow Tensor[Int * 5]` | `Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]` |
-| `179` | `fn :: poly1305 lanes first narrow Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U8] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int` | `Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]` |
-| `180` | `fn :: poly1305 lanes narrow Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int Int` | `Tensor[Int * 5]` |
-| `181` | `fn :: poly1305 lane count Int` | `Int` |
-| `182` | `fn :: poly1305 lane blocks Int Int` | `Int` |
-| `183` | `fn :: c pick Bool Int Int` | `Int` |
-| `184` | `fn :: poly1305 finalize Tensor[Int * 5] Tensor[U8]` | `Tensor[U8]` |
-| `185` | `fn :: pad16 len Int` | `Int` |
-| `186` | `fn :: c put le64 Tensor[U8] Int Int` | `Int` |
-| `187` | `fn :: poly1305 aead mac Tensor[U8] Tensor[U8] Tensor[U8]` | `Tensor[U8]` |
-| `188` | `fn :: aead key stream Tensor[U8] Tensor[U8] Int` | `Tensor[U8]` |
-| `189` | `fn :: aead seal String String String String` | `String` |
-| `190` | `fn :: decrypt verified aead Bool Tensor[U8] Tensor[U8]` | `Int String` |
-| `191` | `fn :: aead open String String String String` | `Int String` |
-| `192` | `fn :: sha512 k hex0` | `String` |
-| `193` | `fn :: sha512 k hex1` | `String` |
-| `194` | `fn :: sha512 fill hex words Tensor[U64 * 160] String Int Int` | `Tensor[U64 * 160]` |
-| `195` | `fn :: sha512 init k` | `Tensor[U64 * 160]` |
-| `196` | `fn :: sha512 init h loop Tensor[U64 * 16] String Int` | `Tensor[U64 * 16]` |
-| `197` | `fn :: sha512 init h` | `Tensor[U64 * 16]` |
-| `198` | `fn :: sha512 rrot lt32 U64 U64 Int` | `U64 U64` |
-| `199` | `fn :: sha512 rshift lt32 U64 U64 Int` | `U64 U64` |
-| `200` | `fn :: sha512 big sigma0 U64 U64` | `U64 U64` |
-| `201` | `fn :: sha512 big sigma1 U64 U64` | `U64 U64` |
-| `202` | `fn :: sha512 small sigma0 U64 U64` | `U64 U64` |
-| `203` | `fn :: sha512 small sigma1 U64 U64` | `U64 U64` |
-| `204` | `fn :: sha512 vbyte String Int Int Int` | `U64` |
-| `205` | `fn :: sha512 load w fast Tensor[U64 * 160] String Int Int` | `Tensor[U64 * 160]` |
-| `206` | `fn :: sha512 load w pad Tensor[U64 * 160] String Int Int Int Int` | `Tensor[U64 * 160]` |
-| `207` | `fn :: sha512 expand w Tensor[U64 * 160] Int` | `Tensor[U64 * 160]` |
-| `208` | `fn :: sha512 copy state Tensor[U64 * 16] Tensor[U64 * 16] Int` | `Tensor[U64 * 16]` |
-| `209` | `fn :: sha512 add state Tensor[U64 * 16] Tensor[U64 * 16] Int` | `Tensor[U64 * 16]` |
-| `210` | `fn :: sha512 rounds loop Tensor[U64 * 16] Tensor[U64 * 160] Tensor[U64 * 160] Int` | `Tensor[U64 * 16]` |
-| `211` | `fn :: sha512 blocks loop Tensor[U64 * 16] Tensor[U64 * 16] Tensor[U64 * 160] Tensor[U64 * 160] String Int Int Int` | `Tensor[U64 * 16]` |
-| `212` | `fn :: sha512 state to raw CT16 Tensor[U64 * 16] Int` | `String` |
-| `213` | `fn :: sha512 bytes String` | `String` |
-| `214` | `fn :: sha512 hex String` | `String` |
-| `215` | `fn :: fe lit U64 U64 U64 U64 U64 U64 U64 U64 U64 U64` | `Tensor[U64 * 10]` |
-| `216` | `fn :: fe zero` | `Tensor[U64 * 10]` |
-| `217` | `fn :: fe one` | `Tensor[U64 * 10]` |
-| `218` | `fn :: fe d` | `Tensor[U64 * 10]` |
-| `219` | `fn :: fe d2` | `Tensor[U64 * 10]` |
-| `220` | `fn :: fe sqrt m1` | `Tensor[U64 * 10]` |
-| `221` | `fn :: fe bx` | `Tensor[U64 * 10]` |
-| `222` | `fn :: fe by` | `Tensor[U64 * 10]` |
-| `223` | `fn :: fe bt` | `Tensor[U64 * 10]` |
-| `224` | `fn :: fe carry pass Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `225` | `fn :: fe carry Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `226` | `fn :: fe add Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `227` | `fn :: fe sub Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `228` | `fn :: fe mul Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `229` | `fn :: fe sq Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `230` | `fn :: fe sq n Tensor[U64 * 10] Int` | `Tensor[U64 * 10]` |
-| `231` | `fn :: fe freeze Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `232` | `fn :: fe eq Tensor[U64 * 10] Tensor[U64 * 10]` | `Bool` |
-| `233` | `fn :: fe pow22523 Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `234` | `fn :: fe invert Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
-| `235` | `fn :: fe to words8 Tensor[U64 * 10]` | `Tensor[U64 * 8]` |
-| `236` | `fn :: words8 to raw32 loop CT16 Tensor[U64 * 8] Int` | `String` |
-| `237` | `fn :: raw32 to words8 String` | `Tensor[U64 * 8]` |
-| `238` | `fn :: fe from raw32 String` | `Bool U64 Tensor[U64 * 10]` |
-| `239` | `fn :: ge pack Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 40]` |
-| `240` | `fn :: ge coord Tensor[U64 * 40] Int` | `Tensor[U64 * 10]` |
-| `241` | `fn :: ge zero` | `Tensor[U64 * 40]` |
-| `242` | `fn :: ge base` | `Tensor[U64 * 40]` |
-| `243` | `fn :: ge add Tensor[U64 * 40] Tensor[U64 * 40]` | `Tensor[U64 * 40]` |
-| `244` | `fn :: ge dbl Tensor[U64 * 40]` | `Tensor[U64 * 40]` |
-| `245` | `fn :: ge cselect loop Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 40] U64 Int` | `Tensor[U64 * 40]` |
-| `246` | `fn :: ge cselect Tensor[U64 * 40] Tensor[U64 * 40] U64` | `Tensor[U64 * 40]` |
-| `247` | `fn :: ge scalarmult loop Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 8] Int` | `Tensor[U64 * 40]` |
-| `248` | `fn :: ge scalarmult ct Tensor[U64 * 40] Tensor[U64 * 8]` | `Tensor[U64 * 40]` |
-| `249` | `fn :: ge to bytes Tensor[U64 * 40]` | `String` |
-| `250` | `fn :: ge finish sign Bool Bool Tensor[U64 * 10] Tensor[U64 * 10]` | `Bool Tensor[U64 * 40]` |
-| `251` | `fn :: ge decompress step2 Tensor[U64 * 10] Tensor[U64 * 10] U64` | `Bool Tensor[U64 * 40]` |
-| `252` | `fn :: ge check root Bool Bool Tensor[U64 * 10] Tensor[U64 * 10] U64` | `Bool Tensor[U64 * 40]` |
-| `253` | `fn :: ge decompress y Bool U64 Tensor[U64 * 10]` | `Bool Tensor[U64 * 40]` |
-| `254` | `fn :: ge from bytes String` | `Bool Tensor[U64 * 40]` |
-| `255` | `fn :: sc l words` | `Tensor[U64 * 8]` |
-| `256` | `fn :: sc lt l loop Tensor[U64 * 8] Tensor[U64 * 8] Int` | `Bool` |
-| `257` | `fn :: sc lt l Tensor[U64 * 8]` | `Bool` |
-| `258` | `fn :: sc sub word U64 U64` | `U64 U64` |
-| `259` | `fn :: sc sub l loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int U64` | `Tensor[U64 * 8]` |
-| `260` | `fn :: sc sub l Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
-| `261` | `fn :: sc norm l Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
-| `262` | `fn :: sc add raw loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int U64` | `Tensor[U64 * 8]` |
-| `263` | `fn :: sc add mod l Tensor[U64 * 8] Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
-| `264` | `fn :: sc zero` | `Tensor[U64 * 8]` |
-| `265` | `fn :: sc one` | `Tensor[U64 * 8]` |
-| `266` | `fn :: sc cond add bit Bool Tensor[U64 * 8] Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
-| `267` | `fn :: sc reduce byte bits Tensor[U64 * 8] Tensor[U64 * 8] U64 Int` | `Tensor[U64 * 8]` |
-| `268` | `fn :: sc reduce le64 loop Tensor[U64 * 8] Tensor[U64 * 8] String Int` | `Tensor[U64 * 8]` |
-| `269` | `fn :: sc reduce le64 String` | `Tensor[U64 * 8]` |
-| `270` | `fn :: sc mul word bits Tensor[U64 * 8] Tensor[U64 * 8] U64 Int` | `Tensor[U64 * 8]` |
-| `271` | `fn :: sc mul mod l loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int` | `Tensor[U64 * 8]` |
-| `272` | `fn :: sc muladd mod l Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
-| `273` | `fn :: ed25519 clamp scalar String` | `Tensor[U64 * 8]` |
-| `274` | `fn :: ed25519 public key String` | `String` |
-| `275` | `fn :: ed25519 sign String String` | `String` |
-| `276` | `fn :: ed25519 verify points Bool Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 8] String String String` | `Bool` |
-| `277` | `fn :: ed25519 verify scalar Bool String String String Tensor[U64 * 8]` | `Bool` |
-| `278` | `fn :: ed25519 verify String String String` | `Bool` |
-| `279` | `fn :: c is ws Int` | `Bool` |
-| `280` | `fn :: c trim start String Int Int` | `Int` |
-| `281` | `fn :: c trim end String Int Int` | `Int` |
-| `282` | `fn :: c trim String` | `String` |
-| `283` | `fn :: c starts with String String` | `Bool` |
-| `284` | `fn :: c split lines loop String Int Int Int [String]` | `[String]` |
-| `285` | `fn :: c split lines trimmed String Int` | `[String]` |
-| `286` | `fn :: c split lines String` | `[String]` |
-| `287` | `fn :: c b64 table` | `String` |
-| `288` | `fn :: c b64 ch Int` | `String` |
-| `289` | `fn :: c b64 encode loop String Int Int` | `String` |
-| `290` | `fn :: c b64 encode String` | `String` |
-| `291` | `fn :: c b64 val Int` | `Int` |
-| `292` | `fn :: c b64 quad CT16 String Int Int String Int Int Int Int` | `Bool String` |
-| `293` | `fn :: c b64 decode loop CT16 String Int Int String` | `Bool String` |
-| `294` | `fn :: c b64 decode trimmed String Int` | `Bool String` |
-| `295` | `fn :: c b64 decode String` | `Bool String` |
-| `296` | `fn :: c nth str [String] Int` | `String` |
-| `297` | `fn :: c str list len [String] Int` | `Int` |
-| `298` | `fn :: minisign encode pubkey String String` | `String` |
-| `299` | `fn :: minisign select pubkey line [String] Int` | `String` |
-| `300` | `fn :: minisign unpack pubkey Bool String` | `String String` |
-| `301` | `fn :: minisign decode pubkey String` | `String String` |
-| `302` | `fn :: minisign sign String String String String String` | `String` |
-| `303` | `fn :: minisign extract tc line String` | `String` |
-| `304` | `fn :: minisign extract tc lines [String] Int` | `String` |
-| `305` | `fn :: minisign trusted comment String` | `String` |
-| `306` | `fn :: minisign payload for alg String String` | `Bool String` |
-| `307` | `fn :: minisign check sigs Bool String String String String String String` | `Bool` |
-| `308` | `fn :: minisign verify decoded Bool String String String String String` | `Bool` |
-| `309` | `fn :: minisign verify body Bool String String String String String String` | `Bool` |
-| `310` | `fn :: minisign verify lines Bool String String String [String]` | `Bool` |
-| `311` | `fn :: minisign verify String String String` | `Bool` |
-| `312` | `fn :: sha384 init h` | `Tensor[U64 * 16]` |
-| `313` | `fn :: sha384 state to raw CT16 Tensor[U64 * 16] Int` | `String` |
-| `314` | `fn :: sha384 bytes String` | `String` |
-| `315` | `fn :: sha384 hex String` | `String` |
-| `316` | `fn :: normalize hmac384 key String` | `Tensor[U8]` |
-| `317` | `fn :: hmac sha384 String String` | `String` |
-| `318` | `fn :: c repeat byte Int Int` | `String` |
-| `319` | `fn :: hkdf extract String String` | `String` |
-| `320` | `fn :: hkdf expand loop String String Int Int String String` | `String` |
-| `321` | `fn :: hkdf expand String String Int` | `String` |
-| `322` | `fn :: hkdf extract sha384 String String` | `String` |
-| `323` | `fn :: hkdf expand sha384 loop String String Int Int String String` | `String` |
-| `324` | `fn :: hkdf expand sha384 String String Int` | `String` |
-| `325` | `fn :: hkdf expand label String String String Int` | `String` |
-| `326` | `fn :: derive secret String String String` | `String` |
-| `327` | `fn :: fe a24` | `Tensor[U64 * 10]` |
-| `328` | `fn :: fe cswap loop Tensor[U64 * 10] Tensor[U64 * 10] U64 Int` | `Tensor[U64 * 10] Tensor[U64 * 10]` |
-| `329` | `fn :: fe cswap Tensor[U64 * 10] Tensor[U64 * 10] U64` | `Tensor[U64 * 10] Tensor[U64 * 10]` |
-| `330` | `fn :: x25519 clamp scalar String` | `Tensor[U64 * 8]` |
-| `331` | `fn :: x25519 decode u String` | `Tensor[U64 * 10]` |
-| `332` | `fn :: x25519 ladder loop Tensor[U64 * 8] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] U64 Int` | `Tensor[U64 * 10] Tensor[U64 * 10]` |
-| `333` | `fn :: x25519 check non zero String` | `String` |
-| `334` | `fn :: x25519 String String` | `String` |
-| `335` | `fn :: x25519 public key String` | `String` |
-| `336` | `arch :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
-| `337` | `arch :: aes last round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
-| `338` | `arch :: aes128 encrypt block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
-| `339` | `arch :: aes256 encrypt block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
-| `340` | `arch :: aes128 ctr block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int` | `Tensor[U8 * 16]` |
-| `341` | `arch :: aes256 ctr block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int` | `Tensor[U8 * 16]` |
-| `342` | `fn :: aes128 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int Int Int` | `Tensor[U8 * n * 16]` |
-| `343` | `fn :: aes256 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int Int Int` | `Tensor[U8 * n * 16]` |
-| `344` | `fn :: aes rotl8 Int Int` | `Int` |
-| `345` | `fn :: aes box fill Tensor[U8] Int Int Bool` | `Tensor[U8]` |
-| `346` | `idem :: aes make box` | `Tensor[U8]` |
-| `347` | `fn :: aes key byte Tensor[U8] Int Int` | `Int` |
-| `348` | `fn :: aes put word Tensor[U8] Int Int Int Int Int` | `Tensor[U8]` |
-| `349` | `fn :: aes expand Tensor[U8] Tensor[U8] Int Int Int Int` | `Tensor[U8]` |
-| `350` | `fn :: aes set key Tensor[U8] String Int Int` | `Tensor[U8]` |
-| `351` | `fn :: aes128 keys Tensor[U8] String` | `Tensor[U8]` |
-| `352` | `fn :: aes256 keys Tensor[U8] String` | `Tensor[U8]` |
-| `353` | `fn :: aes iv16 String` | `Tensor[U8]` |
-| `354` | `fn :: aes128 key stream Tensor[U8] Tensor[U8] String Int Int` | `Tensor[U8]` |
-| `355` | `fn :: aes256 key stream Tensor[U8] Tensor[U8] String Int Int` | `Tensor[U8]` |
-| `356` | `fn :: aes128 block String String` | `String` |
-| `357` | `fn :: aes256 block String String` | `String` |
-| `358` | `fn :: ghash mul Int Int Int Int` | `Int Int` |
-| `359` | `fn :: ghash be64 Tensor[U8] Int Int` | `Int` |
-| `360` | `fn :: ghash be64 tail Tensor[U8] Int Int Int Int` | `Int` |
-| `361` | `fn :: ghash absorb Int Int Int Int Tensor[U8] Int Int` | `Int Int` |
-| `362` | `fn :: ghash put be64 Tensor[U8] Int Int` | `Int` |
-| `363` | `fn :: ghash compute Tensor[U8] Tensor[U8] Tensor[U8]` | `Tensor[U8]` |
-| `364` | `fn :: aes gcm tag String String String Tensor[U8]` | `String` |
-| `365` | `fn :: aes gcm seal parts String String Tensor[U8] String String` | `String` |
-| `366` | `fn :: aes128 gcm seal String String String String` | `String` |
-| `367` | `fn :: aes128 gcm open verified Bool Tensor[U8] Tensor[U8] String Tensor[U8]` | `Int String` |
-| `368` | `fn :: aes128 gcm open String String String String` | `Int String` |
-| `369` | `fn :: aes256 gcm seal String String String String` | `String` |
-| `370` | `fn :: aes256 gcm open verified Bool Tensor[U8] Tensor[U8] String Tensor[U8]` | `Int String` |
-| `371` | `fn :: aes256 gcm open String String String String` | `Int String` |
-| `372` | `fn :: bn zero loop Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
-| `373` | `fn :: bn zero Int` | `Tensor[U64 * 260]` |
-| `374` | `fn :: bn zero520 loop Tensor[U64 * 520] Int Int` | `Tensor[U64 * 520]` |
-| `375` | `fn :: bn zero520 Int` | `Tensor[U64 * 520]` |
-| `376` | `fn :: bn clone loop Tensor[U64 * 260] Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
-| `377` | `fn :: bn clone Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `378` | `fn :: bn strip leading zeroes String Int Int` | `String` |
-| `379` | `fn :: bn from be loop Tensor[U64 * 260] String Int Int Int` | `Tensor[U64 * 260]` |
-| `380` | `fn :: bn from be String Int` | `Tensor[U64 * 260]` |
-| `381` | `fn :: bn from hex String Int` | `Tensor[U64 * 260]` |
-| `382` | `fn :: bn to be loop CT16 Tensor[U64 * 260] Int String String String String` | `String` |
-| `383` | `fn :: bn to be Tensor[U64 * 260] Int` | `String` |
-| `384` | `fn :: bn is zero loop Tensor[U64 * 260] Int Int` | `Bool` |
-| `385` | `fn :: bn is zero Tensor[U64 * 260] Int` | `Bool` |
-| `386` | `fn :: bn cmp loop Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Int` |
-| `387` | `fn :: bn cmp Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Int` |
-| `388` | `fn :: bn add raw loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int U64` | `U64` |
-| `389` | `fn :: bn sub raw loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int U64` | `U64` |
-| `390` | `fn :: bn add mod finish Bool Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `391` | `fn :: bn add mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `392` | `fn :: bn sub mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `393` | `fn :: bn mul row loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int U64` | `Tensor[U64 * 520]` |
-| `394` | `fn :: bn mul full loop Tensor[U64 * 520] Tensor[U64 * 260] Tensor[U64 * 260] Int Int` | `Tensor[U64 * 520]` |
-| `395` | `fn :: bn sub qm loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int U64` | `Tensor[U64 * 520]` |
-| `396` | `fn :: bn cmp520 offset loop Tensor[U64 * 520] Int Tensor[U64 * 260] Int` | `Int` |
-| `397` | `fn :: bn ge520 offset Tensor[U64 * 520] Int Tensor[U64 * 260] Int` | `Bool` |
-| `398` | `fn :: bn sub m while ge Tensor[U64 * 520] Int Tensor[U64 * 260] Int` | `Tensor[U64 * 520]` |
-| `399` | `fn :: bn reduce step q Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int` | `Tensor[U64 * 520]` |
-| `400` | `fn :: bn reduce loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int` | `Tensor[U64 * 520]` |
-| `401` | `fn :: bn copy520 to out Tensor[U64 * 260] Tensor[U64 * 520] Int Int` | `Tensor[U64 * 260]` |
-| `402` | `fn :: bn reduce520 Tensor[U64 * 520] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `403` | `fn :: bn mul mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `404` | `fn :: bn sq mod Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `405` | `fn :: bn mod from be String Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `406` | `fn :: bn mont loop Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int` | `Tensor[U64 * n] Tensor[U64 * n]` |
-| `407` | `fn :: bn mont carry Tensor[U64 * n] Tensor[U64 * 260] Int Int Int` | `Int` |
-| `408` | `fn :: bn mont mul BnMont Tensor[U64 * 260] Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
-| `409` | `fn :: bn mont ix Tensor[U64 * n] Int Int Int` | `Tensor[U64 * n]` |
-| `410` | `fn :: bn mont minv Int` | `Int` |
-| `411` | `fn :: bn mont pow2 BnMont Tensor[U64 * 260] Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
-| `412` | `fn :: bn mont ctx Tensor[U64 * 260] Int` | `BnMont` |
-| `413` | `fn :: bn mont mul mod BnMont Tensor[U64 * 260] Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
-| `414` | `fn :: bn mont sq BnMont Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
-| `415` | `fn :: bn mont in BnMont Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
-| `416` | `fn :: bn mont out BnMont Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
-| `417` | `fn :: bn mont pow bits Tensor[U64 * 260] BnMont Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
-| `418` | `fn :: bn mont pow bytes Tensor[U64 * 260] BnMont Tensor[U64 * 260] String Int Int` | `Tensor[U64 * 260]` |
-| `419` | `fn :: bn mont pow BnMont Tensor[U64 * 260] String` | `Tensor[U64 * 260]` |
-| `420` | `fn :: bn mod exp bits loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int Int` | `Tensor[U64 * 260]` |
-| `421` | `fn :: bn mod exp bytes loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int String Int Int` | `Tensor[U64 * 260]` |
-| `422` | `fn :: bn mod exp plain Tensor[U64 * 260] String Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `423` | `fn :: bn mod exp mont Tensor[U64 * 260] String BnMont` | `Tensor[U64 * 260]` |
-| `424` | `fn :: bn mod exp Tensor[U64 * 260] String Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `425` | `fn :: bn mod inv Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
-| `426` | `fn :: p256 curve` | `EcCurve` |
-| `427` | `fn :: p384 curve` | `EcCurve` |
-| `428` | `fn :: ec inf point Int` | `EcPoint` |
-| `429` | `fn :: ec affine point EcCurve Tensor[U64 * 260] Tensor[U64 * 260]` | `EcPoint` |
-| `430` | `fn :: ec point on curve EcCurve Tensor[U64 * 260] Tensor[U64 * 260]` | `Bool` |
-| `431` | `fn :: ec dbl EcCurve EcPoint` | `EcPoint` |
-| `432` | `fn :: ec add diff EcCurve EcPoint Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260]` | `EcPoint` |
-| `433` | `fn :: ec add EcCurve EcPoint EcPoint` | `EcPoint` |
-| `434` | `fn :: ec to affine EcCurve EcPoint` | `Bool Tensor[U64 * 260] Tensor[U64 * 260]` |
-| `435` | `fn :: ec cselect bn loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] U64 Int Int` | `Tensor[U64 * 260]` |
-| `436` | `fn :: ec cselect point EcPoint EcPoint U64 Int` | `EcPoint` |
-| `437` | `fn :: ec scalar mul loop EcCurve EcPoint EcPoint Tensor[U64 * 260] Int` | `EcPoint` |
-| `438` | `fn :: ec scalar mul EcCurve EcPoint Tensor[U64 * 260]` | `EcPoint` |
-| `439` | `fn :: ec shamir loop EcCurve EcPoint EcPoint EcPoint EcPoint Tensor[U64 * 260] Tensor[U64 * 260] Int` | `EcPoint` |
-| `440` | `fn :: p256 public key inner EcCurve Tensor[U64 * 260]` | `String` |
-| `441` | `fn :: p256 public key String` | `String` |
-| `442` | `fn :: p256 ecdh inner EcCurve Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260]` | `String` |
-| `443` | `fn :: p256 ecdh String String` | `String` |
-| `444` | `fn :: ecdsa unpack der rs Bool Int Int Int Int Bool Int Int Int String Int` | `Bool String String` |
-| `445` | `fn :: ecdsa unpack der seq Bool Int Int String Int` | `Bool String String` |
-| `446` | `fn :: ecdsa unpack sig String Int` | `Bool String String` |
-| `447` | `fn :: ecdsa verify shamir EcCurve Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] String Int` | `Bool` |
-| `448` | `fn :: ecdsa verify curve EcCurve String String String` | `Bool` |
-| `449` | `fn :: ecdsa p256 verify String String String` | `Bool` |
-| `450` | `fn :: ecdsa p256 verify sha256 String String String` | `Bool` |
-| `451` | `fn :: ecdsa p384 verify String String String` | `Bool` |
-| `452` | `fn :: ecdsa p384 verify sha384 String String String` | `Bool` |
-| `453` | `fn :: rsa mod exp inner String String String Int` | `String` |
-| `454` | `fn :: rsa mod exp String String String` | `String` |
-| `455` | `fn :: rsa hash msg String String` | `String` |
-| `456` | `fn :: rsa digest info prefix String` | `String` |
-| `457` | `fn :: rsa verify pkcs1 inner String String String String String Int` | `Bool` |
-| `458` | `fn :: rsa verify pkcs1 String String String String String` | `Bool` |
-| `459` | `fn :: rsa mgf1 loop String String Int Int String` | `String` |
-| `460` | `fn :: rsa pss check db zeroes String Int Int` | `Bool` |
-| `461` | `fn :: rsa pss unmask db CT16 String String Int Int String` | `String` |
-| `462` | `fn :: rsa verify pss em String String String Int Int` | `Bool` |
-| `463` | `fn :: rsa verify pss inner String String String String String Int` | `Bool` |
-| `464` | `fn :: rsa verify pss String String String String String` | `Bool` |
-| `465` | `fn :: pem strip ws step Bool CT16 Int String Int Int String String String String` | `String` |
-| `466` | `fn :: pem strip ws loop CT16 String Int Int String String String String` | `String` |
-| `467` | `fn :: pem decode b64 block CT16 String` | `Bool String` |
-| `468` | `fn :: pem find sub from String String Int Int Int` | `Int` |
-| `469` | `fn :: pem decode blocks step CT16 String String String Int Int Int [String]` | `[String]` |
-| `470` | `fn :: pem decode blocks loop CT16 String String String Int Int [String]` | `[String]` |
-| `471` | `fn :: pem decode blocks String String` | `[String]` |
-| `472` | `fn :: asn1 read len bytes String Int Int Int` | `Int` |
-| `473` | `fn :: asn1 finish tlv Bool Int Int Int Int Int` | `Bool Int Int Int Int` |
-| `474` | `fn :: asn1 parse long len String Int Int Int Int` | `Bool Int Int Int Int` |
-| `475` | `fn :: asn1 parse len dispatch String Int Int Int Int` | `Bool Int Int Int Int` |
-| `476` | `fn :: asn1 parse tlv String Int` | `Bool Int Int Int Int` |
-| `477` | `fn :: x509 parse dec2 String Int` | `Int` |
-| `478` | `fn :: x509 days from civil Int Int Int` | `Int` |
-| `479` | `fn :: x509 parse time tag Int String` | `Int` |
-| `480` | `fn :: x509 parse validity inner Bool Int Int Int Int Int Int String` | `Int Int` |
-| `481` | `fn :: x509 parse validity String Int Int` | `Int Int` |
-| `482` | `fn :: x509 check cn attr Bool String Int Int Int` | `String` |
-| `483` | `fn :: x509 find cn in rdn String Int Int` | `String` |
-| `484` | `fn :: x509 parse sig alg oid String String` | `String` |
-| `485` | `fn :: x509 parse sig alg String Int Int` | `String` |
-| `486` | `fn :: x509 parse rsa spki String` | `String String String` |
-| `487` | `fn :: x509 parse ec spki String Int String` | `String String String` |
-| `488` | `fn :: x509 dispatch spki oid String String Int String` | `String String String` |
-| `489` | `fn :: x509 parse spki inner Bool String Int Int Int` | `String String String` |
-| `490` | `fn :: x509 parse spki String Int Int` | `String String String` |
-| `491` | `fn :: x509 parse san entry Bool Int Int Int Int String Int [String]` | `[String]` |
-| `492` | `fn :: x509 parse san loop String Int Int [String]` | `[String]` |
-| `493` | `fn :: x509 ext octet span String Bool Int Int Int Int` | `Int Int` |
-| `494` | `fn :: x509 dispatch ext oid String String Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
-| `495` | `fn :: x509 parse single ext inner Bool String Int Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
-| `496` | `fn :: x509 parse single ext String Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
-| `497` | `fn :: x509 parse exts step Bool String Int Int Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
-| `498` | `fn :: x509 parse exts loop String Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
-| `499` | `fn :: x509 find exts step Bool Int Int Int String Int` | `[String] Bool Int Bool` |
-| `500` | `fn :: x509 find exts in tbs String Int Int` | `[String] Bool Int Bool` |
-| `501` | `fn :: x509 empty cert` | `X509Cert` |
-| `502` | `fn :: x509 parse cert tbs Bool String Int Int Int Int Int Int Int` | `Bool X509Cert` |
-| `503` | `fn :: x509 parse cert outer Bool String Int` | `Bool X509Cert` |
-| `504` | `fn :: x509 parse cert String` | `Bool X509Cert` |
-| `505` | `fn :: x509 ascii lower char Int` | `String` |
-| `506` | `fn :: x509 to lower loop String Int Int String` | `String` |
-| `507` | `fn :: x509 to lower String` | `String` |
-| `508` | `fn :: x509 count dots loop String Int Int Int` | `Int` |
-| `509` | `fn :: x509 first dot String Int Int` | `Int` |
-| `510` | `fn :: x509 match single san inner String String` | `Bool` |
-| `511` | `fn :: x509 match single san String String` | `Bool` |
-| `512` | `fn :: x509 match san list [String] String` | `Bool` |
-| `513` | `fn :: x509 match hostname X509Cert String` | `Bool` |
-| `514` | `fn :: x509 verify signature String String String String String String` | `Bool` |
-| `515` | `fn :: x509 verify cert sig X509Cert X509Cert` | `Bool` |
+| `160` | `fn :: poly1305 carry into Int Int Int Int Int Tensor[Int * j] Int` | `Int` |
+| `161` | `arch :: poly1305 quad Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U8 * 64] Int Int Int Int Int Int Int Int Int` | `Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` |
+| `162` | `arch :: poly1305 quad last Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U8 * 64] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` | `Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` |
+| `163` | `fn :: poly1305 quads Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U8 * n * 64] Int Int Int Int Int Int Int Int Int Int Int` | `Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` |
+| `164` | `fn :: poly1305 quads last Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U8 * n * 64] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Int Int` | `Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4] Tensor[U64 * 4]` |
+| `165` | `fn :: poly1305 mul Tensor[Int * 5] Tensor[Int * 5]` | `Tensor[Int * 5]` |
+| `166` | `fn :: poly1305 quad powers Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Int` | `Tensor[U64 * 4]` |
+| `167` | `fn :: poly1305 quad start Int` | `Tensor[U64 * 4]` |
+| `168` | `fn :: poly1305 quad sum Tensor[U64 * 4]` | `Int` |
+| `169` | `fn :: poly1305 quad run Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int` | `Tensor[Int * 5]` |
+| `170` | `fn :: poly1305 quad from Tensor[Int * 5] Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int` | `Tensor[Int * 5]` |
+| `171` | `fn :: poly1305 quad bytes Tensor[U8] Int` | `Tensor[U8]` |
+| `172` | `fn :: poly1305 quad rows Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int` | `Tensor[Int * 5]` |
+| `173` | `fn :: poly1305 quad count Int` | `Int` |
+| `174` | `fn :: c pick Bool Int Int` | `Int` |
+| `175` | `fn :: poly1305 finalize Tensor[Int * 5] Tensor[U8]` | `Tensor[U8]` |
+| `176` | `fn :: pad16 len Int` | `Int` |
+| `177` | `fn :: c put le64 Tensor[U8] Int Int` | `Int` |
+| `178` | `fn :: poly1305 aead mac Tensor[U8] Tensor[U8] Tensor[U8]` | `Tensor[U8]` |
+| `179` | `fn :: aead key stream Tensor[U8] Tensor[U8] Int` | `Tensor[U8]` |
+| `180` | `fn :: aead seal String String String String` | `String` |
+| `181` | `fn :: decrypt verified aead Bool Tensor[U8] Tensor[U8]` | `Int String` |
+| `182` | `fn :: aead open String String String String` | `Int String` |
+| `183` | `fn :: sha512 k hex0` | `String` |
+| `184` | `fn :: sha512 k hex1` | `String` |
+| `185` | `fn :: sha512 fill hex words Tensor[U64 * 160] String Int Int` | `Tensor[U64 * 160]` |
+| `186` | `fn :: sha512 init k` | `Tensor[U64 * 160]` |
+| `187` | `fn :: sha512 init h loop Tensor[U64 * 16] String Int` | `Tensor[U64 * 16]` |
+| `188` | `fn :: sha512 init h` | `Tensor[U64 * 16]` |
+| `189` | `fn :: sha512 rrot lt32 U64 U64 Int` | `U64 U64` |
+| `190` | `fn :: sha512 rshift lt32 U64 U64 Int` | `U64 U64` |
+| `191` | `fn :: sha512 big sigma0 U64 U64` | `U64 U64` |
+| `192` | `fn :: sha512 big sigma1 U64 U64` | `U64 U64` |
+| `193` | `fn :: sha512 small sigma0 U64 U64` | `U64 U64` |
+| `194` | `fn :: sha512 small sigma1 U64 U64` | `U64 U64` |
+| `195` | `fn :: sha512 vbyte String Int Int Int` | `U64` |
+| `196` | `fn :: sha512 load w fast Tensor[U64 * 160] String Int Int` | `Tensor[U64 * 160]` |
+| `197` | `fn :: sha512 load w pad Tensor[U64 * 160] String Int Int Int Int` | `Tensor[U64 * 160]` |
+| `198` | `fn :: sha512 expand w Tensor[U64 * 160] Int` | `Tensor[U64 * 160]` |
+| `199` | `fn :: sha512 copy state Tensor[U64 * 16] Tensor[U64 * 16] Int` | `Tensor[U64 * 16]` |
+| `200` | `fn :: sha512 add state Tensor[U64 * 16] Tensor[U64 * 16] Int` | `Tensor[U64 * 16]` |
+| `201` | `fn :: sha512 rounds loop Tensor[U64 * 16] Tensor[U64 * 160] Tensor[U64 * 160] Int` | `Tensor[U64 * 16]` |
+| `202` | `fn :: sha512 blocks loop Tensor[U64 * 16] Tensor[U64 * 16] Tensor[U64 * 160] Tensor[U64 * 160] String Int Int Int` | `Tensor[U64 * 16]` |
+| `203` | `fn :: sha512 state to raw CT16 Tensor[U64 * 16] Int` | `String` |
+| `204` | `fn :: sha512 bytes String` | `String` |
+| `205` | `fn :: sha512 hex String` | `String` |
+| `206` | `fn :: fe lit U64 U64 U64 U64 U64 U64 U64 U64 U64 U64` | `Tensor[U64 * 10]` |
+| `207` | `fn :: fe zero` | `Tensor[U64 * 10]` |
+| `208` | `fn :: fe one` | `Tensor[U64 * 10]` |
+| `209` | `fn :: fe d` | `Tensor[U64 * 10]` |
+| `210` | `fn :: fe d2` | `Tensor[U64 * 10]` |
+| `211` | `fn :: fe sqrt m1` | `Tensor[U64 * 10]` |
+| `212` | `fn :: fe bx` | `Tensor[U64 * 10]` |
+| `213` | `fn :: fe by` | `Tensor[U64 * 10]` |
+| `214` | `fn :: fe bt` | `Tensor[U64 * 10]` |
+| `215` | `fn :: fe carry pass Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `216` | `fn :: fe carry Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `217` | `fn :: fe add Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `218` | `fn :: fe sub Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `219` | `fn :: fe mul Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `220` | `fn :: fe sq Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `221` | `fn :: fe sq n Tensor[U64 * 10] Int` | `Tensor[U64 * 10]` |
+| `222` | `fn :: fe freeze Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `223` | `fn :: fe eq Tensor[U64 * 10] Tensor[U64 * 10]` | `Bool` |
+| `224` | `fn :: fe pow22523 Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `225` | `fn :: fe invert Tensor[U64 * 10]` | `Tensor[U64 * 10]` |
+| `226` | `fn :: fe to words8 Tensor[U64 * 10]` | `Tensor[U64 * 8]` |
+| `227` | `fn :: words8 to raw32 loop CT16 Tensor[U64 * 8] Int` | `String` |
+| `228` | `fn :: raw32 to words8 String` | `Tensor[U64 * 8]` |
+| `229` | `fn :: fe from raw32 String` | `Bool U64 Tensor[U64 * 10]` |
+| `230` | `fn :: ge pack Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10]` | `Tensor[U64 * 40]` |
+| `231` | `fn :: ge coord Tensor[U64 * 40] Int` | `Tensor[U64 * 10]` |
+| `232` | `fn :: ge zero` | `Tensor[U64 * 40]` |
+| `233` | `fn :: ge base` | `Tensor[U64 * 40]` |
+| `234` | `fn :: ge add Tensor[U64 * 40] Tensor[U64 * 40]` | `Tensor[U64 * 40]` |
+| `235` | `fn :: ge dbl Tensor[U64 * 40]` | `Tensor[U64 * 40]` |
+| `236` | `fn :: ge cselect loop Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 40] U64 Int` | `Tensor[U64 * 40]` |
+| `237` | `fn :: ge cselect Tensor[U64 * 40] Tensor[U64 * 40] U64` | `Tensor[U64 * 40]` |
+| `238` | `fn :: ge scalarmult loop Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 8] Int` | `Tensor[U64 * 40]` |
+| `239` | `fn :: ge scalarmult ct Tensor[U64 * 40] Tensor[U64 * 8]` | `Tensor[U64 * 40]` |
+| `240` | `fn :: ge to bytes Tensor[U64 * 40]` | `String` |
+| `241` | `fn :: ge finish sign Bool Bool Tensor[U64 * 10] Tensor[U64 * 10]` | `Bool Tensor[U64 * 40]` |
+| `242` | `fn :: ge decompress step2 Tensor[U64 * 10] Tensor[U64 * 10] U64` | `Bool Tensor[U64 * 40]` |
+| `243` | `fn :: ge check root Bool Bool Tensor[U64 * 10] Tensor[U64 * 10] U64` | `Bool Tensor[U64 * 40]` |
+| `244` | `fn :: ge decompress y Bool U64 Tensor[U64 * 10]` | `Bool Tensor[U64 * 40]` |
+| `245` | `fn :: ge from bytes String` | `Bool Tensor[U64 * 40]` |
+| `246` | `fn :: sc l words` | `Tensor[U64 * 8]` |
+| `247` | `fn :: sc lt l loop Tensor[U64 * 8] Tensor[U64 * 8] Int` | `Bool` |
+| `248` | `fn :: sc lt l Tensor[U64 * 8]` | `Bool` |
+| `249` | `fn :: sc sub word U64 U64` | `U64 U64` |
+| `250` | `fn :: sc sub l loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int U64` | `Tensor[U64 * 8]` |
+| `251` | `fn :: sc sub l Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
+| `252` | `fn :: sc norm l Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
+| `253` | `fn :: sc add raw loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int U64` | `Tensor[U64 * 8]` |
+| `254` | `fn :: sc add mod l Tensor[U64 * 8] Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
+| `255` | `fn :: sc zero` | `Tensor[U64 * 8]` |
+| `256` | `fn :: sc one` | `Tensor[U64 * 8]` |
+| `257` | `fn :: sc cond add bit Bool Tensor[U64 * 8] Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
+| `258` | `fn :: sc reduce byte bits Tensor[U64 * 8] Tensor[U64 * 8] U64 Int` | `Tensor[U64 * 8]` |
+| `259` | `fn :: sc reduce le64 loop Tensor[U64 * 8] Tensor[U64 * 8] String Int` | `Tensor[U64 * 8]` |
+| `260` | `fn :: sc reduce le64 String` | `Tensor[U64 * 8]` |
+| `261` | `fn :: sc mul word bits Tensor[U64 * 8] Tensor[U64 * 8] U64 Int` | `Tensor[U64 * 8]` |
+| `262` | `fn :: sc mul mod l loop Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8] Int` | `Tensor[U64 * 8]` |
+| `263` | `fn :: sc muladd mod l Tensor[U64 * 8] Tensor[U64 * 8] Tensor[U64 * 8]` | `Tensor[U64 * 8]` |
+| `264` | `fn :: ed25519 clamp scalar String` | `Tensor[U64 * 8]` |
+| `265` | `fn :: ed25519 public key String` | `String` |
+| `266` | `fn :: ed25519 sign String String` | `String` |
+| `267` | `fn :: ed25519 verify points Bool Tensor[U64 * 40] Tensor[U64 * 40] Tensor[U64 * 8] String String String` | `Bool` |
+| `268` | `fn :: ed25519 verify scalar Bool String String String Tensor[U64 * 8]` | `Bool` |
+| `269` | `fn :: ed25519 verify String String String` | `Bool` |
+| `270` | `fn :: c is ws Int` | `Bool` |
+| `271` | `fn :: c trim start String Int Int` | `Int` |
+| `272` | `fn :: c trim end String Int Int` | `Int` |
+| `273` | `fn :: c trim String` | `String` |
+| `274` | `fn :: c starts with String String` | `Bool` |
+| `275` | `fn :: c split lines loop String Int Int Int [String]` | `[String]` |
+| `276` | `fn :: c split lines trimmed String Int` | `[String]` |
+| `277` | `fn :: c split lines String` | `[String]` |
+| `278` | `fn :: c b64 table` | `String` |
+| `279` | `fn :: c b64 ch Int` | `String` |
+| `280` | `fn :: c b64 encode loop String Int Int` | `String` |
+| `281` | `fn :: c b64 encode String` | `String` |
+| `282` | `fn :: c b64 val Int` | `Int` |
+| `283` | `fn :: c b64 quad CT16 String Int Int String Int Int Int Int` | `Bool String` |
+| `284` | `fn :: c b64 decode loop CT16 String Int Int String` | `Bool String` |
+| `285` | `fn :: c b64 decode trimmed String Int` | `Bool String` |
+| `286` | `fn :: c b64 decode String` | `Bool String` |
+| `287` | `fn :: c nth str [String] Int` | `String` |
+| `288` | `fn :: c str list len [String] Int` | `Int` |
+| `289` | `fn :: minisign encode pubkey String String` | `String` |
+| `290` | `fn :: minisign select pubkey line [String] Int` | `String` |
+| `291` | `fn :: minisign unpack pubkey Bool String` | `String String` |
+| `292` | `fn :: minisign decode pubkey String` | `String String` |
+| `293` | `fn :: minisign sign String String String String String` | `String` |
+| `294` | `fn :: minisign extract tc line String` | `String` |
+| `295` | `fn :: minisign extract tc lines [String] Int` | `String` |
+| `296` | `fn :: minisign trusted comment String` | `String` |
+| `297` | `fn :: minisign payload for alg String String` | `Bool String` |
+| `298` | `fn :: minisign check sigs Bool String String String String String String` | `Bool` |
+| `299` | `fn :: minisign verify decoded Bool String String String String String` | `Bool` |
+| `300` | `fn :: minisign verify body Bool String String String String String String` | `Bool` |
+| `301` | `fn :: minisign verify lines Bool String String String [String]` | `Bool` |
+| `302` | `fn :: minisign verify String String String` | `Bool` |
+| `303` | `fn :: sha384 init h` | `Tensor[U64 * 16]` |
+| `304` | `fn :: sha384 state to raw CT16 Tensor[U64 * 16] Int` | `String` |
+| `305` | `fn :: sha384 bytes String` | `String` |
+| `306` | `fn :: sha384 hex String` | `String` |
+| `307` | `fn :: normalize hmac384 key String` | `Tensor[U8]` |
+| `308` | `fn :: hmac sha384 String String` | `String` |
+| `309` | `fn :: c repeat byte Int Int` | `String` |
+| `310` | `fn :: hkdf extract String String` | `String` |
+| `311` | `fn :: hkdf expand loop String String Int Int String String` | `String` |
+| `312` | `fn :: hkdf expand String String Int` | `String` |
+| `313` | `fn :: hkdf extract sha384 String String` | `String` |
+| `314` | `fn :: hkdf expand sha384 loop String String Int Int String String` | `String` |
+| `315` | `fn :: hkdf expand sha384 String String Int` | `String` |
+| `316` | `fn :: hkdf expand label String String String Int` | `String` |
+| `317` | `fn :: derive secret String String String` | `String` |
+| `318` | `fn :: fe a24` | `Tensor[U64 * 10]` |
+| `319` | `fn :: fe cswap loop Tensor[U64 * 10] Tensor[U64 * 10] U64 Int` | `Tensor[U64 * 10] Tensor[U64 * 10]` |
+| `320` | `fn :: fe cswap Tensor[U64 * 10] Tensor[U64 * 10] U64` | `Tensor[U64 * 10] Tensor[U64 * 10]` |
+| `321` | `fn :: x25519 clamp scalar String` | `Tensor[U64 * 8]` |
+| `322` | `fn :: x25519 decode u String` | `Tensor[U64 * 10]` |
+| `323` | `fn :: x25519 ladder loop Tensor[U64 * 8] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] Tensor[U64 * 10] U64 Int` | `Tensor[U64 * 10] Tensor[U64 * 10]` |
+| `324` | `fn :: x25519 check non zero String` | `String` |
+| `325` | `fn :: x25519 String String` | `String` |
+| `326` | `fn :: x25519 public key String` | `String` |
+| `327` | `arch :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
+| `328` | `arch :: aes last round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
+| `329` | `arch :: aes128 encrypt block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
+| `330` | `arch :: aes256 encrypt block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256]` | `Tensor[U8 * 16]` |
+| `331` | `arch :: aes128 ctr block Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int` | `Tensor[U8 * 16]` |
+| `332` | `arch :: aes256 ctr block Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int` | `Tensor[U8 * 16]` |
+| `333` | `fn :: aes128 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 11 * 16] Tensor[U8 * 256] Int Int Int` | `Tensor[U8 * n * 16]` |
+| `334` | `fn :: aes256 ctr rows Tensor[U8 * n * 16] Tensor[U8 * 16] Tensor[U8 * 15 * 16] Tensor[U8 * 256] Int Int Int` | `Tensor[U8 * n * 16]` |
+| `335` | `fn :: aes rotl8 Int Int` | `Int` |
+| `336` | `fn :: aes box fill Tensor[U8] Int Int Bool` | `Tensor[U8]` |
+| `337` | `idem :: aes make box` | `Tensor[U8]` |
+| `338` | `fn :: aes key byte Tensor[U8] Int Int` | `Int` |
+| `339` | `fn :: aes put word Tensor[U8] Int Int Int Int Int` | `Tensor[U8]` |
+| `340` | `fn :: aes expand Tensor[U8] Tensor[U8] Int Int Int Int` | `Tensor[U8]` |
+| `341` | `fn :: aes set key Tensor[U8] String Int Int` | `Tensor[U8]` |
+| `342` | `fn :: aes128 keys Tensor[U8] String` | `Tensor[U8]` |
+| `343` | `fn :: aes256 keys Tensor[U8] String` | `Tensor[U8]` |
+| `344` | `fn :: aes iv16 String` | `Tensor[U8]` |
+| `345` | `fn :: aes128 key stream Tensor[U8] Tensor[U8] String Int Int` | `Tensor[U8]` |
+| `346` | `fn :: aes256 key stream Tensor[U8] Tensor[U8] String Int Int` | `Tensor[U8]` |
+| `347` | `fn :: aes128 block String String` | `String` |
+| `348` | `fn :: aes256 block String String` | `String` |
+| `349` | `fn :: ghash mul Int Int Int Int` | `Int Int` |
+| `350` | `fn :: ghash be64 Tensor[U8] Int Int` | `Int` |
+| `351` | `fn :: ghash be64 tail Tensor[U8] Int Int Int Int` | `Int` |
+| `352` | `fn :: ghash absorb Int Int Int Int Tensor[U8] Int Int` | `Int Int` |
+| `353` | `fn :: ghash put be64 Tensor[U8] Int Int` | `Int` |
+| `354` | `fn :: ghash compute Tensor[U8] Tensor[U8] Tensor[U8]` | `Tensor[U8]` |
+| `355` | `fn :: aes gcm tag String String String Tensor[U8]` | `String` |
+| `356` | `fn :: aes gcm seal parts String String Tensor[U8] String String` | `String` |
+| `357` | `fn :: aes128 gcm seal String String String String` | `String` |
+| `358` | `fn :: aes128 gcm open verified Bool Tensor[U8] Tensor[U8] String Tensor[U8]` | `Int String` |
+| `359` | `fn :: aes128 gcm open String String String String` | `Int String` |
+| `360` | `fn :: aes256 gcm seal String String String String` | `String` |
+| `361` | `fn :: aes256 gcm open verified Bool Tensor[U8] Tensor[U8] String Tensor[U8]` | `Int String` |
+| `362` | `fn :: aes256 gcm open String String String String` | `Int String` |
+| `363` | `fn :: bn zero loop Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
+| `364` | `fn :: bn zero Int` | `Tensor[U64 * 260]` |
+| `365` | `fn :: bn zero520 loop Tensor[U64 * 520] Int Int` | `Tensor[U64 * 520]` |
+| `366` | `fn :: bn zero520 Int` | `Tensor[U64 * 520]` |
+| `367` | `fn :: bn clone loop Tensor[U64 * 260] Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
+| `368` | `fn :: bn clone Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `369` | `fn :: bn strip leading zeroes String Int Int` | `String` |
+| `370` | `fn :: bn from be loop Tensor[U64 * 260] String Int Int Int` | `Tensor[U64 * 260]` |
+| `371` | `fn :: bn from be String Int` | `Tensor[U64 * 260]` |
+| `372` | `fn :: bn from hex String Int` | `Tensor[U64 * 260]` |
+| `373` | `fn :: bn to be loop CT16 Tensor[U64 * 260] Int String String String String` | `String` |
+| `374` | `fn :: bn to be Tensor[U64 * 260] Int` | `String` |
+| `375` | `fn :: bn is zero loop Tensor[U64 * 260] Int Int` | `Bool` |
+| `376` | `fn :: bn is zero Tensor[U64 * 260] Int` | `Bool` |
+| `377` | `fn :: bn cmp loop Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Int` |
+| `378` | `fn :: bn cmp Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Int` |
+| `379` | `fn :: bn add raw loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int U64` | `U64` |
+| `380` | `fn :: bn sub raw loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int U64` | `U64` |
+| `381` | `fn :: bn add mod finish Bool Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `382` | `fn :: bn add mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `383` | `fn :: bn sub mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `384` | `fn :: bn mul row loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int U64` | `Tensor[U64 * 520]` |
+| `385` | `fn :: bn mul full loop Tensor[U64 * 520] Tensor[U64 * 260] Tensor[U64 * 260] Int Int` | `Tensor[U64 * 520]` |
+| `386` | `fn :: bn sub qm loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int U64` | `Tensor[U64 * 520]` |
+| `387` | `fn :: bn cmp520 offset loop Tensor[U64 * 520] Int Tensor[U64 * 260] Int` | `Int` |
+| `388` | `fn :: bn ge520 offset Tensor[U64 * 520] Int Tensor[U64 * 260] Int` | `Bool` |
+| `389` | `fn :: bn sub m while ge Tensor[U64 * 520] Int Tensor[U64 * 260] Int` | `Tensor[U64 * 520]` |
+| `390` | `fn :: bn reduce step q Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int Int` | `Tensor[U64 * 520]` |
+| `391` | `fn :: bn reduce loop Tensor[U64 * 520] Tensor[U64 * 260] U64 Int Int` | `Tensor[U64 * 520]` |
+| `392` | `fn :: bn copy520 to out Tensor[U64 * 260] Tensor[U64 * 520] Int Int` | `Tensor[U64 * 260]` |
+| `393` | `fn :: bn reduce520 Tensor[U64 * 520] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `394` | `fn :: bn mul mod Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `395` | `fn :: bn sq mod Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `396` | `fn :: bn mod from be String Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `397` | `fn :: bn mont loop Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int` | `Tensor[U64 * n] Tensor[U64 * n]` |
+| `398` | `fn :: bn mont carry Tensor[U64 * n] Tensor[U64 * 260] Int Int Int` | `Int` |
+| `399` | `fn :: bn mont mul BnMont Tensor[U64 * 260] Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
+| `400` | `fn :: bn mont ix Tensor[U64 * n] Int Int Int` | `Tensor[U64 * n]` |
+| `401` | `fn :: bn mont minv Int` | `Int` |
+| `402` | `fn :: bn mont pow2 BnMont Tensor[U64 * 260] Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
+| `403` | `fn :: bn mont ctx Tensor[U64 * 260] Int` | `BnMont` |
+| `404` | `fn :: bn mont mul mod BnMont Tensor[U64 * 260] Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
+| `405` | `fn :: bn mont sq BnMont Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
+| `406` | `fn :: bn mont in BnMont Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
+| `407` | `fn :: bn mont out BnMont Tensor[U64 * 260]` | `Tensor[U64 * 260]` |
+| `408` | `fn :: bn mont pow bits Tensor[U64 * 260] BnMont Tensor[U64 * 260] Int Int` | `Tensor[U64 * 260]` |
+| `409` | `fn :: bn mont pow bytes Tensor[U64 * 260] BnMont Tensor[U64 * 260] String Int Int` | `Tensor[U64 * 260]` |
+| `410` | `fn :: bn mont pow BnMont Tensor[U64 * 260] String` | `Tensor[U64 * 260]` |
+| `411` | `fn :: bn mod exp bits loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int Int Int` | `Tensor[U64 * 260]` |
+| `412` | `fn :: bn mod exp bytes loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Int String Int Int` | `Tensor[U64 * 260]` |
+| `413` | `fn :: bn mod exp plain Tensor[U64 * 260] String Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `414` | `fn :: bn mod exp mont Tensor[U64 * 260] String BnMont` | `Tensor[U64 * 260]` |
+| `415` | `fn :: bn mod exp Tensor[U64 * 260] String Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `416` | `fn :: bn mod inv Tensor[U64 * 260] Tensor[U64 * 260] Int` | `Tensor[U64 * 260]` |
+| `417` | `fn :: p256 curve` | `EcCurve` |
+| `418` | `fn :: p384 curve` | `EcCurve` |
+| `419` | `fn :: ec inf point Int` | `EcPoint` |
+| `420` | `fn :: ec affine point EcCurve Tensor[U64 * 260] Tensor[U64 * 260]` | `EcPoint` |
+| `421` | `fn :: ec point on curve EcCurve Tensor[U64 * 260] Tensor[U64 * 260]` | `Bool` |
+| `422` | `fn :: ec dbl EcCurve EcPoint` | `EcPoint` |
+| `423` | `fn :: ec add diff EcCurve EcPoint Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260]` | `EcPoint` |
+| `424` | `fn :: ec add EcCurve EcPoint EcPoint` | `EcPoint` |
+| `425` | `fn :: ec to affine EcCurve EcPoint` | `Bool Tensor[U64 * 260] Tensor[U64 * 260]` |
+| `426` | `fn :: ec cselect bn loop Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] U64 Int Int` | `Tensor[U64 * 260]` |
+| `427` | `fn :: ec cselect point EcPoint EcPoint U64 Int` | `EcPoint` |
+| `428` | `fn :: ec scalar mul loop EcCurve EcPoint EcPoint Tensor[U64 * 260] Int` | `EcPoint` |
+| `429` | `fn :: ec scalar mul EcCurve EcPoint Tensor[U64 * 260]` | `EcPoint` |
+| `430` | `fn :: ec shamir loop EcCurve EcPoint EcPoint EcPoint EcPoint Tensor[U64 * 260] Tensor[U64 * 260] Int` | `EcPoint` |
+| `431` | `fn :: p256 public key inner EcCurve Tensor[U64 * 260]` | `String` |
+| `432` | `fn :: p256 public key String` | `String` |
+| `433` | `fn :: p256 ecdh inner EcCurve Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260]` | `String` |
+| `434` | `fn :: p256 ecdh String String` | `String` |
+| `435` | `fn :: ecdsa unpack der rs Bool Int Int Int Int Bool Int Int Int String Int` | `Bool String String` |
+| `436` | `fn :: ecdsa unpack der seq Bool Int Int String Int` | `Bool String String` |
+| `437` | `fn :: ecdsa unpack sig String Int` | `Bool String String` |
+| `438` | `fn :: ecdsa verify shamir EcCurve Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] Tensor[U64 * 260] String Int` | `Bool` |
+| `439` | `fn :: ecdsa verify curve EcCurve String String String` | `Bool` |
+| `440` | `fn :: ecdsa p256 verify String String String` | `Bool` |
+| `441` | `fn :: ecdsa p256 verify sha256 String String String` | `Bool` |
+| `442` | `fn :: ecdsa p384 verify String String String` | `Bool` |
+| `443` | `fn :: ecdsa p384 verify sha384 String String String` | `Bool` |
+| `444` | `fn :: rsa mod exp inner String String String Int` | `String` |
+| `445` | `fn :: rsa mod exp String String String` | `String` |
+| `446` | `fn :: rsa hash msg String String` | `String` |
+| `447` | `fn :: rsa digest info prefix String` | `String` |
+| `448` | `fn :: rsa verify pkcs1 inner String String String String String Int` | `Bool` |
+| `449` | `fn :: rsa verify pkcs1 String String String String String` | `Bool` |
+| `450` | `fn :: rsa mgf1 loop String String Int Int String` | `String` |
+| `451` | `fn :: rsa pss check db zeroes String Int Int` | `Bool` |
+| `452` | `fn :: rsa pss unmask db CT16 String String Int Int String` | `String` |
+| `453` | `fn :: rsa verify pss em String String String Int Int` | `Bool` |
+| `454` | `fn :: rsa verify pss inner String String String String String Int` | `Bool` |
+| `455` | `fn :: rsa verify pss String String String String String` | `Bool` |
+| `456` | `fn :: pem strip ws step Bool CT16 Int String Int Int String String String String` | `String` |
+| `457` | `fn :: pem strip ws loop CT16 String Int Int String String String String` | `String` |
+| `458` | `fn :: pem decode b64 block CT16 String` | `Bool String` |
+| `459` | `fn :: pem find sub from String String Int Int Int` | `Int` |
+| `460` | `fn :: pem decode blocks step CT16 String String String Int Int Int [String]` | `[String]` |
+| `461` | `fn :: pem decode blocks loop CT16 String String String Int Int [String]` | `[String]` |
+| `462` | `fn :: pem decode blocks String String` | `[String]` |
+| `463` | `fn :: asn1 read len bytes String Int Int Int` | `Int` |
+| `464` | `fn :: asn1 finish tlv Bool Int Int Int Int Int` | `Bool Int Int Int Int` |
+| `465` | `fn :: asn1 parse long len String Int Int Int Int` | `Bool Int Int Int Int` |
+| `466` | `fn :: asn1 parse len dispatch String Int Int Int Int` | `Bool Int Int Int Int` |
+| `467` | `fn :: asn1 parse tlv String Int` | `Bool Int Int Int Int` |
+| `468` | `fn :: x509 parse dec2 String Int` | `Int` |
+| `469` | `fn :: x509 days from civil Int Int Int` | `Int` |
+| `470` | `fn :: x509 parse time tag Int String` | `Int` |
+| `471` | `fn :: x509 parse validity inner Bool Int Int Int Int Int Int String` | `Int Int` |
+| `472` | `fn :: x509 parse validity String Int Int` | `Int Int` |
+| `473` | `fn :: x509 check cn attr Bool String Int Int Int` | `String` |
+| `474` | `fn :: x509 find cn in rdn String Int Int` | `String` |
+| `475` | `fn :: x509 parse sig alg oid String String` | `String` |
+| `476` | `fn :: x509 parse sig alg String Int Int` | `String` |
+| `477` | `fn :: x509 parse rsa spki String` | `String String String` |
+| `478` | `fn :: x509 parse ec spki String Int String` | `String String String` |
+| `479` | `fn :: x509 dispatch spki oid String String Int String` | `String String String` |
+| `480` | `fn :: x509 parse spki inner Bool String Int Int Int` | `String String String` |
+| `481` | `fn :: x509 parse spki String Int Int` | `String String String` |
+| `482` | `fn :: x509 parse san entry Bool Int Int Int Int String Int [String]` | `[String]` |
+| `483` | `fn :: x509 parse san loop String Int Int [String]` | `[String]` |
+| `484` | `fn :: x509 ext octet span String Bool Int Int Int Int` | `Int Int` |
+| `485` | `fn :: x509 dispatch ext oid String String Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
+| `486` | `fn :: x509 parse single ext inner Bool String Int Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
+| `487` | `fn :: x509 parse single ext String Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
+| `488` | `fn :: x509 parse exts step Bool String Int Int Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
+| `489` | `fn :: x509 parse exts loop String Int Int [String] Bool Int Bool` | `[String] Bool Int Bool` |
+| `490` | `fn :: x509 find exts step Bool Int Int Int String Int` | `[String] Bool Int Bool` |
+| `491` | `fn :: x509 find exts in tbs String Int Int` | `[String] Bool Int Bool` |
+| `492` | `fn :: x509 empty cert` | `X509Cert` |
+| `493` | `fn :: x509 parse cert tbs Bool String Int Int Int Int Int Int Int` | `Bool X509Cert` |
+| `494` | `fn :: x509 parse cert outer Bool String Int` | `Bool X509Cert` |
+| `495` | `fn :: x509 parse cert String` | `Bool X509Cert` |
+| `496` | `fn :: x509 ascii lower char Int` | `String` |
+| `497` | `fn :: x509 to lower loop String Int Int String` | `String` |
+| `498` | `fn :: x509 to lower String` | `String` |
+| `499` | `fn :: x509 count dots loop String Int Int Int` | `Int` |
+| `500` | `fn :: x509 first dot String Int Int` | `Int` |
+| `501` | `fn :: x509 match single san inner String String` | `Bool` |
+| `502` | `fn :: x509 match single san String String` | `Bool` |
+| `503` | `fn :: x509 match san list [String] String` | `Bool` |
+| `504` | `fn :: x509 match hostname X509Cert String` | `Bool` |
+| `505` | `fn :: x509 verify signature String String String String String String` | `Bool` |
+| `506` | `fn :: x509 verify cert sig X509Cert X509Cert` | `Bool` |
 
 ---
 
@@ -1720,69 +1711,6 @@ fn :: poly1305 blocks loop Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int Int =>
         | off >= n  = h
         | otherwise = poly1305 blocks loop (poly1305 step h r msg off) r msg (off + 16) n
 
--- Poly1305 on n lanes, `k` steps in one loop: h = (h + block) * p, with the block of lane l read at byte lx_(l) + at of `msg`.
--- h and p are 5 limbs of 26 bits (one tensor per limb); s1..s4 = 5 * p1..p4. `at` moves 512 bytes on at each step: this one is for 32 lanes.
-fn :: poly1305 lanes loop Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U8] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
-      poly1305 lanes loop h0 h1 h2 h3 h4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 at k =
-        | k <= 0 = (h0, h1, h2, h3, h4)
-        | otherwise =
-          t0 = (((msg_(lx_i + at) as U64) + ((msg_((lx_i + at) + 1) as U64) shl 8)) + ((msg_((lx_i + at) + 2) as U64) shl 16)) + ((msg_((lx_i + at) + 3) as U64) shl 24)
-          t1 = (((msg_((lx_i + at) + 4) as U64) + ((msg_((lx_i + at) + 5) as U64) shl 8)) + ((msg_((lx_i + at) + 6) as U64) shl 16)) + ((msg_((lx_i + at) + 7) as U64) shl 24)
-          t2 = (((msg_((lx_i + at) + 8) as U64) + ((msg_((lx_i + at) + 9) as U64) shl 8)) + ((msg_((lx_i + at) + 10) as U64) shl 16)) + ((msg_((lx_i + at) + 11) as U64) shl 24)
-          t3 = (((msg_((lx_i + at) + 12) as U64) + ((msg_((lx_i + at) + 13) as U64) shl 8)) + ((msg_((lx_i + at) + 14) as U64) shl 16)) + ((msg_((lx_i + at) + 15) as U64) shl 24)
-          a0 = h0_i + (t0_i and 0x3FFFFFF)
-          a1 = h1_i + (((t0_i shr 26) or (t1_i shl 6)) and 0x3FFFFFF)
-          a2 = h2_i + (((t1_i shr 20) or (t2_i shl 12)) and 0x3FFFFFF)
-          a3 = h3_i + (((t2_i shr 14) or (t3_i shl 18)) and 0x3FFFFFF)
-          a4 = h4_i + ((t3_i shr 8) + 16777216)
-          d0 = ((((a0_i * p0_i) + (a1_i * s4_i)) + (a2_i * s3_i)) + (a3_i * s2_i)) + (a4_i * s1_i)
-          d1 = ((((a0_i * p1_i) + (a1_i * p0_i)) + (a2_i * s4_i)) + (a3_i * s3_i)) + (a4_i * s2_i)
-          d2 = ((((a0_i * p2_i) + (a1_i * p1_i)) + (a2_i * p0_i)) + (a3_i * s4_i)) + (a4_i * s3_i)
-          d3 = ((((a0_i * p3_i) + (a1_i * p2_i)) + (a2_i * p1_i)) + (a3_i * p0_i)) + (a4_i * s4_i)
-          d4 = ((((a0_i * p4_i) + (a1_i * p3_i)) + (a2_i * p2_i)) + (a3_i * p1_i)) + (a4_i * p0_i)
-          e1 = d1_i + (d0_i shr 26)
-          e2 = d2_i + (e1_i shr 26)
-          e3 = d3_i + (e2_i shr 26)
-          e4 = d4_i + (e3_i shr 26)
-          f0 = (d0_i and 0x3FFFFFF) + ((e4_i shr 26) * 5)
-          g0 = f0_i and 0x3FFFFFF
-          g1 = (e1_i and 0x3FFFFFF) + (f0_i shr 26)
-          g2 = e2_i and 0x3FFFFFF
-          g3 = e3_i and 0x3FFFFFF
-          g4 = e4_i and 0x3FFFFFF
-          poly1305 lanes loop g0 g1 g2 g3 g4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 (at + 512) (k - 1)
-
--- The same loop for 8 lanes: `at` moves 128 bytes on at each step.
-fn :: poly1305 lanes loop short Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U8] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
-      poly1305 lanes loop short h0 h1 h2 h3 h4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 at k =
-        | k <= 0 = (h0, h1, h2, h3, h4)
-        | otherwise =
-          t0 = (((msg_(lx_i + at) as U64) + ((msg_((lx_i + at) + 1) as U64) shl 8)) + ((msg_((lx_i + at) + 2) as U64) shl 16)) + ((msg_((lx_i + at) + 3) as U64) shl 24)
-          t1 = (((msg_((lx_i + at) + 4) as U64) + ((msg_((lx_i + at) + 5) as U64) shl 8)) + ((msg_((lx_i + at) + 6) as U64) shl 16)) + ((msg_((lx_i + at) + 7) as U64) shl 24)
-          t2 = (((msg_((lx_i + at) + 8) as U64) + ((msg_((lx_i + at) + 9) as U64) shl 8)) + ((msg_((lx_i + at) + 10) as U64) shl 16)) + ((msg_((lx_i + at) + 11) as U64) shl 24)
-          t3 = (((msg_((lx_i + at) + 12) as U64) + ((msg_((lx_i + at) + 13) as U64) shl 8)) + ((msg_((lx_i + at) + 14) as U64) shl 16)) + ((msg_((lx_i + at) + 15) as U64) shl 24)
-          a0 = h0_i + (t0_i and 0x3FFFFFF)
-          a1 = h1_i + (((t0_i shr 26) or (t1_i shl 6)) and 0x3FFFFFF)
-          a2 = h2_i + (((t1_i shr 20) or (t2_i shl 12)) and 0x3FFFFFF)
-          a3 = h3_i + (((t2_i shr 14) or (t3_i shl 18)) and 0x3FFFFFF)
-          a4 = h4_i + ((t3_i shr 8) + 16777216)
-          d0 = ((((a0_i * p0_i) + (a1_i * s4_i)) + (a2_i * s3_i)) + (a3_i * s2_i)) + (a4_i * s1_i)
-          d1 = ((((a0_i * p1_i) + (a1_i * p0_i)) + (a2_i * s4_i)) + (a3_i * s3_i)) + (a4_i * s2_i)
-          d2 = ((((a0_i * p2_i) + (a1_i * p1_i)) + (a2_i * p0_i)) + (a3_i * s4_i)) + (a4_i * s3_i)
-          d3 = ((((a0_i * p3_i) + (a1_i * p2_i)) + (a2_i * p1_i)) + (a3_i * p0_i)) + (a4_i * s4_i)
-          d4 = ((((a0_i * p4_i) + (a1_i * p3_i)) + (a2_i * p2_i)) + (a3_i * p1_i)) + (a4_i * p0_i)
-          e1 = d1_i + (d0_i shr 26)
-          e2 = d2_i + (e1_i shr 26)
-          e3 = d3_i + (e2_i shr 26)
-          e4 = d4_i + (e3_i shr 26)
-          f0 = (d0_i and 0x3FFFFFF) + ((e4_i shr 26) * 5)
-          g0 = f0_i and 0x3FFFFFF
-          g1 = (e1_i and 0x3FFFFFF) + (f0_i shr 26)
-          g2 = e2_i and 0x3FFFFFF
-          g3 = e3_i and 0x3FFFFFF
-          g4 = e4_i and 0x3FFFFFF
-          poly1305 lanes loop short g0 g1 g2 g3 g4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 (at + 128) (k - 1)
-
 -- Carries 5 wide limbs down to 26 bits each (the top carry comes back times 5) and stores them at `out_(o..o+4)`.
 fn :: poly1305 carry into Int Int Int Int Int Tensor[Int * j] Int => Int
       poly1305 carry into d0 d1 d2 d3 d4 out o =
@@ -1797,378 +1725,6 @@ fn :: poly1305 carry into Int Int Int Int Int Tensor[Int * j] Int => Int
         out_(o + 3) = e3 and 0x3FFFFFF
         out_(o + 4) = e4 and 0x3FFFFFF
         0
-
--- Lane l starts at block l: lx_(l) = off + 16 l.
-fn :: poly1305 lane starts Tensor[U64 * n] Int Int Int => Tensor[U64 * n]
-      poly1305 lane starts t off l n =
-        | l >= n    = t
-        | otherwise =
-          t_(l) = off + (16 * l)
-          poly1305 lane starts t off (l + 1) n
-
--- Lanes `l` to `top - 1` of `t` set to 0.
-fn :: poly1305 clear lanes Tensor[U64 * n] Int Int => Tensor[U64 * n]
-      poly1305 clear lanes t l top =
-        | l >= top  = t
-        | otherwise =
-          t_(l) = 0
-          poly1305 clear lanes t (l + 1) top
-
-fn :: poly1305 cleared (Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]) Int => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
-      poly1305 cleared (a0, a1, a2, a3, a4) top =
-        (poly1305 clear lanes a0 0 top, poly1305 clear lanes a1 0 top, poly1305 clear lanes a2 0 top, poly1305 clear lanes a3 0 top, poly1305 clear lanes a4 0 top)
-
--- Two numbers of 5 limbs of 26 bits multiplied lane by lane, mod 2^130 - 5: a step of the lanes that reads no
--- message. The second number is `t` in the lanes where `sel` is 1 and the number 1 where it is 0 (`nsel` is
--- 1 - sel). Written as the loop of the lanes, with `k` = 1.
-fn :: poly1305 lanes mul Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
-      poly1305 lanes mul a0 a1 a2 a3 a4 sel nsel t0 t1 t2 t3 t4 k =
-        | k <= 0 = (a0, a1, a2, a3, a4)
-        | otherwise =
-          b0 = (sel_i * t0_i) + nsel_i
-          b1 = sel_i * t1_i
-          b2 = sel_i * t2_i
-          b3 = sel_i * t3_i
-          b4 = sel_i * t4_i
-          c1 = b1_i * 5
-          c2 = b2_i * 5
-          c3 = b3_i * 5
-          c4 = b4_i * 5
-          d0 = ((((a0_i * b0_i) + (a1_i * c4_i)) + (a2_i * c3_i)) + (a3_i * c2_i)) + (a4_i * c1_i)
-          d1 = ((((a0_i * b1_i) + (a1_i * b0_i)) + (a2_i * c4_i)) + (a3_i * c3_i)) + (a4_i * c2_i)
-          d2 = ((((a0_i * b2_i) + (a1_i * b1_i)) + (a2_i * b0_i)) + (a3_i * c4_i)) + (a4_i * c3_i)
-          d3 = ((((a0_i * b3_i) + (a1_i * b2_i)) + (a2_i * b1_i)) + (a3_i * b0_i)) + (a4_i * c4_i)
-          d4 = ((((a0_i * b4_i) + (a1_i * b3_i)) + (a2_i * b2_i)) + (a3_i * b1_i)) + (a4_i * b0_i)
-          e1 = d1_i + (d0_i shr 26)
-          e2 = d2_i + (e1_i shr 26)
-          e3 = d3_i + (e2_i shr 26)
-          e4 = d4_i + (e3_i shr 26)
-          f0 = (d0_i and 0x3FFFFFF) + ((e4_i shr 26) * 5)
-          g0 = f0_i and 0x3FFFFFF
-          g1 = (e1_i and 0x3FFFFFF) + (f0_i shr 26)
-          g2 = e2_i and 0x3FFFFFF
-          g3 = e3_i and 0x3FFFFFF
-          g4 = e4_i and 0x3FFFFFF
-          poly1305 lanes mul g0 g1 g2 g3 g4 sel nsel t0 t1 t2 t3 t4 (k - 1)
-
--- 5 times each of four tensors of lanes: the tables s1..s4 = 5 * p1..p4.
-fn :: poly1305 five times Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
-      poly1305 five times a b c d =
-        u1 = a_i * 5
-        u2 = b_i * 5
-        u3 = c_i * 5
-        u4 = d_i * 5
-        (u1, u2, u3, u4)
-
-fn :: poly1305 lane mask fill Tensor[U64 * n] Int Int Int Int => Tensor[U64 * n]
-      poly1305 lane mask fill t ln j keep l =
-        | l >= ln   = t
-        | otherwise =
-          t_(l) = ((((ln - 1) - l) shr j) and 1) xor (1 - keep)
-          poly1305 lane mask fill t ln j keep (l + 1)
-
--- For `ln` lanes: 1 in the lanes whose place counted from the last one (ln - 1 - l) has bit `j` set and 0 in the
--- others when `keep` is 1; the opposite when it is 0. Made once for each `ln`, `j` and `keep`; never written to.
-idem :: poly1305 lane mask Int Int Int => Tensor[U64]
-        poly1305 lane mask ln j keep =  poly1305 lane mask fill (Tensor[U64 * ln]) ln j keep 0
-
--- The byte where each of `ln` lanes starts: 16 l. Made once for each `ln`; never written to.
-idem :: poly1305 lane offsets Int => Tensor[U64]
-        poly1305 lane offsets ln =  poly1305 lane starts (Tensor[U64 * ln]) 0 0 ln
-
-fn :: poly1305 lane first fill Tensor[U64 * n] Int Int Int => Tensor[U64 * n]
-      poly1305 lane first fill t first l n =
-        | l >= n     = t
-        | l <= first =
-          t_(l) = 0
-          poly1305 lane first fill t first (l + 1) n
-        | otherwise  =
-          t_(l) = 16 * (l - first)
-          poly1305 lane first fill t first (l + 1) n
-
--- The offsets of the first, partial step: lane l >= `first` starts at block l - first, the lanes before it at
--- block 0 (they are cleared afterwards). Made once for each `ln` and `first`; never written to.
-idem :: poly1305 lane first offsets Int Int => Tensor[U64]
-        poly1305 lane first offsets ln first =  poly1305 lane first fill (Tensor[U64 * ln]) first 0 ln
-
--- One step of the doubling for 32 lanes: the lanes picked by step `j` are multiplied by the number in lane `at`.
-fn :: poly1305 powers step wide Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
-      poly1305 powers step wide a0 a1 a2 a3 a4 j at =
-        poly1305 lanes mul a0 a1 a2 a3 a4 (poly1305 lane mask 32 j 1) (poly1305 lane mask 32 j 0) (Tensor[U64 * 32] with a0_(at)) (Tensor[U64 * 32] with a1_(at)) (Tensor[U64 * 32] with a2_(at)) (Tensor[U64 * 32] with a3_(at)) (Tensor[U64 * 32] with a4_(at)) 1
-
--- The powers of r for 32 lanes, by doubling: lane l gets r^(32 - l). Every lane starts as r; step j multiplies
--- by r^(2^j) the lanes whose place counted from the last one has bit j set, and r^(2^j) is in lane 32 - 2^j when
--- step j starts. 5 steps of the lanes and no product of plain numbers (Vonkeep's proposal, 2026-11-22).
-fn :: poly1305 powers wide Tensor[Int * 5] => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
-      poly1305 powers wide r =
-        a0, a1, a2, a3, a4 = poly1305 powers step wide (Tensor[U64 * 32] with r_(0)) (Tensor[U64 * 32] with r_(1)) (Tensor[U64 * 32] with r_(2)) (Tensor[U64 * 32] with r_(3)) (Tensor[U64 * 32] with r_(4)) 0 31
-        b0, b1, b2, b3, b4 = poly1305 powers step wide a0 a1 a2 a3 a4 1 30
-        c0, c1, c2, c3, c4 = poly1305 powers step wide b0 b1 b2 b3 b4 2 28
-        d0, d1, d2, d3, d4 = poly1305 powers step wide c0 c1 c2 c3 c4 3 24
-        poly1305 powers step wide d0 d1 d2 d3 d4 4 16
-
--- The first step when `m` blocks do not fill a step (0 < m < 32): those m blocks go to the last m lanes, which
--- then hold one block more than the others; the lanes before them took no block and are set to 0.
--- With m = 0 there is no such step and the state comes back as it was.
-fn :: poly1305 lanes first wide Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U8] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
-      poly1305 lanes first wide h0 h1 h2 h3 h4 msg p0 p1 p2 p3 p4 s1 s2 s3 s4 off m =
-        | m <= 0    = (h0, h1, h2, h3, h4)
-        | otherwise = poly1305 cleared (poly1305 lanes loop h0 h1 h2 h3 h4 msg (poly1305 lane first offsets 32 (32 - m)) p0 p1 p2 p3 p4 s1 s2 s3 s4 off 1) (32 - m)
-
--- h = the state after the `blocks` blocks of 16 bytes of `msg` from byte `off` on, on 32 lanes, with
--- blocks >= 32. Lane l takes one block of every 32; every step multiplies by r^32 and the last one by r^(32 - l),
--- so the sum of the lanes is the same value as block by block (RFC 8439 §2.5.1).
--- When the blocks do not fill the steps, the m that are left over go first, in a step of their own on the last
--- m lanes (`poly1305 lanes first wide`). The sizes are written as numbers, not passed in.
-fn :: poly1305 lanes wide Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int Int => Tensor[Int * 5]
-      poly1305 lanes wide h r msg off blocks =
-        steps = blocks / 32
-        m     = blocks % 32
-        first = (32 - m) % 32
-        q0, q1, q2, q3, q4 = poly1305 powers wide r
-        u1, u2, u3, u4 = poly1305 five times q1 q2 q3 q4
-        p0 = Tensor[U64 * 32] with q0_(0)
-        p1 = Tensor[U64 * 32] with q1_(0)
-        p2 = Tensor[U64 * 32] with q2_(0)
-        p3 = Tensor[U64 * 32] with q3_(0)
-        p4 = Tensor[U64 * 32] with q4_(0)
-        s1 = Tensor[U64 * 32] with (5 * q1_(0))
-        s2 = Tensor[U64 * 32] with (5 * q2_(0))
-        s3 = Tensor[U64 * 32] with (5 * q3_(0))
-        s4 = Tensor[U64 * 32] with (5 * q4_(0))
-        h0 = Tensor[U64 * 32]
-        h1 = Tensor[U64 * 32]
-        h2 = Tensor[U64 * 32]
-        h3 = Tensor[U64 * 32]
-        h4 = Tensor[U64 * 32]
-        h0_(first) = h_(0)
-        h1_(first) = h_(1)
-        h2_(first) = h_(2)
-        h3_(first) = h_(3)
-        h4_(first) = h_(4)
-        lx = poly1305 lane offsets 32
-        a0, a1, a2, a3, a4 = poly1305 lanes first wide h0 h1 h2 h3 h4 msg p0 p1 p2 p3 p4 s1 s2 s3 s4 off m
-        m0, m1, m2, m3, m4 = poly1305 lanes loop a0 a1 a2 a3 a4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 (off + (16 * m)) (steps - 1)
-        f0, f1, f2, f3, f4 = poly1305 lanes loop m0 m1 m2 m3 m4 msg lx q0 q1 q2 q3 q4 u1 u2 u3 u4 ((off + (16 * m)) + (512 * (steps - 1))) 1
-        out = Tensor[Int * 5]
-        poly1305 carry into (tensor sum f0) (tensor sum f1) (tensor sum f2) (tensor sum f3) (tensor sum f4) out 0
-        out
-
--- One step of the doubling for 8 lanes: the lanes picked by step `j` are multiplied by the number in lane `at`.
-fn :: poly1305 powers step narrow Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
-      poly1305 powers step narrow a0 a1 a2 a3 a4 j at =
-        poly1305 lanes mul a0 a1 a2 a3 a4 (poly1305 lane mask 8 j 1) (poly1305 lane mask 8 j 0) (Tensor[U64 * 8] with a0_(at)) (Tensor[U64 * 8] with a1_(at)) (Tensor[U64 * 8] with a2_(at)) (Tensor[U64 * 8] with a3_(at)) (Tensor[U64 * 8] with a4_(at)) 1
-
--- The powers of r for 8 lanes, by doubling: lane l gets r^(8 - l). Every lane starts as r; step j multiplies
--- by r^(2^j) the lanes whose place counted from the last one has bit j set, and r^(2^j) is in lane 8 - 2^j when
--- step j starts. 3 steps of the lanes and no product of plain numbers (Vonkeep's proposal, 2026-11-22).
-fn :: poly1305 powers narrow Tensor[Int * 5] => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
-      poly1305 powers narrow r =
-        a0, a1, a2, a3, a4 = poly1305 powers step narrow (Tensor[U64 * 8] with r_(0)) (Tensor[U64 * 8] with r_(1)) (Tensor[U64 * 8] with r_(2)) (Tensor[U64 * 8] with r_(3)) (Tensor[U64 * 8] with r_(4)) 0 7
-        b0, b1, b2, b3, b4 = poly1305 powers step narrow a0 a1 a2 a3 a4 1 6
-        poly1305 powers step narrow b0 b1 b2 b3 b4 2 4
-
--- The first step when `m` blocks do not fill a step (0 < m < 8): those m blocks go to the last m lanes, which
--- then hold one block more than the others; the lanes before them took no block and are set to 0.
--- With m = 0 there is no such step and the state comes back as it was.
-fn :: poly1305 lanes first narrow Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U8] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Int Int => Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n] Tensor[U64 * n]
-      poly1305 lanes first narrow h0 h1 h2 h3 h4 msg p0 p1 p2 p3 p4 s1 s2 s3 s4 off m =
-        | m <= 0    = (h0, h1, h2, h3, h4)
-        | otherwise = poly1305 cleared (poly1305 lanes loop short h0 h1 h2 h3 h4 msg (poly1305 lane first offsets 8 (8 - m)) p0 p1 p2 p3 p4 s1 s2 s3 s4 off 1) (8 - m)
-
--- h = the state after the `blocks` blocks of 16 bytes of `msg` from byte `off` on, on 8 lanes, with
--- blocks >= 8. Lane l takes one block of every 8; every step multiplies by r^8 and the last one by r^(8 - l),
--- so the sum of the lanes is the same value as block by block (RFC 8439 §2.5.1).
--- When the blocks do not fill the steps, the m that are left over go first, in a step of their own on the last
--- m lanes (`poly1305 lanes first narrow`). The sizes are written as numbers, not passed in.
-fn :: poly1305 lanes narrow Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int Int => Tensor[Int * 5]
-      poly1305 lanes narrow h r msg off blocks =
-        steps = blocks / 8
-        m     = blocks % 8
-        first = (8 - m) % 8
-        q0, q1, q2, q3, q4 = poly1305 powers narrow r
-        u1, u2, u3, u4 = poly1305 five times q1 q2 q3 q4
-        p0 = Tensor[U64 * 8] with q0_(0)
-        p1 = Tensor[U64 * 8] with q1_(0)
-        p2 = Tensor[U64 * 8] with q2_(0)
-        p3 = Tensor[U64 * 8] with q3_(0)
-        p4 = Tensor[U64 * 8] with q4_(0)
-        s1 = Tensor[U64 * 8] with (5 * q1_(0))
-        s2 = Tensor[U64 * 8] with (5 * q2_(0))
-        s3 = Tensor[U64 * 8] with (5 * q3_(0))
-        s4 = Tensor[U64 * 8] with (5 * q4_(0))
-        h0 = Tensor[U64 * 8]
-        h1 = Tensor[U64 * 8]
-        h2 = Tensor[U64 * 8]
-        h3 = Tensor[U64 * 8]
-        h4 = Tensor[U64 * 8]
-        h0_(first) = h_(0)
-        h1_(first) = h_(1)
-        h2_(first) = h_(2)
-        h3_(first) = h_(3)
-        h4_(first) = h_(4)
-        lx = poly1305 lane offsets 8
-        a0, a1, a2, a3, a4 = poly1305 lanes first narrow h0 h1 h2 h3 h4 msg p0 p1 p2 p3 p4 s1 s2 s3 s4 off m
-        m0, m1, m2, m3, m4 = poly1305 lanes loop short a0 a1 a2 a3 a4 msg lx p0 p1 p2 p3 p4 s1 s2 s3 s4 (off + (16 * m)) (steps - 1)
-        f0, f1, f2, f3, f4 = poly1305 lanes loop short m0 m1 m2 m3 m4 msg lx q0 q1 q2 q3 q4 u1 u2 u3 u4 ((off + (16 * m)) + (128 * (steps - 1))) 1
-        out = Tensor[Int * 5]
-        poly1305 carry into (tensor sum f0) (tensor sum f1) (tensor sum f2) (tensor sum f3) (tensor sum f4) out 0
-        out
-
--- How many lanes for a message of `clen` bytes (figures of Vonkeep, 2026-11-22): 32 from 2048 bytes on, 8 from
--- 768 bytes on, and none (block by block) under that. 0 means no lanes.
-fn :: poly1305 lane count Int => Int
-      poly1305 lane count clen =
-        | clen >= 2048 = 32
-        | clen >= 768  = 8
-        | otherwise    = 0
-
--- How many of the `blocks` the lanes take: all of them when 6 or more are left over after the whole steps
--- (they go in the first, partial step), and only the whole steps when fewer are (those few go block by block).
-fn :: poly1305 lane blocks Int Int => Int
-      poly1305 lane blocks blocks ln =
-        | ln == 0            = 0
-        | (blocks % ln) >= 6 = blocks
-        | otherwise          = blocks - (blocks % ln)
-
-fn :: c pick Bool Int Int => Int
-      c pick use_a a   b   =
-        | use_a     = a
-        | otherwise = b
-
-fn :: poly1305 finalize Tensor[Int * 5] Tensor[U8] => Tensor[U8]
-      poly1305 finalize h                otk        =
-        c1   = h_(1) / 67108864
-        h1   = h_(1) % 67108864
-        t2   = h_(2) + c1
-        c2   = t2 / 67108864
-        h2   = t2 % 67108864
-        t3   = h_(3) + c2
-        c3   = t3 / 67108864
-        h3   = t3 % 67108864
-        t4   = h_(4) + c3
-        c4   = t4 / 67108864
-        h4   = t4 % 67108864
-        t0   = h_(0) + (c4 * 5)
-        c0   = t0 / 67108864
-        h0   = t0 % 67108864
-        h1_f = h1 + c0
-
-        g0_t = h0 + 5
-        gc0  = g0_t / 67108864
-        g0   = g0_t % 67108864
-        g1_t = h1_f + gc0
-        gc1  = g1_t / 67108864
-        g1   = g1_t % 67108864
-        g2_t = h2 + gc1
-        gc2  = g2_t / 67108864
-        g2   = g2_t % 67108864
-        g3_t = h3 + gc2
-        gc3  = g3_t / 67108864
-        g3   = g3_t % 67108864
-        g4   = (h4 + gc3) - 67108864
-
-        use_g = g4 >= 0
-        f0   = c pick use_g g0 h0
-        f1   = c pick use_g g1 h1_f
-        f2   = c pick use_g g2 h2
-        f3   = c pick use_g g3 h3
-        f4   = c pick use_g g4 h4
-
-        w0   = (f0 + ((f1 % 64) * 67108864)) % 4294967296
-        w1   = ((f1 / 64) + ((f2 % 4096) * 1048576)) % 4294967296
-        w2   = ((f2 / 4096) + ((f3 % 262144) * 16384)) % 4294967296
-        w3   = ((f3 / 262144) + (f4 * 256)) % 4294967296
-
-        s0   = le32 at otk 16
-        s1   = le32 at otk 20
-        s2   = le32 at otk 24
-        s3   = le32 at otk 28
-
-        sum0 = w0 + s0
-        sum1 = w1 + s1 + (sum0 / 4294967296)
-        sum2 = w2 + s2 + (sum1 / 4294967296)
-        sum3 = w3 + s3 + (sum2 / 4294967296)
-        tag  = Tensor[U8 * 16]
-        o1   = c put le32 tag 0 (sum0 % 4294967296)
-        o2   = c put le32 tag o1 (sum1 % 4294967296)
-        o3   = c put le32 tag o2 (sum2 % 4294967296)
-        c put le32 tag o3 (sum3 % 4294967296)
-        tag
-
-fn :: pad16 len Int => Int
-      pad16 len len =
-        | (len % 16) == 0 = 0
-        | otherwise       = 16 - (len % 16)
-
--- Writes `n` as 8 little-endian bytes at `off`; returns `off + 8`.
-fn :: c put le64 Tensor[U8] Int Int => Int
-      c put le64 t          off n   =
-        o1 = c put le32 t off (n % 4294967296)
-        c put le32 t o1 (n / 4294967296)
-
--- The MAC of RFC 8439 §2.8 over aad || pad16 || ct || pad16 || le64(len aad) || le64(len ct).
--- The ciphertext is read in place, on lanes from 768 bytes on (`poly1305 lane count`), else block by block;
--- only the padded aad, the last partial block and the lengths are copied (to small buffers).
-fn :: poly1305 aead mac Tensor[U8] Tensor[U8] Tensor[U8] => Tensor[U8]
-      poly1305 aead mac otk        aad_b      ct_b       =
-        alen  = c u8 len aad_b
-        clen  = c u8 len ct_b
-        r     = poly1305 r limbs otk
-        abuf  = Tensor[U8 * (alen + (pad16 len alen))]
-        c copy bytes abuf 0 aad_b 0 alen
-        h1    = poly1305 blocks loop (Tensor[Int * 5]) r abuf 0 (alen + (pad16 len alen))
-        full  = (clen shr 4) shl 4
-        ln    = poly1305 lane count clen
-        lb    = poly1305 lane blocks (clen shr 4) ln
-        h2    =
-          | lb <= 0   = h1
-          | ln == 32  = poly1305 lanes wide h1 r ct_b 0 lb
-          | otherwise = poly1305 lanes narrow h1 r ct_b 0 lb
-        h3    = poly1305 blocks loop h2 r ct_b (lb shl 4) full
-        tail  = Tensor[U8 * 32]
-        c copy bytes tail 0 ct_b full (clen - full)
-        tlen  =
-          | clen > full = 16
-          | otherwise   = 0
-        o1    = c put le64 tail tlen alen
-        c put le64 tail o1 clen
-        h_fin = poly1305 blocks loop h3 r tail 0 (tlen + 16)
-        poly1305 finalize h_fin otk
-
--- The key stream of one AEAD message of `n` bytes, in one call (RFC 8439 §2.8): block 0, whose first 32 bytes
--- are the one-time key of Poly1305, and then the blocks from 1 on that cover the message. Whole blocks, so
--- nothing is cut here: the message's part is the bytes 64 to 64 + n.
-fn :: aead key stream Tensor[U8] Tensor[U8] Int => Tensor[U8]
-      aead key stream key_bs nonce_bs n =  chacha20 key stream key_bs nonce_bs 0 (64 + (((n + 63) / 64) * 64))
-
-fn :: aead seal String String String String => String
-      aead seal key nonce aad plaintext =
-        | (str len key) != 32 or (str len nonce) != 12 = ""
-        | otherwise                                    =
-          ks     = aead key stream (tensor from str key) (tensor from str nonce) (str len plaintext)
-          ct_bs  = c bitxor bytes (tensor from str plaintext) (c bytes part ks 64 (64 + (str len plaintext)))
-          tag_bs = poly1305 aead mac ks (tensor from str aad) ct_bs
-          (tensor to str ct_bs) + (tensor to str tag_bs)
-
--- The plaintext only when the tag was right: `ks` is the key stream of `aead key stream`.
-fn :: decrypt verified aead Bool Tensor[U8] Tensor[U8] => Int String
-      decrypt verified aead False _          _          =  (0 - 12, "")
-      decrypt verified aead True  ks         ct_bs      =
-        (0, tensor to str (c bitxor bytes ct_bs (c bytes part ks 64 (64 + (c u8 len ct_bs)))))
-
-fn :: aead open String String String String => Int String
-      aead open key nonce aad ciphertext_and_tag =
-        | (str len key) != 32 or (str len nonce) != 12 or (str len ciphertext_and_tag) < 16 = (0 - 7, "")
-        | otherwise =
-          total_len = str len ciphertext_and_tag
-          ct_len    = total_len - 16
-          ct_str    = byte slice ciphertext_and_tag 0 ct_len
-          tag_str   = byte slice ciphertext_and_tag ct_len total_len
-          ct_bs     = tensor from str ct_str
-          ks        = aead key stream (tensor from str key) (tensor from str nonce) ct_len
-          exp_tag   = tensor to str (poly1305 aead mac ks (tensor from str aad) ct_bs)
-          decrypt verified aead (ct equal tag_str exp_tag) ks ct_bs
 ```
 
 ### 24.4.4. Implementació interna: SHA-256 on Processor Operations: a Block, the HMAC Step of PBKDF2 and the Loops
@@ -2237,8 +1793,9 @@ Fixa't en com `crypto.ridgun` estructura les signatures `fn :: ... => ...` prime
 ```ridgun
 -- A round, the last round, a whole block and the counter block of CTR mode are operations: each has a portable
 -- definition and a variant on the AES instructions of x86-64 (RIDGUN_CPU=2 forces the portable one).
--- A variant on four blocks per instruction (`on x64 by 4`) was measured slower here for the counter loop
--- (1 320 ns against 850 ns per 4 096 bytes), so the rounds have the one-block variant only.
+-- The rounds have the one-block variant only. A variant on four blocks per instruction (`on x64 by 4`) was
+-- slower for the counter loop with ridgunc 1.0.51; the compiler team measured it no slower with 1.0.81
+-- (665 ns against 698 ns per 4 096 bytes). It has not been taken here yet.
 
 arch :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
         aes round s k box =
