@@ -96,9 +96,68 @@ fn :: test str case repeat and padding => ()
         ()
 
 -- @tests TS-STR-001
+-- ── str to upper / str to lower on every byte and every length ──
+fn :: cs all bytes Tensor[U8] Int Int => Tensor[U8]
+      cs all bytes t          i   n   =
+        | i >= n    = t
+        | otherwise =
+          t_(i) = (i * 7) % 256
+          cs all bytes t (i + 1) n
+
+-- A text of `n` bytes that goes through every byte value.
+fn :: cs text Int => String
+      cs text n   =  tensor to str (cs all bytes (Tensor[U8 * n]) 0 n)
+
+-- How many bytes of `got` are not what the rule gives for the byte of `src`: 1 for upper, 0 for lower.
+fn :: cs wrong Tensor[U8] Tensor[U8] Int Int Int Int => Int
+      cs wrong src        got        i   n   up  bad =
+        | i >= n                                                 = bad
+        | (up == 1) and (got_(i) != (to upper code src_(i)))     = cs wrong src got (i + 1) n up (bad + 1)
+        | (up == 0) and (got_(i) != (to lower code src_(i)))     = cs wrong src got (i + 1) n up (bad + 1)
+        | otherwise                                              = cs wrong src got (i + 1) n up bad
+
+fn :: cs check Int Int => Int
+      cs check n   up  =  cs checked (cs text n) n up
+
+fn :: cs checked String Int Int => Int
+      cs checked s      n   1   =  cs sized s (str to upper s) n 1
+      cs checked s      n   _   =  cs sized s (str to lower s) n 0
+
+fn :: cs sized String String Int Int => Int
+      cs sized s      got    n   up  =
+        | (str len got) != n = n + 1
+        | otherwise          = cs wrong (tensor from str s) (tensor from str got) 0 n up 0
+
+fn :: cs lens Int Int Int Int => Int
+      cs lens n   top up  bad =
+        | n > top   = bad
+        | otherwise = cs lens (n + 1) top up (bad + (cs check n up))
+
+-- @tests TS-STR-001
+fn :: test str case on every byte and length => ()
+      test str case on every byte and length =
+        cs lens 0 600 1 0 -> assert equals 0 "str to upper: every byte right for every length from 0 to 600, with all 256 byte values"
+        cs lens 0 600 0 0 -> assert equals 0 "str to lower: the same"
+        cs check 100000 1 -> assert equals 0 "str to upper of 100 000 bytes"
+        cs check 100000 0 -> assert equals 0 "str to lower of 100 000 bytes"
+        cs sized "abc" "abc" 3 1 -> assert equals 3 "the checker sees a text that was not changed"
+        s = cs text 300
+        up = str to upper s
+        s == (cs text 300) -> assert true "the text given is not changed"
+        str to upper up -> assert equals up "upper of upper is the same"
+        str to lower (str to upper "Hello, World 123") -> assert equals "hello, world 123" "upper then lower"
+        str to upper "ñandú çä ß 日本" -> assert equals "ñANDú çä ß 日本" "only a to z change: the bytes of other alphabets stay"
+        str to lower "ÑANDÚ ÇÄ" -> assert equals "ÑandÚ ÇÄ" "and only A to Z"
+        str to upper "@[`{" -> assert equals "@[`{" "the bytes next to the letters do not change"
+        str to lower "@[`{" -> assert equals "@[`{" "in either direction"
+        str to upper "az" -> assert equals "AZ" "the first and the last letter"
+        str to lower "AZ" -> assert equals "az" "and back"
+        str len (str to upper "") -> assert equals 0 "nothing gives nothing"
+
 fn :: main => ()
       main =
         test str search and predicates
         test str trim replace and split
         test str case repeat and padding
+        test str case on every byte and length
         echo "[PASS] test str: TS-STR-001 passed"

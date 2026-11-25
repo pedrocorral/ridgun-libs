@@ -155,51 +155,44 @@ fn :: str split String String => [String]
 
 -- ── ASCII Case Conversion ────────────────────────────────────
 
-fn :: upper char code String Int Int => String
-      upper char code s idx c =
-        | is ascii lower c = char from code (c - 32)
-        | otherwise        = str slice s idx (idx + 1)
+-- ── Case of a whole text: one pass over its bytes ───────────
+-- A table of 256 bytes says what each byte becomes; the text is read as a tensor of bytes, every byte is looked
+-- up in the table in one loop, and the result is one new text. Only the letters a to z and A to Z change: the
+-- bytes of other alphabets (128 and over) stay as they are.
 
-fn :: upper char slice String Int => String
-      upper char slice s      idx =
-        upper char code s idx (str char at s idx)
+fn :: str case fill Tensor[U8] Int Bool => Tensor[U8]
+      str case fill t          i   up   =
+        | i >= 256  = t
+        | up        =
+          t_(i) = to upper code i
+          str case fill t (i + 1) up
+        | otherwise =
+          t_(i) = to lower code i
+          str case fill t (i + 1) up
 
-fn :: str to upper range String Int Int => String
-      str to upper range s start end =
-        | start >= end     = ""
-        | end - start == 1 = upper char slice s start
-        | end - start == 2 = (upper char slice s start) + (upper char slice s (start + 1))
-        | otherwise        =
-          mid = (start + end) shr 1
-          (str to upper range s start mid) + (str to upper range s mid end)
+-- Made once for the program; never written to.
+idem :: str upper table => Tensor[U8]
+        str upper table =  str case fill (Tensor[U8 * 256]) 0 True
+
+idem :: str lower table => Tensor[U8]
+        str lower table =  str case fill (Tensor[U8 * 256]) 0 False
+
+fn :: str case map Tensor[U8 * n] Tensor[U8] => Tensor[U8 * n]
+      str case map t              table      =  table_(t_i)
 
 -- @implements FR-STR-001
 -- @implements API-STR-001
 fn :: str to upper String => String
-      str to upper s      =  str to upper range s 0 (str len s)
-
-fn :: lower char code String Int Int => String
-      lower char code s idx c =
-        | is ascii upper c = char from code (c + 32)
-        | otherwise        = str slice s idx (idx + 1)
-
-fn :: lower char slice String Int => String
-      lower char slice s      idx =
-        lower char code s idx (str char at s idx)
-
-fn :: str to lower range String Int Int => String
-      str to lower range s start end =
-        | start >= end     = ""
-        | end - start == 1 = lower char slice s start
-        | end - start == 2 = (lower char slice s start) + (lower char slice s (start + 1))
-        | otherwise        =
-          mid = (start + end) shr 1
-          (str to lower range s start mid) + (str to lower range s mid end)
+      str to upper s      =
+        | (str len s) == 0 = ""
+        | otherwise        = tensor to str (str case map (tensor from str s) (str upper table))
 
 -- @implements FR-STR-001
 -- @implements API-STR-001
 fn :: str to lower String => String
-      str to lower s      =  str to lower range s 0 (str len s)
+      str to lower s      =
+        | (str len s) == 0 = ""
+        | otherwise        = tensor to str (str case map (tensor from str s) (str lower table))
 
 -- ── Repetition & Padding ─────────────────────────────────────
 
