@@ -211,7 +211,7 @@ type X509Cert = tbs_der: String, issuer_der: String, subject_der: String, issuer
 | `144` | `fn :: ca2 blamka cols loop Tensor[U64 * 8 * 16] Int` | `Tensor[U64 * 8 * 16]` |
 | `145` | `fn :: compress block Tensor[U64 * 8 * 16] Tensor[U64 * 8 * 16]` | `Tensor[U64 * 8 * 16]` |
 | `146` | `fn :: le32 at Tensor[U8] Int` | `Int` |
-| `147` | `fn :: chacha rounds Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Int` | `Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]` |
+| `147` | `fn :: chacha rounds Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Int` | `()` |
 | `148` | `fn :: chacha fill counter Tensor[U32 * n] Int Int Int` | `Tensor[U32 * n]` |
 | `149` | `fn :: chacha page Tensor[U8] Tensor[U8] Int Int` | `Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]` |
 | `150` | `fn :: c bytes part Tensor[U8] Int Int` | `Tensor[U8]` |
@@ -1492,77 +1492,78 @@ fn :: le32 at Tensor[U8] Int => Int
       le32 at bs         off =
         bs_(off) + (bs_(off + 1) * 256) + (bs_(off + 2) * 65536) + (bs_(off + 3) * 16777216)
 
--- Ten double rounds on n blocks at once: one tensor per state word (RFC 8439 §2.3).
+-- Ten double rounds on n blocks at once: one tensor per state word (RFC 8439 §2.3). The 16 tensors are written
+-- in place (`s0_i = s0_i + s4_i` writes the elements of s0; ridgunc 1.0.85): a call makes no new tensor.
 -- Consecutive element-wise statements run as one loop, and the self call repeats it (requirement COMP-031 of the compiler).
-fn :: chacha rounds Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
+fn :: chacha rounds Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Int => ()
       chacha rounds s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 k =
-        | k <= 0 = (s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15)
+        | k <= 0 = ()
         | otherwise =
-          s0v1 = s0_i + s4_i
-          s12v1 = (s12_i xor s0v1_i) rotl 16
-          s8v1 = s8_i + s12v1_i
-          s4v1 = (s4_i xor s8v1_i) rotl 12
-          s0v2 = s0v1_i + s4v1_i
-          s12v2 = (s12v1_i xor s0v2_i) rotl 8
-          s8v2 = s8v1_i + s12v2_i
-          s4v2 = (s4v1_i xor s8v2_i) rotl 7
-          s1v1 = s1_i + s5_i
-          s13v1 = (s13_i xor s1v1_i) rotl 16
-          s9v1 = s9_i + s13v1_i
-          s5v1 = (s5_i xor s9v1_i) rotl 12
-          s1v2 = s1v1_i + s5v1_i
-          s13v2 = (s13v1_i xor s1v2_i) rotl 8
-          s9v2 = s9v1_i + s13v2_i
-          s5v2 = (s5v1_i xor s9v2_i) rotl 7
-          s2v1 = s2_i + s6_i
-          s14v1 = (s14_i xor s2v1_i) rotl 16
-          s10v1 = s10_i + s14v1_i
-          s6v1 = (s6_i xor s10v1_i) rotl 12
-          s2v2 = s2v1_i + s6v1_i
-          s14v2 = (s14v1_i xor s2v2_i) rotl 8
-          s10v2 = s10v1_i + s14v2_i
-          s6v2 = (s6v1_i xor s10v2_i) rotl 7
-          s3v1 = s3_i + s7_i
-          s15v1 = (s15_i xor s3v1_i) rotl 16
-          s11v1 = s11_i + s15v1_i
-          s7v1 = (s7_i xor s11v1_i) rotl 12
-          s3v2 = s3v1_i + s7v1_i
-          s15v2 = (s15v1_i xor s3v2_i) rotl 8
-          s11v2 = s11v1_i + s15v2_i
-          s7v2 = (s7v1_i xor s11v2_i) rotl 7
-          s0v3 = s0v2_i + s5v2_i
-          s15v3 = (s15v2_i xor s0v3_i) rotl 16
-          s10v3 = s10v2_i + s15v3_i
-          s5v3 = (s5v2_i xor s10v3_i) rotl 12
-          s0v4 = s0v3_i + s5v3_i
-          s15v4 = (s15v3_i xor s0v4_i) rotl 8
-          s10v4 = s10v3_i + s15v4_i
-          s5v4 = (s5v3_i xor s10v4_i) rotl 7
-          s1v3 = s1v2_i + s6v2_i
-          s12v3 = (s12v2_i xor s1v3_i) rotl 16
-          s11v3 = s11v2_i + s12v3_i
-          s6v3 = (s6v2_i xor s11v3_i) rotl 12
-          s1v4 = s1v3_i + s6v3_i
-          s12v4 = (s12v3_i xor s1v4_i) rotl 8
-          s11v4 = s11v3_i + s12v4_i
-          s6v4 = (s6v3_i xor s11v4_i) rotl 7
-          s2v3 = s2v2_i + s7v2_i
-          s13v3 = (s13v2_i xor s2v3_i) rotl 16
-          s8v3 = s8v2_i + s13v3_i
-          s7v3 = (s7v2_i xor s8v3_i) rotl 12
-          s2v4 = s2v3_i + s7v3_i
-          s13v4 = (s13v3_i xor s2v4_i) rotl 8
-          s8v4 = s8v3_i + s13v4_i
-          s7v4 = (s7v3_i xor s8v4_i) rotl 7
-          s3v3 = s3v2_i + s4v2_i
-          s14v3 = (s14v2_i xor s3v3_i) rotl 16
-          s9v3 = s9v2_i + s14v3_i
-          s4v3 = (s4v2_i xor s9v3_i) rotl 12
-          s3v4 = s3v3_i + s4v3_i
-          s14v4 = (s14v3_i xor s3v4_i) rotl 8
-          s9v4 = s9v3_i + s14v4_i
-          s4v4 = (s4v3_i xor s9v4_i) rotl 7
-          chacha rounds s0v4 s1v4 s2v4 s3v4 s4v4 s5v4 s6v4 s7v4 s8v4 s9v4 s10v4 s11v4 s12v4 s13v4 s14v4 s15v4 (k - 1)
+          s0_i = s0_i + s4_i
+          s12_i = (s12_i xor s0_i) rotl 16
+          s8_i = s8_i + s12_i
+          s4_i = (s4_i xor s8_i) rotl 12
+          s0_i = s0_i + s4_i
+          s12_i = (s12_i xor s0_i) rotl 8
+          s8_i = s8_i + s12_i
+          s4_i = (s4_i xor s8_i) rotl 7
+          s1_i = s1_i + s5_i
+          s13_i = (s13_i xor s1_i) rotl 16
+          s9_i = s9_i + s13_i
+          s5_i = (s5_i xor s9_i) rotl 12
+          s1_i = s1_i + s5_i
+          s13_i = (s13_i xor s1_i) rotl 8
+          s9_i = s9_i + s13_i
+          s5_i = (s5_i xor s9_i) rotl 7
+          s2_i = s2_i + s6_i
+          s14_i = (s14_i xor s2_i) rotl 16
+          s10_i = s10_i + s14_i
+          s6_i = (s6_i xor s10_i) rotl 12
+          s2_i = s2_i + s6_i
+          s14_i = (s14_i xor s2_i) rotl 8
+          s10_i = s10_i + s14_i
+          s6_i = (s6_i xor s10_i) rotl 7
+          s3_i = s3_i + s7_i
+          s15_i = (s15_i xor s3_i) rotl 16
+          s11_i = s11_i + s15_i
+          s7_i = (s7_i xor s11_i) rotl 12
+          s3_i = s3_i + s7_i
+          s15_i = (s15_i xor s3_i) rotl 8
+          s11_i = s11_i + s15_i
+          s7_i = (s7_i xor s11_i) rotl 7
+          s0_i = s0_i + s5_i
+          s15_i = (s15_i xor s0_i) rotl 16
+          s10_i = s10_i + s15_i
+          s5_i = (s5_i xor s10_i) rotl 12
+          s0_i = s0_i + s5_i
+          s15_i = (s15_i xor s0_i) rotl 8
+          s10_i = s10_i + s15_i
+          s5_i = (s5_i xor s10_i) rotl 7
+          s1_i = s1_i + s6_i
+          s12_i = (s12_i xor s1_i) rotl 16
+          s11_i = s11_i + s12_i
+          s6_i = (s6_i xor s11_i) rotl 12
+          s1_i = s1_i + s6_i
+          s12_i = (s12_i xor s1_i) rotl 8
+          s11_i = s11_i + s12_i
+          s6_i = (s6_i xor s11_i) rotl 7
+          s2_i = s2_i + s7_i
+          s13_i = (s13_i xor s2_i) rotl 16
+          s8_i = s8_i + s13_i
+          s7_i = (s7_i xor s8_i) rotl 12
+          s2_i = s2_i + s7_i
+          s13_i = (s13_i xor s2_i) rotl 8
+          s8_i = s8_i + s13_i
+          s7_i = (s7_i xor s8_i) rotl 7
+          s3_i = s3_i + s4_i
+          s14_i = (s14_i xor s3_i) rotl 16
+          s9_i = s9_i + s14_i
+          s4_i = (s4_i xor s9_i) rotl 12
+          s3_i = s3_i + s4_i
+          s14_i = (s14_i xor s3_i) rotl 8
+          s9_i = s9_i + s14_i
+          s4_i = (s4_i xor s9_i) rotl 7
+          chacha rounds s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 (k - 1)
 
 fn :: chacha fill counter Tensor[U32 * n] Int Int Int => Tensor[U32 * n]
       chacha fill counter t first i n =
@@ -1590,24 +1591,40 @@ fn :: chacha page Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * 
         s13 = Tensor[U32 * nb] with (le32 at nonce_bs 0)
         s14 = Tensor[U32 * nb] with (le32 at nonce_bs 4)
         s15 = Tensor[U32 * nb] with (le32 at nonce_bs 8)
-        w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15 = chacha rounds s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 10
-        o0 = w0_i + s0_i
-        o1 = w1_i + s1_i
-        o2 = w2_i + s2_i
-        o3 = w3_i + s3_i
-        o4 = w4_i + s4_i
-        o5 = w5_i + s5_i
-        o6 = w6_i + s6_i
-        o7 = w7_i + s7_i
-        o8 = w8_i + s8_i
-        o9 = w9_i + s9_i
-        o10 = w10_i + s10_i
-        o11 = w11_i + s11_i
-        o12 = w12_i + s12_i
-        o13 = w13_i + s13_i
-        o14 = w14_i + s14_i
-        o15 = w15_i + s15_i
-        (o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15)
+        w0 = s0_i + 0
+        w1 = s1_i + 0
+        w2 = s2_i + 0
+        w3 = s3_i + 0
+        w4 = s4_i + 0
+        w5 = s5_i + 0
+        w6 = s6_i + 0
+        w7 = s7_i + 0
+        w8 = s8_i + 0
+        w9 = s9_i + 0
+        w10 = s10_i + 0
+        w11 = s11_i + 0
+        w12 = s12_i + 0
+        w13 = s13_i + 0
+        w14 = s14_i + 0
+        w15 = s15_i + 0
+        chacha rounds w0 w1 w2 w3 w4 w5 w6 w7 w8 w9 w10 w11 w12 w13 w14 w15 10
+        w0_i = w0_i + s0_i
+        w1_i = w1_i + s1_i
+        w2_i = w2_i + s2_i
+        w3_i = w3_i + s3_i
+        w4_i = w4_i + s4_i
+        w5_i = w5_i + s5_i
+        w6_i = w6_i + s6_i
+        w7_i = w7_i + s7_i
+        w8_i = w8_i + s8_i
+        w9_i = w9_i + s9_i
+        w10_i = w10_i + s10_i
+        w11_i = w11_i + s11_i
+        w12_i = w12_i + s12_i
+        w13_i = w13_i + s13_i
+        w14_i = w14_i + s14_i
+        w15_i = w15_i + s15_i
+        (w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15)
 
 -- The bytes `from` to `to` (not included) of `t`, as a new tensor. One copy per step, none byte by byte.
 fn :: c bytes part Tensor[U8] Int Int => Tensor[U8]
@@ -1813,9 +1830,9 @@ Fíjate en cómo `crypto.ridgun` estructura las firmas `fn :: ... => ...` primer
 ```ridgun
 -- A round, the last round, a whole block and the counter block of CTR mode are operations: each has a portable
 -- definition and a variant on the AES instructions of x86-64 (RIDGUN_CPU=2 forces the portable one).
--- The rounds have two variants: four blocks per instruction where the processor has it (`on x64 by 4`, used by
--- the loops over rows) and one block. With ridgunc 1.0.51 the four-block one was slower for the counter loop;
--- the compiler team measured it no slower with 1.0.81 (665 ns against 698 ns per 4 096 bytes).
+-- The rounds have two variants: four blocks per instruction where the processor has it (`on x64 by 4`) and one
+-- block. Since ridgunc 1.0.84 the counter loop takes four rows per turn and runs the four-block one: a wrong
+-- instruction planted in it makes the suite fail (checked with 1.0.86).
 
 arch :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
         aes round s k box =
