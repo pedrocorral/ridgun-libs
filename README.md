@@ -55,8 +55,8 @@ Pure-Ridgun standard and system library suite. Every lib compiles to portable Ri
 
 ## Requirements & Toolchain
 
-- **Compiler**: `ridgunc` 1.0.59 or later (pure-Ridgun self-hosted compiler). 1.0.55 to 1.0.58 compile the libs, but a project that takes `crypto` as a dependency runs its processor operations on the portable definitions, 120 to 400 times slower.
-- **Build & Test Runner**: `stable` 1.0.59 or later (`build.ridgun`)
+- **Compiler**: `ridgunc` 1.0.81 or later (pure-Ridgun self-hosted compiler): SHA-256 reads a message by rows without copying it, which 1.0.81 brought.
+- **Build & Test Runner**: `stable` 1.0.81 or later (`build.ridgun`)
 - **Supported Targets**: `Linux` (`X86_64`, `Arm64`) with cross-platform PAL dispatch (`Linux | MacOS | Windows`)
 
 ---
