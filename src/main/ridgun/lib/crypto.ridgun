@@ -1405,6 +1405,80 @@ fn :: chacha rounds Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 *
           s4_i = (s4_i xor s9_i) rotl 7
           chacha rounds s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 (k - 1)
 
+-- The same rounds with a new tensor for each line, for more than 64 blocks at once. Vonkeep measured on
+-- 2026-11-25, with ridgunc 1.0.87, the rounds in place 9 to 12% slower than these from 65 536 bytes on
+-- (`chacha20 bitxor` of 65 536 bytes: 92.4 us against 82.2 us) and the same at 4 064 bytes. To be removed when the
+-- form in place is as fast on wide tensors.
+fn :: chacha rounds wide Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
+      chacha rounds wide s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 k =
+        | k <= 0 = (s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15)
+        | otherwise =
+          s0v1 = s0_i + s4_i
+          s12v1 = (s12_i xor s0v1_i) rotl 16
+          s8v1 = s8_i + s12v1_i
+          s4v1 = (s4_i xor s8v1_i) rotl 12
+          s0v2 = s0v1_i + s4v1_i
+          s12v2 = (s12v1_i xor s0v2_i) rotl 8
+          s8v2 = s8v1_i + s12v2_i
+          s4v2 = (s4v1_i xor s8v2_i) rotl 7
+          s1v1 = s1_i + s5_i
+          s13v1 = (s13_i xor s1v1_i) rotl 16
+          s9v1 = s9_i + s13v1_i
+          s5v1 = (s5_i xor s9v1_i) rotl 12
+          s1v2 = s1v1_i + s5v1_i
+          s13v2 = (s13v1_i xor s1v2_i) rotl 8
+          s9v2 = s9v1_i + s13v2_i
+          s5v2 = (s5v1_i xor s9v2_i) rotl 7
+          s2v1 = s2_i + s6_i
+          s14v1 = (s14_i xor s2v1_i) rotl 16
+          s10v1 = s10_i + s14v1_i
+          s6v1 = (s6_i xor s10v1_i) rotl 12
+          s2v2 = s2v1_i + s6v1_i
+          s14v2 = (s14v1_i xor s2v2_i) rotl 8
+          s10v2 = s10v1_i + s14v2_i
+          s6v2 = (s6v1_i xor s10v2_i) rotl 7
+          s3v1 = s3_i + s7_i
+          s15v1 = (s15_i xor s3v1_i) rotl 16
+          s11v1 = s11_i + s15v1_i
+          s7v1 = (s7_i xor s11v1_i) rotl 12
+          s3v2 = s3v1_i + s7v1_i
+          s15v2 = (s15v1_i xor s3v2_i) rotl 8
+          s11v2 = s11v1_i + s15v2_i
+          s7v2 = (s7v1_i xor s11v2_i) rotl 7
+          s0v3 = s0v2_i + s5v2_i
+          s15v3 = (s15v2_i xor s0v3_i) rotl 16
+          s10v3 = s10v2_i + s15v3_i
+          s5v3 = (s5v2_i xor s10v3_i) rotl 12
+          s0v4 = s0v3_i + s5v3_i
+          s15v4 = (s15v3_i xor s0v4_i) rotl 8
+          s10v4 = s10v3_i + s15v4_i
+          s5v4 = (s5v3_i xor s10v4_i) rotl 7
+          s1v3 = s1v2_i + s6v2_i
+          s12v3 = (s12v2_i xor s1v3_i) rotl 16
+          s11v3 = s11v2_i + s12v3_i
+          s6v3 = (s6v2_i xor s11v3_i) rotl 12
+          s1v4 = s1v3_i + s6v3_i
+          s12v4 = (s12v3_i xor s1v4_i) rotl 8
+          s11v4 = s11v3_i + s12v4_i
+          s6v4 = (s6v3_i xor s11v4_i) rotl 7
+          s2v3 = s2v2_i + s7v2_i
+          s13v3 = (s13v2_i xor s2v3_i) rotl 16
+          s8v3 = s8v2_i + s13v3_i
+          s7v3 = (s7v2_i xor s8v3_i) rotl 12
+          s2v4 = s2v3_i + s7v3_i
+          s13v4 = (s13v3_i xor s2v4_i) rotl 8
+          s8v4 = s8v3_i + s13v4_i
+          s7v4 = (s7v3_i xor s8v4_i) rotl 7
+          s3v3 = s3v2_i + s4v2_i
+          s14v3 = (s14v2_i xor s3v3_i) rotl 16
+          s9v3 = s9v2_i + s14v3_i
+          s4v3 = (s4v2_i xor s9v3_i) rotl 12
+          s3v4 = s3v3_i + s4v3_i
+          s14v4 = (s14v3_i xor s3v4_i) rotl 8
+          s9v4 = s9v3_i + s14v4_i
+          s4v4 = (s4v3_i xor s9v4_i) rotl 7
+          chacha rounds wide s0v4 s1v4 s2v4 s3v4 s4v4 s5v4 s6v4 s7v4 s8v4 s9v4 s10v4 s11v4 s12v4 s13v4 s14v4 s15v4 (k - 1)
+
 fn :: chacha fill counter Tensor[U32 * n] Int Int Int => Tensor[U32 * n]
       chacha fill counter t first i n =
         | i >= n    = t
@@ -1413,8 +1487,9 @@ fn :: chacha fill counter Tensor[U32 * n] Int Int Int => Tensor[U32 * n]
           chacha fill counter t first (i + 1) n
 
 -- The key stream of `nb` blocks from block `ctr` on, as 16 tensors of `nb` words (word w of block b is o<w>_(b)).
-fn :: chacha page Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
-      chacha page key_bs nonce_bs ctr nb =
+-- Up to 64 blocks the rounds are written in place; wider, each line makes a new tensor (`chacha rounds wide`).
+fn :: chacha page narrow Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
+      chacha page narrow key_bs nonce_bs ctr nb =
         s0 = Tensor[U32 * nb] with 1634760805
         s1 = Tensor[U32 * nb] with 857760878
         s2 = Tensor[U32 * nb] with 2036477234
@@ -1465,6 +1540,48 @@ fn :: chacha page Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * 
         w14_i = w14_i + s14_i
         w15_i = w15_i + s15_i
         (w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15)
+
+fn :: chacha page wide Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
+      chacha page wide key_bs nonce_bs ctr nb =
+        s0 = Tensor[U32 * nb] with 1634760805
+        s1 = Tensor[U32 * nb] with 857760878
+        s2 = Tensor[U32 * nb] with 2036477234
+        s3 = Tensor[U32 * nb] with 1797285236
+        s4 = Tensor[U32 * nb] with (le32 at key_bs 0)
+        s5 = Tensor[U32 * nb] with (le32 at key_bs 4)
+        s6 = Tensor[U32 * nb] with (le32 at key_bs 8)
+        s7 = Tensor[U32 * nb] with (le32 at key_bs 12)
+        s8 = Tensor[U32 * nb] with (le32 at key_bs 16)
+        s9 = Tensor[U32 * nb] with (le32 at key_bs 20)
+        s10 = Tensor[U32 * nb] with (le32 at key_bs 24)
+        s11 = Tensor[U32 * nb] with (le32 at key_bs 28)
+        s12 = chacha fill counter (Tensor[U32 * nb]) ctr 0 nb
+        s13 = Tensor[U32 * nb] with (le32 at nonce_bs 0)
+        s14 = Tensor[U32 * nb] with (le32 at nonce_bs 4)
+        s15 = Tensor[U32 * nb] with (le32 at nonce_bs 8)
+        w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15 = chacha rounds wide s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 10
+        o0 = w0_i + s0_i
+        o1 = w1_i + s1_i
+        o2 = w2_i + s2_i
+        o3 = w3_i + s3_i
+        o4 = w4_i + s4_i
+        o5 = w5_i + s5_i
+        o6 = w6_i + s6_i
+        o7 = w7_i + s7_i
+        o8 = w8_i + s8_i
+        o9 = w9_i + s9_i
+        o10 = w10_i + s10_i
+        o11 = w11_i + s11_i
+        o12 = w12_i + s12_i
+        o13 = w13_i + s13_i
+        o14 = w14_i + s14_i
+        o15 = w15_i + s15_i
+        (o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15)
+
+fn :: chacha page Tensor[U8] Tensor[U8] Int Int => Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n] Tensor[U32 * n]
+      chacha page key_bs nonce_bs ctr nb =
+        | nb <= 64  = chacha page narrow key_bs nonce_bs ctr nb
+        | otherwise = chacha page wide key_bs nonce_bs ctr nb
 
 -- The bytes `from` to `to` (not included) of `t`, as a new tensor. One copy per step, none byte by byte.
 fn :: c bytes part Tensor[U8] Int Int => Tensor[U8]
