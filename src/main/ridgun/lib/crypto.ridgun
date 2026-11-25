@@ -784,47 +784,34 @@ arch :: sha256 end two bytes Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U8 * 64] Int
           a1, e1 = sha256 end two abcd efgh m hi lo
           sha256 be bytes a1 e1
 
--- The first state of SHA-256 (FIPS 180-4 §5.3.3), written in the operation: `m` only gives the shape.
-arch :: sha256 first state Tensor[U8 * 64] => Tensor[U32 * 4] Tensor[U32 * 4]
-        sha256 first state m =
-          w = group as u32 (group pick m [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
-          z = w_i xor w_i
-          a0 = z_i + 0x6a09e667
-          a1 = z_i + 0xbb67ae85
-          a2 = z_i + 0x3c6ef372
-          a3 = z_i + 0xa54ff53a
-          a = group pick two (group pick two a0 a1 [0, 4]) (group pick two a2 a3 [0, 4]) [0, 1, 2, 3]
-          e0 = z_i + 0x510e527f
-          e1 = z_i + 0x9b05688c
-          e2 = z_i + 0x1f83d9ab
-          e3 = z_i + 0x5be0cd19
-          e = group pick two (group pick two e0 e1 [0, 4]) (group pick two e2 e3 [0, 4]) [0, 1, 2, 3]
-          (a, e)
+-- The first state of SHA-256 (FIPS 180-4 §5.3.3): two groups written in the source, with no tensor behind them.
+arch :: sha256 start => Tensor[U32 * 4] Tensor[U32 * 4]
+        sha256 start =  (group u32 [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a], group u32 [0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19])
 
 -- A whole message of fewer than 64 bytes: its end block (or its two end blocks) from the first state.
 arch :: sha256 short Tensor[U8 * 64] Int Int => Tensor[U8 * 32]
         sha256 short m hi lo =
-          a0, e0 = sha256 first state m
+          a0, e0 = sha256 start
           a1, e1 = sha256 end a0 e0 m hi lo
           sha256 be bytes a1 e1
 
 arch :: sha256 short two Tensor[U8 * 64] Int Int => Tensor[U8 * 32]
         sha256 short two m hi lo =
-          a0, e0 = sha256 first state m
+          a0, e0 = sha256 start
           a1, e1 = sha256 end two a0 e0 m hi lo
           sha256 be bytes a1 e1
 
 -- A whole message of 64 to 127 bytes: one full block `b`, then the end.
 arch :: sha256 mid Tensor[U8 * 64] Tensor[U8 * 64] Int Int => Tensor[U8 * 32]
         sha256 mid b m hi lo =
-          a0, e0 = sha256 first state b
+          a0, e0 = sha256 start
           a1, e1 = sha256 block a0 e0 b
           a2, e2 = sha256 end a1 e1 m hi lo
           sha256 be bytes a2 e2
 
 arch :: sha256 mid two Tensor[U8 * 64] Tensor[U8 * 64] Int Int => Tensor[U8 * 32]
         sha256 mid two b m hi lo =
-          a0, e0 = sha256 first state b
+          a0, e0 = sha256 start
           a1, e1 = sha256 block a0 e0 b
           a2, e2 = sha256 end two a1 e1 m hi lo
           sha256 be bytes a2 e2
@@ -833,7 +820,7 @@ arch :: sha256 mid two Tensor[U8 * 64] Tensor[U8 * 64] Int Int => Tensor[U8 * 32
 -- the end of the message and the outer hash.
 arch :: sha256 hmac one Tensor[U8 * 64] Tensor[U8 * 64] Int Int => Tensor[U8 * 32]
         sha256 hmac one kb m hi lo =
-          a0, e0 = sha256 first state kb
+          a0, e0 = sha256 start
           ki = kb_i xor 54
           ko = kb_i xor 92
           ia, ie = sha256 block a0 e0 ki
@@ -844,7 +831,7 @@ arch :: sha256 hmac one Tensor[U8 * 64] Tensor[U8 * 64] Int Int => Tensor[U8 * 3
 
 arch :: sha256 hmac one two Tensor[U8 * 64] Tensor[U8 * 64] Int Int => Tensor[U8 * 32]
         sha256 hmac one two kb m hi lo =
-          a0, e0 = sha256 first state kb
+          a0, e0 = sha256 start
           ki = kb_i xor 54
           ko = kb_i xor 92
           ia, ie = sha256 block a0 e0 ki
@@ -856,7 +843,7 @@ arch :: sha256 hmac one two Tensor[U8 * 64] Tensor[U8 * 64] Int Int => Tensor[U8
 -- The two key states of HMAC: after the block `kb` xor 0x36 and after the block `kb` xor 0x5c.
 arch :: sha256 hmac keys Tensor[U8 * 64] => Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4] Tensor[U32 * 4]
         sha256 hmac keys kb =
-          a0, e0 = sha256 first state kb
+          a0, e0 = sha256 start
           ki = kb_i xor 54
           ko = kb_i xor 92
           ia, ie = sha256 block a0 e0 ki
@@ -890,10 +877,10 @@ fn :: sha256 group4 Int Int Int Int => Tensor[U32]
 
 -- The first state of SHA-256, built once for the whole program.
 idem :: sha256 iv a => Tensor[U32]
-        sha256 iv a =  sha256 group4 0x6a09e667 0xbb67ae85 0x3c6ef372 0xa54ff53a
+        sha256 iv a =  group u32 [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a]
 
 idem :: sha256 iv e => Tensor[U32]
-        sha256 iv e =  sha256 group4 0x510e527f 0x9b05688c 0x1f83d9ab 0x5be0cd19
+        sha256 iv e =  group u32 [0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
 
 -- The full blocks of a message as the rows of a table, one row write each.
 -- The full blocks of a message, as bytes: the loop reads them 64 at a time straight from this tensor, with no
@@ -3240,9 +3227,9 @@ fn :: x25519 public key String => String
 -- ── AES on processor operations (FIPS 197; `arch ::`, ridgunc 1.0.55) ──
 -- A round, the last round, a whole block and the counter block of CTR mode are operations: each has a portable
 -- definition and a variant on the AES instructions of x86-64 (RIDGUN_CPU=2 forces the portable one).
--- The rounds have the one-block variant only. A variant on four blocks per instruction (`on x64 by 4`) was
--- slower for the counter loop with ridgunc 1.0.51; the compiler team measured it no slower with 1.0.81
--- (665 ns against 698 ns per 4 096 bytes). It has not been taken here yet.
+-- The rounds have two variants: four blocks per instruction where the processor has it (`on x64 by 4`, used by
+-- the loops over rows) and one block. With ridgunc 1.0.51 the four-block one was slower for the counter loop;
+-- the compiler team measured it no slower with 1.0.81 (665 ns against 698 ns per 4 096 bytes).
 
 arch :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 * 16]
         aes round s k box =
@@ -3255,6 +3242,8 @@ arch :: aes round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tensor[U8 
           x1 = (a1_i shl 1) xor ((a1_i shr 7) * 27)
           m = ((x0_i xor x1_i) xor a1_i) xor (a2_i xor a3_i)
           m_i xor k_i
+        aes round s k box on x64 by 4 =
+          group as u8 (cpu aesenc (group as u64 s) (group as u64 k))
         aes round s k box on x64 =
           group as u8 (cpu aesenc (group as u64 s) (group as u64 k))
 
@@ -3263,6 +3252,8 @@ arch :: aes last round Tensor[U8 * 16] Tensor[U8 * 16] Tensor[U8 * 256] => Tenso
           t = box_(s_i)
           r = group pick t [0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11]
           r_i xor k_i
+        aes last round s k box on x64 by 4 =
+          group as u8 (cpu aesenclast (group as u64 s) (group as u64 k))
         aes last round s k box on x64 =
           group as u8 (cpu aesenclast (group as u64 s) (group as u64 k))
 
@@ -3424,80 +3415,100 @@ fn :: aes256 block String String => String
 
 -- ── GHASH with carry-less products and AES-GCM (NIST SP 800-38D) ──
 
--- GHASH product (NIST SP 800-38D §6.3) of two blocks, each as two big-endian 64-bit integers (high, low).
--- Read that way the bits of the field element are reversed, so the carry-less product comes out one place
--- to the right: shift left by 1, then reduce by x^128 + x^7 + x^2 + x + 1.
-fn :: ghash mul Int Int Int Int => Int Int
-      ghash mul x1 x0 h1 h0 =
-        lo  = x0 clmul h0
-        loh = x0 clmulhi h0
-        hi  = x1 clmul h1
-        hih = x1 clmulhi h1
-        xm  = x0 xor x1
-        hm  = h0 xor h1
-        mi  = ((xm clmul hm) xor lo) xor hi
-        mih = ((xm clmulhi hm) xor loh) xor hih
-        w1  = loh xor mi
-        w2  = hi xor mih
-        v3  = (hih shl 1) or (w2 shr 63)
-        v2  = (w2 shl 1) or (w1 shr 63)
-        v1  = (w1 shl 1) or (lo shr 63)
-        v0  = lo shl 1
-        u2  = v2 xor v0 xor (v0 shr 1) xor (v0 shr 2) xor (v0 shr 7)
-        u1  = v1 xor (v0 shl 63) xor (v0 shl 62) xor (v0 shl 57)
-        z1  = v3 xor u1 xor (u1 shr 1) xor (u1 shr 2) xor (u1 shr 7)
-        z0  = u2 xor (u1 shl 63) xor (u1 shl 62) xor (u1 shl 57)
-        (z1, z0)
+-- GHASH (NIST SP 800-38D §6.3) in groups of two 64-bit numbers (`arch ::`, ridgunc 1.0.81). A block of 16 bytes
+-- is read as two big-endian numbers: lane 0 the high one, lane 1 the low one. Read that way the bits of the field
+-- element are reversed, so the carry-less product comes out one place to the right: it is shifted left by 1 and
+-- then reduced by x^128 + x^7 + x^2 + x + 1.
 
--- The 8 bytes at `off` as a big-endian integer; bytes at or after `n` count as 0 (the zero padding of a block).
-fn :: ghash be64 Tensor[U8] Int Int => Int
-      ghash be64 bs off n =
-        | (off + 8) <= n = (bs_(off) shl 56) or (bs_(off + 1) shl 48) or (bs_(off + 2) shl 40) or (bs_(off + 3) shl 32) or (bs_(off + 4) shl 24) or (bs_(off + 5) shl 16) or (bs_(off + 6) shl 8) or bs_(off + 7)
-        | otherwise      = ghash be64 tail bs off n 0 0
+-- The product of two blocks.
+arch :: ghash times Tensor[U64 * 2] Tensor[U64 * 2] => Tensor[U64 * 2]
+        ghash times x h =
+          p   = x_i clmul h_i
+          ph  = x_i clmulhi h_i
+          xs  = group pick x [1, 0]
+          hs  = group pick h [1, 0]
+          xm  = x_i xor xs_i
+          hm  = h_i xor hs_i
+          ps  = group pick p [1, 0]
+          phs = group pick ph [1, 0]
+          mi  = ((xm_i clmul hm_i) xor p_i) xor ps_i
+          mih = ((xm_i clmulhi hm_i) xor ph_i) xor phs_i
+          wa  = group pick two p ph [0, 3]
+          wb  = group pick two mih mi [0, 2]
+          w   = wa_i xor wb_i
+          hi2 = group pick two ph w [0, 2]
+          lo2 = group pick two w p [1, 3]
+          zz  = p_i xor p_i
+          lz  = group pick two p zz [1, 2]
+          v32 = (hi2_i shl 1) or (w_i shr 63)
+          v10 = (lo2_i shl 1) or (lz_i shr 63)
+          v0  = group pick v10 [1, 1]
+          fa  = ((v0_i xor (v0_i shr 1)) xor (v0_i shr 2)) xor (v0_i shr 7)
+          fb  = ((v0_i shl 63) xor (v0_i shl 62)) xor (v0_i shl 57)
+          ua  = group pick two v10 v32 [0, 3]
+          ub  = group pick two fb fa [0, 2]
+          u   = ua_i xor ub_i
+          u1  = group pick u [0, 0]
+          ga  = ((u1_i xor (u1_i shr 1)) xor (u1_i shr 2)) xor (u1_i shr 7)
+          gb  = ((u1_i shl 63) xor (u1_i shl 62)) xor (u1_i shl 57)
+          za  = group pick two v32 u [0, 3]
+          zb  = group pick two ga gb [0, 2]
+          za_i xor zb_i
 
-fn :: ghash be64 tail Tensor[U8] Int Int Int Int => Int
-      ghash be64 tail bs off n i acc =
-        | i >= 8         = acc
-        | (off + i) >= n = ghash be64 tail bs off n (i + 1) (acc shl 8)
-        | otherwise      = ghash be64 tail bs off n (i + 1) ((acc shl 8) or bs_(off + i))
+-- The 16 bytes of a block as its two big-endian numbers, and back.
+arch :: ghash words Tensor[U8 * 16] => Tensor[U64 * 2]
+        ghash words m =  group as u64 (group pick m [7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8])
 
--- Y = (Y xor block) * H for every 16-byte block of `bs` (the last one zero-padded).
-fn :: ghash absorb Int Int Int Int Tensor[U8] Int Int => Int Int
-      ghash absorb y1 y0 h1 h0 bs off n =
-        | off >= n  = (y1, y0)
+arch :: ghash block bytes Tensor[U64 * 2] => Tensor[U8 * 16]
+        ghash block bytes z =  group pick (group as u8 z) [7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8]
+
+-- One block absorbed: y = (y xor block) * h.
+arch :: ghash step Tensor[U64 * 2] Tensor[U64 * 2] Tensor[U8 * 16] => Tensor[U64 * 2]
+        ghash step y h m =
+          x = ghash words m
+          xy = y_i xor x_i
+          ghash times xy h
+
+-- The blocks `at` to `at + left - 1` of `msg`, read where they are.
+fn :: ghash rows Tensor[U64 * 2] Tensor[U64 * 2] Tensor[U8 * n * 16] Int Int => Tensor[U64 * 2]
+      ghash rows y h msg at left
+        | left <= 0 = y
         | otherwise =
-          z1, z0 = ghash mul (y1 xor (ghash be64 bs off n)) (y0 xor (ghash be64 bs (off + 8) n)) h1 h0
-          ghash absorb z1 z0 h1 h0 bs (off + 16) n
+          y1 = ghash step y h msg_(at,)
+          ghash rows y1 h msg (at + 1) (left - 1)
 
-fn :: ghash put be64 Tensor[U8] Int Int => Int
-      ghash put be64 t off v =
-        t_(off + 0) = (v shr 56) and 255
-        t_(off + 1) = (v shr 48) and 255
-        t_(off + 2) = (v shr 40) and 255
-        t_(off + 3) = (v shr 32) and 255
-        t_(off + 4) = (v shr 24) and 255
-        t_(off + 5) = (v shr 16) and 255
-        t_(off + 6) = (v shr 8) and 255
-        t_(off + 7) = (v shr 0) and 255
-        0
+-- The bytes as whole blocks of 16: as they are when their length is a multiple of 16, else with zeros after them.
+fn :: ghash padded Tensor[U8] Int => Tensor[U8]
+      ghash padded bs n =
+        | (n % 16) == 0 = bs
+        | otherwise     = tensor from str ((tensor to str bs) + (tensor to str (Tensor[U8 * (16 - (n % 16))])))
 
--- GHASH_H(aad || pad || ct || pad || len64(aad) || len64(ct)) as 16 bytes (NIST SP 800-38D §7.1 step 5).
+fn :: ghash absorb Tensor[U64 * 2] Tensor[U64 * 2] Tensor[U8] Int => Tensor[U64 * 2]
+      ghash absorb y h bs n =
+        | n <= 0    = y
+        | otherwise = ghash rows y h (ghash padded bs n) 0 ((n + 15) / 16)
+
+-- The block of the two lengths, in bits.
+fn :: ghash lengths Int Int => Tensor[U64 * 2]
+      ghash lengths alen clen =
+        t = Tensor[U64 * 2]
+        t_(0) = alen * 8
+        t_(1) = clen * 8
+        t
+
+arch :: ghash last Tensor[U64 * 2] Tensor[U64 * 2] Tensor[U64 * 2] => Tensor[U64 * 2]
+        ghash last y h lens =
+          x = y_i xor lens_i
+          ghash times x h
+
+-- GHASH_H(aad, ct): both zero-padded to a block, then the block of their two bit lengths.
 fn :: ghash compute Tensor[U8] Tensor[U8] Tensor[U8] => Tensor[U8]
       ghash compute h_bs aad_bs ct_bs =
-        h1 = ghash be64 h_bs 0 16
-        h0 = ghash be64 h_bs 8 16
-        alen = c u8 len aad_bs
-        clen = c u8 len ct_bs
-        a1, a0 = ghash absorb 0 0 h1 h0 aad_bs 0 alen
-        b1, b0 = ghash absorb a1 a0 h1 h0 ct_bs 0 clen
-        f1, f0 = ghash mul (b1 xor (alen * 8)) (b0 xor (clen * 8)) h1 h0
-        out = Tensor[U8 * 16]
-        ghash put be64 out 0 f1
-        ghash put be64 out 8 f0
-        out
+        h  = ghash words h_bs
+        ya = ghash absorb (Tensor[U64 * 2]) h aad_bs (c u8 len aad_bs)
+        yc = ghash absorb ya h ct_bs (c u8 len ct_bs)
+        ghash block bytes (ghash last yc h (ghash lengths (c u8 len aad_bs) (c u8 len ct_bs)))
 
-
--- The tag of GCM: GHASH of the associated data and the ciphertext, XORed with E(K, J0).
 fn :: aes gcm tag String String String Tensor[U8] => String
       aes gcm tag h_s ej0 aad ct =
         tensor to str (c bitxor bytes (ghash compute (tensor from str h_s) (tensor from str aad) ct) (tensor from str ej0))

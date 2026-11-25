@@ -21,6 +21,7 @@ automated_in: [src/test/ridgun/test crypto.ridgun]
 5. The same test: PBKDF2-HMAC-SHA-256 on the two vectors of RFC 7914 §11 and on four cases from Python (4 096 iterations; a 65-byte password with a 55-byte salt; a 200-byte password with a 120-byte salt and 100 bytes of output; empty password and salt).
 6. Both tests run a second time with `RIDGUN_CPU=2`.
 7. `test processor operations one by one`: `sha256 schedule`, `sha256 rounds`, `aes round` and `aes last round` each called alone: words 16 to 19 and the first four rounds of the block of `abc` (FIPS 180-4), and round 1 and the last round of the example of FIPS 197 Appendix B. The values given are unchanged after the call.
+8. `test aes gcm on every length`: AES-128-GCM and AES-256-GCM, the sealed messages of every length from 0 to 600 bytes and of 4 064, 4 096, 65 535 and 1 048 577 bytes, and 300 bytes with 5 000 bytes of additional data, against Python's AESGCM. Every length from 0 to 300 opens to its message. For messages of 0, 15, 16, 17, 33 and 200 bytes, every single bit of the box and of the additional data is changed in turn and each open must be refused with no text.
 
 ## Expected results (map to acceptance criteria)
 - AC1 → step 1. AC2 → step 2. AC3 → steps 2 and 3.

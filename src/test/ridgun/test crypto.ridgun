@@ -1150,6 +1150,103 @@ fn :: test processor operations one by one => ()
         k10 = hex str to bytes "d014f9a8c9ee2589e13f0cc8b6630ca6"
         bytes hex (aes last round s10 k10 box) -> assert str eq "3925841d02dc09fbdc118597196a0b32" "aes last round: the ciphertext of FIPS 197 Appendix B"
 
+-- ── AES-GCM on every length, and no change of one bit accepted (TS-CRYPTO-007) ──
+-- The expected values come from Python's `cryptography` (AESGCM), with the messages, nonces and additional data
+-- of the ChaCha20-Poly1305 tests above; the AES-128 key is the first 16 bytes of the 256-bit one.
+
+fn :: gcm key Int => String
+      gcm key 128 =  str slice (ref key 0) 0 16
+      gcm key _   =  ref key 0
+
+fn :: gcm seal Int String String String String => String
+      gcm seal 128 k nc aad m =  aes128 gcm seal k nc aad m
+      gcm seal _   k nc aad m =  aes256 gcm seal k nc aad m
+
+fn :: gcm open Int String String String String => Int String
+      gcm open 128 k nc aad box =  aes128 gcm open k nc aad box
+      gcm open _   k nc aad box =  aes256 gcm open k nc aad box
+
+fn :: gcm box Int Int Int => String
+      gcm box bits n alen =  gcm seal bits (gcm key bits) (ref nonce (gcm nonce of n alen)) (sha msg alen) (sha msg n)
+
+-- The nonce of the long-additional-data case is the one of 5000, as in the reference.
+fn :: gcm nonce of Int Int => Int
+      gcm nonce of n alen =
+        | alen > 63 = alen
+        | otherwise = n
+
+fn :: gcm chain Int Int Int String => String
+      gcm chain bits n to acc
+        | n > to    = acc
+        | otherwise = gcm chain bits (n + 1) to (sha256 hex (acc + (gcm box bits n (n % 64))))
+
+-- 0 when the length opens to its message.
+fn :: gcm len wrong Int Int => Int
+      gcm len wrong bits n =
+        back = gcm open bits (gcm key bits) (ref nonce n) (sha msg (n % 64)) (gcm box bits n (n % 64))
+        (bad if ((aead rc back) == 0)) + (bad if (same bytes (aead pt back) (sha msg n)))
+
+fn :: gcm lens wrong Int Int Int Int => Int
+      gcm lens wrong bits n to bad =
+        | n > to    = bad
+        | otherwise = gcm lens wrong bits (n + 1) to (bad + (gcm len wrong bits n))
+
+-- 1 when an open that had to be refused was not: anything but a refusal with no text.
+fn :: gcm accepted (Int String) => Int
+      gcm accepted (rc, pt)     =
+        | (rc != 0) and ((str len pt) == 0) = 0
+        | otherwise                         = 1
+
+fn :: gcm box flips Int String String String String Int Int Int => Int
+      gcm box flips bits k nc aad box p b acc =
+        | p >= (str len box) = acc
+        | b >= 8             = gcm box flips bits k nc aad box (p + 1) 0 acc
+        | otherwise          = gcm box flips bits k nc aad box p (b + 1) (acc + (gcm accepted (gcm open bits k nc aad (flip bit box p b))))
+
+fn :: gcm aad flips Int String String String String Int Int Int => Int
+      gcm aad flips bits k nc aad box p b acc =
+        | p >= (str len aad) = acc
+        | b >= 8             = gcm aad flips bits k nc aad box (p + 1) 0 acc
+        | otherwise          = gcm aad flips bits k nc aad box p (b + 1) (acc + (gcm accepted (gcm open bits k nc (flip bit aad p b) box)))
+
+fn :: gcm changes Int Int => Int
+      gcm changes bits n =
+        k   = gcm key bits
+        nc  = ref nonce n
+        aad = sha msg 20
+        box = gcm seal bits k nc aad (sha msg n)
+        (gcm box flips bits k nc aad box 0 0 0) + (gcm aad flips bits k nc aad box 0 0 0)
+
+-- @tests TS-CRYPTO-007
+fn :: test aes gcm on every length => ()
+      test aes gcm on every length =
+        gcm chain 128 0 600 "" -> assert str eq "6fbcdb6b705fd1bb9d329ef2396708e376e7a434c14a31dd701de1549bbac99a" "AES-128-GCM: the sealed messages of every length from 0 to 600 bytes are Python's"
+        gcm chain 256 0 600 "" -> assert str eq "77c9d52bb089b462a0b2c42c27add02545d7c997ef2fdb756e9d85bea9675914" "AES-256-GCM: the same"
+        sha256 hex (gcm box 128 4064 32) -> assert str eq "50609bfc87c79a3d7aaea9e875e97838d5451d32573f3fe39479da54d4f8cdbd" "AES-128-GCM of 4 064 bytes"
+        sha256 hex (gcm box 128 4096 0) -> assert str eq "c0ac26910a53e00c9dd84a835ca4106e0d751675815a43d7a44f381d56edc1f2" "of 4 096 bytes"
+        sha256 hex (gcm box 128 65535 63) -> assert str eq "f42ce24dc308b9f67efea7d23fc887e727a794af4df8e0c90b44aad7a9dc61cd" "of 65 535 bytes"
+        sha256 hex (gcm box 128 1048577 1) -> assert str eq "dbee97eefb57d87fafc56e14cead4ad623536a7d5205598f0635e2dec2ae023c" "of one megabyte and a byte"
+        sha256 hex (gcm box 128 300 5000) -> assert str eq "9068c988f27be030e1b39c815b5e7135e375677473f1de7e710121646fd16e9d" "300 bytes with 5 000 bytes of additional data"
+        sha256 hex (gcm box 256 4064 32) -> assert str eq "c90c8f8a6dc76daf35ce94873003ce3c4f8942cbe5152714efda0a683f43f56a" "AES-256-GCM of 4 064 bytes"
+        sha256 hex (gcm box 256 4096 0) -> assert str eq "8ebd6d4db4ad5643703caa7cef970ead1556b7961df990f8d5e77b5e3c52324a" "of 4 096 bytes"
+        sha256 hex (gcm box 256 65535 63) -> assert str eq "073d5d09416856966900e6abc8b1151ba99094f56621484da8854db36ebefeb7" "of 65 535 bytes"
+        sha256 hex (gcm box 256 1048577 1) -> assert str eq "4d162b8c87e408408b4728193a55a4d320f096eaee1b636dca770b0e447a9b4f" "of one megabyte and a byte"
+        sha256 hex (gcm box 256 300 5000) -> assert str eq "3441951a035e8d9a8e114e7ce9a2287686ed5d66ef55961aff7d2bfd5d7d9017" "300 bytes with 5 000 bytes of additional data"
+        gcm lens wrong 128 0 300 0 -> assert int equals 0 "AES-128-GCM: every length from 0 to 300 opens to its message"
+        gcm lens wrong 256 0 300 0 -> assert int equals 0 "AES-256-GCM: the same"
+        gcm len wrong 128 65535 -> assert int equals 0 "and 65 535 bytes"
+        -- the checker itself, then every bit of the box and of the additional data
+        gcm accepted (gcm open 128 (gcm key 128) (ref nonce 40) (sha msg 20) (gcm seal 128 (gcm key 128) (ref nonce 40) (sha msg 20) (sha msg 40))) -> assert int equals 1 "the checker sees an accepted box"
+        gcm changes 128 0 -> assert int equals 0 "AES-128-GCM: no change of one bit is accepted for an empty message"
+        gcm changes 128 15 -> assert int equals 0 "for 15 bytes"
+        gcm changes 128 16 -> assert int equals 0 "for 16 bytes"
+        gcm changes 128 17 -> assert int equals 0 "for 17 bytes"
+        gcm changes 128 200 -> assert int equals 0 "for 200 bytes"
+        gcm changes 256 0 -> assert int equals 0 "AES-256-GCM: for an empty message"
+        gcm changes 256 16 -> assert int equals 0 "for 16 bytes"
+        gcm changes 256 33 -> assert int equals 0 "for 33 bytes"
+        gcm changes 256 200 -> assert int equals 0 "for 200 bytes"
+
 fn :: main => ()
       main =
         test rgf019 bytes and bitops -> ()
@@ -1165,6 +1262,7 @@ fn :: main => ()
         test chacha20 key stream on every length -> ()
         test aead on every length -> ()
         test aead refuses every change -> ()
+        test aes gcm on every length -> ()
         test sha512 fips vectors -> ()
         test ed25519 rfc8032 vectors and negatives -> ()
         test minisign roundtrip and tamper -> ()
