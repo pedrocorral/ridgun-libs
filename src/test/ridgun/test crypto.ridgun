@@ -957,6 +957,8 @@ fn :: test chacha20 key stream on every length => ()
         stream differs kb nb 100 (chacha20 key stream kb nb 10 100) -> assert int equals 1 "the checker sees a key stream of another counter"
         -- the way that makes one block at a time in registers gives the same bytes at every size
         blocks differ kb nb 0 1100 0 -> assert int equals 0 "block by block in registers: the same bytes for every length from 0 to 1100"
+        -- 64 blocks at once are written in place, 65 make new tensors: the lengths on both sides of that step
+        blocks differ kb nb 4030 4230 0 -> assert int equals 0 "and for every length from 4 030 to 4 230, where the rounds change from in place to new tensors"
         sha256 hex (tensor to str (chacha20 key stream blocks (tensor from str (ref key 0)) (tensor from str (ref nonce 4064)) 3 4064)) -> assert str eq "a23e4420b114cbf21c0af7898f2d6ef468206ee61f5575edb47c3367543a2f06" "and 4 064 bytes of it are Python's"
         sha256 hex (tensor to str (chacha20 key stream blocks (tensor from str (ref key 0)) (tensor from str (ref nonce 65535)) 3 65535)) -> assert str eq "4332bd4c450c060bbc41785c0584f1ce3eeefb9b5db1e8f01630e26240445540" "and 65 535 bytes"
         sha256 hex (tensor to str (chacha20 key stream blocks (tensor from str (ref key 0)) (tensor from str (ref nonce 1048577)) 3 1048577)) -> assert str eq "4973cc6cb05df6c1ee964282e689a7c05cc735a0a15505f7c00e4aa4a4fab29b" "and one megabyte and a byte"
