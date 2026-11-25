@@ -1457,7 +1457,7 @@ fn :: c first bytes Tensor[U8] Int Int => Tensor[U8]
         | have == n = stream
         | otherwise = c bytes part stream 0 n
 
--- The first `n` bytes (at most 1 MiB) of the key stream from block `ctr` on: all the blocks at once,
+-- The first `n` bytes (at most 64 KiB) of the key stream from block `ctr` on: all the blocks at once,
 -- then the 16 word tensors side by side and their bytes (ridgunc 1.0.40).
 fn :: chacha20 key stream chunk Tensor[U8] Tensor[U8] Int Int => Tensor[U8]
       chacha20 key stream chunk key_bs nonce_bs ctr n =
@@ -1465,12 +1465,22 @@ fn :: chacha20 key stream chunk Tensor[U8] Tensor[U8] Int Int => Tensor[U8]
         o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15 = chacha page key_bs nonce_bs ctr nb
         c first bytes (tensor bytes (tensor interleave [o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15])) (64 * nb) n
 
--- The first `n` bytes of the key stream from block `ctr` on, 1 MiB at a time.
+-- The pieces of the key stream of a long message, 64 KiB each (1 024 blocks), as texts.
+fn :: chacha20 key stream pieces Tensor[U8] Tensor[U8] Int Int => [String]
+      chacha20 key stream pieces key_bs nonce_bs ctr n =
+        | n <= 0     = []
+        | n <= 65536 = [tensor to str (chacha20 key stream chunk key_bs nonce_bs ctr n)]
+        | otherwise  = [tensor to str (chacha20 key stream chunk key_bs nonce_bs ctr 65536)] :: (chacha20 key stream pieces key_bs nonce_bs (ctr + 1024) (n - 65536))
+
+-- The first `n` bytes of the key stream from block `ctr` on. Up to 64 KiB it is made in one go; a longer one is
+-- made 64 KiB at a time and joined once. Made whole, a long key stream cost more for each byte the longer it was
+-- (Vonkeep, 2026-11-25: 1.2 ns a byte at 64 KiB, 2.9 at 512 KiB), and past 1 MiB its pieces were copied again
+-- at every join.
 fn :: chacha20 key stream Tensor[U8] Tensor[U8] Int Int => Tensor[U8]
       chacha20 key stream key_bs nonce_bs ctr n =
-        | n <= 0       = Tensor[U8 * 0]
-        | n <= 1048576 = chacha20 key stream chunk key_bs nonce_bs ctr n
-        | otherwise    = tensor from str ((tensor to str (chacha20 key stream chunk key_bs nonce_bs ctr 1048576)) + (tensor to str (chacha20 key stream key_bs nonce_bs (ctr + 16384) (n - 1048576))))
+        | n <= 0     = Tensor[U8 * 0]
+        | n <= 65536 = chacha20 key stream chunk key_bs nonce_bs ctr n
+        | otherwise  = tensor from str (str join (chacha20 key stream pieces key_bs nonce_bs ctr n) "")
 
 -- The 64-byte keystream block `counter` (RFC 8439 §2.3).
 fn :: chacha20 block Tensor[U8] Tensor[U8] Int => Tensor[U8]
@@ -1695,11 +1705,12 @@ fn :: poly1305 quad bytes Tensor[U8] Int => Tensor[U8]
 fn :: poly1305 quad rows Tensor[Int * 5] Tensor[Int * 5] Tensor[U8] Int => Tensor[Int * 5]
       poly1305 quad rows h r msg rows =  poly1305 quad from h r (poly1305 mul r r) (poly1305 quad bytes msg rows) rows
 
--- How many rows of 64 bytes go through the 4 lanes: all the whole rows from 256 bytes on, none under that
--- (a short message goes block by block: the powers of r would cost more than they save).
+-- How many rows of 64 bytes go through the 4 lanes: all the whole rows from 320 bytes on, none under that
+-- (a short message goes block by block: the powers of r would cost more than they save). Vonkeep measured the
+-- start at 256 bytes on 2026-11-25: 256 and 257 bytes were 4 to 8% slower than block by block, 320 bytes 5% faster.
 fn :: poly1305 quad count Int => Int
       poly1305 quad count clen =
-        | clen >= 256 = clen shr 6
+        | clen >= 320 = clen shr 6
         | otherwise   = 0
 
 fn :: c pick Bool Int Int => Int
