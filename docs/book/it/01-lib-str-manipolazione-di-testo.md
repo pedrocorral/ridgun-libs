@@ -42,7 +42,7 @@ In `ridgun-libs`, **`str`** è una **lib** di prima classe situata in `src/main/
 
 ### 01.2.2. Catalogo esaustivo dei tipi e delle firme in `src/main/ridgun/lib/str.ridgun`
 
-Di seguito trovi l'inventario completo dei tipi algebrici (`type`), degli operatori (`op ::`) e delle firme di funzione (`fn ::`) definiti in `src/main/ridgun/lib/str.ridgun` (`0` tipi, `0` operatori e `39` funzioni):
+Di seguito trovi l'inventario completo dei tipi algebrici (`type`), degli operatori (`op ::`) e delle firme di funzione (`fn ::`) definiti in `src/main/ridgun/lib/str.ridgun` (`0` tipi, `0` operatori e `37` funzioni):
 
 | # | Funzione / Firma (`fn ::`) | Tipo di Ritorno |
 |---|---|---|
@@ -70,21 +70,19 @@ Di seguito trovi l'inventario completo dei tipi algebrici (`type`), degli operat
 | `22` | `fn :: str split loop String String Int Int Int Int Int [String]` | `[String]` |
 | `23` | `fn :: str split step String String Int Int` | `[String]` |
 | `24` | `fn :: str split String String` | `[String]` |
-| `25` | `fn :: upper char code String Int Int` | `String` |
-| `26` | `fn :: upper char slice String Int` | `String` |
-| `27` | `fn :: str to upper range String Int Int` | `String` |
-| `28` | `fn :: str to upper String` | `String` |
-| `29` | `fn :: lower char code String Int Int` | `String` |
-| `30` | `fn :: lower char slice String Int` | `String` |
-| `31` | `fn :: str to lower range String Int Int` | `String` |
-| `32` | `fn :: str to lower String` | `String` |
-| `33` | `fn :: str repeat loop String Int String` | `String` |
-| `34` | `fn :: str repeat String Int` | `String` |
-| `35` | `fn :: pad fill unit String` | `String` |
-| `36` | `fn :: str pad left step String Int String Int` | `String` |
-| `37` | `fn :: str pad left String Int String` | `String` |
-| `38` | `fn :: str pad right step String Int String Int` | `String` |
-| `39` | `fn :: str pad right String Int String` | `String` |
+| `25` | `fn :: str case fill Tensor[U8] Int Bool` | `Tensor[U8]` |
+| `26` | `idem :: str upper table` | `Tensor[U8]` |
+| `27` | `idem :: str lower table` | `Tensor[U8]` |
+| `28` | `fn :: str case map Tensor[U8 * n] Tensor[U8]` | `Tensor[U8 * n]` |
+| `29` | `fn :: str to upper String` | `String` |
+| `30` | `fn :: str to lower String` | `String` |
+| `31` | `fn :: str repeat loop String Int String` | `String` |
+| `32` | `fn :: str repeat String Int` | `String` |
+| `33` | `fn :: pad fill unit String` | `String` |
+| `34` | `fn :: str pad left step String Int String Int` | `String` |
+| `35` | `fn :: str pad left String Int String` | `String` |
+| `36` | `fn :: str pad right step String Int String Int` | `String` |
+| `37` | `fn :: str pad right String Int String` | `String` |
 
 ---
 
